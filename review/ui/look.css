@@ -1,0 +1,120 @@
+/* The look of the controls over the board, the library and Home, in two settings of the whole app (owner 2026-10-04: «make a
+   setting with shadows or without, I decide later; and one where every element is round, or a more pro direction: a little square
+   with a moderate radius»).
+     cv.shadow  "1" the plates float with a shadow (the default), "0" they lie flat
+     cv.shape   "round" pills and circles (the default), "pro" squarer, a moderate radius
+   Each page puts both on its root before its first paint (data-shadow, data-shape). Loaded by canvas.html, v2.html and home.html;
+   the !important wins over each page's own radius and shadow, so a control keeps one look whichever page draws it. */
+/* on the dark paper (#17171a) a soft shadow hardly shows: it is deep and dark there, with a hairline of light along the plate's top */
+:root { --plate-sh: 0 14px 40px rgba(0, 0, 0, .72), 0 4px 12px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .05); }
+:root[data-theme=light] { --plate-sh: 0 10px 28px rgba(40, 30, 15, .13), 0 2px 6px rgba(40, 30, 15, .1); }
+:root[data-shadow="0"] { --plate-sh: none; }
+
+/* the plates: the board's crumb, its round buttons and dock and menus; the window buttons' capsule, the library button and the
+   floating library; Home's sidebar, search, buttons and loading crumb */
+:is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #sets, #pages, #ctx, #wl, #tlibR, aside, .top #q, .btn.primary, #load .crumb, .menu),
+body.cv-on :is(header.hy-dock, main#list) { box-shadow: var(--plate-sh) !important; }
+
+/* «Pro»: no pills; a 38 px plate takes 11 px, a bar 14 px, a button inside a plate 8 px */
+:root[data-shape=pro] :is(#crumb, #bset, #bhist, #bkeys, #bntf, #wl, #tlibR, #load .crumb, .top #q, .top .search, .btn) { border-radius: 11px !important; }
+:root[data-shape=pro] :is(#dock, body.cv-on header.hy-dock) { border-radius: 14px !important; }
+:root[data-shape=pro] :is(#crumb button, #dock button, .fhbtn, .fcr, header.hy-dock :is(button, input, select, label, .seg, #vf)) { border-radius: 8px !important; }
+:root[data-shape=pro] header.hy-dock :is(.seg, #vf) button { border-radius: 6px !important; }
+:root[data-shape=pro] :is(#load .lb) { border-radius: 11px !important; }
+#load .lb { box-shadow: var(--plate-sh) !important; }
+
+/* How the top line comes in (owner 2026-10-04: «the crumb and this button must grow out of scale 0, not just drop in; the crumb
+   from 1:1 widens, and its parts fade in one after another, home › board › page»): the library button pops out of its centre, the
+   crumb grows as a circle at its left end, opens to its width, then its parts come one by one. It runs for the canvas's #crumb on
+   load (hy-open), Home's loading plate and button when a board opens (#load.on), and what has .hy-grow / .hy-pop (v2 #tlibR). The clip is
+   only for the move (backwards fill), so the shadow is whole after it. */
+:root { --pl-r: 19px; } :root[data-shape=pro] { --pl-r: 11px; }
+@keyframes hyPop { from { transform: scale(0); } to { transform: none; } }
+/* the crumb grows in grey, as a control not ready yet (the library button's lib-wait), and turns active the moment it is a whole circle,
+   before it opens to its width (owner 2026-10-04) */
+@keyframes hyGrow {
+  0% { transform: scale(0); opacity: .4; clip-path: inset(0 calc(100% - 38px) 0 0 round var(--pl-r)); animation-timing-function: cubic-bezier(.33, 0, .2, 1); }
+  40% { transform: none; opacity: .4; clip-path: inset(0 calc(100% - 38px) 0 0 round var(--pl-r)); animation-timing-function: cubic-bezier(.45, 0, .2, 1); }
+  52% { opacity: 1; } 100% { transform: none; opacity: 1; clip-path: inset(0 0 0 0 round var(--pl-r)); } }
+@keyframes hyPart { from { opacity: 0; } to { opacity: 1; } }
+:is(.hy-pop, #load.on .lb) { animation: hyPop .5s cubic-bezier(.2, .9, .3, 1.15) var(--pop-d, .1s) backwards; }
+:is(.hy-grow, :root.hy-open #crumb, #load.on .crumb) { transform-origin: 19px 50%; animation: hyGrow 1.1s linear var(--grow-d, .1s) backwards; }
+:is(.hy-grow, :root.hy-open #crumb, #load.on .crumb) > * { animation: hyPart .4s ease backwards; }
+/* the house is there from the start: it grows in the grey circle and turns active with it (owner 2026-10-04); the rest come after */
+:is(.hy-grow, :root.hy-open #crumb, #load.on .crumb) > :nth-child(1) { animation: none; }
+:is(.hy-grow, :root.hy-open #crumb, #load.on .crumb) > :nth-child(2) { animation-delay: calc(var(--grow-d, .1s) + .72s); }
+:is(.hy-grow, :root.hy-open #crumb, #load.on .crumb) > :nth-child(3) { animation-delay: calc(var(--grow-d, .1s) + .8s); }
+:is(.hy-grow, :root.hy-open #crumb, #load.on .crumb) > :nth-child(4) { animation-delay: calc(var(--grow-d, .1s) + .88s); }
+:is(.hy-grow, :root.hy-open #crumb, #load.on .crumb) > :nth-child(5) { animation-delay: calc(var(--grow-d, .1s) + .96s); }
+:is(.hy-grow, :root.hy-open #crumb, #load.on .crumb) > :nth-child(n+6) { animation-delay: calc(var(--grow-d, .1s) + 1.04s); }
+#load.on :is(.crumb, .lb) { --grow-d: .35s; --pop-d: .3s; }   /* Home's loading screen comes in over .3 s first */
+@media (prefers-reduced-motion: reduce) { :is(.hy-pop, #load.on .lb), :is(.hy-grow, :root.hy-open #crumb, #load.on .crumb), :is(.hy-grow, :root.hy-open #crumb, #load.on .crumb) > * { animation: none; } }
+
+/* the library button's picture shows the library: a thin strip when closed, the panel when open, sliding between the two */
+.lbi .pane { transform-box: fill-box; transform-origin: 0 50%; transform: scaleX(.34); opacity: .4; transition: transform .38s cubic-bezier(.3, .8, .25, 1), opacity .25s ease; }
+[aria-pressed=true] > .lbi .pane { transform: none; opacity: .85; }
+
+/* Menus: one kind of item everywhere (owner 2026-10-04, ui/menu.js): an icon, the label, the shortcut on the right in key caps as
+   in the shortcuts panel; the board's right click, the pages menu, the library's card menu, Home's menus */
+:is(#ctx, #lctx, .menu) button { gap: 9px; }
+:is(#ctx, #lctx, .menu) button > svg { flex: none; opacity: .75; }
+:is(#ctx, #lctx, .menu) .ml { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.mi0 { width: 15px; flex: none; }
+.mk { display: inline-flex; gap: 3px; margin-left: 18px; flex: none; }
+.mk kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; margin: 0; box-sizing: border-box; font: 600 11px/1 var(--sans);
+  color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; }
+
+/* The settings panel: the same on Home and on the board (owner 2026-10-04: «the settings differ, and so do they look») */
+#sets { width: 360px !important; padding: 12px !important; gap: 10px !important; box-sizing: border-box; }
+#sets .sh { font: 500 11px var(--sans) !important; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+#sets .sh span { float: right; letter-spacing: 0; color: var(--sub); font-variant-numeric: tabular-nums; }
+#sets .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#sets .opts button { height: 32px !important; border: 1px solid var(--line) !important; border-radius: 999px !important; background: var(--raise); color: var(--sub);
+  font: 500 12px var(--sans) !important; cursor: pointer; }
+:root[data-shape=pro] #sets .opts button { border-radius: 8px !important; }
+#sets .opts button[aria-pressed=true] { background: var(--ink) !important; color: var(--panel) !important; border-color: var(--ink) !important; }
+#sets .range { width: 100%; margin: 2px 0 4px; accent-color: var(--ink); cursor: pointer; }
+#sets .setnote { color: var(--muted); font-size: 12px; }
+.ml .mh { color: var(--muted); margin-left: 4px; }   /* a quiet note after a label («доски останутся») */
+/* the library over the whole window: the picture's panel fills its frame (owner 2026-10-04: «the icon does not move when it widens») */
+body.lwide #tlibR[aria-pressed=true] > .lbi .pane { transform: scaleX(2.17); }
+
+/* The paper (owner 2026-10-04: «why is the library black and not the board's colour; a variable for the standard colour, and the
+   colour for the light and the dark theme changeable in the settings»): one colour for the board, Home, the loading screen, the
+   library's panel and the window under them. --paper-d / --paper-l are the settings cv.paperDark / cv.paperLight, put on the root
+   by each page; --paper is the one of the theme in use. */
+:root { --paper: var(--paper-d, #17171a); }
+:root[data-theme=light] { --paper: var(--paper-l, #ebe6dc); }
+#sets .paper { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
+#sets .paper label { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--raise); color: var(--sub); font: 500 12px var(--sans); cursor: pointer; }
+:root[data-shape=pro] #sets .paper label { border-radius: 8px; }
+#sets .paper input[type=color] { margin-left: auto; width: 22px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: none; cursor: pointer; }
+#sets .paper input[type=color]::-webkit-color-swatch-wrapper { padding: 0; } #sets .paper input[type=color]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+#sets .paper button { height: 32px !important; padding: 0 10px; }
+
+/* No focus rings anywhere (owner 2026-10-05: «убери эти уебищные focus выделения»): a clicked or tabbed-to control shows no outline;
+   menus keep their row highlight for the arrow keys, text fields their border colour while typing */
+:focus, :focus-visible { outline: none !important; }
+
+/* The one chevron (owner 2026-10-04: «the arrow differs at the end and between the steps; it must be the same everywhere, in the 3D
+   studio, the library, the crumb, the folders»): ui/menu.js HY_CHEV, 12 px, a 1.2 px line, the muted colour; turned down (.dn) it opens a
+   list, turned down on an open folder of a tree. The crumbs give it the same room on either side: steps 8 px in, 1 px around it. */
+.hy-chev { display: block; width: 12px; height: 12px; flex: none; color: var(--muted); }
+.hy-chev.dn { transform: rotate(90deg); }
+
+/* One search field (owner 2026-10-04: «why is this one not round and not in the dark style, the round shape is on»): a magnifier, the
+   field's own look on the plates' colour, round, or a moderate radius in «pro». Home's board search and the library's folder search. */
+.hy-search { position: relative; display: flex; align-items: center; flex: 1; min-width: 0; }
+.hy-search > svg { position: absolute; left: 12px; width: 15px; height: 15px; color: var(--muted); pointer-events: none; }
+/* !important: the library's own rules for every search field (v2.html, studio-lib.css) must not reshape this one */
+.hy-search > input { flex: 1; width: 100% !important; min-width: 0; height: 32px !important; box-sizing: border-box; padding: 0 12px 0 34px !important; border: 1px solid var(--line) !important; border-radius: 999px !important;
+  background: color-mix(in srgb, var(--panel) 82%, transparent) !important; color: var(--ink); font: 13px var(--sans) !important; outline: none; box-shadow: none !important; transition: border-color .15s ease; }
+.hy-search > input:focus { border-color: var(--sel, #0a84ff) !important; }
+.hy-search > input::placeholder { color: var(--muted); }
+.hy-search > input::-webkit-search-cancel-button { -webkit-appearance: none; }
+:root[data-shape=pro] .hy-search > input { border-radius: 8px !important; }
+
+/* a project's icon (ui/projicon.js): a line icon in its colour or an emoji, the same box either way; Home, the board's crumb */
+.pji { display: inline-grid; place-items: center; width: var(--pj); height: var(--pj); flex: none; line-height: 1; }
+.pji svg { width: 100%; height: 100%; }
+.pji.emo { font-size: calc(var(--pj) * .8); }   /* an emoji is wider than its letters: a little smaller, the same room beside it as an icon has */

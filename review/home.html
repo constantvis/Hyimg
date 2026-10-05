@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyimg · Главная</title>
+<!-- Home of the Mac app (owner 2026-09-30: "like Figma"): project cards with a preview of recent frames, search, new / add folder.
+     Loaded from a file by native/main.swift, which fills it through window.hyimgHome(data) and takes actions through
+     webkit.messageHandlers.hyimg. Edits here show with ⌘R, no rebuild. Colours and type are the canvas tokens (canvas.html). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap">
+<script src="ui/paper.js"></script>
+<script src="ui/stars.js"></script>
+<script>// the window is dragged by the empty part of its top band (ui/dragband.js): Home's columns are background, the loading screen too
+window.HY_DRAG = { flat: ".app, main, .top, .sp, aside, .grow, .body, #load" };   // the loading screen is background, its plate's house and folder are not
+// the window buttons' capsule (#wl) is the app's and goes in full screen: the app says when (hyimgFS), a reloaded page guesses from its size
+if ((() => { try { return !!window.webkit.messageHandlers.hyimg; } catch { return false; } })()) document.documentElement.classList.add("in-app");
+{ let told = false; const set = on => document.documentElement.classList.toggle("hy-fs", on);
+  window.hyimgFS = on => { told = true; set(on); };
+  const guess = () => { if (!told) set(innerWidth >= screen.width - 1 && innerHeight >= screen.height - 1); };
+  guess(); addEventListener("resize", guess); }
+// the page itself never zooms (owner 2026-10-04: «the built-in zoom is never acceptable in our app»)
+addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) e.preventDefault(); }, { passive: false, capture: true });   // capture: a panel that stops the wheel still cannot let it zoom
+["gesturestart", "gesturechange", "gestureend"].forEach(t => addEventListener(t, e => e.preventDefault(), { passive: false, capture: true }));</script>
+<script src="ui/dragband.js"></script>
+<script src="ui/menu.js"></script>
+<script src="ui/projicon.js"></script>
+<link rel="stylesheet" href="ui/ui.css"><link rel="stylesheet" href="ui/look.css">
+<style>
+/* Home in the canvas's look (owner 2026-10-04: «the same background as the canvas but without dots, settings at the top right, the
+   panel on the left like in the 3D studio, so it feels like one style, freer, less boxed in»). The theme and the paper's grain are the
+   app's settings (settings.json, the app sends them with the projects); the paper is ui/paper.js, as on the canvas. */
+:root {
+  --bg: #f4f4f5; --panel: #ffffff; --raise: #f4f4f5; --raise2: #e9e9ec; --ink: #09090b; --sub: #52525b; --muted: #a1a1aa; --line: #e4e4e7;
+  --board: var(--paper); --warn: #b45309; --sel: #2563eb; --sans: "Geist", -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+:root[data-theme="dark"] {
+  --bg: #09090b; --panel: #0c0c0e; --raise: #18181b; --raise2: #202024; --ink: #fafafa; --sub: #a1a1aa; --muted: #71717a; --line: #27272a;
+  --board: var(--paper); --warn: #f5a524; --sel: #3b82f6;
+}
+* { box-sizing: border-box; }
+*, *::before, *::after { -webkit-user-select: none; user-select: none; }
+input { -webkit-user-select: text; user-select: text; }
+html, body { margin: 0; height: 100%; background: var(--board); color: var(--ink); font: 13px/1.45 var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+button { font: inherit; color: inherit; }
+
+.app { display: grid; grid-template-columns: 256px 1fr; height: 100%; }
+/* a panel floating on the paper, like the layers in the 3D studio; in the app it reaches the top and the window's buttons sit in its
+   corner, as in a Mac sidebar (owner 2026-10-04: «the menu like this, without a block of its own for the Mac buttons») */
+aside { margin: 12px 0 12px 12px; background: color-mix(in srgb, var(--panel) 90%, transparent); border: 1px solid var(--line); border-radius: 14px;
+  -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); box-shadow: var(--hy-sh-pop);
+  display: flex; flex-direction: column; padding: 10px 8px; gap: 2px; min-height: 0; }
+aside .nav { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--sub); text-align: left; cursor: pointer; width: 100%; }
+aside .nav:hover { background: var(--raise); color: var(--ink); }
+aside .nav[aria-current=true] { background: var(--raise); color: var(--ink); }
+aside .nav svg { flex: 0 0 auto; opacity: .85; }
+aside .nav .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+aside .dot { width: 6px; height: 6px; border-radius: 99px; background: #22c55e; flex: 0 0 auto; }
+aside h4 { margin: 18px 10px 6px; font: 500 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+/* «Проекты» with a plus on hover: a new project (owner 2026-10-04) */
+aside h4.ph { display: flex; align-items: center; height: 22px; margin-bottom: 4px; }
+aside h4.ph button { margin-left: auto; width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer;
+  opacity: 0; transform: scale(.7); transition: opacity .15s ease, transform .22s cubic-bezier(.2, .9, .3, 1.15), background .12s ease, color .12s ease; }
+aside #plist:hover h4.ph button, aside h4.ph button:focus-visible { opacity: 1; transform: none; }
+aside h4.ph button:hover { background: var(--raise); color: var(--ink); }
+aside .grow { flex: 1; }
+aside .plist { overflow: auto; min-height: 0; display: flex; flex-direction: column; gap: 2px; }
+aside .nav.noproj { color: var(--muted); } aside .nav.noproj:hover, aside .nav.noproj[aria-current=true] { color: var(--ink); }
+.head span.hic, .head span.hic:hover { cursor: default; color: var(--muted); background: none; }
+aside .nav .ct { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+aside .nav.drop, .card.drop .cover { box-shadow: inset 0 0 0 2px var(--sel); }
+aside .nav input { flex: 1; min-width: 0; height: 24px; border: 1px solid var(--sel); border-radius: 6px; background: var(--panel); color: var(--ink); font: 13px var(--sans); padding: 0 6px; outline: none; }
+/* until the app sends the projects (owner 2026-10-04: «on a reload it is empty, then something appears»): grey cards breathing */
+.skel { border-radius: 14px; background: color-mix(in srgb, var(--ink) 7%, transparent); animation: breathe 1.2s ease-in-out infinite alternate; }
+@keyframes breathe { from { opacity: .45; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+
+main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.top { display: flex; align-items: center; gap: 10px; padding: 12px 64px 12px 32px; }
+.search { position: relative; flex: 0 1 360px; }
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; z-index: 1; }
+.search input { width: 100%; height: 38px; padding: 0 14px 0 36px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--ink); font: 13px var(--sans); outline: none;
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--hy-sh-ctl); }
+.search input:focus { border-color: var(--sel); }
+.search input::placeholder { color: var(--muted); }
+.top .sp { flex: 1; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--ink); font-weight: 500; cursor: pointer; white-space: nowrap;
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--hy-sh-ctl); }
+.btn:hover { background: var(--raise); }
+.btn.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.btn.primary:hover { opacity: .88; }
+/* the settings at the top right, the canvas's round key and its panel */
+#bset { position: fixed; top: 12px; right: 12px; z-index: 30; width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--line); color: var(--sub); background: color-mix(in srgb, var(--panel) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--hy-sh-ctl); }
+#bset:hover, #bset[aria-expanded=true] { color: var(--ink); }
+#sets { position: fixed; top: 58px; right: 12px; z-index: 30; width: 280px; padding: 12px; display: none; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: var(--hy-sh-pop); }
+#sets.open { display: flex; }
+#sets .sh { font: 500 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+#sets .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#sets .opts button { height: 30px; border: 1px solid var(--line); border-radius: 999px; background: var(--raise); color: var(--sub); cursor: pointer; font: 500 12px var(--sans); }
+#sets .opts button[aria-pressed=true] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+#sets .setnote { color: var(--muted); font-size: 12px; }
+/* opening and saving a project, on its own cover (owner 2026-10-04: «the steps one after another», then «just an indicator right on
+   the file's thumb when something is saving»): the last steps the app reports, small, at the bottom of the cover */
+.prog { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 7px 10px; border-radius: 10px; background: rgba(9,9,11,.74); color: #e4e4e7;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); display: none; transition: opacity .4s; }
+.prog.on { display: block; } .prog.fade { opacity: 0; }
+.prog ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font: 12px/1.35 var(--sans); }   /* the UI's text, like every status line */
+.prog li { display: flex; gap: 8px; align-items: center; min-width: 0; animation: stepIn .28s cubic-bezier(.16, 1, .3, 1) both; }
+.prog li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prog li::before { content: "›"; color: #a1a1aa; width: 8px; flex: none; }
+.prog li.ok::before { content: "✓"; color: #4ade80; } .prog li.bad { color: #ff8a8a; } .prog li.bad::before { content: "×"; color: #ff8a8a; }
+.prog li.now::after { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #a1a1aa; border-right-color: transparent; animation: spin .7s linear infinite; }
+/* leaving for a board (owner 2026-10-04: «everything on Home scales 1 > 1.5 and fades out, then the content comes in», then «not so
+   fast, there is time»): Home grows from the pressed board and fades, the paper stays; coming back, Home settles in from a little
+   larger. Each is one layer moving on the GPU: the glass of the panels loses its blur while it moves (behind it is plain paper, so the
+   blur shows nothing there and only cost frames) */
+.app { will-change: transform, opacity; transition: transform .75s cubic-bezier(.45, 0, .2, 1), opacity .6s cubic-bezier(.45, 0, .2, 1); }
+body.leave .app { transform: scale(1.5); opacity: 0; pointer-events: none; }
+#bset { z-index: 41 !important; }   /* the gear stays over the loading screen, where the board has its own (owner 2026-10-04) */
+@keyframes homeIn { from { transform: scale(1.12); opacity: 0; } to { transform: none; opacity: 1; } }
+body.enter .app { animation: homeIn .8s cubic-bezier(.16, 1, .3, 1) both; }
+body:is(.leave, .enter) :is(aside, .search input, .btn, .prog), body:is(.leave, .enter) #bset { -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* coming back Home only the entrance plays: WebKit ran the leave's transition back to scale 1 once the entrance had ended, a second
+   move (owner 2026-10-04: «a double animation again when I go Home»), so transitions are off while Home settles */
+body.nt .app { transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .app { transition: none; } body.enter .app { animation: none; } }
+/* a board opening (owner 2026-10-04: «we go from Home to the chosen board and the loading happens there, the server and so on, and then
+   the animation»): Home is gone at once; its paper, the board's plate «⌂ › board» where the canvas has it, and the steps in the middle
+   stay until the canvas and its controls are drawn, then the app shows the canvas and it plays its entrance */
+/* the window's own buttons sit in this capsule, as on the boards (v2.html #wl); it stays over the loading screen, the buttons do too */
+#wl { position: fixed; top: 12px; left: 12px; width: 80px; height: 38px; box-sizing: border-box; z-index: 41; border-radius: 999px; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); display: none; }
+:root.in-app:not(.hy-fs) #wl { display: block; }
+:root.in-app:not(.hy-fs) aside { padding-top: 48px; }
+/* full screen takes the window buttons away and the sidebar's top room closes smoothly, and opens again on leaving it (owner 2026-10-05) */
+:root.in-app aside { transition: padding-top .45s cubic-bezier(.32,.72,0,1); }
+/* On Home the buttons lie on the sidebar and their capsule is not there. Leaving for a board the sidebar flies off and the capsule
+   takes over where it was (owner 2026-10-04: «first the dark block itself, then the outline, when the menu flies past, so the
+   change goes unnoticed»): its fill comes first, under the sidebar still there in the same colour, then its outline once the sidebar
+   has gone past; coming back the outline goes first, the fill as the sidebar settles over it. */
+#wl { transition: background-color .25s ease .2s, border-color .2s ease, box-shadow .2s ease; }
+body:not(.leave) #wl { background-color: transparent; border-color: transparent; box-shadow: none !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+body.leave #wl { transition: background-color .3s ease, border-color .35s ease .24s, box-shadow .35s ease .24s; }
+:root.in-app:not(.hy-fs) #load .crumb { left: 142px; }   /* where the board's crumb will be: after the capsule and the library button */
+/* the board's library button where the board will have it (v2.html #tlibR), so the top line is whole while the board loads */
+#load .lb { position: absolute; top: 12px; left: 12px; width: 38px; height: 38px; box-sizing: border-box; border-radius: 999px; display: grid; place-items: center;
+  border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--sub); }
+:root.in-app:not(.hy-fs) #load .lb { left: 98px; }
+#load .lb { opacity: .4; }   /* as the board has it while it loads: the library opens once the board's content is there */
+#load { position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .5s cubic-bezier(.16, 1, .3, 1), visibility 0s .5s; }
+#load.on { opacity: 1; visibility: visible; transition: opacity .6s cubic-bezier(.16, 1, .3, 1) .3s, visibility 0s; }
+#load.cut { transition: none; }
+#load canvas { position: absolute; inset: 0; width: 100%; height: 100%; }   /* the stars while the board loads (ui/stars.js) */
+#load .crumb { position: absolute; top: 12px; left: 56px; height: 38px; display: flex; align-items: center; gap: 0; padding: 0 4px; border-radius: 999px;
+  border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 82%, transparent); box-shadow: var(--hy-sh-ctl); color: var(--sub); font: 500 13px var(--sans); }
+#load .crumb > span { height: 30px; display: inline-flex; align-items: center; padding: 0 8px; white-space: nowrap; }
+#load .crumb .cs { padding: 0 1px; }
+#load .crumb .nm { max-width: 100px; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; display: block; line-height: 30px; }
+#load .crumb .hm { width: 30px; padding: 0; justify-content: center; }
+#load .crumb [hidden] { display: none !important; }
+#load .crumb { pointer-events: auto; }   /* the screen itself lets clicks through; its plate's house and folder lead back */
+#load .crumb :is(.hm, .fd) { border-radius: 999px; cursor: pointer; color: var(--sub); }
+#load .crumb :is(.hm, .fd):hover { background: var(--raise); color: var(--ink); }
+#load .crumb .fdi { display: contents; } #load .crumb .fd { gap: 6px; }
+#load .crumb .fdn { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#load .crumb .pg { color: var(--ink); gap: 6px; }
+#load .crumb .pg svg { flex: none; }
+#load .crumb .pn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+#load .crumb .pn:empty::before { content: "Загрузка"; color: var(--muted); animation: breathe 1.1s ease-in-out infinite alternate; }
+#load .crumb.fit { transition: width .4s cubic-bezier(.3, .8, .25, 1); overflow: hidden; }
+/* the steps (owner 2026-10-04: «the loading jumps», then «what loaded first must not vanish, each new line pushes the ones before it
+   up; a fifth narrower; one after another»): a box of fixed size, the lines stand at its bottom, the oldest go up into a soft fade */
+#load .steps { position: absolute; left: 50%; bottom: calc(50% - 40px); width: 0; height: 220px; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column;
+  justify-content: flex-end; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 90px); mask-image: linear-gradient(to bottom, transparent 0, #000 90px);
+  font: 13px/22px var(--sans); color: var(--sub); transition: opacity .3s ease, width .45s cubic-bezier(.16, 1, .3, 1), margin-left .45s cubic-bezier(.16, 1, .3, 1); }   /* the UI's text, as on the board: one style for status text; as wide as its widest line, widening smoothly (owner 2026-10-04) */
+#load ol { margin: 0; padding: 0; list-style: none; will-change: transform; }   /* the list moves as one block in the box */
+#load ol.out { opacity: 0; }
+#load li { display: flex; gap: 10px; align-items: center; height: 22px; overflow: hidden; white-space: nowrap; animation: lineIn .45s ease both; transition: opacity .5s ease; }
+#load li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; } #load li.gone { animation: lineOut .45s ease both; }
+@keyframes lineIn { from { opacity: 0; } }   /* one height for every line: the new one only fades in, the list glides up as a block */ @keyframes lineOut { to { opacity: 0; height: 0; } }
+#load li::before { content: "›"; color: var(--muted); width: 10px; flex: none; }
+#load li.ok { opacity: .5; } #load li.ok::before { content: "✓"; color: #22c55e; } #load li.bad { color: #ef4444; } #load li.bad::before { content: "×"; color: #ef4444; }
+#load li.now { opacity: 1; color: var(--ink); }
+#load li.now::after { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); border-right-color: transparent; animation: spin .7s linear infinite; }
+@keyframes stepIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .prog li { animation: none; } }
+
+.body { overflow: auto; padding: 20px 32px 72px; min-height: 0; }
+.head { display: flex; align-items: baseline; gap: 12px; margin: 0 0 18px; }
+.head h1 { margin: 0; font: 600 20px/1.2 var(--sans); letter-spacing: -.01em; }
+.head span { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 22px 20px; }
+/* cards or a list, as in Figma's files (owner 2026-10-04): the switch at the far right of the title, kept in home.json (view) */
+.head .vt { align-self: center; margin-left: auto; display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: var(--raise); }
+.head .vt button { width: 30px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px; background: none; color: var(--muted); cursor: pointer; transition: background .15s ease, color .15s ease; }
+.head .vt button:hover { color: var(--ink); }
+.head .vt button[aria-pressed=true] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .15); }
+:root[data-shape=pro] .head .vt { border-radius: 8px; } :root[data-shape=pro] .head .vt button { border-radius: 6px; }
+.list { display: flex; flex-direction: column; }
+.list .lh, .list .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 170px) minmax(0, 1.5fr) 140px 76px; align-items: center; gap: 16px; padding: 0 10px; }
+.list .lh { height: 30px; border-bottom: 1px solid var(--line); color: var(--muted); font: 500 12px var(--sans); }
+.list .card { height: 56px; flex-direction: row; border-radius: 10px; transition: background .12s ease; }
+.list .card + .card { margin-top: 2px; }
+.list .card:hover, .list .card:focus-visible { background: var(--raise); }
+.list .card .nmc { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.list .card .cover { width: 64px; height: 40px; aspect-ratio: auto; flex: none; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line); }
+.list .card:hover .cover { box-shadow: inset 0 0 0 1px var(--line); }
+.list .card .cover .dots { background-size: 8px 8px; } .list .card .cover .dots svg { display: none; }
+.list .card .n { font: 500 14px/1.3 var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .card .op { display: inline-block; width: 6px; height: 6px; margin-left: 8px; border-radius: 99px; background: #22c55e; vertical-align: 2px; }
+.list .card .c2, .list .card .c3 { color: var(--sub); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 7px; }
+.list .card .c3 { color: var(--muted); font-variant-numeric: tabular-nums; }
+/* the path is the button that opens the board's folder in Finder (owner 2026-10-04: «the path, and open this folder, neatly») */
+.list .card .pth { justify-self: start; max-width: 100%; display: inline-flex; align-items: center; gap: 7px; height: 28px; margin-left: -8px; padding: 0 8px; border: 0; border-radius: 7px;
+  background: none; color: var(--muted); font: 13px var(--sans); cursor: pointer; min-width: 0; transition: background .12s ease, color .12s ease; }
+.list .card .pth span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+.list .card .pth svg { flex: none; opacity: .8; }
+.list .card .pth b { font-weight: 400; color: var(--sub); }   /* the folder itself brighter than the folders it is in */
+.list .card .pth:hover b { color: var(--ink); }
+.list .card .pth:hover { background: var(--raise2); color: var(--ink); }
+:root[data-shape=pro] .list .card .pth { border-radius: 6px; }
+.list .card .acts { display: flex; justify-content: flex-end; gap: 2px; }
+.list .card .fav { position: static; width: 28px; height: 28px; background: none; color: var(--muted); -webkit-backdrop-filter: none; backdrop-filter: none; transform: none; }
+.list .card .fav:hover { background: var(--raise2); color: var(--ink); }
+.list .card .more { margin: 0; }
+.list .card.missing .n { color: var(--warn); }
+.card { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; border-radius: 12px; }
+.cover { position: relative; aspect-ratio: 16 / 10; border-radius: 14px; overflow: hidden; background: var(--raise); box-shadow: var(--hy-sh-ctl), inset 0 0 0 1px var(--line); }
+.cover .mos { position: absolute; inset: 0; display: grid; grid-template-columns: 1.6fr 1fr; grid-template-rows: 1fr 1fr; gap: 2px; }
+.cover .mos img { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--raise); }
+.cover .mos img:first-child { grid-row: span 2; }
+.cover .mos.one { grid-template-columns: 1fr; } .cover .mos.one img:first-child { grid-row: auto; }
+.cover .dots { position: absolute; inset: 0; background-image: radial-gradient(circle, color-mix(in srgb, var(--ink) 16%, transparent) 1px, transparent 1.6px); background-size: 18px 18px; display: grid; place-items: center; color: var(--muted); }
+.card:hover .cover { box-shadow: var(--hy-sh-pop), 0 0 0 3px color-mix(in srgb, var(--sel) 40%, transparent); }
+.card:focus-visible { outline: none; }
+.meta { display: flex; align-items: flex-start; gap: 8px; padding: 0 2px; }
+.meta .t { flex: 1; min-width: 0; }
+.meta .n { font: 500 14px/1.3 var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta .s { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.more { width: 28px; height: 28px; margin-top: -3px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; opacity: 0; }
+.card:hover .more, .more[aria-expanded=true] { opacity: 1; }
+.more:hover { background: var(--raise); color: var(--ink); }
+.chip { position: absolute; left: 10px; top: 10px; display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: rgba(9,9,11,.72); color: #fafafa !important; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); font: 500 11px var(--sans); color: var(--ink); }
+.chip i { width: 6px; height: 6px; border-radius: 99px; background: #22c55e; }
+/* the heart in the cover's top right corner (owner 2026-10-04): on hover, and always once the board is a favourite */
+.fav { position: absolute; right: 8px; top: 8px; z-index: 2; width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 99px;
+  background: rgba(9,9,11,.55); color: #fafafa; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); cursor: pointer;
+  opacity: 0; transform: scale(.8); transition: opacity .18s ease, transform .25s cubic-bezier(.2, .9, .3, 1.15), background .15s ease; }
+.card:hover .fav, .fav[aria-pressed=true], .fav:focus-visible { opacity: 1; transform: none; }
+.fav:hover { background: rgba(9,9,11,.75); }
+.fav svg { width: 16px; height: 16px; transition: fill .15s ease, color .15s ease; }
+.fav[aria-pressed=true] svg { fill: #ff4d6d; color: #ff4d6d; }
+.fav.pop svg { animation: favPop .38s cubic-bezier(.2, .9, .3, 1.3); }
+@keyframes favPop { 0% { transform: scale(.6); } 60% { transform: scale(1.25); } 100% { transform: none; } }
+aside .nav .hrt { width: 16px; height: 16px; flex: none; color: #ff4d6d; }
+.card.missing .cover .mos { opacity: .25; filter: grayscale(1); }
+.card.missing .warn { position: absolute; inset: 0; display: grid; place-content: center; gap: 10px; text-align: center; color: var(--warn); font-weight: 500; }
+.card.missing .warn .btn { justify-self: center; color: var(--ink); background: var(--bg); }
+
+.empty { display: grid; place-items: center; min-height: 60vh; text-align: center; }
+.empty h2 { margin: 0 0 6px; font: 600 18px var(--sans); }
+.empty p { margin: 0 0 18px; color: var(--sub); max-width: 46ch; }
+.empty .row { display: flex; gap: 10px; justify-content: center; }
+.none { color: var(--muted); padding: 30px 0; }
+
+.menu { position: fixed; z-index: 50; min-width: 210px; padding: 5px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: var(--hy-sh-pop); display: none; }
+.menu.open { display: block; }
+.menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 30px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.menu button:hover, .menu button:focus-visible { background: var(--raise2); outline: none; }
+.menu hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
+kbd { margin-left: auto; color: var(--muted); font: 11px var(--sans); }
+/* a project's icon: ui/look.css .pji */
+aside .nav [data-ficon] { display: grid; border-radius: 5px; transition: background .15s ease; }
+aside .nav [data-ficon]:hover { background: var(--raise2); }
+.head .hic { align-self: center; display: grid; padding: 3px; margin: -3px -4px -3px -3px; border: 0; border-radius: 8px; background: none; color: var(--ink); cursor: pointer; transition: background .15s ease; }
+.head .hic:hover { background: var(--raise); }
+/* the picker, as the project's icon in ChatGPT: Иконка (a colour and a line icon) or Эмодзи (a grid and a field for any) */
+#pjpick { position: fixed; z-index: 55; width: 288px; padding: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: var(--hy-sh-pop);
+  opacity: 0; transform: scale(.96) translateY(-4px); transform-origin: 20px 0; pointer-events: none; transition: opacity .16s ease, transform .22s cubic-bezier(.3, .8, .25, 1); }
+#pjpick.open { opacity: 1; transform: none; pointer-events: auto; }
+#pjpick .pjt { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 2px; margin-bottom: 10px; border-radius: 9px; background: var(--raise); }
+#pjpick .pjt button { height: 26px; border: 0; border-radius: 7px; background: none; color: var(--sub); font: 500 12px var(--sans); cursor: pointer; transition: background .15s ease, color .15s ease; }
+#pjpick .pjt button[aria-selected=true] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .15); }
+#pjpick .pjc { display: flex; justify-content: space-between; margin: 0 2px 10px; }
+#pjpick .pjc button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: pointer; box-shadow: 0 0 0 2px var(--panel) inset; transition: box-shadow .15s ease; }
+#pjpick .pjc button[aria-pressed=true] { box-shadow: 0 0 0 2px var(--panel) inset, 0 0 0 2px var(--c); }
+#pjpick .pjg { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 2px; max-height: 240px; overflow: hidden auto; }
+#pjpick .pjg button { aspect-ratio: 1; min-width: 0; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--ink); cursor: pointer; font-size: 18px; line-height: 1; transition: background .12s ease; }
+#pjpick .pjg button:hover { background: var(--raise); }
+#pjpick .pjg button[aria-pressed=true] { background: var(--raise2); box-shadow: inset 0 0 0 1.5px var(--sel); }
+#pjpick .pjg svg { width: 18px; height: 18px; }
+#pjpick .pjin { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--muted); font: 500 12px var(--sans); }
+#pjpick .pjin input { flex: 1; min-width: 0; height: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--raise); color: var(--ink); font: 13px var(--sans); outline: none; }
+#pjpick .pjin input:focus { border-color: var(--sel); }
+:root[data-shape=pro] #pjpick { border-radius: 11px; }
+@media (prefers-reduced-motion: no-preference) { .card .cover { transition: box-shadow .12s; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside aria-label="Разделы">
+    <button class="nav" data-tab="recent" aria-current="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span class="nm">Недавние</span></button>
+    <button class="nav" data-tab="all"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span class="nm">Все доски</span></button>
+    <div class="plist" id="plist"></div>
+    <div class="grow"></div>
+  </aside>
+  <main>
+    <div class="top">
+      <label class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><input id="q" placeholder="Найти доску" aria-label="Найти доску"></label>
+      <div class="sp"></div>
+      <button class="btn primary" data-act="create"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Новая доска</button>
+    </div>
+    <div class="body" id="body"></div>
+  </main>
+</div>
+<div class="menu" id="menu" role="menu"></div>
+<div id="pjpick" role="dialog" aria-label="Иконка проекта"></div>
+<div id="wl" aria-hidden="true"></div>
+<div id="load" aria-live="polite"><span class="lb" aria-hidden="true"><svg class="lbi" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><rect class="pane" x="5.5" y="6.5" width="6" height="11" rx="1" fill="currentColor" stroke="none"/></svg></span><canvas id="stars" aria-hidden="true"></canvas><div class="crumb"><span class="hm" title="Главная: доска догрузится сама"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg></span><span class="cs"><svg class="hy-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span><span class="fd" hidden title="Проект на главной: доска догрузится сама"><i class="fdi"></i><span class="fdn"></span></span><span class="cs fds" hidden><svg class="hy-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span><span class="nm"></span><span class="cs"><svg class="hy-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span><span class="pg"><span class="pn"></span><svg class="hy-chev dn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></div><div class="steps"><ol></ol></div></div>
+<button id="bset" title="Настройки приложения" aria-label="Настройки приложения" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+<div id="sets" role="dialog" aria-label="Настройки приложения">
+  <div class="sh">Тема</div><div class="opts" data-set="cv.theme"><button data-v="auto" title="Как в macOS: днем светлая, вечером темная, если так настроено в системе">Авто</button><button data-v="dark" title="Темная тема, графитовая бумага">Темная</button><button data-v="light" title="Светлая тема, светлая бумага">Светлая</button></div>
+  <div class="sh">Зерно бумаги</div><div class="opts" data-set="cv.grain"><button data-v="0">Очень тонкое</button><button data-v="1">Тонкое</button><button data-v="2">Заметное</button><button data-v="3">Сильное</button></div>
+  <div id="engineSet" hidden><div class="sh">Движок</div><div class="opts" id="engineOpts"><button data-engine="webkit" title="Движок macOS, как Safari: рисует процессором">WebKit</button><button data-engine="chromium" title="Движок Chrome внутри Hyimg: доска рисуется видеокартой и не тормозит">Chromium</button></div></div>
+  <div class="sh">Отрисовка</div><div class="opts" data-set="cv.lod"><button data-v="0" title="Каждая картинка отдельным элементом">Обычная</button><button data-v="1" title="Издалека картинки рисуются одним холстом (canvas 2D)">Холст</button><button data-v="2" title="Издалека картинки рисует видеокарта (WebGL), как в Figma">WebGL</button></div>
+  <div class="sh">Заметки</div><div class="opts" data-set="cv.glass"><button data-v="1" title="Полупрозрачные, под ними сильное размытие">Стекло</button><button data-v="0" title="Плотные, без размытия">Плотные</button></div>
+  <div class="sh">Точки</div><div class="opts" data-set="cv.dotsgl"><button data-v="0" title="Сетка из слоев CSS, как всегда">Обычные</button><button data-v="1" title="Одним слоем WebGL: живые, по ним идут волны, когда кладешь картинки">WebGL</button></div>
+  <div class="sh">Тени</div><div class="opts" data-set="cv.shadow"><button data-v="1" title="Плашки и кнопки парят над доской">С тенями</button><button data-v="0" title="Плашки лежат плоско">Без теней</button></div>
+  <div class="sh">Углы</div><div class="opts" data-set="cv.shape"><button data-v="round" title="Кнопки и плашки круглые">Круглые</button><button data-v="pro" title="Строже: почти квадратные, с умеренным радиусом">Pro</button></div>
+  <div class="sh">Цвет бумаги</div>
+  <div class="paper"><label>Темная<input type="color" data-paper="paperDark" aria-label="Цвет бумаги в темной теме"></label><label>Светлая<input type="color" data-paper="paperLight" aria-label="Цвет бумаги в светлой теме"></label><button data-paper-reset title="Вернуть цвета по умолчанию">Сбросить</button></div>
+  <div class="sh">Видимость точек <span id="dotsVal"></span></div>
+  <input id="dotsVis" class="range" type="range" min="0" max="300" step="5" aria-label="Видимость точек, процентов">
+  <div class="setnote">Одни для всего приложения: главная и все доски.</div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const send = (action, id) => { try { webkit.messageHandlers.hyimg.postMessage({ action, id }); } catch (e) { console.log("no native bridge", action, id); } };
+let DATA = null, TAB = "recent";   // null until the app sends the projects: Home shows it is loading, not «no projects»
+let HOME = { folders: [] }, EDIT = null;   // folders of projects (home.json through the app); the folder being named
+const saveHome = () => { try { webkit.messageHandlers.hyimg.postMessage({ action: "homeSave", home: HOME }); } catch (e) { console.log("no native bridge", HOME); } };
+const folderOf = id => HOME.folders.find(f => f.projects.includes(id));
+const ICO_PROJ = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 15.5 9 11l4 3.5 2.5-2 4.5 3.5"/></svg>`;
+try { TAB = localStorage.getItem("home.tab") || "recent"; } catch {}
+
+function ago(ts) {
+  if (!ts) return "еще не открывалась";
+  const s = (Date.now() - ts * 1000) / 1000;
+  if (s < 60) return "изменена только что";
+  if (s < 3600) return `изменена ${Math.round(s / 60)} мин назад`;
+  if (s < 86400) return `изменена ${Math.round(s / 3600)} ч назад`;
+  const d = new Date(ts * 1000), y = new Date(Date.now() - 864e5);
+  if (d.toDateString() === y.toDateString()) return "изменена вчера";
+  return "изменена " + d.toLocaleDateString("ru", { day: "numeric", month: "long" });
+}
+const plural = (n, a, b, c) => `${n.toLocaleString("ru-RU")} ${n % 10 === 1 && n % 100 !== 11 ? a : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? b : c}`;
+
+function cover(p) {
+  const im = (p.covers || []).slice(0, 3);
+  if (!im.length) return `<div class="dots"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5"/></svg></div>`;
+  return `<div class="mos ${im.length < 3 ? "one" : ""}">${(im.length < 3 ? im.slice(0, 1) : im).map(u => `<img src="${esc(u)}" alt="" loading="lazy" decoding="async">`).join("")}</div>`;
+}
+function cardHtml(p) {
+  const meta = [ago(p.updated), p.onCanvas ? plural(p.onCanvas, "кадр на холсте", "кадра на холсте", "кадров на холсте") : ""].filter(Boolean).join(" · ");
+  return `<div class="card ${p.available ? "" : "missing"}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="Открыть ${esc(p.name)}">
+    <div class="cover">${cover(p)}<button class="fav" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" aria-label="${isFav(p.id) ? "Убрать из избранного" : "В избранное"}" title="${isFav(p.id) ? "Убрать из избранного" : "В избранное"}">${HEART}</button>${p.open ? `<span class="chip"><i></i>открыта</span>` : ""}<div class="prog" data-prog="${p.id}" aria-live="polite"><ol></ol></div>
+      ${p.available ? "" : `<div class="warn">Папка недоступна<button class="btn" data-act="relink" data-id="${p.id}">Указать папку…</button></div>`}</div>
+    <div class="meta"><div class="t"><div class="n">${esc(p.name)}</div><div class="s" title="${esc(p.path)}">${esc(meta)}</div></div>
+      <button class="more" data-more="${p.id}" aria-label="Действия с доской" aria-haspopup="menu" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg></button></div>
+  </div>`;
+}
+// favourites (owner 2026-10-04: «instead of "no folder", favourites, moved to the top, gone while there are none; a heart, and a button
+// for it in the thumbnail's top right corner»): home.json favs[], board ids in the order they were added
+const HEART = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 19.5s-7.5-4.4-7.5-9.7A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6c0 5.3-7.5 9.7-7.5 9.7z"/></svg>`;
+const isFav = id => (HOME.favs || []).includes(id);
+function toggleFav(id) {
+  const on = !isFav(id); HOME.favs = on ? [...(HOME.favs || []), id] : HOME.favs.filter(x => x !== id);
+  saveHome(); render();
+  if (on) { const b = document.querySelector(`.fav[data-fav="${id}"]`); if (b) b.classList.add("pop"); }
+}
+// a folder's path the way Finder's title shows it: the home folder as ~
+const shortPath = path => (path || "").replace(/^\/Users\/[^/]+/, "~");
+// the folders it is in, then the folder itself; a path too long loses its start, never the folder's own name
+const pathHtml = path => { const s = shortPath(path), i = s.lastIndexOf("/"); return i < 0 ? `<b>${esc(s)}</b>` : esc(s.slice(0, i + 1)) + `<b>${esc(s.slice(i + 1))}</b>`; };
+// a board as a row of the list: a small cover, its name, its project, when it changed, the heart and «⋯»
+function rowHtml(p) {
+  const f = folderOf(p.id), fav = isFav(p.id), fl = fav ? "Убрать из избранного" : "В избранное";
+  return `<div class="card ${p.available ? "" : "missing"}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="Открыть ${esc(p.name)}" title="${esc(p.path)}">
+    <div class="nmc"><div class="cover">${cover(p)}</div><div class="n">${esc(p.name)}${p.open ? `<i class="op" title="открыта"></i>` : ""}${p.available ? "" : " · папка недоступна"}</div></div>
+    <div class="c2">${f ? HY_PROJ.html(f, 15) + esc(f.name) : ""}</div>
+    <div><button class="pth" data-act="openFolder" data-id="${p.id}" title="Открыть папку в Finder · ${esc(p.path)}">${HY_IC.folder}<span><bdi>${pathHtml(p.path)}</bdi></span></button></div><div class="c3">${esc(ago(p.updated))}</div>
+    <div class="acts"><button class="fav" data-fav="${p.id}" aria-pressed="${fav}" aria-label="${fl}" title="${fl}">${HEART}</button>
+      <button class="more" data-more="${p.id}" aria-label="Действия с доской" aria-haspopup="menu" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg></button></div>
+  </div>`;
+}
+const ICO_NONE = `<span class="pji" style="--pj:16px" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3.2 2.6"><rect x="4" y="4" width="16" height="16" rx="3.5"/></svg></span>`;
+const VT = `<div class="vt" role="group" aria-label="Вид"><button data-view="grid" title="Карточки" aria-label="Карточки"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button><button data-view="list" title="Список" aria-label="Список"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8.5 6.5h12M8.5 12h12M8.5 17.5h12"/><circle cx="4.5" cy="6.5" r=".9" fill="currentColor"/><circle cx="4.5" cy="12" r=".9" fill="currentColor"/><circle cx="4.5" cy="17.5" r=".9" fill="currentColor"/></svg></button></div>`;
+function projRow(p, sub) {
+  return `<button class="nav ${sub ? "sub" : ""}" data-open="${p.id}" title="${esc(p.path)}" draggable="true">${ICO_PROJ}<span class="nm">${esc(p.name)}</span>${p.open ? `<span class="dot" title="открыта"></span>` : ""}</button>`;
+}
+function render() {
+  const q = $("#q").value.trim().toLowerCase();
+  document.querySelectorAll("aside [data-tab]").forEach(b => b.setAttribute("aria-current", b.dataset.tab === TAB));
+  if (!DATA) {   // the app has not sent the projects yet
+    $("#plist").innerHTML = [70, 55, 62].map(w => `<div class="skel" style="height: 22px; margin: 6px 10px; width: ${w}%"></div>`).join("");
+    $("#body").innerHTML = `<div class="head"><div class="skel" style="width: 140px; height: 24px"></div></div><div class="grid">${[0, 1, 2].map(() => `<div><div class="skel" style="aspect-ratio: 16 / 10"></div><div class="skel" style="height: 14px; width: 50%; margin-top: 12px"></div></div>`).join("")}</div>`;
+    return;
+  }
+  const all = DATA.projects || [], byId = new Map(all.map(p => [p.id, p]));
+  HOME.folders.forEach(f => { f.projects = f.projects.filter(id => byId.has(id)); });   // a project removed from the catalog leaves its folder
+  // the left: folders of projects (open ones show their projects), then the projects in no folder
+  // a project is one row, its boards show on the right when it is picked (owner 2026-10-04: it does not open into a list here)
+  const folders = HOME.folders.map(f => `<button class="nav folder" data-folder="${f.id}" aria-current="${TAB === "f:" + f.id}">
+      <span data-ficon="${f.id}" title="Иконка проекта">${HY_PROJ.html(f)}</span>
+      ${EDIT === f.id ? `<input data-fname="${f.id}" value="${esc(f.name)}" aria-label="Имя проекта">` : `<span class="nm">${esc(f.name)}</span><span class="ct">${f.projects.length}</span>`}</button>`
+    ).join("")
+    // «Без проекта» (owner 2026-10-04): the boards in no project, always last in the list; not a project of home.json, so it is not
+    // renamed, deleted or given an icon; a board dragged onto it leaves its project
+    + `<button class="nav folder noproj" data-tab="none" aria-current="${TAB === "none"}">${ICO_NONE}<span class="nm">Без проекта</span><span class="ct">${all.filter(p => !folderOf(p.id)).length}</span></button>`;
+  HOME.favs = (HOME.favs || []).filter(id => byId.has(id));
+  const favs = HOME.favs.map(id => byId.get(id));
+  $("#plist").innerHTML = (favs.length ? `<h4>Избранное</h4>${favs.map(p => projRow(p)).join("")}` : "") + `<h4 class="ph">Проекты<button data-local="newfolder" title="Новый проект" aria-label="Новый проект"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></h4>${folders}`;
+  const inp = $("#plist input[data-fname]"); if (inp) { inp.focus(); inp.select(); }
+  if (!all.length) {
+    $("#body").innerHTML = `<div class="empty"><div><h2>Досок пока нет</h2><p>Доска живет в папке Finder с картинками. Подпапки станут коллекциями библиотеки, файлы останутся на месте. Правая кнопка: сделать доской папку, которая уже есть.</p>
+      <div class="row"><button class="btn primary" data-act="create">Новая доска</button></div></div></div>`;
+    return;
+  }
+  const folder = TAB.startsWith("f:") && HOME.folders.find(f => "f:" + f.id === TAB);
+  if (TAB.startsWith("f:") && !folder) TAB = "recent";
+  let list = (folder ? folder.projects.map(id => byId.get(id)) : TAB === "none" ? all.filter(p => !folderOf(p.id)) : all).filter(p => !q || p.name.toLowerCase().includes(q) || (p.path || "").toLowerCase().includes(q));
+  if (TAB === "recent") list = [...list].sort((a, b) => (b.opened || b.updated || 0) - (a.opened || a.updated || 0));
+  else if (!folder) list = [...list].sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  $("#body").innerHTML = `<div class="head">${folder ? `<button class="hic" data-ficon="${folder.id}" title="Иконка проекта">${HY_PROJ.html(folder, 22)}</button>` : ""}${TAB === "none" ? `<span class="hic">${ICO_NONE.replace("--pj:16px", "--pj:22px")}</span>` : ""}<h1>${folder ? esc(folder.name) : TAB === "recent" ? "Недавние" : TAB === "none" ? "Без проекта" : "Все доски"}</h1><span>${list.length}</span>${VT.replace(`data-view="${HOME.view === "list" ? "list" : "grid"}"`, `$& aria-pressed="true"`)}</div>`
+    + (!list.length ? "" : HOME.view === "list" ? `<div class="list"><div class="lh"><span>Название</span><span>Проект</span><span>Путь</span><span>Изменена</span><span></span></div>${list.map(rowHtml).join("")}</div>` : `<div class="grid">${list.map(cardHtml).join("")}</div>`)
+    + (list.length ? "" : `<p class="none">${q ? `Ничего не нашлось по «${esc(q)}».` : TAB === "none" ? "Все доски лежат в проектах." : "В проекте пока нет досок: перетащи их сюда или выбери «В проект» правой кнопкой."}</p>`);
+  PROG.forEach((_, id) => paintProg(id));
+}
+function newFolder(withProject) {
+  const f = { id: "f" + Date.now().toString(36), name: "Новый проект", projects: [] };
+  if (withProject) { HOME.folders.forEach(x => x.projects = x.projects.filter(id => id !== withProject)); f.projects.push(withProject); }
+  HOME.folders.push(f); EDIT = f.id; saveHome(); render();
+}
+function moveTo(pid, fid) {
+  HOME.folders.forEach(f => f.projects = f.projects.filter(id => id !== pid));
+  const f = HOME.folders.find(x => x.id === fid); if (f) f.projects.push(pid);
+  saveHome(); render();
+}
+function nameFolder(fid, name) { const f = HOME.folders.find(x => x.id === fid); EDIT = null; if (f && name.trim()) f.name = name.trim(); saveHome(); render(); }
+// the app's settings (theme, grain): sent with the projects, changed here and written back by the app
+let SET = {};
+const SET_DEF = { "cv.dotsgl": "0", "cv.grain": "2", "cv.lod": "1", "cv.glass": "1", "cv.shadow": "1", "cv.shape": "round" };   // the board's defaults (canvas.html SETS)
+let DATA_ENGINE = { cef: false, engine: "webkit" };   // which engine draws the boards, from the app
+const sendSettings = change => { try { webkit.messageHandlers.hyimg.postMessage({ action: "settings", change }); } catch (e) { console.log("no native bridge", change); } };
+const SYS = matchMedia("(prefers-color-scheme: dark)");
+function applySettings() {
+  const t = SET["cv.theme"] || "auto", theme = t === "auto" ? (SYS.matches ? "dark" : "light") : t, kind = theme === "light" ? "light" : "graphite";
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.dataset.shadow = SET["cv.shadow"] ?? "1"; document.documentElement.dataset.shape = SET["cv.shape"] ?? "round";   // ui/look.css
+  if (window.hyPaper) { hyPaper.apply(SET["cv.paperDark"], SET["cv.paperLight"]);   // the paper's colours, the whole app's (ui/look.css --paper)
+    document.body.style.background = hyPaper.css(kind, +(SET["cv.grain"] ?? 2), SET[kind === "light" ? "cv.paperLight" : "cv.paperDark"]); }
+  SET_DEF["cv.lod"] = DATA_ENGINE.engine === "chromium" ? "2" : "1";   // the boards' default drawing: WebGL in Chromium (canvas.html SETS)
+  document.querySelectorAll("#sets [data-paper]").forEach(i => { i.value = SET["cv." + i.dataset.paper] || hyPaper.BOARD[i.dataset.paper === "paperDark" ? "graphite" : "light"]; });
+  document.querySelectorAll("#sets [data-set]").forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === String(g.dataset.set === "cv.theme" ? t : (SET[g.dataset.set] ?? SET_DEF[g.dataset.set])))));
+  const dv = SET["cv.dotsv"] ?? "100"; $("#dotsVis").value = dv; $("#dotsVal").textContent = dv + "%";
+  $("#engineSet").hidden = !DATA_ENGINE.cef; $("#engineOpts").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.engine === DATA_ENGINE.engine));
+}
+SYS.addEventListener("change", applySettings);
+$("#bset").addEventListener("click", e => { e.stopPropagation(); const on = !$("#sets").classList.contains("open"); $("#sets").classList.toggle("open", on); $("#bset").setAttribute("aria-expanded", on); });
+$("#sets").addEventListener("click", e => {
+  e.stopPropagation();
+  const en = e.target.closest("[data-engine]");   // the engine is the app's own setting, not the file's: the app switches it
+  if (en) { DATA_ENGINE.engine = en.dataset.engine; applySettings(); try { webkit.messageHandlers.hyimg.postMessage({ action: "engine", engine: en.dataset.engine }); } catch {} return; }
+  const b = e.target.closest("button[data-v]"), g = b && b.closest("[data-set]"); if (!b) return;
+  SET[g.dataset.set] = b.dataset.v; applySettings(); sendSettings({ [g.dataset.set]: b.dataset.v });
+});
+// «Цвет бумаги», as on the board: Home, the boards and the window's ground take it
+$("#sets").addEventListener("input", e => { const i = e.target.closest("[data-paper]"); if (!i) return; SET["cv." + i.dataset.paper] = i.value; applySettings();
+  clearTimeout(i.t); i.t = setTimeout(() => sendSettings({ ["cv." + i.dataset.paper]: i.value }), 250); });
+$("#sets").addEventListener("click", e => { if (!e.target.closest("[data-paper-reset]")) return; delete SET["cv.paperDark"]; delete SET["cv.paperLight"]; applySettings(); sendSettings({ "cv.paperDark": null, "cv.paperLight": null }); }, true);
+// the dots' visibility, as on the board: the number follows the slider, the file gets it once the slider rests
+$("#dotsVis").addEventListener("input", e => { SET["cv.dotsv"] = e.target.value; $("#dotsVal").textContent = e.target.value + "%"; clearTimeout(e.target.t); e.target.t = setTimeout(() => sendSettings({ "cv.dotsv": e.target.value }), 200); });
+document.addEventListener("pointerdown", e => { if (!e.target.closest("#sets, #bset")) { $("#sets").classList.remove("open"); $("#bset").setAttribute("aria-expanded", "false"); } });
+// opening or saving a project: the steps come one after another, at least a beat apart, on the project's cover; the last three show
+const PROG = new Map();   // id -> {lines: [{text, cls}], queue, t, out}
+function paintProg(id) {
+  if (LOADING && LOADING.id === id) {   // the board opening in front: its steps in the middle; new lines are added, not the list redrawn
+    const st = PROG.get(id), ol = $("#load ol"); if (!st) { ol.innerHTML = ""; return; }
+    const byK = new Map([...ol.children].map(li => [+li.dataset.k, li]));
+    st.lines.forEach((l, k) => {   // each line keeps its own element (data-k): a new one opens below and pushes the others up
+      let li = byK.get(k);
+      if (!li) {
+        li = document.createElement("li"); li.dataset.k = k; li.append(document.createElement("span")); ol.appendChild(li);
+        // the list was pushed up by one line at once: it starts where it was (or still was going) and glides there
+        const m = getComputedStyle(ol).transform, f0 = m && m !== "none" ? new DOMMatrix(m).f : 0;
+        ol.style.transition = "none"; ol.style.transform = `translateY(${f0 + 22}px)`; void ol.offsetWidth;
+        ol.style.transition = "transform .45s cubic-bezier(.16, 1, .3, 1)"; ol.style.transform = "translateY(0)";
+      }
+      if (li.firstChild.textContent !== l.text) li.firstChild.textContent = l.text;
+      const box = ol.parentNode, need = Math.ceil(li.firstChild.scrollWidth) + 46;   // a longer line widens the box smoothly, it never narrows
+      if (need > box.offsetWidth) {
+        const first = !box.style.width; if (first) box.style.transition = "none";   // the first line: its width at once
+        box.style.width = need + "px"; box.style.marginLeft = -need / 2 + "px";
+        if (first) { void box.offsetWidth; box.style.transition = ""; }
+      }
+      if (li.firstChild.textContent !== l.text) li.firstChild.textContent = l.text;
+      const cls = l.cls + (li.classList.contains("gone") ? " gone" : ""); if (li.className !== cls) li.className = cls;
+    });
+    return;
+  }
+  const st = PROG.get(id), box = document.querySelector(`.prog[data-prog="${id}"]`); if (!box) return;
+  box.classList.toggle("on", !!st && st.lines.length > 0); box.classList.toggle("fade", !!st && !!st.out);
+  if (!st) return;
+  box.querySelector("ol").innerHTML = st.lines.slice(-3).map(l => `<li class="${l.cls}"><span>${esc(l.text)}</span></li>`).join("");
+}
+function nextStep(id) {
+  const st = PROG.get(id); if (!st || st.t || !st.queue.length) return;
+  const s = st.queue.shift(); st.lines.forEach(l => { if (l.cls === "now") l.cls = "ok"; });
+  st.lines.push({ text: s.text, cls: s.failed ? "bad" : s.done ? "ok" : "now" }); paintProg(id);
+  if (s.done || s.failed) { clearTimeout(st.out); st.out = setTimeout(() => { st.out = -1; paintProg(id); setTimeout(() => { if (st.out === -1) { PROG.delete(id); paintProg(id); } }, 450); }, s.failed ? 6000 : 1400); }
+  st.t = setTimeout(() => { st.t = 0; nextStep(id); }, 260);   // one line at a time, however many came at once
+}
+window.hyimgProgress = s => {
+  let st = PROG.get(s.id); if (!st || st.out === -1) { st = { lines: [], queue: [], t: 0, out: 0 }; PROG.set(s.id, st); }
+  if (st.out > 0) { clearTimeout(st.out); st.out = 0; }
+  if (st.lines.some(l => l.text === s.text) || st.queue.some(q => q.text === s.text)) return;
+  st.queue.push(s); nextStep(s.id);
+};
+// the board's page name, sent by its canvas while it loads: the plate takes it as the board's crumb has it, widening smoothly
+window.hyimgCrumb = page => {
+  const c = $("#load .crumb"), n = $("#load .pn"); if (!c || n.textContent === page) return;
+  const w0 = c.offsetWidth; n.textContent = page; const w1 = c.offsetWidth;
+  c.style.width = w0 + "px"; c.classList.add("fit"); void c.offsetWidth; c.style.width = w1 + "px";
+  clearTimeout(hyimgCrumb.t); hyimgCrumb.t = setTimeout(() => { c.classList.remove("fit"); c.style.width = ""; }, 450);
+};
+// The app opens a board: Home leaves at once, growing from the pressed board, and the loading stays in its place (#load)
+let LOADING = null;   // {id, t} while a board opens in front of Home
+const LEAVE_MS = 750;
+window.hyimgOpen = (id, name) => {
+  const c = document.querySelector(`.card[data-id="${id}"] .cover`) || document.querySelector(`[data-open="${id}"]`), app = $(".app");
+  if (c) { const r = c.getBoundingClientRect(); app.style.transformOrigin = `${r.left + r.width / 2}px ${r.top + r.height / 2}px`; }
+  LOADING = { id, t: performance.now() }; SHOWN = false;
+  if (STARS) { STARS.stop(); STARS = null; }
+  // the stars fly from the press while the board loads (ui/stars.js, in a worker); when the board's page sends its grid
+  // (window.hyimgStars) their lines move onto its dots
+  startStars(hyStarsDefaultSpec(innerWidth, innerHeight, hyPaper.DOTC[document.documentElement.dataset.theme === "light" ? "light" : "graphite"]));
+  $("#load .nm").textContent = name || ""; $("#load .pn").textContent = "";
+  { const f = folderOf(id); $("#load .fd").hidden = $("#load .fds").hidden = !f; $("#load .fdn").textContent = f ? f.name : ""; $("#load .fdi").innerHTML = f ? HY_PROJ.html(f, 15) : ""; $("#load .fd").dataset.f = f ? f.id : ""; } $("#load ol").classList.remove("out"); $("#load ol").innerHTML = ""; $("#load .steps").style.width = $("#load .steps").style.marginLeft = ""; $("#load").classList.remove("cut");
+  clearTimeout(window.hyimgBack.t); document.body.classList.remove("enter", "nt"); void document.body.offsetWidth; document.body.classList.add("leave"); $("#load").classList.add("on");
+  paintProg(id); [...PROG.keys()].filter(k => k !== id).forEach(paintProg);
+  return true;
+};
+// the canvas is drawn: the steps finish (all shown, Home fully gone), fade, and the app puts the canvas in front, which then comes in;
+// only the steps fade, the paper and the plate are the canvas's own, so the swap does not show
+window.hyimgHandoff = id => {
+  if (!LOADING || LOADING.id !== id) return false;
+  const go = () => {
+    const st = PROG.get(id), wait = Math.max(0, LEAVE_MS - (performance.now() - LOADING.t));
+    if ((st && (st.queue.length || st.t)) || wait > 0) { setTimeout(go, Math.max(60, wait)); return; }
+    // no fade here: the board's page carries the list on as it stands («it fades, then appears again», owner 2026-10-04)
+    const lines = ((PROG.get(id) || {}).lines || []).map(l => l.text);
+    try { webkit.messageHandlers.hyimg.postMessage({ action: "handoff", id, stars: STARS ? STARS.params : null, lines }); } catch { send("handoff", id); }
+    // the board carries the stars on from here; Home's own stop once the board is in front (it stays in the window under the board,
+    // and its field kept drawing the whole window in its worker all through the work on the board, owner 2026-10-04: «the frame rate dropped»)
+    const st0 = STARS; setTimeout(() => { if (STARS === st0 && STARS) { STARS.stop(); STARS = null; } }, 1500);
+  };
+  go(); return true;
+};
+// the app shows Home again: it settles in at once with what it already has, fresh data comes after
+let SHOWN = false, STARS = null;
+// the step lines were measured before the UI's font came, narrower than it: once it is there the box is measured again
+if (document.fonts) document.fonts.ready.then(() => { const ol = $("#load ol"); if (!ol) return; const box = ol.parentNode; let need = 0;
+  ol.querySelectorAll("li span").forEach(sp => { need = Math.max(need, Math.ceil(sp.scrollWidth) + 46); }); if (need > box.offsetWidth) { box.style.width = need + "px"; box.style.marginLeft = -need / 2 + "px"; } });
+function startStars(spec) {
+  if (!window.hyStars || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let c = $("#stars"); if (!c) { c = document.createElement("canvas"); c.id = "stars"; $("#load").prepend(c); }
+  STARS = hyStars(c, { seed: (Math.random() * 4294967296) >>> 0, t0: Date.now(), spec, origin: [0, 0] });
+}
+window.hyimgStars = (id, spec) => {   // the opening board's grid: the stars start on it, or move onto it
+  if (!LOADING || LOADING.id !== id || !spec) return false;
+  if (STARS) STARS.setSpec(spec, [0, 0]); else startStars(spec);
+  return true;
+};   // Home is on screen and has played its entrance: asked again (the app may ask twice), it does not replay
+window.hyimgBack = () => {
+  if (LOADING) { PROG.delete(LOADING.id); LOADING = null; }
+  return homeIn();
+};
+// Home comes back over the loading screen
+function homeIn() {
+  if (STARS) { STARS.stop(); STARS = null; }
+  if (SHOWN && !document.body.classList.contains("leave")) return true;
+  SHOWN = true;
+  $("#load").classList.add("cut"); $("#load").classList.remove("on"); $("#load ol").innerHTML = "";
+  document.body.classList.add("nt"); document.body.classList.remove("leave", "enter"); void document.body.offsetWidth; document.body.classList.add("enter"); clearTimeout(window.hyimgBack.t);
+  window.hyimgBack.t = setTimeout(() => { document.body.classList.remove("enter"); void document.body.offsetWidth; document.body.classList.remove("nt"); }, 850);
+  return true;
+}
+// Leaving the loading (owner 2026-10-04: «while it loads the house does not click, and I may have changed my mind»): Home comes back,
+// on the board's folder if that was clicked; the board goes on loading behind, its steps on its card, and stays there when drawn
+function cancelOpen(folder) {
+  if (!LOADING) return; const id = LOADING.id; LOADING = null;
+  send("cancelOpen", id);
+  if (folder) TAB = "f:" + folder;
+  homeIn(); render(); paintProg(id);
+}
+$("#load .crumb").addEventListener("click", e => { const hm = e.target.closest(".hm"), fd = e.target.closest(".fd"); if (hm || fd) cancelOpen(fd ? fd.dataset.f : null); });
+// a board's folder on its own crumb: Home on that folder
+window.hyimgShowFolder = id => { if (HOME.folders.some(f => f.id === id)) { TAB = "f:" + id; render(); } };
+// the app calls this with the project list (and again when something changes, and when Home comes back to the front)
+window.hyimgHome = data => {
+  DATA = data || { projects: [] }; if (DATA.engine) DATA_ENGINE = { cef: !!DATA.cef, engine: DATA.engine };
+  if (DATA.settings) { SET = DATA.settings; applySettings(); try { localStorage.setItem("home.set", JSON.stringify(SET)); } catch {} }
+  if (DATA.home && Array.isArray(DATA.home.folders)) HOME = { ...DATA.home, folders: DATA.home.folders.map(f => ({ ...f, projects: [...(f.projects || [])] })) };
+  render();
+};
+
+function openMenu(id, x, y, btn) {
+  const p = (DATA.projects || []).find(p => p.id === id); if (!p) return;
+  const m = $("#menu");
+  const inF = folderOf(id);
+  m.innerHTML = hyMenuItem(`data-act="open" data-id="${id}"`, "open", "Открыть", ["↩"]) + hyMenuItem(`data-act="rename" data-id="${id}"`, "rename", "Переименовать…")
+    + hyMenuItem(`data-fav="${id}"`, "heart", isFav(id) ? "Убрать из избранного" : "В избранное")
+    + "<hr>" + HOME.folders.filter(f => f !== inF).map(f => hyMenuItem(`data-local="move" data-id="${id}" data-f="${f.id}"`, HY_PROJ.html(f, 15), `В проект «${esc(f.name)}»`)).join("")
+    + hyMenuItem(`data-local="newfolder" data-id="${id}"`, "plus", "В новый проект")
+    + (inF ? hyMenuItem(`data-local="unfile" data-id="${id}"`, "unfile", `Убрать из проекта «${esc(inF.name)}»`) : "")
+    + "<hr>" + hyMenuItem(`data-act="relink" data-id="${id}"`, "relink", "Указать папку в Finder…") + hyMenuItem(`data-act="openFolder" data-id="${id}"`, "folder", "Открыть папку") + hyMenuItem(`data-act="reveal" data-id="${id}"`, "finder", "Показать в Finder")
+    // its server without opening it (owner 2026-10-04): started, it loads behind with its steps on the card; stopped, its green mark goes
+    + "<hr>" + (p.open ? hyMenuItem(`data-act="stopServer" data-id="${id}"`, "stop", "Остановить сервер") : hyMenuItem(`data-act="startServer" data-id="${id}"`, "play", "Запустить сервер"));
+  m.classList.add("open");
+  const r = m.getBoundingClientRect();
+  m.style.left = Math.min(x, innerWidth - r.width - 8) + "px"; m.style.top = Math.min(y, innerHeight - r.height - 8) + "px";
+  document.querySelectorAll(".more[aria-expanded=true]").forEach(b => b.setAttribute("aria-expanded", "false"));
+  if (btn) btn.setAttribute("aria-expanded", "true");
+  m.querySelector("button").focus();
+}
+function openProject(id) { send("open", id); }   // the app reports the steps if it has to load it
+// a menu of its own: the empty space (a new project, a Finder folder as a project, a new folder) and a folder (rename, delete)
+function openMenuHtml(html, x, y) {
+  const m = $("#menu"); m.innerHTML = html; m.classList.add("open");
+  const r = m.getBoundingClientRect(); m.style.left = Math.min(x, innerWidth - r.width - 8) + "px"; m.style.top = Math.min(y, innerHeight - r.height - 8) + "px";
+}
+function closeMenu() { $("#menu").classList.remove("open"); document.querySelectorAll(".more[aria-expanded=true]").forEach(b => b.setAttribute("aria-expanded", "false")); }
+
+document.addEventListener("click", e => {
+  const more = e.target.closest("[data-more]");
+  if (more) { e.stopPropagation(); const r = more.getBoundingClientRect(); openMenu(more.dataset.more, r.right - 210, r.bottom + 6, more); return; }
+  const loc = e.target.closest("[data-local]");
+  if (loc) { closeMenu(); const a = loc.dataset.local, id = loc.dataset.id;
+    if (a === "move") moveTo(id, loc.dataset.f); else if (a === "unfile") moveTo(id, null); else if (a === "newfolder") newFolder(id || null);
+    else if (a === "renamefolder") { EDIT = loc.dataset.f; render(); }
+    else if (a === "iconfolder") { const el = document.querySelector(`aside [data-ficon="${loc.dataset.f}"]`); if (el) openPick(loc.dataset.f, el); }
+    else if (a === "delfolder") { HOME.folders = HOME.folders.filter(f => f.id !== loc.dataset.f); if (TAB === "f:" + loc.dataset.f) TAB = "all"; saveHome(); render(); }
+    return; }
+  const fi = e.target.closest("[data-ficon]"); if (fi && EDIT !== fi.dataset.ficon) { closeMenu(); PJ && PJ.id === fi.dataset.ficon ? closePick() : openPick(fi.dataset.ficon, fi); return; }
+  if (PJ && !e.target.closest("#pjpick")) closePick();
+  const vw = e.target.closest("[data-view]"); if (vw) { if ((HOME.view || "grid") !== vw.dataset.view) { HOME.view = vw.dataset.view; saveHome(); render(); } return; }
+  const fv = e.target.closest("[data-fav]"); if (fv) { closeMenu(); toggleFav(fv.dataset.fav); return; }
+  // a double click renames the folder in place, as a page's name in the board's pages menu (owner 2026-10-04); the first click has
+  // drawn the list again, so the second one is caught here (detail 2), a dblclick would land on an element no longer there
+  // the folder being named takes no click of its own: a space typed in its name pressed the folder's button and drew the list again
+  if (e.target.closest("[data-folder]") && EDIT === e.target.closest("[data-folder]").dataset.folder) return;
+  const fo = e.target.closest("[data-folder]"); if (fo && !e.target.closest("input")) { if (e.detail >= 2) EDIT = fo.dataset.folder; TAB = "f:" + fo.dataset.folder; render(); return; }
+  const act = e.target.closest("[data-act]");
+  if (act) { closeMenu(); send(act.dataset.act === "open" ? "open" : act.dataset.act, act.dataset.id || null); return; }
+  if (!e.target.closest("#menu")) closeMenu();
+  const tab = e.target.closest("[data-tab]"); if (tab) { TAB = tab.dataset.tab; try { localStorage.setItem("home.tab", TAB); } catch {} render(); return; }
+  const op = e.target.closest("[data-open]"); if (op) { openProject(op.dataset.open); return; }
+  const card = e.target.closest(".card"); if (card && !card.classList.contains("missing")) openProject(card.dataset.id);
+});
+document.addEventListener("contextmenu", e => {
+  if (e.target.closest("input")) return;
+  e.preventDefault();
+  const card = e.target.closest(".card, [data-open]"); if (card) return openMenu(card.dataset.id || card.dataset.open, e.clientX, e.clientY);
+  const fo = e.target.closest("[data-folder]");
+  if (fo) return openMenuHtml(hyMenuItem(`data-local="renamefolder" data-f="${fo.dataset.folder}"`, "rename", "Переименовать проект")
+    + hyMenuItem(`data-local="iconfolder" data-f="${fo.dataset.folder}"`, HY_PROJ.html(HOME.folders.find(f => f.id === fo.dataset.folder), 15), "Иконка проекта…") + "<hr>"
+    + hyMenuItem(`data-local="delfolder" data-f="${fo.dataset.folder}"`, "del", `Удалить проект <span class="mh">доски останутся</span>`), e.clientX, e.clientY);
+  openMenuHtml(hyMenuItem('data-act="create"', "plus", "Новая доска") + hyMenuItem('data-act="add"', "folder", "Доска из папки Finder…") + "<hr>" + hyMenuItem('data-local="newfolder"', "folder", "Новый проект"), e.clientX, e.clientY);
+});
+// naming a folder: Enter or leaving the field keeps the name, Esc keeps the old one
+document.addEventListener("keydown", e => { const i = e.target.closest && e.target.closest("input[data-fname]"); if (!i) return; e.stopPropagation();
+  if (e.key === "Enter") nameFolder(i.dataset.fname, i.value); else if (e.key === "Escape") { EDIT = null; render(); } }, true);
+document.addEventListener("keyup", e => { if (e.key === " " && e.target.closest && e.target.closest("input[data-fname]")) e.preventDefault(); }, true);   // a space stays in the name
+document.addEventListener("focusout", e => { const i = e.target.closest && e.target.closest("input[data-fname]"); if (i && EDIT === i.dataset.fname) nameFolder(i.dataset.fname, i.value); });
+// a project dragged onto a folder goes into it; onto «Все доски» or the empty side it leaves its folder
+let DRAG = null;
+document.addEventListener("dragstart", e => { const c = e.target.closest(".card, [data-open]"); if (!c) return; DRAG = c.dataset.id || c.dataset.open; e.dataTransfer.setData("text/plain", DRAG); e.dataTransfer.effectAllowed = "move"; });
+document.addEventListener("dragover", e => { if (!DRAG) return; const t = e.target.closest("[data-folder], [data-tab=all], [data-tab=none]"); document.querySelectorAll(".drop").forEach(x => x !== t && x.classList.remove("drop")); if (t) { e.preventDefault(); t.classList.add("drop"); } });
+document.addEventListener("drop", e => { const t = e.target.closest("[data-folder], [data-tab=all], [data-tab=none]"); document.querySelectorAll(".drop").forEach(x => x.classList.remove("drop")); if (!DRAG || !t) return; e.preventDefault(); moveTo(DRAG, t.dataset.folder || null); DRAG = null; });
+document.addEventListener("dragend", () => { DRAG = null; document.querySelectorAll(".drop").forEach(x => x.classList.remove("drop")); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeMenu(); if (PJ) return closePick(); if (document.activeElement === $("#q") && $("#q").value) { $("#q").value = ""; render(); } return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") { e.preventDefault(); $("#q").focus(); $("#q").select(); return; }
+  const card = e.target.closest && !e.target.closest("button") && e.target.closest(".card");
+  if (card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); if (!card.classList.contains("missing")) openProject(card.dataset.id); }
+});
+$("#q").addEventListener("input", render);
+
+// a project's icon (owner 2026-10-04: «change a project's icon as in ChatGPT, an emoji or an icon»): the picker opens under the
+// icon pressed (the sidebar's, the head's) or from the project's right click; every pick is saved at once and drawn everywhere
+let PJ = null;
+function openPick(id, anchor) {
+  const f = HOME.folders.find(x => x.id === id); if (!f) return;
+  PJ = { id, tab: null }; drawPick();
+  const p = $("#pjpick"), r = anchor.getBoundingClientRect();
+  p.style.left = Math.max(8, Math.min(r.left - 6, innerWidth - p.offsetWidth - 8)) + "px";
+  p.style.top = Math.min(r.bottom + 6, innerHeight - p.offsetHeight - 8) + "px";
+  requestAnimationFrame(() => p.classList.add("open"));
+}
+function drawPick() {
+  const f = PJ && HOME.folders.find(x => x.id === PJ.id); if (!f) return closePick();
+  $("#pjpick").innerHTML = HY_PROJ.picker(f, PJ.tab);
+}
+function closePick() { PJ = null; $("#pjpick").classList.remove("open"); }
+function setIcon(patch) {
+  const f = PJ && HOME.folders.find(x => x.id === PJ.id); if (!f) return;
+  Object.entries(patch).forEach(([k, v]) => { if (v) f[k] = v; else delete f[k]; });
+  saveHome(); render(); drawPick();
+}
+$("#pjpick").addEventListener("click", e => {
+  e.stopPropagation();
+  const t = e.target.closest("[data-pjtab]"); if (t) { PJ.tab = t.dataset.pjtab; drawPick(); if (PJ.tab === "emoji") $("#pjpick [data-pjown]").focus(); return; }
+  const c = e.target.closest("[data-pjcolor]"); if (c) { const f = HOME.folders.find(x => x.id === PJ.id); setIcon(HY_PROJ.isIcon(f.icon) ? { color: c.dataset.pjcolor } : { color: c.dataset.pjcolor, icon: "layers" }); return; }
+  const i = e.target.closest("[data-pjicon]"); if (i) { setIcon({ icon: i.dataset.pjicon === "layers" ? null : i.dataset.pjicon }); return; }
+  const m = e.target.closest("[data-pjemoji]"); if (m) { PJ.tab = "emoji"; setIcon({ icon: m.dataset.pjemoji }); }
+});
+// any emoji of its own: the first character typed or pasted (macOS ⌃⌘Space opens the system's emoji panel in the field)
+$("#pjpick").addEventListener("input", e => {
+  if (!e.target.matches("[data-pjown]")) return;
+  const v = e.target.value.trim(); if (!v) return;
+  const g = window.Intl && Intl.Segmenter ? [...new Intl.Segmenter().segment(v)][0].segment : [...v][0];
+  const f = HOME.folders.find(x => x.id === PJ.id); f.icon = g; saveHome(); render();
+  document.querySelectorAll("#pjpick [data-pjemoji]").forEach(b => b.setAttribute("aria-pressed", b.dataset.pjemoji === g));
+});
+$("#pjpick").addEventListener("keydown", e => { if (e.key === "Escape") { e.stopPropagation(); closePick(); } else if (e.key === "Enter") closePick(); });
+try { SET = JSON.parse(localStorage.getItem("home.set") || "{}") || {}; } catch {}   // the theme the app sent last time, until it sends it again
+applySettings();
+render();
+send("ready");
+</script>
+</body>
+</html>

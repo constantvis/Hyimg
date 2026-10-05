@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">Hyimg</title>
+  <defs>
+    <clipPath id="tile">
+      <rect x="48" y="48" width="928" height="928" rx="208"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect x="48" y="48" width="928" height="928" rx="208" fill="#e92001"/>
+    <path d="M304 1000V584C432 516 504 414 512 240C520 414 592 516 720 584V1000Z" fill="#ffbc22"/>
+    <g fill="none" stroke="#111111" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M96 636C168 636 236 620 304 584C432 516 504 414 512 240C520 414 592 516 720 584C788 620 856 636 928 636"/>
+      <path d="M304 584V1000M720 584V1000"/>
+    </g>
+  </g>
+</svg>

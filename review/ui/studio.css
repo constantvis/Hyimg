@@ -1,0 +1,122 @@
+/* «Студия» (owner 2026-10-04): the whole interface in the 3D editor's look, Spline and DialKit: solid cards, small radii, the system font
+   at 12 px, 30 px controls, segmented switches, a pink accent. «Классика» is what the pages draw without this file; every rule here
+   applies only under html[data-ui="studio"], so the classic look cannot change. One look at a time: whatever is on screen follows it.
+   The palette comes in a dark and a light version, chosen by the page's theme (data-theme). The library's own parts: studio-lib.css. */
+
+:root[data-ui="studio"] {
+  --sans: -apple-system, "SF Pro Text", system-ui, "Helvetica Neue", sans-serif;
+  --st-fs: 12px; --st-h: 30px; --st-r: 8px; --st-rp: 12px; --st-rb: 10px;
+}
+:root[data-ui="studio"], :root[data-ui="studio"][data-theme="dark"] {
+  --bg: #111113; --panel: #1b1c1f; --raise: #25262a; --raise2: #303136; --ink: #ececef; --sub: #9a9ba3; --muted: #64656d; --line: #2c2d32;
+  --sel: #ff4fa3; --accent: #ff4fa3; --accent-ink: #1c0a13; --st-shadow: 0 16px 50px rgba(0,0,0,.38); --st-shadow-s: 0 4px 16px rgba(0,0,0,.28);
+}
+:root[data-ui="studio"][data-theme="light"] {
+  --bg: #f2f2f4; --panel: #ffffff; --raise: #f0f0f2; --raise2: #e4e4e8; --ink: #1b1c1f; --sub: #6b6c73; --muted: #9a9ba3; --line: #e3e3e7;
+  --sel: #e5307f; --accent: #e5307f; --accent-ink: #ffffff; --st-shadow: 0 14px 40px rgba(20,20,30,.12); --st-shadow-s: 0 3px 12px rgba(20,20,30,.08);
+}
+:root[data-ui="studio"] body { font-size: var(--st-fs); }
+:root[data-ui="studio"] kbd { border-radius: 4px; font-family: var(--sans); }
+
+/* ---------- the canvas ---------- */
+/* the round buttons in the corner become small square cards */
+:root[data-ui="studio"] :is(#bset, #bhist, #bkeys, #bntf) { width: 34px; height: 34px; border-radius: var(--st-rb); background: var(--panel); border-color: var(--line);
+  -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--st-shadow-s); font-family: var(--sans); font-size: 13px; }
+:root[data-ui="studio"] :is(#bset, #bhist, #bkeys, #bntf):hover { background: var(--raise); }
+:root[data-ui="studio"] :is(#bset, #bhist, #bkeys, #bntf)[aria-expanded=true] { background: var(--raise2); color: var(--ink); }
+:root[data-ui="studio"] :is(#bset, #bhist, #bkeys, #bntf) svg { width: 16px; height: 16px; }
+:root[data-ui="studio"] #bntf.dot::after { top: 5px; right: 5px; width: 8px; height: 8px; }
+
+/* the plate «⌂ › project › page» top left: a card like the keys on the right */
+:root[data-ui="studio"] #crumb { height: 34px; border-radius: var(--st-rb); background: var(--panel); border-color: var(--line); -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--st-shadow-s); font: 500 12px var(--sans); }
+:root[data-ui="studio"] #crumb button { height: 26px; border-radius: 6px; }
+:root[data-ui="studio"] #crumb button:hover, :root[data-ui="studio"] #cPage[aria-expanded=true] { background: var(--raise); }
+
+/* every panel that opens over the board: a solid card */
+:root[data-ui="studio"] :is(#sets, #hist, #ntf, #keys, #pages, #ctx, #info) { background: var(--panel); border-color: var(--line); border-radius: var(--st-rp);
+  -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--st-shadow); font-size: var(--st-fs); }
+:root[data-ui="studio"] :is(#sets, #hist, #ntf, #keys) { top: 54px; }
+
+/* the settings: DialKit's section labels and segmented switches */
+:root[data-ui="studio"] #sets { padding: 10px; gap: 6px; }
+:root[data-ui="studio"] #sets .sh { font: 600 11px var(--sans); letter-spacing: 0; text-transform: none; color: var(--sub); margin-top: 4px; }
+:root[data-ui="studio"] #sets .opts { display: flex; gap: 2px; padding: 2px; border-radius: var(--st-r); background: var(--raise); }
+:root[data-ui="studio"] #sets .opts button { flex: 1; height: 26px; min-width: 0; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: var(--sub);
+  font: 500 12px var(--sans); box-shadow: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-ui="studio"] #sets .opts button:hover { color: var(--ink); }
+:root[data-ui="studio"] #sets .opts button[aria-pressed=true] { background: var(--raise2); color: var(--ink); box-shadow: var(--st-shadow-s); }
+:root[data-ui="studio"] #sets .range { height: var(--st-h); border-radius: var(--st-r); background: var(--raise); padding: 0 10px; }
+:root[data-ui="studio"] #sets input[type=range] { accent-color: var(--ink); }
+
+/* notifications, keys, pages, the right-click menu */
+:root[data-ui="studio"] #ntf .nt { border-radius: var(--st-r); }
+:root[data-ui="studio"] #ntf .nt.new { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+:root[data-ui="studio"] :is(#ctx, #pages) button, :root[data-ui="studio"] #pages .row { height: 28px; border-radius: 6px; font: 500 12px var(--sans); }
+:root[data-ui="studio"] :is(#ctx button:hover, #ctx button:focus-visible, #pages .row:hover) { background: var(--raise); }
+:root[data-ui="studio"] #pages .row.cur { background: var(--raise2); }
+:root[data-ui="studio"] #pages input { border-radius: 6px; }
+
+/* the history: tabs as a segmented switch, the inputs and buttons at DialKit's height */
+:root[data-ui="studio"] #hist { top: 54px; }
+:root[data-ui="studio"] #hist .hh b { font: 600 12px var(--sans); }
+:root[data-ui="studio"] #hist .htabs { padding: 2px; gap: 2px; border-radius: var(--st-r); background: var(--raise); }
+:root[data-ui="studio"] #hist .htabs button { height: 26px; border-radius: 6px; font: 500 12px var(--sans); background: transparent; color: var(--sub); }
+:root[data-ui="studio"] #hist .htabs button.on { background: var(--raise2); color: var(--ink); box-shadow: var(--st-shadow-s); }
+:root[data-ui="studio"] #hist input { height: var(--st-h); border-radius: var(--st-r); background: var(--raise); border-color: transparent; font: 12px var(--sans); }
+:root[data-ui="studio"] #hist input:focus { border-color: var(--accent); }
+:root[data-ui="studio"] #histSave { height: var(--st-h); border-radius: var(--st-r); font: 600 12px var(--sans); }
+:root[data-ui="studio"] :is(#histList, #evList) .hv, :root[data-ui="studio"] #evList .ev { border-radius: var(--st-r); }
+:root[data-ui="studio"] :is(#histList, #evList) .hday { font: 600 11px var(--sans); letter-spacing: 0; text-transform: none; }
+:root[data-ui="studio"] :is(#histList .hl b, #evList .el b) { font: 600 12px var(--sans); }
+:root[data-ui="studio"] #histList .hv.who-owner .dot { background: var(--accent); border-color: var(--accent); }
+
+/* the dock: a card with square keys instead of a glass pill */
+:root[data-ui="studio"] .bar { border-radius: var(--st-rp) !important; background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--st-shadow);
+  padding: 5px; gap: 2px !important; }
+:root[data-ui="studio"] .bar button { height: var(--st-h) !important; border-radius: var(--st-r) !important; background: transparent !important; color: var(--sub) !important;
+  font: 500 12px var(--sans); padding: 0 10px !important; }
+:root[data-ui="studio"] .bar button.ic, :root[data-ui="studio"] .bar .plgdock :is(button[data-tool], button[data-plus]) { width: 32px; padding: 0 !important; }
+:root[data-ui="studio"] .bar button:hover { background: var(--raise) !important; color: var(--ink) !important; }
+:root[data-ui="studio"] .bar button.pg { background: var(--raise) !important; color: var(--ink) !important; }
+:root[data-ui="studio"] .bar button svg { width: 16px; height: 16px; }
+:root[data-ui="studio"] .bar .plgdock button.on { background: var(--accent) !important; color: var(--accent-ink) !important; }
+:root[data-ui="studio"] .bar .plgdock button.pri { background: var(--ink) !important; color: var(--panel) !important; }
+:root[data-ui="studio"] .bar .plgdock button.wide:not(.pri) { background: var(--raise) !important; }
+:root[data-ui="studio"] .bar .zl, :root[data-ui="studio"] .bar .st { font: 500 11px var(--sans); }
+
+/* the bars over a selection, the crop's proportions, the jump and preview bars, the crop hint */
+:root[data-ui="studio"] .tidy { border-radius: var(--st-rb); background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--st-shadow-s); border-color: var(--line); }
+:root[data-ui="studio"] .tidy button { border-radius: 6px; font: 500 12px var(--sans); }
+:root[data-ui="studio"] .tidy button:hover { background: var(--raise); }
+:root[data-ui="studio"] :is(.tidy.tsz .hx.on, .cratio button.on, .tidy .fv.on) { background: var(--raise2); color: var(--ink); }
+:root[data-ui="studio"] :is(#jump, #pv, #hint) { border-radius: var(--st-rb); background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--st-shadow-s);
+  font: 500 12px var(--sans); }
+:root[data-ui="studio"] :is(#jump button, #pv button) { border-radius: var(--st-r); font: 500 12px var(--sans); }
+
+/* the frame card on the right */
+:root[data-ui="studio"] #info { font-size: var(--st-fs); }
+:root[data-ui="studio"] :is(#info #iOpen, #info #iFav) { border-radius: var(--st-r); }
+:root[data-ui="studio"] #iNotes .sh { font: 600 11px var(--sans); letter-spacing: 0; text-transform: none; }
+:root[data-ui="studio"] #iNotes :is(.chip, .inote, .more) { border-radius: 6px; }
+
+/* the notes that pop up at the top (ui/toasts.js) */
+:root[data-ui="studio"] #hyToasts .ht { border-radius: var(--st-rb); font: 500 12px var(--sans); -webkit-backdrop-filter: none; backdrop-filter: none;
+  background: color-mix(in srgb, var(--k) 10%, var(--panel)); box-shadow: var(--st-shadow-s); }
+
+/* the canvas's own library column (the canvas opened on its own, not inside the library page) */
+:root[data-ui="studio"] :is(.lhead select, .lhead input[type=search], .tg, .more) { height: var(--st-h); border-radius: var(--st-r); font: 500 12px var(--sans); }
+:root[data-ui="studio"] .th { border-radius: 6px; }
+:root[data-ui="studio"] .th.on::after { border-radius: 6px; }
+
+/* sliders as DialKit draws them: a field filled up to the value, the label and the number inside (canvas.html sets --p) */
+:root[data-ui="studio"] #sets .sh:has(+ .range) { position: relative; z-index: 1; height: var(--st-h); margin: 4px 0 calc(-1 * var(--st-h) - 6px); padding: 0 10px;
+  display: flex; align-items: center; justify-content: space-between; color: var(--ink); font: 500 12px var(--sans); pointer-events: none; }
+:root[data-ui="studio"] #sets .sh:has(+ .range) span { float: none; color: var(--ink); }
+:root[data-ui="studio"] #sets .range { -webkit-appearance: none; appearance: none; height: var(--st-h); margin: 0; padding: 0; border-radius: var(--st-r);
+  background: linear-gradient(to right, color-mix(in srgb, var(--ink) 16%, var(--raise)) var(--p, 50%), var(--raise) var(--p, 50%)); }
+:root[data-ui="studio"] #sets .range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 3px; height: 16px; border-radius: 2px; background: var(--sub); }
+:root[data-ui="studio"] #sets .range::-moz-range-thumb { width: 3px; height: 16px; border: 0; border-radius: 2px; background: var(--sub); }
+
+/* what is on the board keeps its own type: titles and notes measure their boxes with it, a change of look must not move them */
+:root[data-ui="studio"] #world { font-family: "Geist", -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 13px; }

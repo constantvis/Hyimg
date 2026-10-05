@@ -1,0 +1,30 @@
+/* What every page shares in both looks (owner 2026-10-04: «standardised»). */
+
+/* Reset buttons: the library's filters, the 3D editor's dock (everything) and the end of each editor panel. Always in their place:
+   pale and not pressable while there is nothing to take back, red once there is. */
+:root { --hy-red: #ff453a; }
+:root[data-theme="light"] { --hy-red: #d70015; }
+.hy-reset { transition: color .15s, background-color .15s, opacity .15s; }
+.hy-reset:disabled { opacity: .4; cursor: default; }
+.hy-reset:not(:disabled) { color: var(--hy-red) !important; background: color-mix(in srgb, var(--hy-red) 15%, transparent) !important; }
+.hy-reset:not(:disabled):hover { background: color-mix(in srgb, var(--hy-red) 24%, transparent) !important; }
+/* in a dock it carries its word (owner 2026-10-04: «why is there no reset in the 3D studio»: a bare ↺ read as one more tool) and turns
+   solid red once there is something to take back */
+.bar button.hy-reset, .reset.hy-reset { width: auto !important; padding: 0 12px 0 10px !important; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.bar button.hy-reset:not(:disabled), .reset.hy-reset:not(:disabled) { color: #fff !important; background: var(--hy-red) !important; }
+.bar button.hy-reset:not(:disabled):hover, .reset.hy-reset:not(:disabled):hover { background: color-mix(in srgb, var(--hy-red) 86%, #000) !important; }
+.bar button.hy-reset svg, .reset.hy-reset svg { width: 15px; height: 15px; flex: none; }
+/* the library's reset was an ink pill shown only when needed; at rest it now looks like the dock's other keys */
+.reset.hy-reset:disabled { background: var(--raise) !important; color: var(--sub) !important; }
+
+/* Shadows (owner 2026-10-04: «at the bottom and on the right there are some, elsewhere none: standardise»). Two depths for everything
+   that floats over the board or the library, set here once instead of per element:
+   - a control lying on the surface: the round keys and the plate at the top, the docks, the view switch, the bars over a selection,
+     the notes at the top;
+   - a panel or a menu opened over it: settings, history, notifications, keys, pages, the right-click menu, the frame card, the
+     library beside the canvas, the viewer's side, popovers, the 3D editor's panels.
+   Darker in the dark theme, where a light shadow does not show. */
+:root { --hy-sh-ctl: 0 1px 2px rgba(0,0,0,.10), 0 6px 18px rgba(0,0,0,.12); --hy-sh-pop: 0 2px 6px rgba(0,0,0,.10), 0 18px 48px rgba(0,0,0,.18); }
+:root[data-theme="dark"] { --hy-sh-ctl: 0 1px 2px rgba(0,0,0,.40), 0 6px 18px rgba(0,0,0,.35); --hy-sh-pop: 0 2px 6px rgba(0,0,0,.35), 0 18px 48px rgba(0,0,0,.50); }
+:is(#bset, #bhist, #bkeys, #bntf, #crumb, #jump, #pv, #hint, .bar, .tidy, .vsw, header.hy-dock, #hyToasts .ht, .tools, .pickbar) { box-shadow: var(--hy-sh-ctl) !important; }
+:is(#sets, #hist, #ntf, #keys, #pages, #ctx, #info, .pop, .side, .tfpanel, body.cv-on main, .fdrawer.open:not(body.fdock .fdrawer), .m3p) { box-shadow: var(--hy-sh-pop) !important; }

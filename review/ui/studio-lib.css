@@ -1,0 +1,248 @@
+/* «Студия» for the library page (v2.html): the same look as the canvas in studio.css, the 3D editor's cards and DialKit's controls.
+   Every rule applies only under html[data-ui="studio"], so «Классика» stays as v2.html draws it. Meaning colours stay: the verdicts
+   (good / idea / bad), the ♥ pink, the orange question, the blue «on the canvas» mark and the blue / red of included / excluded tags.
+   Picks, the chosen folder and switched-on chips take the Studio accent, as selection does on the canvas. */
+
+/* the library's own tokens on top of studio.css: the viewer's backdrop, the focus ring, the "on" fill */
+:root[data-ui="studio"], :root[data-ui="studio"][data-theme] {
+  --shade: color-mix(in srgb, var(--bg) 97%, transparent); --ring: color-mix(in srgb, var(--accent) 55%, transparent);
+  --on: var(--ink); --on-ink: var(--panel);
+}
+:root[data-ui="studio"] { scrollbar-color: var(--raise2) transparent; }
+:root[data-ui="studio"] :is(main, .side, .fdrawer, .tfpanel) { scrollbar-width: thin; scrollbar-color: var(--raise2) transparent; }
+
+/* ---------- fields and buttons in general ---------- */
+:root[data-ui="studio"] :is(select, input[type=search]) { height: var(--st-h); border-radius: var(--st-r); border: 1px solid transparent; background-color: var(--raise);
+  font: 500 12px var(--sans); padding: 0 10px; }
+:root[data-ui="studio"] select { padding-right: 28px; background-position: calc(100% - 15px) 13px, calc(100% - 10px) 13px; }
+:root[data-ui="studio"] :is(select, input[type=search]):focus { outline: none; border-color: var(--accent); }
+:root[data-ui="studio"] textarea { border-radius: var(--st-r); border: 1px solid transparent; background: var(--raise); font: 12px/1.5 var(--sans); padding: 8px 10px; }
+:root[data-ui="studio"] textarea:focus { border-color: var(--accent); box-shadow: none; }
+:root[data-ui="studio"] label.check { font-size: 12px; gap: 6px; }
+/* checkboxes: a small rounded square, the accent with a tick when on */
+:root[data-ui="studio"] label.check input { appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 16px; height: 16px; margin: 0; border-radius: 4px;
+  background: var(--raise2); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
+:root[data-ui="studio"] label.check input:checked { box-shadow: none; background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center / 12px no-repeat; }
+:root[data-ui="studio"] .empty { font-size: 12px; color: var(--sub); }
+
+/* ---------- the dock at the bottom: a solid card, 30 px controls, segmented switches ---------- */
+:root[data-ui="studio"] body header { border-radius: var(--st-rp); background: var(--panel); border-color: var(--line); -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--st-shadow); padding: 5px; gap: 4px; font-size: var(--st-fs); }
+:root[data-ui="studio"] header .filters { gap: 4px; row-gap: 4px; }
+:root[data-ui="studio"] header select { height: var(--st-h); border: 0; background-color: var(--raise); font-weight: 500; }
+:root[data-ui="studio"] header input[type=search] { height: var(--st-h); width: 120px; border: 0; background-color: var(--raise); }
+:root[data-ui="studio"] header input[type=search]:focus { width: 200px; box-shadow: inset 0 0 0 1px var(--accent); }
+:root[data-ui="studio"] body.cv-on header #q { background-position: 8px center; padding-left: 30px; }
+:root[data-ui="studio"] body.cv-on header #q:placeholder-shown:not(:focus) { width: var(--st-h); padding: 0; background-position: 7px center; }
+/* DialKit's segmented control: a track in --raise, the chosen segment one step lighter */
+:root[data-ui="studio"] .seg { gap: 2px; padding: 2px; border-radius: var(--st-r); background: var(--raise); }
+:root[data-ui="studio"] .seg button { height: 26px; padding: 0 10px; border-radius: 6px; font: 500 12px var(--sans); color: var(--sub); }
+:root[data-ui="studio"] .seg button:hover { color: var(--ink); }
+:root[data-ui="studio"] .seg button[aria-pressed=true] { background: var(--raise2); color: var(--ink); box-shadow: var(--st-shadow-s); }
+:root[data-ui="studio"] .seg .favf, :root[data-ui="studio"] .seg .favf[aria-pressed=true] { color: #ff2d6f; }
+:root[data-ui="studio"] .seg .askf { padding: 0 6px; }
+:root[data-ui="studio"] .seg .askf .qi { width: 18px; height: 18px; border-radius: 5px; font: 700 11px var(--sans); background: var(--raise2); }
+:root[data-ui="studio"] .seg .askf.has .qi { background: #ff9f0a; color: #111; }
+:root[data-ui="studio"] .seg .askf[aria-pressed=true] .qi { box-shadow: 0 0 0 2px color-mix(in srgb, #ff9f0a 45%, transparent); }
+/* up / down between collections: two square keys on one track */
+:root[data-ui="studio"] .seg.updown { gap: 2px; padding: 2px; }
+:root[data-ui="studio"] .seg.updown button { width: 28px; padding: 0; border-radius: 6px; box-shadow: none; }
+:root[data-ui="studio"] .seg.updown button:hover { background: var(--raise2); color: var(--ink); }
+/* square keys: tag filter, «Брак», reset */
+:root[data-ui="studio"] .tfbtn { width: var(--st-h); height: var(--st-h); border-radius: var(--st-r); background: var(--raise); }
+:root[data-ui="studio"] .tfbtn:hover { color: var(--ink); background: var(--raise2); }
+:root[data-ui="studio"] :is(.tfbtn[aria-expanded=true], .tfbtn.on) { background: var(--raise2); color: var(--ink); }
+:root[data-ui="studio"] .tfbtn b { top: -5px; right: -5px; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 5px; font: 700 10px/15px var(--sans); }
+:root[data-ui="studio"] .chk { height: var(--st-h); padding: 0 10px; border-radius: var(--st-r); background: var(--raise); font: 500 12px var(--sans); }
+:root[data-ui="studio"] .chk:hover { color: var(--ink); }
+:root[data-ui="studio"] .chk:has(input:checked) { background: var(--bad); color: #fff; }
+:root[data-ui="studio"] body.cv-on .chk { width: var(--st-h); padding: 0; }
+:root[data-ui="studio"] .reset { width: var(--st-h); height: var(--st-h); border-radius: var(--st-r); font: 500 12px var(--sans); }
+:root[data-ui="studio"] header .progress { font: 500 11px var(--sans); padding: 0 8px 0 4px; }
+:root[data-ui="studio"] .tfactive { gap: 4px; }
+:root[data-ui="studio"] .tfchip { height: 24px; padding: 0 8px; border-radius: 6px; font: 500 12px var(--sans); }
+:root[data-ui="studio"] .tfchip.inc { background: #0a84ff; color: #fff; }
+
+/* the view switch in the corner: a card like the canvas's corner keys */
+:root[data-ui="studio"] .vsw { gap: 2px; padding: 2px; border-radius: var(--st-rb); background: var(--panel); border-color: var(--line); -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--st-shadow-s); }
+:root[data-ui="studio"] .vsw button { width: 32px; height: 28px; border-radius: var(--st-r); }
+:root[data-ui="studio"] .vsw button:hover { background: var(--raise); color: var(--ink); }
+:root[data-ui="studio"] .vsw button[aria-pressed=true] { background: var(--raise2); color: var(--ink); box-shadow: none; }
+:root[data-ui="studio"] .vsw button svg { width: 16px; height: 16px; }
+
+/* ---------- the list ---------- */
+:root[data-ui="studio"] section h2 { font: 600 15px/1.3 var(--sans); letter-spacing: 0; margin: 28px 0 2px; }
+:root[data-ui="studio"] section:first-child h2 { margin-top: 16px; }
+:root[data-ui="studio"] section h2 span { font-size: 11px; font-weight: 400; }
+:root[data-ui="studio"] h3.batch { font: 500 12px var(--sans); margin: 14px 0 8px; gap: 6px; }
+
+/* cards: small radius, no lift; hover and pick draw a ring instead */
+:root[data-ui="studio"] .card { border-radius: var(--st-rb); transition: none; }
+:root[data-ui="studio"] body.cv-on .card { border-radius: var(--st-r); }
+:root[data-ui="studio"] .card:hover { transform: none; box-shadow: none; outline: 1px solid color-mix(in srgb, var(--ink) 35%, transparent); outline-offset: -1px; }
+:root[data-ui="studio"] .card.picked { outline: 2px solid var(--accent); outline-offset: -2px; }
+:root[data-ui="studio"] .card .nm { font: 500 11px var(--sans); padding: 20px 8px 6px; }
+:root[data-ui="studio"] .pill { border-radius: 5px; padding: 2px 6px; font: 600 10.5px/1.25 var(--sans); -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root[data-ui="studio"] body.cv-on .pill { font-size: 10px; padding: 2px 5px; border-radius: 4px; }
+:root[data-ui="studio"] .card .sc { border-radius: 5px; padding: 2px 6px; font: 600 10.5px/1.25 var(--sans); -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root[data-ui="studio"] .card .cvs { width: 20px; height: 20px; border-radius: 6px; }
+/* the pick mark: a square checkbox, filled with the accent when picked */
+:root[data-ui="studio"] .card .pick { width: 20px; height: 20px; border-radius: 6px; border-width: 1.5px; }
+:root[data-ui="studio"] .card.picked .pick { background-color: var(--accent); border-color: var(--accent); background-size: 13px; }
+:root[data-ui="studio"] .card:hover .sc, :root[data-ui="studio"] body.picking .card .sc { right: 34px; }
+/* the bar that appears with a pick: a card, the count in the accent */
+:root[data-ui="studio"] .pickbar { gap: 4px; padding: 4px 4px 4px 12px; border-radius: var(--st-rb); background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  box-shadow: var(--st-shadow); font: 600 12px var(--sans); }
+:root[data-ui="studio"] .pickbar span { color: var(--accent); margin-right: 4px; }
+:root[data-ui="studio"] .pickbar button { height: 28px; padding: 0 10px; border-radius: 6px; background: var(--raise); color: var(--ink); font: 500 12px var(--sans); }
+:root[data-ui="studio"] .pickbar button:hover { background: var(--raise2); }
+:root[data-ui="studio"] .pickbar button.x { width: 28px; padding: 0; }
+/* drag ghosts are styled from JS; these win over their inline colours */
+:root[data-ui="studio"] .dragghost { border-radius: var(--st-rb) !important; }
+:root[data-ui="studio"] .dragghost b { background: var(--accent) !important; color: var(--accent-ink) !important; border-radius: 6px !important; font-family: var(--sans) !important; }
+:root[data-ui="studio"] body > div[style*="-1000px"]:not(.dragghost) { border-radius: var(--st-r) !important; background: var(--accent) !important; color: var(--accent-ink) !important;
+  font: 600 12px var(--sans) !important; padding: 6px 10px !important; }
+
+/* ---------- the floating library over the canvas ---------- */
+:root[data-ui="studio"] body.cv-on main { background: var(--panel); border-color: var(--line); border-radius: var(--st-rp); box-shadow: var(--st-shadow); }
+:root[data-ui="studio"] body.cv-on main#list { padding-top: 52px; }
+:root[data-ui="studio"] #lgrip { border-radius: 0; }
+:root[data-ui="studio"] #lgrip:hover, :root[data-ui="studio"] body.cv-drag #lgrip { background: linear-gradient(90deg, transparent 5px, var(--accent) 5px 7px, transparent 7px); }
+
+/* ---------- the folder path and the drawer ---------- */
+:root[data-ui="studio"] .fbar { height: 40px; padding: 0 6px; gap: 4px; background: var(--panel); border-color: var(--line); font-size: var(--st-fs); }
+:root[data-ui="studio"] body:not(.cv-on) .fbar { top: 8px; margin: 8px 128px 0 24px; border: 1px solid var(--line); border-radius: var(--st-rp); box-shadow: var(--st-shadow-s); }
+:root[data-ui="studio"] body.cv-on .fbar { border-radius: 11px 11px 0 0; }
+:root[data-ui="studio"] :is(.fbar, .ftree) .fhbtn { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 8px; border-radius: 6px;
+  font: 600 12px var(--sans); letter-spacing: 0; text-transform: none; }
+:root[data-ui="studio"] .fcr { display: inline-flex; align-items: center; height: 24px; padding: 0 6px; border-radius: 6px; font: 500 12px var(--sans); }
+:root[data-ui="studio"] .fcr:last-of-type { font-weight: 600; }
+:root[data-ui="studio"] .fcnt { font-size: 11px; }
+:root[data-ui="studio"] .fbar .fpk { color: var(--accent); font: 600 11px var(--sans); }
+/* the drawer: a card instead of glass; slightly see-through, so the frames switching under it still show */
+:root[data-ui="studio"] .fdrawer { top: 53px; padding: 6px 6px 150px; background: color-mix(in srgb, var(--panel) 88%, transparent); -webkit-backdrop-filter: none; backdrop-filter: none;
+  border-radius: 0 0 11px 11px; }
+:root[data-ui="studio"] body:not(.cv-on) .fdrawer { top: 56px; border-radius: var(--st-rp); border-color: var(--line); box-shadow: var(--st-shadow); }
+:root[data-ui="studio"] .ftree { border: 0; background: transparent; padding: 0; border-radius: var(--st-r); }
+/* folder rows like the 3D editor's outliner: hover in --raise, the chosen folder in the accent */
+:root[data-ui="studio"] .frow { height: 28px; border-radius: 6px; font-size: 12px; }
+:root[data-ui="studio"] .frow:hover { background: var(--raise); }
+:root[data-ui="studio"] .frow.on { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
+:root[data-ui="studio"] .frow.picked { background: var(--raise2); color: var(--ink); box-shadow: none; }
+:root[data-ui="studio"] .frow.inherited { background: var(--raise); }
+:root[data-ui="studio"] .frow .fn { font-size: 12px; }
+:root[data-ui="studio"] .frow .fc { font-size: 10px; }
+:root[data-ui="studio"] .frow .fck { border-radius: 4px; }
+:root[data-ui="studio"] .frow .fck[aria-checked=true] { background-color: var(--accent); border-color: var(--accent); }
+
+/* ---------- the tag filter ---------- */
+:root[data-ui="studio"] .tfpanel { padding: 10px 12px 12px; border-radius: var(--st-rp); border-color: var(--line); background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--st-shadow); font-size: var(--st-fs); }
+:root[data-ui="studio"] .tfhead { font-size: 11px; color: var(--sub); }
+:root[data-ui="studio"] .tfhead button { height: 26px; padding: 0 10px; border-radius: 6px; font: 500 12px var(--sans); }
+:root[data-ui="studio"] .tfhead button:hover { background: var(--raise2); color: var(--ink); }
+:root[data-ui="studio"] .tfg { margin-top: 8px; }
+:root[data-ui="studio"] .tfg h4 { font: 600 11px var(--sans); letter-spacing: 0; text-transform: none; color: var(--sub); margin: 0 0 5px; }
+:root[data-ui="studio"] .tfg div { gap: 4px; }
+:root[data-ui="studio"] .tfg button { height: 26px; padding: 0 9px; border-radius: 6px; font: 500 12px var(--sans); gap: 5px; }
+:root[data-ui="studio"] .tfg button:hover { background: var(--raise2); color: var(--ink); }
+:root[data-ui="studio"] .tfg button i { font-size: 10px; }
+
+/* ---------- the right-click menu: the canvas's menu card ---------- */
+:root[data-ui="studio"] #lctx { padding: 5px; border-radius: var(--st-rp); border-color: var(--line); background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--st-shadow); }
+:root[data-ui="studio"] #lctx button { height: 28px; padding: 0 8px; border-radius: 6px; font: 500 12px var(--sans); }
+
+/* ---------- the viewer ---------- */
+:root[data-ui="studio"] .stage:not(.zoomed) img { border-radius: var(--st-r); }
+:root[data-ui="studio"] .hint2 { font-size: 11px; }
+:root[data-ui="studio"] .zoomhint { padding: 3px 8px; border-radius: 6px; font: 600 11px var(--sans); }
+:root[data-ui="studio"] .tools { padding: 4px; border-radius: var(--st-rb); box-shadow: var(--st-shadow-s); }
+:root[data-ui="studio"] .tools button { height: 28px; padding: 0 10px; border-radius: 6px; font: 500 12px var(--sans); }
+:root[data-ui="studio"] .tools button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); }
+/* the notes switch: a small card with DialKit's toggle */
+:root[data-ui="studio"] .ntog { height: var(--st-h); padding: 0 6px 0 10px; gap: 7px; border-radius: var(--st-r); border-color: var(--line); background: var(--panel);
+  box-shadow: var(--st-shadow-s); font: 500 12px var(--sans); }
+:root[data-ui="studio"] .ntog .sw { width: 30px; height: 18px; }
+:root[data-ui="studio"] .ntog .sw i { top: 2px; left: 2px; width: 14px; height: 14px; }
+:root[data-ui="studio"] .ntog .lamp { width: 7px; height: 7px; }
+/* the comment popover on the frame */
+:root[data-ui="studio"] .pop { padding: 10px; gap: 8px; border-radius: var(--st-rp); border-color: var(--line); box-shadow: var(--st-shadow); }
+:root[data-ui="studio"] .popn { font: 600 11px var(--sans); color: var(--sub); }
+:root[data-ui="studio"] .pop textarea { min-height: 64px; font-size: 12px; }
+:root[data-ui="studio"] .popb button { height: 28px; padding: 0 10px; border-radius: 6px; font: 500 12px var(--sans); }
+:root[data-ui="studio"] .popb .ghost:hover { background: var(--raise); }
+:root[data-ui="studio"] .popb .solid kbd { height: 16px; min-width: 16px; font-size: 10px; }
+
+/* the side panel: a solid card like the 3D editor's inspector */
+:root[data-ui="studio"] .side { border-radius: var(--st-rp); border-color: var(--line); background: var(--panel); -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: var(--st-shadow); font-size: var(--st-fs); }
+:root[data-ui="studio"] .side > :is(.phead, .helpbox, .pfoot) { padding-left: 14px; padding-right: 14px; }
+:root[data-ui="studio"] .side .phead { align-items: center; padding-top: 12px; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--line); }
+:root[data-ui="studio"] .side .pname { font: 600 13px/1.3 var(--sans); letter-spacing: 0; }
+:root[data-ui="studio"] .side .psub { font-size: 11px; margin-top: 1px; }
+:root[data-ui="studio"] .icon { width: 28px; height: 28px; border-radius: var(--st-r); font: 600 12px var(--sans); }
+:root[data-ui="studio"] .helpbox { font-size: 12px; gap: 6px; padding-bottom: 12px; }
+/* section labels: DialKit's, small and sentence case */
+:root[data-ui="studio"] body[data-lay] .side :is(.gh, #notesblock .nhead) { font: 600 11px/1.2 var(--sans); letter-spacing: 0; text-transform: none; color: var(--sub);
+  padding: 8px 2px 4px !important; margin: 0; }
+/* verdict: one segmented track; the chosen verdict keeps its colour */
+:root[data-ui="studio"] .side .verdicts { gap: 2px; padding: 2px; margin: 0 12px 10px; border: 0; border-radius: var(--st-r); background: var(--raise); grid-template-columns: repeat(3, 1fr) 36px; }
+:root[data-ui="studio"] .side .verdicts button { height: 28px; border-radius: 6px; font: 500 12px var(--sans); }
+:root[data-ui="studio"] .side .verdicts button:not([aria-pressed=true]):hover { background: var(--raise2); }
+:root[data-ui="studio"] .side .verdicts .fav svg { width: 16px; height: 16px; }
+/* questions from the agent */
+:root[data-ui="studio"] #qblock { margin: 0 12px 10px; gap: 6px; }
+:root[data-ui="studio"] #qblock .qh { font: 600 11px var(--sans); letter-spacing: 0; text-transform: none; }
+:root[data-ui="studio"] #qblock .q { border-radius: var(--st-rb); padding: 10px; gap: 6px; }
+:root[data-ui="studio"] #qblock .qt { font-size: 12px; }
+:root[data-ui="studio"] #qblock .qa { min-height: 38px; font-size: 12px; }
+:root[data-ui="studio"] #qblock .qs { font-size: 10px; }
+/* criteria: each row is a DialKit labeled segmented control, 30 px, in --raise; the focused row gets the accent ring */
+:root[data-ui="studio"] .side .crit { margin: 0 12px; gap: 4px; padding-bottom: 6px; }
+:root[data-ui="studio"] body[data-lay] .side .cg { gap: 3px; }
+:root[data-ui="studio"] body[data-lay] .side .cg .row { height: var(--st-h); min-height: var(--st-h); padding: 2px 2px 2px 10px; grid-template-columns: 84px 1fr; column-gap: 4px;
+  border: 0; border-radius: var(--st-r); background: var(--raise) !important; }
+:root[data-ui="studio"] body[data-lay] .side .cg .row.focus { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent); }
+:root[data-ui="studio"] body[data-lay] .side .row .name { font: 500 12px var(--sans); color: var(--sub); }
+:root[data-ui="studio"] body[data-lay] .side .row.focus .name { color: var(--ink); }
+:root[data-ui="studio"] body[data-lay] .side .row .stars { gap: 2px; }
+:root[data-ui="studio"] body[data-lay] .side .row .stars button { border-radius: 6px; font: 400 12px var(--sans); }
+:root[data-ui="studio"] body[data-lay] .side .row .stars button:not(.on):hover,
+:root[data-ui="studio"] body[data-lay] .side .row.focus .stars button:not(.on):hover { background: var(--raise2); color: var(--ink); }
+:root[data-ui="studio"] body[data-lay] .side .row .stars button.on { font-weight: 600; }
+/* «Годится для»: small chips, switched on in the accent */
+:root[data-ui="studio"] .side .useblock { margin: 0 8px 6px; padding: 0 4px 6px !important; border-radius: var(--st-rb); }
+:root[data-ui="studio"] .side .useblock.focus { background: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent); }
+:root[data-ui="studio"] .side .useblock .use { gap: 4px; }
+:root[data-ui="studio"] .side .useblock .use button { height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: var(--raise); font: 500 12px var(--sans); color: var(--sub); }
+:root[data-ui="studio"] .side .useblock .use button:hover { background: var(--raise2); color: var(--ink); }
+:root[data-ui="studio"] .side .useblock .use button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); }
+/* sticky notes from the canvas */
+:root[data-ui="studio"] .bn { gap: 8px; padding: 2px 2px 0; }
+:root[data-ui="studio"] .bnote { font-size: 12px; gap: 8px; grid-template-columns: 8px 1fr; }
+:root[data-ui="studio"] .bnote .dot { width: 8px; height: 8px; border-radius: 2px; margin-top: 5px; }
+:root[data-ui="studio"] .bnote small { font-size: 10.5px; }
+/* notes on the frame: one --raise card each */
+:root[data-ui="studio"] #notesblock { margin: 0 12px 8px; gap: 4px; }
+:root[data-ui="studio"] #notesblock li:not(.nhead) { grid-template-columns: 20px 1fr auto; gap: 8px; padding: 8px 6px 8px 8px; border: 0; border-radius: var(--st-r); background: var(--raise); }
+:root[data-ui="studio"] #notesblock li:not(.nhead):hover { background: var(--raise); }
+:root[data-ui="studio"] #notesblock li:not(.nhead):focus-within { background: var(--raise); box-shadow: inset 0 0 0 1px var(--accent); }
+:root[data-ui="studio"] .notes .num { width: 20px; height: 20px; border-radius: 6px; font: 600 11px var(--sans); }
+:root[data-ui="studio"] #notesblock .ntext { font-size: 12px; padding-top: 2px; }
+:root[data-ui="studio"] .notes .x { border-radius: 6px; }
+:root[data-ui="studio"] .notes .x:hover { background: var(--raise2); }
+/* the comment: a --raise field */
+:root[data-ui="studio"] .side > .block { margin: 0 12px 8px; padding: 0 0 4px; border: 0; border-radius: var(--st-r); background: var(--raise); }
+:root[data-ui="studio"] .side > .block:focus-within { box-shadow: inset 0 0 0 1px var(--accent); }
+:root[data-ui="studio"] .side .block textarea { min-height: 64px; padding: 8px 10px; border: 0; background: transparent; font-size: 12px; }
+:root[data-ui="studio"] .side .block .saved { font-size: 11px; padding: 0 10px; }
+/* the foot: auto-next, prompt and references */
+:root[data-ui="studio"] .side .pfoot { padding-top: 10px; padding-bottom: 12px; gap: 8px; }
+:root[data-ui="studio"] details summary { font-size: 12px; }
+:root[data-ui="studio"] .model { font-size: 11px; margin-top: 8px; }
+:root[data-ui="studio"] .prompt { font-size: 12px; line-height: 1.55; margin-top: 6px; }
+:root[data-ui="studio"] .refs { gap: 4px; margin-top: 8px; }
+:root[data-ui="studio"] .refs img { height: 56px; border-radius: 6px; }

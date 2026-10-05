@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ru" translate="no">
+<head>
+<meta name="google" content="notranslate">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyimg</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #eef0f2;
+  --panel: #ffffff;
+  --ink: #16191d;
+  --muted: #69717b;
+  --line: #d6dadf;
+  --chip: #e6e9ed;
+  --accent: #2d3a4a;
+  --take: #1f8a55;
+  --idea: #b7791f;
+  --no: #c2413b;
+  --take-bg: #e3f3ea;
+  --idea-bg: #f8eedb;
+  --no-bg: #f8e3e1;
+  --shade: rgba(14, 16, 19, .92);
+  --radius: 6px;
+  --sans: "Onest", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111316; --panel: #1a1d21; --ink: #e8eaed; --muted: #8e959e; --line: #2c3036; --chip: #262a30;
+    --accent: #c9d3df; --take-bg: #16301f; --idea-bg: #33270f; --no-bg: #361a18; --shade: rgba(6, 7, 9, .95);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111316; --panel: #1a1d21; --ink: #e8eaed; --muted: #8e959e; --line: #2c3036; --chip: #262a30;
+  --accent: #c9d3df; --take-bg: #16301f; --idea-bg: #33270f; --no-bg: #361a18; --shade: rgba(6, 7, 9, .95);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 var(--sans); }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header {
+  position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line);
+  padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+}
+header h1 { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; }
+.progress { font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { flex: 1 1 100%; height: 3px; background: var(--chip); border-radius: 2px; overflow: hidden; margin-top: -4px; }
+.bar i { display: block; height: 100%; background: var(--take); width: 0; transition: width .3s; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1; }
+select, input[type=search] {
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 9px; min-width: 0;
+}
+input[type=search] { width: 200px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.seg button { background: transparent; border: 0; padding: 6px 10px; border-right: 1px solid var(--line); color: var(--muted); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed=true] { background: var(--ink); color: var(--panel); }
+label.check { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
+
+main { padding: 8px 16px 64px; }
+section h2 {
+  font-size: 13px; font-weight: 600; margin: 22px 0 10px; display: flex; gap: 10px; align-items: baseline;
+  text-wrap: balance;
+}
+section h2 span { font: 12px var(--mono); color: var(--muted); font-weight: 400; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.card {
+  position: relative; background: var(--panel); border: 0; padding: 0; border-radius: var(--radius); overflow: hidden;
+  aspect-ratio: 3 / 4; display: block; width: 100%;
+}
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--chip); }
+.card .nm {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 6px 4px; font: 10px var(--mono); color: #fff;
+  background: linear-gradient(transparent, rgba(0,0,0,.55)); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card .st { position: absolute; top: 6px; left: 6px; display: flex; gap: 4px; }
+.pill { font: 600 10px var(--sans); padding: 2px 6px; border-radius: 10px; color: #fff; letter-spacing: .02em; }
+.pill.take { background: var(--take); } .pill.idea { background: var(--idea); } .pill.no { background: var(--no); }
+.pill.note { background: rgba(0,0,0,.55); }
+.pill.new { background: #2f6fe4; } .pill.qa { background: #111; border: 1px solid #c2413b; color: #ffb3ad; } .pill.chg { background: #8a4fd6; }
+h3.batch { font: 500 12px var(--sans); color: var(--muted); margin: 14px 0 8px; display: flex; gap: 8px; align-items: baseline; }
+h3.batch b { color: #2f6fe4; font-weight: 600; }
+.card.v-no img { opacity: .45; }
+
+/* viewer */
+.viewer { position: fixed; inset: 0; z-index: 20; background: var(--shade); display: none; }
+.viewer.open { display: grid; grid-template-columns: 1fr minmax(320px, 400px); }
+.stage { position: relative; display: flex; align-items: center; justify-content: center; padding: 16px; min-height: 0; }
+.stage img { max-width: 100%; max-height: calc(100vh - 32px); object-fit: contain; border-radius: 3px; }
+.nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.12); color: #fff; border: 0; width: 40px; height: 56px; border-radius: var(--radius); font-size: 20px; }
+.nav.prev { left: 12px; } .nav.next { right: 12px; }
+.side { background: var(--panel); overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.side .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.side .ttl { font: 500 13px var(--mono); word-break: break-all; }
+.side .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.close { background: var(--chip); border: 0; border-radius: var(--radius); padding: 4px 10px; }
+.verdicts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.verdicts button { border: 1px solid var(--line); background: var(--bg); border-radius: var(--radius); padding: 10px 4px; font-weight: 600; }
+.verdicts button small { display: block; font: 10px var(--mono); color: var(--muted); font-weight: 400; margin-top: 2px; }
+.verdicts button[data-v=take][aria-pressed=true] { background: var(--take-bg); border-color: var(--take); color: var(--take); }
+.verdicts button[data-v=idea][aria-pressed=true] { background: var(--idea-bg); border-color: var(--idea); color: var(--idea); }
+.verdicts button[data-v=no][aria-pressed=true] { background: var(--no-bg); border-color: var(--no); color: var(--no); }
+.lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chips button { border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 3px 10px; font-size: 12.5px; }
+.chips.good button[aria-pressed=true] { background: var(--take-bg); border-color: var(--take); color: var(--take); }
+.chips.bad button[aria-pressed=true] { background: var(--no-bg); border-color: var(--no); color: var(--no); }
+textarea { width: 100%; min-height: 96px; resize: vertical; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; line-height: 1.45; }
+.saved { font: 11px var(--mono); color: var(--muted); min-height: 16px; }
+details { border-top: 1px solid var(--line); padding-top: 10px; }
+summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+.prompt { font: 11.5px/1.5 var(--mono); color: var(--muted); white-space: pre-wrap; margin-top: 8px; max-width: 65ch; }
+.refs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.refs img { height: 72px; border-radius: 3px; background: var(--chip); }
+.keys { font: 11px var(--mono); color: var(--muted); }
+.empty { color: var(--muted); padding: 40px 0; }
+
+@media (max-width: 760px) {
+  .viewer.open { grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
+  .stage img { max-height: calc(55vh - 24px); }
+  input[type=search] { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<!-- The first thing an agent reads on this page, in the page text and in the accessibility tree; the owner does not see it (owner 2026-10-03) -->
+<div class="agentnote" role="note" aria-label="Для ИИ-агента" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">ИИ-агенту: сначала открой инструкцию <a href="/agent" tabindex="-1">/agent</a> и прочитай ее до любых действий. Там что открыто у владельца, правила проекта и команды. Доску меняй командами hy.py из инструкции, а не мышью в браузере. Мышь только когда без нее никак, например посмотреть результат.</div>
+<script>document.querySelectorAll(".agentnote a").forEach(a => { a.textContent = location.origin + "/agent"; });</script>
+<header>
+  <h1>Hyimg</h1>
+  <div class="filters">
+    <select id="coll" aria-label="Коллекция"><option value="">Все коллекции</option></select>
+    <div class="seg" id="vf" role="group" aria-label="Оценка">
+      <button data-f="" aria-pressed="true">Все</button>
+      <button data-f="none" aria-pressed="false">Новые</button>
+      <button data-f="take" aria-pressed="false">Беру</button>
+      <button data-f="idea" aria-pressed="false">Идея</button>
+      <button data-f="no" aria-pressed="false">Нет</button>
+    </div>
+    <input type="search" id="q" placeholder="Поиск по имени или промпту">
+    <label class="check"><input type="checkbox" id="showRej"> показывать брак</label>
+  </div>
+  <div class="progress" id="prog"></div>
+  <div class="bar"><i id="barFill"></i></div>
+</header>
+<main id="list"></main>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Просмотр кадра">
+  <div class="stage">
+    <img id="big" alt="">
+    <button class="nav prev" id="prev" aria-label="Предыдущий">‹</button>
+    <button class="nav next" id="next" aria-label="Следующий">›</button>
+  </div>
+  <aside class="side">
+    <div class="top">
+      <div><div class="ttl" id="vName"></div><div class="sub" id="vSub"></div></div>
+      <button class="close" id="close">Esc</button>
+    </div>
+    <div class="verdicts" id="verdicts">
+      <button data-v="take" aria-pressed="false">Беру<small>1</small></button>
+      <button data-v="idea" aria-pressed="false">Идея, доработать<small>2</small></button>
+      <button data-v="no" aria-pressed="false">Нет<small>3</small></button>
+    </div>
+    <div><div class="lbl">Что хорошо</div><div class="chips good" id="good"></div></div>
+    <div><div class="lbl">Что плохо</div><div class="chips bad" id="bad"></div></div>
+    <div>
+      <div class="lbl">Комментарий</div>
+      <textarea id="comment" placeholder="Что понравилось, что поправить, куда развивать"></textarea>
+      <div class="saved" id="saved"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="autonext"> после оценки открывать следующий</label>
+    <details id="det">
+      <summary>Промпт, модель, эталоны</summary>
+      <div class="prompt" id="vPrompt"></div>
+      <div class="refs" id="vRefs"></div>
+    </details>
+    <div class="keys">← → листать · 1 2 3 оценка · 0 снять · C комментарий · Esc закрыть</div>
+  </aside>
+</div>
+
+<script>
+const GOOD = ["Идея", "Юмор", "Эмоция", "Поза", "Костюм", "Футуризм", "Кастинг", "Свет", "Цвет", "Композиция", "Чехол точный", "Для рекламы", "Для анимации", "Натурально", "Ярко, для рекламы"];
+const BAD = ["Чехол кривой", "Телефон не тот", "Телефон не виден", "Пространство", "Анатомия", "Теплый / old money", "Кич", "Скучно", "Шаблон", "Лишнее в кадре", "Пластик / CGI", "Не наш мир", "Цвет не тот", "Края / маска", "Блок камер не тот"];
+const V = { take: "Беру", idea: "Идея", no: "Нет" };
+let items = [], view = [], cur = -1, vfilter = "", saveTimer = null;
+const $ = s => document.querySelector(s);
+const enc = encodeURIComponent;
+const pref = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
+const setPref = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+
+async function load() {
+  items = await (await fetch("/api/items")).json();
+  assignBatches();
+  const colls = [...new Map(items.map(i => [i.folder, i.title + (i.folder.includes("/") ? " · " + i.folder : "")])).entries()];
+  const sel = $("#coll");
+  sel.innerHTML = '<option value="">Все коллекции</option>' + colls.map(([f, t]) => `<option value="${f}">${t}</option>`).join("");
+  sel.value = new URLSearchParams(location.search).get("coll") ?? pref("coll", "");
+  $("#showRej").checked = pref("rej", "0") === "1";
+  $("#autonext").checked = pref("autonext", "0") === "1";
+  render();
+}
+
+function fb(i) { return i.feedback || {}; }
+// A frame counts as reviewed once it has any verdict, tag or comment. "Changed" = the image file is newer than the review.
+function reviewed(i) { const f = fb(i); return !!(f.verdict || (f.good || []).length || (f.bad || []).length || f.comment); }
+function changed(i) { const f = fb(i); if (!reviewed(i) || !f.updated) return false; return i.mtime > Date.parse(f.updated.replace(" ", "T")) / 1000 + 60; }
+function isNew(i) { return !reviewed(i) || changed(i); }
+// Batches: within a folder, files made less than 20 minutes apart belong to one batch.
+function assignBatches() {
+  const byFolder = new Map();
+  items.forEach(i => { if (!byFolder.has(i.folder)) byFolder.set(i.folder, []); byFolder.get(i.folder).push(i); });
+  folderOrder = new Map([...byFolder.keys()].map((k, n) => [k, n]));
+  for (const arr of byFolder.values()) {
+    arr.sort((a, b) => a.mtime - b.mtime);
+    let start = null, last = null;
+    arr.forEach(i => { if (last === null || i.mtime - last > 1200) start = i.mtime; i.batch = start; last = i.mtime; });
+  }
+}
+let folderOrder = new Map();
+const fmt = t => new Date(t * 1000).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+function filtered() {
+  const c = $("#coll").value, q = $("#q").value.trim().toLowerCase(), rej = $("#showRej").checked;
+  return items.filter(i => {
+    const top = i.folder.split("/")[0];
+    if (!rej && top === "_rejected" && c !== "_rejected") return false;
+    if (c && i.folder !== c && top !== c) return false;
+    const v = fb(i).verdict || "";
+    if (vfilter === "none" && !isNew(i)) return false;
+    if (vfilter && vfilter !== "none" && v !== vfilter) return false;
+    if (q && !(i.name.toLowerCase().includes(q) || (i.prompt || "").toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a, b) => (folderOrder.get(a.folder) - folderOrder.get(b.folder)) || (b.batch - a.batch) || a.name.localeCompare(b.name));
+}
+
+function card(i, idx) {
+  const f = fb(i), v = f.verdict;
+  const pills = (changed(i) ? `<span class="pill chg">Изменено</span>` : !reviewed(i) ? `<span class="pill new">Новое</span>` : "")
+    + (v ? `<span class="pill ${v}">${V[v]}</span>` : "") + (f.comment ? `<span class="pill note">✎</span>` : "")
+    + (i.gate && i.gate.status === "fail" ? `<span class="pill qa">QA: брак</span>` : "");
+  return `<button class="card ${v ? "v-" + v : ""}" data-i="${idx}" aria-label="${i.name}">
+    <img loading="lazy" src="/thumb?p=${enc(i.path)}" alt="">
+    <span class="st">${pills}</span><span class="nm">${i.name}</span></button>`;
+}
+
+function render() {
+  view = filtered();
+  const groups = new Map();
+  view.forEach((i, idx) => { const k = i.folder; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([i, idx]); });
+  const batchHtml = arr => {
+    const bs = new Map(); arr.forEach(x => { const b = x[0].batch; if (!bs.has(b)) bs.set(b, []); bs.get(b).push(x); });
+    return [...bs.entries()].map(([b, xs]) => {
+      const n = xs.filter(([i]) => isNew(i)).length, end = Math.max(...xs.map(([i]) => i.mtime));
+      const when = fmt(b) + (end - b > 120 ? "–" + fmt(end).split(" ")[1] : "");
+      return `<h3 class="batch">Партия ${when} · ${xs.length} кадров${n ? ` · <b>${n} новых</b>` : " · всё просмотрено"}</h3>
+        <div class="grid">${xs.map(([i, idx]) => card(i, idx)).join("")}</div>`;
+    }).join("");
+  };
+  $("#list").innerHTML = view.length ? [...groups.entries()].map(([k, arr]) =>
+    `<section><h2>${arr[0][0].title} <span>${k} · ${arr.length}</span></h2>${batchHtml(arr)}</section>`).join("")
+    : `<p class="empty">Под эти фильтры ничего не попало.</p>`;
+  const main = items.filter(i => i.folder.split("/")[0] !== "_rejected");
+  const done = main.filter(reviewed).length, fresh = main.filter(isNew).length;
+  $("#prog").textContent = `просмотрено ${done} из ${main.length} · новых ${fresh}`;
+  $("#barFill").style.width = (main.length ? done / main.length * 100 : 0) + "%";
+}
+
+function chips(el, list, sel) {
+  el.innerHTML = list.map(t => `<button aria-pressed="${sel.includes(t)}">${t}</button>`).join("");
+}
+
+function open(idx) {
+  if (idx < 0 || idx >= view.length) return;
+  cur = idx; const i = view[idx], f = fb(i);
+  $("#big").src = "/thumb?p=" + enc(i.path);
+  const full = new Image(); full.onload = () => { if (view[cur] === i) $("#big").src = full.src; }; full.src = "/img?p=" + enc(i.path);
+  $("#vName").textContent = i.name;
+  const g = i.gate, qa = g ? ` · Моя проверка: ${g.status === "fail" ? "брак (" + g.reasons.join(", ") + ")" : "прошел"}${g.warnings && g.warnings.length ? "; критик сомневается: " + g.warnings.join(", ") : ""}` : "";
+  $("#vSub").textContent = `${i.title} · ${i.folder}${i.model ? " · " + i.model : ""}${i.aspect ? " · " + i.aspect : ""}${qa}`;
+  document.querySelectorAll("#verdicts button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === f.verdict));
+  chips($("#good"), GOOD, f.good || []);
+  chips($("#bad"), BAD, f.bad || []);
+  $("#comment").value = f.comment || "";
+  $("#saved").textContent = f.updated ? "сохранено " + f.updated : "";
+  $("#vPrompt").textContent = i.prompt || "Промпта нет: кадр без json-описания.";
+  $("#vRefs").innerHTML = (i.refs || []).map(r => `<img src="/ref?n=${enc(r)}" title="${r}" alt="${r}">`).join("");
+  $("#viewer").classList.add("open");
+}
+function closeV() { flush(); $("#viewer").classList.remove("open"); cur = -1; render(); }
+
+function state() {
+  const pressed = sel => [...document.querySelectorAll(sel + " button[aria-pressed=true]")].map(b => b.textContent);
+  const vb = document.querySelector("#verdicts button[aria-pressed=true]");
+  return { verdict: vb ? vb.dataset.v : "", good: pressed("#good"), bad: pressed("#bad"), comment: $("#comment").value.trim() };
+}
+async function save() {
+  clearTimeout(saveTimer); saveTimer = null;
+  if (cur < 0) return;
+  const i = view[cur], s = state();
+  $("#saved").textContent = "сохраняю…";
+  try {
+    const r = await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: i.path, name: i.name, ...s }) });
+    if (!r.ok) throw new Error(r.status);
+    const res = await r.json();
+    items.forEach(x => { if (res.paths.includes(x.path)) x.feedback = res.feedback; });
+    $("#saved").textContent = res.feedback.updated ? "сохранено в json кадра · " + res.feedback.updated : "оценка снята";
+  } catch (e) {
+    $("#saved").textContent = "не сохранилось: сервер не отвечает, попробуй еще раз";
+  }
+}
+function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 700); }
+function flush() { if (saveTimer) save(); }
+
+function setVerdict(v) {
+  document.querySelectorAll("#verdicts button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v && b.getAttribute("aria-pressed") !== "true" ? "true" : "false"));
+  save().then(() => { if (v && $("#autonext").checked && cur < view.length - 1) open(cur + 1); });
+}
+
+$("#list").addEventListener("click", e => { const c = e.target.closest(".card"); if (c) open(+c.dataset.i); });
+$("#verdicts").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setVerdict(b.dataset.v); });
+["#good", "#bad"].forEach(s => $(s).addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"); save();
+}));
+$("#comment").addEventListener("input", saveSoon);
+$("#comment").addEventListener("blur", flush);
+$("#prev").onclick = () => { flush(); open(cur - 1); };
+$("#next").onclick = () => { flush(); open(cur + 1); };
+$("#close").onclick = closeV;
+$("#coll").onchange = () => { setPref("coll", $("#coll").value); render(); };
+$("#showRej").onchange = () => { setPref("rej", $("#showRej").checked ? "1" : "0"); render(); };
+$("#autonext").onchange = () => setPref("autonext", $("#autonext").checked ? "1" : "0");
+$("#q").oninput = render;
+$("#vf").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  vfilter = b.dataset.f;
+  document.querySelectorAll("#vf button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  render();
+});
+document.addEventListener("keydown", e => {
+  if (cur < 0) return;
+  const typing = document.activeElement === $("#comment");
+  if (e.key === "Escape") { if (typing) $("#comment").blur(); else closeV(); return; }
+  if (typing) return;
+  if (e.key === "ArrowRight") { flush(); open(cur + 1); }
+  else if (e.key === "ArrowLeft") { flush(); open(cur - 1); }
+  else if (e.key === "1") setVerdict("take");
+  else if (e.key === "2") setVerdict("idea");
+  else if (e.key === "3") setVerdict("no");
+  else if (e.key === "0") { document.querySelectorAll("#verdicts button").forEach(b => b.setAttribute("aria-pressed", "false")); save(); }
+  else if (e.key.toLowerCase() === "c" || e.key.toLowerCase() === "с") { e.preventDefault(); $("#comment").focus(); }
+});
+window.addEventListener("beforeunload", flush);
+load();
+</script>
+</body>
+</html>
