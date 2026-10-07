@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 import WebKit
 
 final class ProjectView {
@@ -18,6 +19,7 @@ final class ProjectView {
         server = ServerSession(project: project, sourceRoot: sourceRoot)
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = WKWebsiteDataStore(forIdentifier: project.id)
+        configuration.preferences.isElementFullscreenEnabled = true   // a video's ⤢ opens the player in true full screen (owner 2026-10-06)
         web = FirstClickWebView(frame: .zero, configuration: configuration)
         web.allowsBackForwardNavigationGestures = false
         web.isInspectable = true
@@ -51,6 +53,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ServerSession.settingsFile = registry.file.deletingLastPathComponent().appendingPathComponent("settings.json").path
+        Lang.current = fileLang()   // the menus, the titles and Home in the owner's language from the start (owner 2026-10-06)
         buildMenu()
         // macOS switching light/dark: the project pages' «Авто» theme follows (the window chrome stays dark)
         appearanceWatch = NSApp.observe(\.effectiveAppearance) { [weak self] app, _ in self?.sessions.values.forEach { $0.web.appearance = app.effectiveAppearance } }
@@ -198,15 +201,17 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     func saveTabs() { defaults.set(tabs.map(\.uuidString), forKey: key("openTabs")); defaults.set(selected?.uuidString, forKey: key("selectedTab")) }
     // Home is an HTML page (review/home.html) in its own web view: edits show with ⌘R like the canvas; actions come back through "hyimg"
     @objc func showProjects() {
+        markSeen(selected)   // the board leaving the front: what was done on it while it was there is not news
         selected = nil
         tabBar?.selected = nil
-        window?.title = "Hyimg — Главная"
+        updateTitle()
         saveTabs(); writeActive()
         let web: WKWebView
         if let homeWeb { web = homeWeb }
         else {
             let configuration = WKWebViewConfiguration()
             configuration.userContentController.add(self, name: "hyimg")
+            setHomeLang(configuration.userContentController)   // window.HY_LANG before Home's first line (owner 2026-10-06)
             web = FirstClickWebView(frame: .zero, configuration: configuration)
             web.isInspectable = true
             web.uiDelegate = self
@@ -224,17 +229,29 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     // Home's data is read off the main thread; on quit Chromium owns the memory allocator once it stops, so a read still running
     // then crashed while freeing its dictionaries (2026-10-04): the quit waits for it before Chromium stops
     let homeWork = DispatchGroup()
+    var homeSeq = 0   // the latest Home list asked for: an older one built more slowly never overwrites it
     var quitting = false
     func pushHome() {
         guard let web = homeWeb, !quitting else { return }
+        homeSeq += 1; let seq = homeSeq
         let projects = registry.projects, openIDs = Set(tabs), opened = defaults.dictionary(forKey: key("opened")) as? [String: Double] ?? [:]
         let engine = useChromium ? "chromium" : "webkit", cef = HYCef.available()
+        // news since the owner last saw each board (BoardNews, BoardSeen): a board never seen since this came in counts from when it was
+        // last opened (or from now), and that start is written down so it holds; the board in front has none
+        var seen = BoardSeen.read(seenFile); let now = Date().timeIntervalSince1970, front = selected
+        let fresh = projects.filter { seen[$0.id.uuidString] == nil }
+        if !fresh.isEmpty { fresh.forEach { seen[$0.id.uuidString] = opened[$0.id.uuidString] ?? now }; BoardSeen.write(seenFile, seen) }
+        let since = seen
         DispatchQueue.global(qos: .userInitiated).async(group: homeWork) {
             let list: [[String: Any]] = projects.map { p in
-                var d = HomeData.info(for: p); d["open"] = openIDs.contains(p.id); d["opened"] = opened[p.id.uuidString] ?? 0; return d
+                var d = HomeData.info(for: p); d["open"] = openIDs.contains(p.id); d["opened"] = opened[p.id.uuidString] ?? 0
+                if p.id != front, let news = BoardNews.summary(stateRoot: p.stateRoot, since: since[p.id.uuidString] ?? now) { d["news"] = news }
+                return d
             }
             guard let data = try? JSONSerialization.data(withJSONObject: ["projects": list, "settings": self.readSettings(), "home": self.readHome(), "engine": engine, "cef": cef]), let json = String(data: data, encoding: .utf8) else { return }
-            DispatchQueue.main.async { web.evaluateJavaScript("window.hyimgHome && window.hyimgHome(\(json))") }
+            // (owner 2026-10-06: a removed board stayed on Home: closing its tab asked for the list first, and that list, built in
+            // parallel and later, landed after the one without it)
+            DispatchQueue.main.async { guard seq == self.homeSeq else { return }; web.evaluateJavaScript("window.hyimgHome && window.hyimgHome(\(json))") }
         }
     }
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -261,28 +278,36 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         guard let action = body["action"] as? String else { return }
         let project = (body["id"] as? String).flatMap(UUID.init).flatMap { id in registry.projects.first { $0.id == id } }
         switch action {
-        case "ready": pushHome()
+        case "ready":
+            pushHome()
+            if window?.styleMask.contains(.fullScreen) == true { homeWeb?.evaluateJavaScript("window.hyimgFS && window.hyimgFS(true)") }   // Home reloaded in full screen (a language change) keeps the capsule hidden
+        // a board's language switch (ui/i18n.js T.set → hyLangChanged → {action:"lang"}): written to the app's file at once, so it is
+        // right even if the page's own POST is late, and applied to the menus and Home (owner 2026-10-06)
+        case "lang": if let v = body["lang"] as? String { writeSettings(["cv.lang": Lang.pick(v)]) }
         case "home":   // the house on the canvas's plate «⌂ › project › page», or the board's folder on it (Home shows that folder)
             showProjects()
             if let f = body["folder"] as? String { homeWeb?.evaluateJavaScript("window.hyimgShowFolder && window.hyimgShowFolder(\(jsString(f)))") }
         // Home's loading screen: the owner changed their mind (owner 2026-10-04: «while loading I may want to leave»): Home stays, the
         // board goes on loading behind with its steps on its card, and does not come to the front when drawn
         case "cancelOpen":
-            if let project { appLog("cancelOpen \(project.name)"); if opening == project.id { opening = nil }; if selected == project.id { selected = nil; saveTabs(); writeActive() } }
+            if let project { appLog("cancelOpen \(project.name)"); markSeen(project.id); if opening == project.id { opening = nil }; if selected == project.id { selected = nil; saveTabs(); writeActive() } }
         // Home's card menu: a board's server started without opening it, or stopped (its green mark goes)
         case "startServer": if let project { warm(project) }
         case "ground": DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.applyGround() }   // a board changed the paper's colour (its file write lands first)
         case "stopServer": if let project { closeTab(project.id) }
+        case "removeBoard": if let project { removeBoard(project) }   // Home's red «Remove board…» (owner 2026-10-06)
         case "homeSave": if let h = body["home"] as? [String: Any] { writeHome(h) }   // Home's folders of projects
         case "handoff": if let id = (body["id"] as? String).flatMap(UUID.init) { handoff(id, stars: body["stars"] as? [String: Any], lines: body["lines"] as? [String]) }
         case "settings": if let change = body["change"] as? [String: Any] { writeSettings(change) }   // Home's gear: the app's settings
         case "open": if let project { openProject(project) }
-        case "add": addProject()
-        case "create": createProject()
+        case "add": addProject(into: body["folder"] as? String)
+        case "create": createProject(into: body["folder"] as? String)
         case "rename": if let project { rename(project) }
+        case "renameTo": if let project, let name = body["name"] as? String { renameTo(project, name) }   // the crumb's name edited in place (a double click)
         case "relink": if let project { relink(project) }
         case "reveal": if let project { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: project.libraryRoot)]) }
         case "openFolder": if let project { NSWorkspace.shared.open(URL(fileURLWithPath: project.libraryRoot, isDirectory: true)) }   // Home's list: the board's own folder, opened in Finder
+        case "storage": storageMessage(body, project)   // Settings › Storage: sizes, memory, «Clear cache» (StorageBridge.swift)
         case "engine": if let e = body["engine"] as? String, (e == "chromium") != useChromium { toggleEngine() }   // CEF: the canvas gear
         default: break
         }
@@ -297,6 +322,15 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     // Home's own arrangement (owner 2026-10-04: «a folder that gathers projects, Studio North, Lookbook FW27; not a Finder folder»):
     // folders of projects by id, beside the catalog; the catalog of projects stays as it is
     var homeFile: URL { registry.file.deletingLastPathComponent().appendingPathComponent("home.json") }
+    // when the owner last saw each board (ProjectRegistry.swift BoardSeen): Home's news counts from there
+    var seenFile: URL { registry.file.deletingLastPathComponent().appendingPathComponent("seen.json") }
+    // a board came to the front or left it: its news is read; Home takes the number off its card at once (owner 2026-10-06: «the
+    // number clears as soon as I open that board»), before its next list arrives
+    func markSeen(_ id: UUID?) {
+        guard let id else { return }
+        BoardSeen.mark(seenFile, [id])
+        homeWeb?.evaluateJavaScript("window.hyimgSeen && window.hyimgSeen(\"\(id.uuidString)\")")
+    }
     // the Home folder a board is in (Home's own grouping, home.json), for the board's crumb «⌂ › folder › board › page»
     func folderOf(_ id: UUID) -> (id: String, name: String, icon: String, color: String)? {
         guard let folders = readHome()["folders"] as? [[String: Any]] else { return nil }
@@ -311,12 +345,11 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         guard sessions[project.id] == nil, FileManager.default.fileExists(atPath: project.libraryRoot) else { return }
         if !tabs.contains(project.id) { tabs.append(project.id); saveTabs() }
         let session = makeSession(project)
-        homeProgress(project.id, "Запускаю «\(project.name)»")
+        homeProgress(project.id, L("Starting “%@”", project.name))
         stage(session); load(session); pushHome()
     }
     func readHome() -> [String: Any] {
-        guard let d = try? Data(contentsOf: homeFile), let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else { return [:] }
-        return j
+        (try? Data(contentsOf: homeFile)).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
     }
     func writeHome(_ h: [String: Any]) {
         if let data = try? JSONSerialization.data(withJSONObject: h, options: [.prettyPrinted, .sortedKeys]) { try? data.write(to: homeFile, options: .atomic) }
@@ -330,6 +363,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         if let data = try? JSONSerialization.data(withJSONObject: cur, options: [.prettyPrinted, .sortedKeys]) { try? data.write(to: URL(fileURLWithPath: p), options: .atomic) }
         applyGround()
         sessions.values.forEach { pullSettings($0) }   // the boards take Home's change now, not when they next come to the front
+        syncLang()   // cv.lang among the changes (Home's gear, the Language menu, a board): menus, title and Home follow
     }
     // a board reads the app's settings file again (ui/settings.js, its pull), the canvas inside it too (owner 2026-10-04: «the
     // settings do not sync»): after a change on Home, and whenever a board comes to the front
@@ -389,53 +423,87 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         alert.addButton(withTitle: "OK")
         alert.runModal()
     }
-    @objc func addProject() {
+    @objc func addProject() { addProject(into: nil) }
+    func addProject(into folder: String?) {
         let panel = NSOpenPanel()
-        panel.title = "Добавить папку с изображениями"
+        panel.title = L("Add a folder of images")
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        do { let project = try registry.register(path: url.path, name: nil, styleRefs: nil); openProject(project) }
-        catch { alert("Не удалось добавить доску", detail: error.localizedDescription) }
+        do { let project = try registry.register(path: url.path, name: nil, styleRefs: nil); fileInto(folder, project); openProject(project) }
+        catch { alert(L("Couldn't add the board"), detail: error.localizedDescription) }
     }
-    @objc func createProject() {
-        let panel = NSSavePanel()
-        panel.title = "Папка для новой доски"
-        panel.nameFieldStringValue = "Новая доска"
-        panel.prompt = "Создать"
+    // «New board» picks the board's folder (owner 2026-10-06: «I selected the folder, it took a file instead»): it was a Save panel,
+    // which always makes a new folder named by its name field inside the one shown, so choosing an existing folder made
+    // «Product Atlas Gen2/GEMINI.md/». Now it is an Open panel for folders: an existing one, or a new one from its New Folder button.
+    // A folder that already has a board opens that board.
+    @objc func createProject() { createProject(into: nil) }
+    func createProject(into folder: String?) {
+        let panel = NSOpenPanel()
+        panel.title = L("Folder for the new board")
+        panel.message = L("Choose the folder of the board's images, or make a new one with New Folder.")
+        panel.prompt = L("Create board")
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
         panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            guard !FileManager.default.fileExists(atPath: url.path) else { throw RegistryError.invalid("Папка уже существует. Используйте «Добавить папку».") }
-            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
-            let project = try registry.register(path: url.path, name: nil, styleRefs: nil)
-            openProject(project)
-        } catch { alert("Не удалось создать доску", detail: error.localizedDescription) }
+        do { let project = try registry.register(path: url.path, name: nil, styleRefs: nil); fileInto(folder, project); openProject(project) }
+        catch { alert(L("Couldn't create the board"), detail: error.localizedDescription) }
+    }
+    // a board made while a project was picked on Home goes into that project (home.json, the same list Home's drag writes)
+    func fileInto(_ folder: String?, _ project: Project) {
+        guard let folder else { return }
+        var h = readHome(); var folders = h["folders"] as? [[String: Any]] ?? []
+        guard let k = folders.firstIndex(where: { $0["id"] as? String == folder }) else { return }
+        var ids = folders[k]["projects"] as? [String] ?? []
+        for i in folders.indices { folders[i]["projects"] = (folders[i]["projects"] as? [String] ?? []).filter { $0 != project.id.uuidString } }   // one project per board
+        ids = ids.filter { $0 != project.id.uuidString } + [project.id.uuidString]; folders[k]["projects"] = ids
+        h["folders"] = folders; writeHome(h); pushHome()
     }
     func rename(_ project: Project) {
         let prompt = NSAlert()
-        prompt.messageText = "Название доски"
-        prompt.informativeText = "Название папки и файлы останутся прежними."
+        prompt.messageText = L("Board name")
+        prompt.informativeText = L("The folder name and the files stay the same.")
         let field = NSTextField(string: project.name)
         field.frame = NSRect(x: 0, y: 0, width: 360, height: 24)
         prompt.accessoryView = field
-        prompt.addButton(withTitle: "Сохранить")
-        prompt.addButton(withTitle: "Отмена")
+        prompt.addButton(withTitle: L("Save"))
+        prompt.addButton(withTitle: L("Cancel"))
         prompt.window.initialFirstResponder = field
         guard prompt.runModal() == .alertFirstButtonReturn else { return }
+        renameTo(project, field.stringValue)
+    }
+    // the rename itself, from the modal above or from the field in the board's crumb: the catalog, the tabs, Home, the crumb
+    // off the list after a question; its tab and server close first, the folder stays untouched
+    func removeBoard(_ project: Project) {
+        let ask = NSAlert()
+        ask.messageText = String(format: L("Remove “%@” from Hyimg?"), project.name)
+        ask.informativeText = L("The board leaves the list. Its folder, pictures and saved board stay on disk; adding the folder again brings it back.")
+        ask.addButton(withTitle: L("Remove")).hasDestructiveAction = true
+        ask.addButton(withTitle: L("Cancel"))
+        guard ask.runModal() == .alertFirstButtonReturn else { return }
+        closeTab(project.id)
+        do { try registry.remove(id: project.id); tabBar?.items = tabItems(); pushHome(); writeActive() }
+        catch { alert(L("Couldn't remove the board"), detail: error.localizedDescription) }
+    }
+    func renameTo(_ project: Project, _ newName: String) {
         do {
-            try registry.rename(id: project.id, name: field.stringValue); tabBar?.items = tabItems(); pushHome(); writeActive()
+            try registry.rename(id: project.id, name: newName); tabBar?.items = tabItems(); pushHome(); writeActive()
             if let s = sessions.values.first(where: { $0.server.project.id == project.id }), let name = registry.projects.first(where: { $0.id == project.id })?.name {
                 evaluate(s, "window.hyimgProjName && window.hyimgProjName(\(jsString(name)))")   // the board's crumb shows the new name at once
             }
         }
-        catch { alert("Не удалось переименовать доску", detail: error.localizedDescription) }
+        catch {
+            alert(L("Couldn't rename the board"), detail: error.localizedDescription)
+            if let s = sessions.values.first(where: { $0.server.project.id == project.id }) { evaluate(s, "window.hyimgProjName && window.hyimgProjName(\(jsString(project.name)))") }   // the crumb takes its old name back
+        }
     }
     func relink(_ project: Project) {
         let panel = NSOpenPanel()
-        panel.title = "Укажите папку доски «\(project.name)»"
-        panel.message = "Файлы не будут перемещены. Доступная прежняя папка _review сохранится как источник данных."
+        panel.title = L("Choose the folder of “%@”", project.name)
+        panel.message = L("No files are moved. The previous _review folder, if it is still there, stays the source of the data.")
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         guard panel.runModal() == .OK, let url = panel.url else { return }
@@ -446,17 +514,19 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
                 self.sessions.removeValue(forKey: project.id)
                 self.tabs.removeAll { $0 == project.id }; self.tabBar?.items = self.tabItems()
                 self.showProjects()
-            } catch { self.alert("Не удалось связать папку", detail: error.localizedDescription) }
+            } catch { self.alert(L("Couldn't link the folder"), detail: error.localizedDescription) }
         }
         if let session = sessions[project.id] { performAfterSaving(session, operation: relink) }
         else { relink() }
     }
     func openProject(_ project: Project) {
         guard FileManager.default.fileExists(atPath: project.libraryRoot) else { showProjects(); relink(project); return }
+        if selected != project.id { markSeen(selected) }   // the board it replaces in front
         selected = project.id
+        markSeen(project.id)
         if !tabs.contains(project.id) { tabs.append(project.id); tabBar?.items = tabItems() }
         tabBar?.selected = project.id
-        window?.title = "Hyimg — \(project.name)"
+        updateTitle()
         var opened = defaults.dictionary(forKey: key("opened")) as? [String: Double] ?? [:]; opened[project.id.uuidString] = Date().timeIntervalSince1970; defaults.set(opened, forKey: key("opened"))
         saveTabs(); writeActive()
         let session = makeSession(project)
@@ -502,7 +572,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
             if session.loaded { evaluate(session, "window.hyimgPrep && window.hyimgPrep()") }   // its page hides until its entrance
             if session.drawn { askHandoff(project.id) }   // drawn already: it comes once Home is gone
             else {
-                homeProgress(project.id, "Открываю «\(project.name)»")
+                homeProgress(project.id, L("Opening “%@”", project.name))
                 stage(session)
                 if !session.loading && !session.loaded { load(session) }
             }
@@ -518,11 +588,11 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         session.drawn = true
         appLog("canvasReady \(session.server.project.name) opening=\(opening == session.server.project.id) front=\(inFront(session.surface))")
         let id = session.server.project.id
-        if opening != id { homeProgress(id, "Доска нарисована", done: true) }   // steps of a board opened without Home do not hang on its cover
+        if opening != id { homeProgress(id, L("Board drawn"), done: true) }   // steps of a board opened without Home do not hang on its cover
         if inFront(session.surface) { evaluate(session, "window.hyimgIntro && window.hyimgIntro()"); return }
         guard selected == id, opening == id else { return }   // drawn in the background: its entrance plays when it comes
         if let text, !text.isEmpty { homeProgress(id, text) }
-        homeProgress(id, "Доска нарисована", done: true)
+        homeProgress(id, L("Board drawn"), done: true)
         askHandoff(id)
     }
     // the board's grid, sent by its page as it starts: Home's loading stars fly along it (review/ui/stars.js)
@@ -591,6 +661,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     func front(_ session: ProjectView, why: String = "") {
         appLog("front \(session.server.project.name) \(why) drawn=\(session.drawn) loaded=\(session.loaded)")   // a board in front before its entrance (owner 2026-10-04)
         if opening == session.server.project.id { opening = nil }
+        syncLang()   // the fallback for a language changed where the app was not told (owner 2026-10-06)
         pullSettings(session)
         replaceContent(session.surface)
         if let cef = session.cef { cef.focusPage() } else { window?.makeFirstResponder(session.web) }
@@ -609,7 +680,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         let id = session.server.project.id
         let folder = folderOf(id)   // the board's Home folder on its crumb (none: the crumb has no folder step)
         evaluate(session, "window.hyimgFolder && window.hyimgFolder(\(jsString(folder?.name ?? "")), \(jsString(folder?.id ?? "")), \(jsString(folder?.icon ?? "")), \(jsString(folder?.color ?? "")))")
-        if opening == id { homeProgress(id, "Страница загружена, строю доску") }
+        if opening == id { homeProgress(id, L("Page loaded, building the board")) }
     }
     // CEF: the same events the WKWebView delegate handles, from Chromium
     func attachChromium(_ session: ProjectView) {
@@ -636,7 +707,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
                 self.pageLoaded(session)
             } else {
                 session.loaded = false; session.loading = false
-                self.showFailure(session, message: error ?? "Страница не загрузилась")
+                self.showFailure(session, message: error ?? L("The page did not load"))
                 if self.selected == session.server.project.id { self.front(session) }
             }
         }
@@ -671,15 +742,15 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         cef.onCrash = { [weak self, weak session] in
             guard let self, let session else { return }
             session.loaded = false; session.loading = false
-            self.alert("Страница доски завершилась", detail: "Последние несохраненные изменения могли не записаться. Нажмите ⌘R, чтобы открыть сохраненную версию.")
+            self.alert(L("The board's page quit"), detail: L("The latest unsaved changes may not have been written. Press ⌘R to open the saved version."))
         }
     }
     @objc func toggleEngine() {   // CEF: Вид › Движок Chromium; the open projects reopen in the other engine after saving
         let next = useChromium ? "webkit" : "chromium"
-        if next == "chromium" && !HYCef.available() { alert("Chromium не встроен в эту сборку", detail: "Соберите Hyimg с CEF: ./build.sh скачает и подключит его."); return }
+        if next == "chromium" && !HYCef.available() { alert(L("This build has no Chromium"), detail: L("Build Hyimg with CEF: ./build.sh downloads and links it.")); return }
         let open = Array(sessions.values)
         flushAll(open[...]) { result in
-            if case .failure(let error) = result { self.alert("Изменения не сохранены", detail: error.localizedDescription); return }
+            if case .failure(let error) = result { self.alert(L("Changes not saved"), detail: error.localizedDescription); return }
             self.defaults.set(next, forKey: self.key("engine")); self.buildMenu()
             for s in open { s.cef?.closeBrowser(); s.server.stopSynchronously() }
             self.sessions.removeAll()
@@ -690,17 +761,17 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         session.loading = true
         session.drawn = false
         if !session.loaded {
-            let wait = "<html><meta charset='utf-8'><body style='background:#171719;color:#ddd;font:16px -apple-system;padding:60px'>Открываю доску…</body></html>"
+            let wait = "<html><meta charset='utf-8'><body style='background:#171719;color:#ddd;font:16px -apple-system;padding:60px'>\(L("Opening the board…"))</body></html>"
             if let cef = session.cef { cef.loadHTML(wait) } else { session.web.loadHTMLString(wait, baseURL: nil) }
         }
         let started = Date(), id = session.server.project.id
-        homeProgress(id, "Сервер доски · порт \(session.server.project.port)")
+        homeProgress(id, L("Board server · port %ld", session.server.project.port))
         session.server.ensure(restart: restart) { [weak self, weak session] result in
             guard let self, let session else { return }
             switch result {
             case .success(let url):
-                self.homeProgress(id, "Сервер ответил · \(Int(Date().timeIntervalSince(started) * 1000)) мс")
-                self.homeProgress(id, "Загружаю холст и библиотеку")
+                self.homeProgress(id, L("Server responded · %ld ms", Int(Date().timeIntervalSince(started) * 1000)))
+                self.homeProgress(id, L("Loading the canvas and the library"))
                 session.loaded = false
                 var open = URLComponents(url: url, resolvingAgainstBaseURL: false)
                 if open?.path == "/" || open?.path == "" { open?.queryItems = [URLQueryItem(name: "view", value: "canvas")] }   // a project opens on its canvas
@@ -709,23 +780,31 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
                 if let cef = session.cef { cef.loadURL((open?.url ?? url).absoluteString) } else { session.web.load(URLRequest(url: open?.url ?? url)) }
             case .failure(let error):
                 session.loading = false
-                self.homeProgress(id, "Не открылся: \(error.localizedDescription)", failed: true)
+                self.homeProgress(id, L("Did not open: %@", error.localizedDescription), failed: true)
                 if self.selected == session.server.project.id {
                     self.front(session)
                     self.showFailure(session, message: error.localizedDescription)
-                    self.alert("Не удалось открыть доску", detail: error.localizedDescription)
+                    self.alert(L("Couldn't open the board"), detail: error.localizedDescription)
                 }
             }
         }
     }
     func showFailure(_ session: ProjectView, message: String) {
         let safe = message.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
-        let page = "<html><meta charset='utf-8'><body style='background:#171719;color:#ddd;font:16px -apple-system;padding:60px'><h2>Доска не открылась</h2><p>\(safe)</p><p>Нажмите ⌘R для повторной попытки или вернитесь на главную (⌘⇧H).</p></body></html>"
+        let page = "<html><meta charset='utf-8'><body style='background:#171719;color:#ddd;font:16px -apple-system;padding:60px'><h2>\(L("The board did not open"))</h2><p>\(safe)</p><p>\(L("Press ⌘R to try again or go back Home (⌘⇧H)."))</p></body></html>"
         if let cef = session.cef { cef.loadHTML(page) } else { session.web.loadHTMLString(page, baseURL: nil) }
     }
     @objc func reload() {
         guard let selected, let session = sessions[selected] else { homeWeb?.reloadFromOrigin(); return }   // ⌘R on Home reloads home.html
         performAfterSaving(session) { self.load(session) }
+    }
+    // View › Media Library ⌘M and Hide Interface ⌘. (owner 2026-10-06, as in Figma): the page takes the keys itself first; these are the
+    // menu's own way to the same (a key the page did not take, a click on the item)
+    @objc func menuLibrary() { pageMenu("library") }
+    @objc func menuHideUI() { pageMenu("hideui") }
+    func pageMenu(_ what: String) {
+        guard let selected, let session = sessions[selected] else { return }
+        evaluate(session, "window.hyimgMenu && window.hyimgMenu(\"\(what)\")")
     }
     @objc func restartServer() {
         guard let selected, let session = sessions[selected] else { return }
@@ -755,7 +834,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         guard let window, window.attachedSheet == nil else { return nil }
         let sheet = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 360, height: 90), styleMask: [.titled], backing: .buffered, defer: false)
         sheet.title = "Hyimg"
-        let message = label("Сохраняю изменения…", size: 15)
+        let message = label(L("Saving changes…"), size: 15)
         message.frame = NSRect(x: 28, y: 32, width: 310, height: 24)
         sheet.contentView?.addSubview(message)
         window.beginSheet(sheet)
@@ -770,13 +849,13 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         guard !session.operationPending && !terminationPending else { return }
         session.operationPending = true
         let sheet = savingSheet(), id = session.server.project.id
-        homeProgress(id, "Сохраняю")   // shown on the project's cover when Home is in front
+        homeProgress(id, L("Saving"))   // shown on the project's cover when Home is in front
         flush(session) { result in
             self.dismissSavingSheet(sheet)
             session.operationPending = false
             switch result {
-            case .success: self.homeProgress(id, "Сохранено", done: true); operation()
-            case .failure(let error): self.homeProgress(id, "Не сохранено", failed: true); self.alert("Изменения не сохранены", detail: error.localizedDescription)
+            case .success: self.homeProgress(id, L("Saved"), done: true); operation()
+            case .failure(let error): self.homeProgress(id, L("Not saved"), failed: true); self.alert(L("Changes not saved"), detail: error.localizedDescription)
             }
         }
     }
@@ -792,7 +871,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard !terminationPending else { return .terminateCancel }
         guard !sessions.values.contains(where: { $0.operationPending }) else {
-            alert("Дождитесь сохранения", detail: "Сейчас выполняется другое действие с доской.")
+            alert(L("Wait for saving to finish"), detail: L("Another action with the board is in progress."))
             return .terminateCancel
         }
         terminationPending = true
@@ -806,7 +885,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
                 case .success: HYCef.closeAllThen { sender.reply(toApplicationShouldTerminate: true) }   // CEF: browsers close before the process ends
                 case .failure(let error):
                     self.terminationPending = false
-                    self.alert("Не удалось сохранить изменения", detail: error.localizedDescription)
+                    self.alert(L("Couldn't save the changes"), detail: error.localizedDescription)
                     sender.reply(toApplicationShouldTerminate: false)
                 }
             }
@@ -820,6 +899,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationWillTerminate(_ notification: Notification) {
         quitting = true
+        if let id = selected { BoardSeen.mark(seenFile, [id]) }   // the board in front at quit was seen to the end
         sessions.values.forEach { $0.server.stopSynchronously() }
         _ = homeWork.wait(timeout: .now() + 5)
         HYCef.shutdown()   // CEF
@@ -843,15 +923,32 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         let panel = NSAlert(); panel.messageText = message; panel.runModal(); completionHandler()
     }
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
-        let panel = NSAlert(); panel.messageText = message; panel.addButton(withTitle: "Да"); panel.addButton(withTitle: "Отмена")
+        let panel = NSAlert(); panel.messageText = message; panel.addButton(withTitle: L("confirm::OK")); panel.addButton(withTitle: L("Cancel"))
         completionHandler(panel.runModal() == .alertFirstButtonReturn)
     }
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         let panel = NSAlert(); panel.messageText = prompt
         let field = NSTextField(string: defaultText ?? ""); field.frame = NSRect(x: 0, y: 0, width: 360, height: 24)
-        panel.accessoryView = field; panel.addButton(withTitle: "Сохранить"); panel.addButton(withTitle: "Отмена")
+        panel.accessoryView = field; panel.addButton(withTitle: L("Save")); panel.addButton(withTitle: L("Cancel"))
         panel.window.initialFirstResponder = field
         completionHandler(panel.runModal() == .alertFirstButtonReturn ? field.stringValue : nil)
+    }
+    // <input type="file"> (owner 2026-10-06: «Open file…» in a 3D card): WKWebView shows no panel unless the app does, a file input just did
+    // nothing. The page may name the formats it wants in window.hyimgAccept (".glb,.gltf,.obj"); they narrow the panel, else any file can be
+    // chosen. Chromium (CEF) has its own panel.
+    func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = parameters.allowsDirectories
+        panel.allowsMultipleSelection = parameters.allowsMultipleSelection
+        webView.evaluateJavaScript("window.hyimgAccept || ''", in: frame, in: .page) { result in
+            if case .success(let value) = result, let accept = value as? String {
+                let types = accept.split(separator: ",").compactMap { UTType(filenameExtension: $0.trimmingCharacters(in: CharacterSet(charactersIn: ". "))) }
+                if !types.isEmpty { panel.allowedContentTypes = types }
+            }
+            let done: (NSApplication.ModalResponse) -> Void = { completionHandler($0 == .OK ? panel.urls : nil) }
+            if let window = webView.window { panel.beginSheetModal(for: window, completionHandler: done) } else { done(panel.runModal()) }
+        }
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         guard (error as NSError).code != NSURLErrorCancelled,
@@ -876,7 +973,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         guard let session = sessions.values.first(where: { $0.web === webView }) else { return }
         session.loaded = false
         session.loading = false
-        alert("Страница доски завершилась", detail: "Последние несохраненные изменения могли не записаться. Нажмите ⌘R, чтобы открыть сохраненную версию.")
+        alert(L("The board's page quit"), detail: L("The latest unsaved changes may not have been written. Press ⌘R to open the saved version."))
     }
     func buildMenu() {
         let menu = NSMenu()
@@ -893,16 +990,62 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
             menu.addItem(root)
         }
         func engineItem() -> NSMenuItem {   // CEF
-            let it = item("Движок Chromium", #selector(toggleEngine), ""); it.state = useChromium ? .on : .off
-            it.toolTip = HYCef.available() ? "Доска рисуется Chromium на видеокарте; выключено: WebKit (как Safari)" : "В этой сборке Chromium нет"; return it
+            let it = item(L("Chromium Engine"), #selector(toggleEngine), ""); it.state = useChromium ? .on : .off
+            it.toolTip = HYCef.available() ? L("Boards are drawn by Chromium on the GPU; off: WebKit (as in Safari)") : L("This build has no Chromium"); return it
         }
-        section("Hyimg", [item("Скрыть Hyimg", #selector(NSApplication.hide(_:)), "h"), .separator(), item("Выйти из Hyimg", #selector(NSApplication.terminate(_:)), "q")])
-        section("Доска", [item("Главная", #selector(showProjects), "h", [.command, .shift]), item("Доска из папки Finder…", #selector(addProject), "o"), item("Новая доска…", #selector(createProject), "n"), .separator(), item("Следующая вкладка", #selector(nextTab), "\t", [.control]), item("Предыдущая вкладка", #selector(previousTab), "\t", [.control, .shift]), item("Закрыть вкладку", #selector(closeCurrentTab), "w")])
-        section("Правка", [item("Отменить", Selector(("undo:")), "z"), item("Повторить", Selector(("redo:")), "z", [.command, .shift]), .separator(), item("Вырезать", #selector(NSText.cut(_:)), "x"), item("Скопировать", #selector(NSText.copy(_:)), "c"), item("Вставить", #selector(NSText.paste(_:)), "v"), item("Выбрать все", #selector(NSText.selectAll(_:)), "a")])
-        section("Вид", [item("Обновить", #selector(reload), "r"), item("Перезапустить сервер", #selector(restartServer), "r", [.command, .shift]), item("Открыть в браузере", #selector(openInBrowser), "o", [.command, .shift]), .separator(), engineItem(), .separator(), item("Во весь экран", #selector(NSWindow.toggleFullScreen(_:)), "f", [.command, .control])])
-        section("Окно", [item("Свернуть", #selector(NSWindow.miniaturize(_:)), "m")])
+        // Hyimg › Language (owner 2026-10-06: «make 2 versions, Russian and English, switchable in settings»): each language
+        // named in itself, a checkmark on the current one
+        func languageItem() -> NSMenuItem {
+            let root = NSMenuItem(title: L("Language"), action: nil, keyEquivalent: "")
+            let submenu = NSMenu(title: L("Language"))
+            for (code, name) in [("en", "English"), ("ru", "Русский")] {
+                let it = NSMenuItem(title: name, action: #selector(chooseLanguage(_:)), keyEquivalent: "")
+                it.target = self; it.representedObject = code; it.state = Lang.current == code ? .on : .off
+                submenu.addItem(it)
+            }
+            root.submenu = submenu
+            return root
+        }
+        section("Hyimg", [languageItem(), .separator(), item(L("Hide Hyimg"), #selector(NSApplication.hide(_:)), "h"), .separator(), item(L("Quit Hyimg"), #selector(NSApplication.terminate(_:)), "q")])
+        section(L("Board"), [item(L("Home"), #selector(showProjects), "h", [.command, .shift]), item(L("Board from Finder Folder…"), #selector(addProject as () -> Void), "o"), item(L("New Board…"), #selector(createProject as () -> Void), "n"), .separator(), item(L("Next Tab"), #selector(nextTab), "\t", [.control]), item(L("Previous Tab"), #selector(previousTab), "\t", [.control, .shift]), item(L("Close Tab"), #selector(closeCurrentTab), "w")])
+        section(L("Edit"), [item(L("Undo"), Selector(("undo:")), "z"), item(L("Redo"), Selector(("redo:")), "z", [.command, .shift]), .separator(), item(L("Cut"), #selector(NSText.cut(_:)), "x"), item(L("Copy"), #selector(NSText.copy(_:)), "c"), item(L("Paste"), #selector(NSText.paste(_:)), "v"), item(L("Select All"), #selector(NSText.selectAll(_:)), "a")])
+        section(L("View"), [item(L("Reload Page"), #selector(reload), "r"), item(L("Restart Server"), #selector(restartServer), "r", [.command, .shift]), item(L("Open in Browser"), #selector(openInBrowser), "o", [.command, .shift]), .separator(), item(L("Media Library"), #selector(menuLibrary), "m"), item(L("Hide Interface"), #selector(menuHideUI), "."), .separator(), engineItem(), .separator(), item(L("Enter Full Screen"), #selector(NSWindow.toggleFullScreen(_:)), "f", [.command, .control])])
+        section(L("Window"), [item(L("Minimize"), #selector(NSWindow.miniaturize(_:)), "")])   // ⌘M is the media library's (owner 2026-10-06, as in Figma); the yellow button still minimizes
         NSApp.mainMenu = menu
     }
+    // The interface language (owner 2026-10-06: «make 2 versions, Russian and English, switchable in settings»). One source: the
+    // app's setting cv.lang in settings.json, the file every board's server reads and writes; Lang.current caches it for L().
+    // Whatever changed it (the Language menu, Home's gear, a board's settings, a board's own POST that came first) ends here:
+    // the menus are built again, the window title follows, Home reloads with the new window.HY_LANG; the boards reload themselves
+    // when their settings pull sees the new value (ui/i18n.js T.changed()).
+    func fileLang() -> String { Lang.pick(readSettings()["cv.lang"] as? String) }
+    func syncLang() { let v = fileLang(); if v != Lang.current { applyLang(v) } }
+    func applyLang(_ v: String) {
+        Lang.current = v
+        appLog("language \(v)")
+        buildMenu()
+        updateTitle()
+        tabBar?.relabel()
+        if let web = homeWeb {
+            setHomeLang(web.configuration.userContentController)
+            web.reloadFromOrigin()
+        }
+    }
+    @objc func chooseLanguage(_ sender: NSMenuItem) {
+        guard let v = sender.representedObject as? String else { return }
+        writeSettings(["cv.lang": Lang.pick(v)])   // writeSettings applies it and makes the boards pull it
+    }
+    // Home is a file page: it learns the language from the app before its first line runs (ui/i18n.js reads window.HY_LANG)
+    func setHomeLang(_ controller: WKUserContentController) {
+        controller.removeAllUserScripts()   // only this script is there; the "hyimg" message handler stays
+        controller.addUserScript(WKUserScript(source: "window.HY_LANG = \"\(Lang.current)\";", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+    }
+    func updateTitle() {
+        if let id = selected, let p = registry.projects.first(where: { $0.id == id }) { window?.title = L("Hyimg · %@", p.name) }
+        else { window?.title = L("Hyimg · Home") }
+    }
+    // the fallback: a change the app was not told about (a board's page wrote the file itself) is taken when the app comes back
+    func applicationDidBecomeActive(_ notification: Notification) { syncLang() }
 }
 
 let arguments = CommandLine.arguments
@@ -913,11 +1056,12 @@ func argument(_ name: String) -> String? {
 do {
     let catalogURL: URL
     if let path = argument("--catalog") {
-        guard path.hasPrefix("/") else { throw RegistryError.invalid("Путь --catalog должен быть абсолютным.") }
+        guard path.hasPrefix("/") else { throw RegistryError.invalid(L("The --catalog path must be absolute.")) }
         catalogURL = URL(fileURLWithPath: path)
     } else {
         catalogURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Hyimg/projects.json")
     }
+    Lang.current = Lang.read(settings: catalogURL.deletingLastPathComponent().appendingPathComponent("settings.json"))   // errors in the owner's language (owner 2026-10-06)
     let registry = try ProjectRegistry(file: catalogURL)
     if let folder = argument("--register-project") {
         let project = try registry.register(path: folder, name: argument("--name"), styleRefs: argument("--style-refs"), compatibilityPort: argument("--compat-port").flatMap(Int.init))
@@ -933,12 +1077,12 @@ do {
         } else if let bundled = Bundle.main.resourceURL, FileManager.default.fileExists(atPath: bundled.appendingPathComponent("review/server.py").path) {
             sourceRoot = bundled
         } else {
-            throw RegistryError.invalid("Не найдены исходники и встроенный сервер. Пересоберите приложение командой build.sh в папке Hyimg.")
+            throw RegistryError.invalid(L("Neither the sources nor the bundled server were found. Rebuild the app with build.sh in the Hyimg folder."))
         }
         let initialProjectID: UUID?
         if let requested = argument("--open-project") {
             guard let id = UUID(uuidString: requested), registry.projects.contains(where: { $0.id == id }) else {
-                throw RegistryError.invalid("Доска --open-project не найдена в каталоге.")
+                throw RegistryError.invalid(L("The --open-project board is not in the catalog."))
             }
             initialProjectID = id
         } else { initialProjectID = nil }
@@ -956,7 +1100,7 @@ do {
     let app = NSApplication.shared
     app.setActivationPolicy(.regular)
     let alert = NSAlert()
-    alert.messageText = "Hyimg не запущен"
+    alert.messageText = L("Hyimg could not start")
     alert.informativeText = error.localizedDescription
     alert.runModal()
     exit(1)

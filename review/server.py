@@ -4,10 +4,9 @@
 # Identical copies of the image elsewhere in the library (same name and byte size, e.g. in _favs)
 # get the same feedback. Every change is also appended to _review/feedback-log.jsonl as history.
 # Run: python3 server.py [port]   (default 4180), open http://localhost:4180
-import hashlib, io, json, os, re, shutil, subprocess, sys, tempfile, threading, time, urllib.parse, urllib.request
-import fcntl
+import fcntl, hashlib, io, json, os, re, shutil, subprocess, sys, tempfile, threading, time, urllib.parse, urllib.request
 from contextlib import ExitStack
-from config import CODE_DIR, HERE, W, BOARDS, NOTES, PROJECT_ID, RULES, MOUNTS, MOUNT_SETS, real
+from config import CACHE_ROOT, CODE_DIR, HERE, W, BOARDS, NOTES, PROJECT_ID, RULES, MOUNTS, MOUNT_SETS, real
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from PIL import Image
 import tags
@@ -15,9 +14,16 @@ import history   # version snapshots of the boards (2026-09-30)
 import events    # what happened on a page, event by event (2026-10-02)
 import dedup     # one picture, one place in the library: sha1 of every file (2026-10-02)
 import foldersync   # folders as on the board, «Разложить по папкам как на доске» (2026-10-05)
+import webvideo     # a WebM copy for an engine without H.264, the app's Chromium (2026-10-05)
+import pdfpages, lib3d   # a PDF's pages as pictures, one page at a time (2026-10-06); 3D files as files of their folders (2026-10-07)
+import filters      # the dock's pinned filters and a project's own tags (owner 2026-10-06)
+import thumbcache    # thumbnails and previews in the app's cache, not in Dropbox (2026-10-07)
+import lifetime      # how long a server lives: with the app, or with whoever started it (2026-10-07)
+import storage       # where the disk goes, Settings › Storage, and the one safe cleanup (owner 2026-10-07)
+import foldercolors   # a folder's colour in the library's tree, a mark for finding your way (owner 2026-10-06)
 tags.configure(RULES)   # the board's theme tags, from its rules
 
-THUMBS = os.path.join(HERE, "_thumbs")
+THUMBS = thumbcache.THUMBS   # ~/Library/Caches/Hyimg/<board>/thumbs, outside Dropbox, capped; moved from <state>/_thumbs (thumbcache.py)
 LOG = os.path.join(HERE, "feedback-log.jsonl")
 # What the library leaves out: the server's own folders always, the rest by the board's rules (config.py RULES, the person's file of
 # library rules, owner 2026-10-05: no project of anyone's in the code). .posters and .stills are still views of 3D cards and HTML frames.
@@ -34,12 +40,39 @@ EXT = (".jpg", ".jpeg", ".png", ".webp")
 # ratings live in <file>.<ext>.json: IMG_1604.psd and IMG_1604.JPG lie side by side and must not share one json.
 DOC_EXT = (".psd", ".psb", ".ai", ".tif", ".tiff", ".heic", ".heif", ".svg")
 VIDEO_EXT = (".mp4", ".mov", ".m4v", ".webm")
-MEDIA_EXT = EXT + DOC_EXT + VIDEO_EXT
+# Owner 2026-10-06: a PDF is in the library and on the board with its first page as the picture, and its card steps through the pages
+# (pdfpages.py draws a page as an image on demand: the app's Chromium has no PDF plugin). Its ratings live in <file>.pdf.json.
+PDF_EXT = (".pdf",)
+MEDIA_EXT = EXT + DOC_EXT + VIDEO_EXT + PDF_EXT
 
 
 def kind_of(path):
     e = os.path.splitext(path)[1].lower()
-    return "video" if e in VIDEO_EXT else "doc" if e in DOC_EXT else "image"
+    pk = plugin_kinds().get(e) if e not in MEDIA_EXT else None   # a plugin's own kind of file (html: Dev studio, owner 2026-10-06)
+    return pk[0] if pk else "video" if e in VIDEO_EXT else "pdf" if e in PDF_EXT else "doc" if e in DOC_EXT else "model" if e in MODEL_EXT else "image"
+
+
+# A plugin's own kinds of library files (owner 2026-10-06: «dev studio and html are a plugin too»): manifest.json
+# "kinds": {"html": [".html", ".htm"]} lists those files in the library like the others, kind "html" with its ext; preview() asks the
+# plugin's server module for their picture (preview(full, out_png)), Quick Look when it has none. A kind never takes over the app's own
+# extensions or names. Read from the manifests at most every 10 s: scan() asks for every file.
+_PKINDS = [0.0, {}]
+PLAIN_KINDS = ("image", "video", "pdf", "doc", "model")
+
+
+def plugin_kinds():
+    """{".html": ("html", "<plugin>")} of the plugins the server finds"""
+    if time.time() - _PKINDS[0] > 10:
+        out = {}
+        for n, (_d, m) in plugins().items():
+            ks = m.get("kinds")
+            if not isinstance(ks, dict): continue
+            for k, exts in ks.items():
+                if not (isinstance(k, str) and re.fullmatch(r"[a-z][a-z0-9]{0,15}", k) and k not in PLAIN_KINDS and isinstance(exts, list)): continue
+                for e in exts:
+                    if isinstance(e, str) and re.fullmatch(r"\.[a-z0-9]{1,8}", e) and e not in MEDIA_EXT + MODEL_EXT: out.setdefault(e, (k, n))
+        _PKINDS[:] = [time.time(), out]
+    return _PKINDS[1]
 # Outside folders shown in the library as their own collections without copying (2026-09-30), from the board's rules (config.py
 # MOUNTS). Virtual path "ext/<name>/<file>" maps to the real folder; feedback sidecars <name>.json are written next to the image, a
 # gallery-dl <name>.jpg.json stays as it is and only feeds the caption.
@@ -153,7 +186,7 @@ def lib_dirty():
 # started answers with it, and a list older than a minute or changed by an agent is answered as it is while a new scan runs behind:
 # the pages hear of a difference through /api/changes (LIB_SIG["v"]) and fetch it again. The server's own writes, a first start
 # with nothing kept and a library that scans in under 2 s are still scanned before the answer, so what was just written is in it.
-SNAP = os.path.join(os.path.expanduser("~/Library/Caches/Hyimg"), PROJECT_ID or hashlib.sha1(W.encode()).hexdigest()[:16], "library.json")
+SNAP = os.path.join(CACHE_ROOT, PROJECT_ID or hashlib.sha1(W.encode()).hexdigest()[:16], "library.json")
 _SNAP_HASH = [None]
 
 
@@ -255,7 +288,7 @@ def scan():
             dirs[:] = []
             continue
         for f in files:
-            if not f.lower().endswith(MEDIA_EXT) or (SKIP_FILES and f.startswith(SKIP_FILES)):  # e.g. raw AI crops are intermediates (2026-09-27)
+            if not f.lower().endswith(MEDIA_EXT + tuple(plugin_kinds())) or (SKIP_FILES and f.startswith(SKIP_FILES)):  # e.g. raw AI crops are intermediates (2026-09-27); a plugin's kinds too (html)
                 continue
             path = f if rel_root == "." else os.path.join(rel_root, f)   # files right in the project folder (226 on one board): no "./" in front
             name = os.path.splitext(f)[0]
@@ -293,13 +326,18 @@ def scan():
                 "grid_feedback": meta.get("grid_feedback", {}),
                 "board_notes": notes_for(meta),   # sticky notes from the canvas that touch this frame, resolved through their files (2026-09-30)
                 **({"kind": kind, "ext": os.path.splitext(f)[1][1:].upper()} if kind != "image" else {}),
-                **({"duration": video_seconds(os.path.join(root, f))} if kind == "video" else {}),
+                # a file with nothing in it or one that cannot be read (Dropbox had not brought it down, owner 2026-10-06): the library lists it
+                # with a mark instead of losing it, the board does not take it as a picture
+                **({"empty": True} if is_empty(os.path.join(root, f)) else {}),
+                **({"pages": n} if kind == "pdf" and (n := pdf_pages_known(path)) else {}),
+                # length, picture size and codecs for the board's card; the codecs tell a page whether its engine plays the file (2026-10-05)
+                **(dict(zip(("duration", "vsize", "vcodec", "acodec"), video_probe(os.path.join(root, f)))) if kind == "video" else {}),
             })
     # theme tags from the prompt (tags.py): batch style blocks are learned from all prompts first, then each scene is tagged
     tags.learn(items)
     for i in items:
         i["tags"] = tags.tags(i)
-    items += scan_mounts()
+    items += scan_mounts() + lib3d.as_frames(scan3d(), real)   # 3D files are files of their folders too (2026-10-07)
     # Owner 2026-09-29: collections in order of when they were started, labelled YYMMDDHHmm. The start is the creation time of the
     # oldest image in the folder (birth time survives edits; renaming folders would break the feedback paths and scripts).
     first = {}
@@ -650,7 +688,7 @@ def load_pages():
         L = json.load(open(os.path.join(BOARDS, "pages.json"), encoding="utf-8"))["pages"]
     except (OSError, ValueError, KeyError):
         L = []
-    return L or [{"id": "main", "title": "Страница 1"}]
+    return L or [{"id": "main", "title": tr("Page 1", "Страница 1")}]   # a board with no pages yet: its first one in the app's language
 
 
 def pages_state():
@@ -673,7 +711,7 @@ def save_pages(pages):
         for pg in pages:
             board_path(pg["id"])   # same id rules as boards
             if pg["id"] not in seen:
-                seen.add(pg["id"]); clean.append({"id": pg["id"], "title": (pg.get("title") or "").strip()[:80] or "Без названия"})
+                seen.add(pg["id"]); clean.append({"id": pg["id"], "title": (pg.get("title") or "").strip()[:80] or tr("Untitled", "Без названия")})
         if not clean:
             raise PermissionError("no pages")
         # a page taken out of the list keeps its board: moved to boards/_deleted, never erased
@@ -699,25 +737,46 @@ _DUR = {}
 
 
 def video_seconds(full):
+    return video_probe(full)[0]
+
+
+def video_probe(full):
+    """a video's length in seconds, its picture's [width, height] as it is shown (a phone clip turned by 90 degrees swaps them) and the
+    codec names of its picture and sound ("h264", "aac"), once per version of the file; one ffprobe for all (the board's info card shows
+    them, owner 2026-10-05; the codecs tell the app's Chromium, which has no H.264, to ask for /video), else Spotlight's length"""
     key = (full, os.path.getmtime(full))
     if key not in _DUR:
-        sec = None
+        sec, wh, vc, ac = None, None, None, None
         probe = _tool("ffprobe")
         try:
             if probe:
-                out = subprocess.run([probe, "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", full], capture_output=True, text=True, timeout=20).stdout
+                out = subprocess.run([probe, "-v", "error", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height:stream_tags=rotate:stream_side_data=rotation",
+                                      "-of", "json", full], capture_output=True, text=True, timeout=20).stdout
+                d = json.loads(out or "{}")
+                streams = d.get("streams") or []
+                st = next((x for x in streams if x.get("codec_type") == "video"), {})
+                vc = st.get("codec_name"); ac = next((x.get("codec_name") for x in streams if x.get("codec_type") == "audio"), None)
+                if st.get("width") and st.get("height"):
+                    turn = st.get("tags", {}).get("rotate") or next((x.get("rotation") for x in st.get("side_data_list", []) if "rotation" in x), 0)
+                    wh = [int(st["width"]), int(st["height"])]
+                    if abs(int(float(turn or 0))) % 180 == 90: wh.reverse()
+                if (d.get("format") or {}).get("duration"):
+                    sec = round(float(d["format"]["duration"]), 1)
             else:
                 out = subprocess.run(["mdls", "-raw", "-name", "kMDItemDurationSeconds", full], capture_output=True, text=True, timeout=20).stdout
-            sec = round(float(out.strip()), 1)
-        except (OSError, ValueError, subprocess.SubprocessError):
+                sec = round(float(out.strip()), 1)
+        except (OSError, ValueError, TypeError, AttributeError, subprocess.SubprocessError):
             pass
-        _DUR[key] = sec
+        _DUR[key] = (sec, wh, vc, ac)
     return _DUR[key]
 
 
 def preview(rel):
     """a picture of a file the browser cannot draw (PSD, PSB, AI, TIFF, HEIC, SVG, video), made once per version of the file, 2048 px"""
     src = real(rel); st = os.stat(src)
+    if kind_of(rel) == "pdf" and st.st_size:
+        return pdf_master(rel, 1)   # PDFKit draws the page, a grey card when nothing can
+    if kind_of(rel) == "model": return lib3d.preview(rel, sprite_file)   # a 3D file: its turntable's first view, never Quick Look
     base = os.path.join(THUMBS, re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{int(st.st_mtime)}.prev")
     have = lambda: next((base + e for e in (".jpg", ".png") if os.path.exists(base + e)), None)
     if have():
@@ -733,6 +792,14 @@ def preview(rel):
             _PREV_SLOTS.acquire()
             made = None
             empty = st.st_size == 0   # a 0-byte file (two such PSDs in «Lookbook FW27»): Quick Look hangs on it, it gets the grey card at once
+            pk = plugin_kinds().get(os.path.splitext(rel)[1].lower()) if not empty else None
+            if pk:   # a plugin's kind (html: Dev studio draws the page in Chromium); Quick Look below when it cannot
+                try:
+                    fn = getattr(plugin_module(pk[1]), "preview", None)
+                    if fn: fn(src, os.path.join(tmp, "k.png"))
+                    if os.path.isfile(os.path.join(tmp, "k.png")) and os.path.getsize(os.path.join(tmp, "k.png")): made = os.path.join(tmp, "k.png")
+                except Exception:
+                    pass
             ff = _tool("ffmpeg") if kind_of(rel) == "video" and not empty else None
             if ff:   # a frame a second in, or the first one of a shorter clip
                 for at in ("1", "0"):
@@ -765,6 +832,100 @@ def preview(rel):
     return out
 
 
+def is_empty(full):
+    """a file with no bytes or one this process cannot read: shown, but not taken for a picture (owner 2026-10-06, a board folder of
+    111 files had 105 at 0 bytes: Dropbox never brought them down, and the library showed almost nothing). Nothing is downloaded."""
+    try:
+        return os.path.getsize(full) == 0 or not os.access(full, os.R_OK)
+    except OSError:
+        return True
+
+
+def _pdf_base(rel):
+    return os.path.join(THUMBS, re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{int(os.stat(real(rel)).st_mtime)}")
+
+
+def pdf_pages_known(rel):
+    """the page count if an earlier read saved it (a few bytes beside the thumbnails); the library list never starts a renderer"""
+    try:
+        d = pdfpages.cached(_pdf_base(rel))
+    except OSError:
+        return 0
+    return d["pages"] if d else 0
+
+
+_PDF_LOCK, _PDF_GUARD = {}, threading.Lock()
+
+
+def pdf_info(rel):
+    """{pages, ars} of a PDF (ars: width / height of each page), read once per version of the file; {pages: 0, error} when it is empty,
+    locked or unreadable. The pages are 1-based everywhere."""
+    full = real(rel)
+    if is_empty(full):
+        return {"pages": 0, "ars": [], "error": "empty"}
+    base = _pdf_base(rel); d = pdfpages.cached(base)
+    if d:
+        return d
+    with _PDF_GUARD:
+        lock = _PDF_LOCK.setdefault(base, threading.Lock())
+    with lock:
+        d = pdfpages.cached(base)
+        if d:
+            return d
+        with _PREV_SLOTS:
+            try:
+                d = pdfpages.read(full)
+            except pdfpages.PdfError as ex:
+                return {"pages": 0, "ars": [], "error": str(ex)}
+        pdfpages.remember(base, d)
+        return {"pages": d["pages"], "ars": d.get("ars", [])}
+
+
+def pdf_master(rel, page=1):
+    """page `page` of a PDF drawn as a picture, 2048 px on its long side, once per version of the file (a jpeg: the state folder sits in
+    Dropbox). The first call also saves the page count. A grey card when nothing can draw it; a page past the end is the last page."""
+    full = real(rel)
+    n = (pdf_info(rel).get("pages") or 1) if os.path.getsize(full) else 1
+    page = max(1, min(int(page), n)); base = _pdf_base(rel)
+    out = f"{base}.pdf{page}.jpg"
+    if os.path.exists(out):
+        return out
+    with _PDF_GUARD:
+        lock = _PDF_LOCK.setdefault(out, threading.Lock())
+    with lock:
+        if os.path.exists(out):
+            return out
+        os.makedirs(THUMBS, exist_ok=True)
+        tmp = tempfile.mkdtemp(dir=THUMBS)
+        try:
+            _PREV_SLOTS.acquire()
+            made = os.path.join(tmp, "p.png")
+            try:
+                d = pdfpages.read(full, page, made, 2048)
+                pdfpages.remember(base, d)
+            except pdfpages.PdfError:
+                made = None
+            if made:
+                with Image.open(made) as im:   # a page is drawn on white: the renderer leaves it see-through, and in the display's colours (a profile)
+                    im.load(); icc = im.info.get("icc_profile"); im = im.convert("RGBA"); rgb = im.convert("RGB")
+                    if icc:   # to sRGB, which is what a browser takes an untagged jpeg for: without it a green page came out grey-green
+                        try:
+                            from PIL import ImageCms
+                            import io
+                            rgb = ImageCms.profileToProfile(rgb, ImageCms.ImageCmsProfile(io.BytesIO(icc)), ImageCms.createProfile("sRGB"))
+                        except Exception:
+                            pass
+                    bg = Image.new("RGB", im.size, (255, 255, 255)); bg.paste(rgb, mask=im.getchannel("A"))
+                    bg.save(out + ".tmp", "JPEG", quality=88)
+            else:   # a locked or broken PDF: a grey card, so the grid and the board keep their place; a new version of the file tries again
+                Image.new("RGB", (640, 640), (58, 58, 62)).save(out + ".tmp", "JPEG", quality=88)
+            os.replace(out + ".tmp", out)
+        finally:
+            _PREV_SLOTS.release()
+            shutil.rmtree(tmp, ignore_errors=True)
+    return out
+
+
 def psd_size(full):
     # width and height from the header of a PSD or PSB (big ones take seconds to preview, the canvas needs only the shape)
     with open(full, "rb") as fh:
@@ -774,18 +935,158 @@ def psd_size(full):
     return [int.from_bytes(head[18:22], "big"), int.from_bytes(head[14:18], "big")]
 
 
-def thumb(rel, size=640):
+def thumb(rel, size=640, page=1):
     st = os.stat(real(rel))
-    src = real(rel) if kind_of(rel) == "image" else preview(rel)
-    key = re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{int(st.st_mtime)}.{size}.jpg"
+    pdf = kind_of(rel) == "pdf" and st.st_size > 0
+    if pdf and size == 2048:   # the large preview of a page (owner 2026-10-06): the page as drawn
+        return pdf_master(rel, page)
+    src = (pdf_master(rel, page) if pdf and page > 1 else real(rel) if kind_of(rel) == "image" and st.st_size else preview(rel))   # an empty picture: the grey card
+    stem = re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{int(st.st_mtime)}" + (f".p{page}" if pdf and page > 1 else "")   # page 1 keeps the key of a plain thumbnail
+    key = f"{stem}.{size}.jpg"
     out = os.path.join(THUMBS, key)
-    if not os.path.exists(out):
+    if not os.path.exists(out) and not thumbcache.adopt(key):   # one still in the old folder while it moves
         # small thumbs come from the 640 one when it exists: opening a 4K png for a 320 px card is the slow part
-        big = os.path.join(THUMBS, re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{int(st.st_mtime)}.640.jpg")
-        mid = os.path.join(THUMBS, re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{int(st.st_mtime)}.320.jpg")
+        big = os.path.join(THUMBS, f"{stem}.640.jpg")
+        mid = os.path.join(THUMBS, f"{stem}.320.jpg")
         im = Image.open(mid if size < 320 and os.path.exists(mid) else big if size < 640 and os.path.exists(big) else src).convert("RGB")
         im.thumbnail((size, size * 2))
         im.save(out, quality=82)
+    return thumbcache.used(out)   # handed out: the ceiling keeps it longer
+
+
+# 3D files in the library (owner 2026-10-06: «Open media library, where everything is already filtered to 3D files, and on hover they
+# turn»), listed here for the «3D» filter and, since 2026-10-07, in scan() as files of their folders (lib3d.py). A project model is one entry.
+# Each file has a turntable: one sheet of N views around the vertical axis (a webp, cols x rows of cell px) that a page with three.js
+# draws once and posts here (the plugin's sprites.js); it is kept like a thumbnail, per version of the file, in _thumbs. The sheet
+# turns on hover without a WebGL context per tile, its first view is the still picture.
+# STEP and IGES (owner 2026-10-06: «convert a STEP file once to a 3D model with FreeCAD»): listed like the rest; the 3D plugin's cad.py turns
+# each into a glb once, in the app's cache, and its turntable is drawn from that glb. The state «converting…» is the page's, not a field here.
+MODEL_EXT = (".glb", ".gltf", ".obj", ".stl", ".fbx", ".step", ".stp", ".iges", ".igs")
+MODEL_SKIP = ("3d/scenes", "3d/shots", "3d/converted")   # a scene's own scene.glb, snapshots, a converted copy of a file listed already
+SPRITE_MAX = 32 * 1024 * 1024
+_M3 = {"v": None, "items": None, "t": 0.0}
+_M3_LOCK = threading.Lock()
+
+
+def _model_version(full):
+    """a model's version: its file's time; for model.json the newest of its folder's files (a part changed)"""
+    if os.path.basename(full) != "model.json": return int(os.path.getmtime(full))
+    d = os.path.dirname(full)
+    return int(max(os.path.getmtime(os.path.join(d, n)) for n in os.listdir(d) if os.path.isfile(os.path.join(d, n))))
+
+
+def _sprite_base(rel, version):
+    return os.path.join(THUMBS, re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{version}.sprite")
+
+
+def sprite_info(rel, version):
+    """the turntable of a file as the page needs it ({n, cols, cell, v}), or None while nobody has drawn it"""
+    try: meta = json.load(open(_sprite_base(rel, version) + ".json", encoding="utf-8"))
+    except (OSError, ValueError): return None
+    return meta if isinstance(meta, dict) and os.path.exists(_sprite_base(rel, version) + ".webp") else None
+
+
+def _model_item(rel, full, titles_, folder, born):
+    ext = os.path.splitext(rel)[1].lower()
+    st = os.stat(full); ver = _model_version(full); name = os.path.splitext(os.path.basename(rel))[0]
+    out = {"name": name, "path": rel, "folder": folder, "mtime": int(st.st_mtime), "born": born, "size": st.st_size, "kind": "model",
+           "ext": ext[1:].upper(), "aspect": "1:1", "tags": [], "feedback": {}, "questions": [], "ver": ver, "sprite": sprite_info(rel, ver)}
+    if ext == ".json":   # model.json: the model's own title, the id its folder is named by
+        try: title = json.load(open(full, encoding="utf-8")).get("title")
+        except (OSError, ValueError, AttributeError): title = None
+        out.update(name=str(title or os.path.basename(os.path.dirname(rel))), ext="MODEL", model=os.path.basename(os.path.dirname(rel)))
+        out["size"] = sum(os.path.getsize(os.path.join(os.path.dirname(full), n)) for n in os.listdir(os.path.dirname(full)) if os.path.isfile(os.path.join(os.path.dirname(full), n)))
+    t = titles_
+    out["title"] = "В корне доски" if folder == "." else t.get(folder, t.get(folder.split("/")[0], folder))
+    return out
+
+
+def scan3d():
+    """every 3D file of the library, by the same rules as scan() for the folders it looks in"""
+    items, t = [], titles()
+    for root, dirs, files in os.walk(W):
+        rel_root = os.path.relpath(root, W).replace(os.sep, "/")
+        if rel_root == ".":
+            dirs[:] = [d for d in dirs if d not in SKIP]
+        if os.path.realpath(root) == HERE or any(part in SKIP for part in rel_root.split("/")):
+            dirs[:] = []; continue
+        if rel_root.split("/")[0] in ("html", "frames") or (HIDE_NAMED and HIDE_NAMED.intersection(rel_root.split("/"))) \
+           or any(rel_root == h or rel_root.startswith(h + "/") for h in HIDE) or (HIDE_PREFIXES and os.path.basename(rel_root).startswith(HIDE_PREFIXES)):
+            dirs[:] = []; continue
+        if any(rel_root == s or rel_root.startswith(s + "/") for s in MODEL_SKIP):
+            dirs[:] = []; continue
+        whole = rel_root.startswith("3d/models/") and "model.json" in files   # a project model: one entry for its folder
+        names = ["model.json"] if whole else [f for f in files if f.lower().endswith(MODEL_EXT) and not (SKIP_FILES and f.startswith(SKIP_FILES))]
+        for f in names:
+            full = os.path.join(root, f)
+            try: items.append(_model_item(f if rel_root == "." else f"{rel_root}/{f}", full, t, rel_root, int(getattr(os.stat(full), "st_birthtime", os.path.getmtime(full)))))
+            except OSError: continue
+    first = {}
+    for i in items: first[i["folder"]] = min(first.get(i["folder"], i["born"]), i["born"])
+    for i in items: i["start"] = time.strftime("%y%m%d%H%M", time.localtime(first[i["folder"]]))
+    items.sort(key=lambda i: (-first[i["folder"]], i["folder"], i["name"]))
+    return items
+
+
+def models3d(fresh=False):
+    """the list, kept while the library's folders do not change (and at most a minute), with the turntables as they stand now"""
+    with _M3_LOCK:
+        key = (LIB_SIG["sig"], LIB_GEN[0])
+        if fresh or _M3["items"] is None or _M3["v"] != key or time.time() - _M3["t"] > 60:
+            _M3.update(items=scan3d(), v=key, t=time.time())
+        items = [dict(i) for i in _M3["items"]]
+    for i in items: i["sprite"] = sprite_info(i["path"], i["ver"])   # a turntable drawn since the walk
+    return ui_items(items)
+
+
+def models3d_info(paths):
+    """the same entry for given paths (a card's recent files), None for one that is gone: no walk of the library"""
+    out, t = [], titles()
+    for rel in paths[:60]:
+        try:
+            rel = resolve(rel); full = safe(rel)
+            if not os.path.isfile(full) or not (rel.lower().endswith(MODEL_EXT) or os.path.basename(rel) == "model.json"): raise FileNotFoundError(rel)
+            out.append(ui_items([_model_item(rel, full, t, os.path.dirname(rel) or ".", int(os.path.getmtime(full)))])[0])
+        except (OSError, PermissionError, ValueError): out.append(None)
+    return out
+
+
+def save_sprite(rel, data, n, cols, cell):
+    """a turntable drawn by a page: a png sheet of n views, cols across, cell px each; kept as webp (the browser's own encoder is not the same
+    everywhere: WebKit has none) beside its numbers; the sheets of older versions of the file go"""
+    rel = resolve(rel); full = safe(rel)
+    if not (rel.lower().endswith(MODEL_EXT) or os.path.basename(rel) == "model.json") or not os.path.isfile(full): raise ValueError("not a 3D file of the library")
+    rows = -(-n // cols)
+    if not (2 <= n <= 120 and 1 <= cols <= 16 and 32 <= cell <= 512): raise ValueError("bad sheet numbers")
+    with Image.open(io.BytesIO(data)) as im:
+        if im.size != (cols * cell, rows * cell): raise ValueError(f"the sheet is {im.size[0]}x{im.size[1]}, {cols * cell}x{rows * cell} expected")
+        im = im.convert("RGBA")
+    ver = _model_version(full); base = _sprite_base(rel, ver)
+    os.makedirs(THUMBS, exist_ok=True)
+    stem = re.sub(r"[^A-Za-z0-9._-]", "_", rel) + "."
+    for old in os.listdir(THUMBS):   # one version of a file's turntable is kept
+        if old.startswith(stem) and ".sprite" in old and not old.startswith(os.path.basename(base)): os.remove(os.path.join(THUMBS, old))
+    tmp = base + ".tmp.webp"
+    im.save(tmp, "WEBP", quality=80, alpha_quality=90, method=4); os.replace(tmp, base + ".webp")
+    for still in os.listdir(THUMBS):   # the stills cut from an earlier sheet of this version
+        if re.fullmatch(re.escape(os.path.basename(base)) + r"\.[0-9]+\.webp", still): os.remove(os.path.join(THUMBS, still))
+    meta = {"n": n, "cols": cols, "cell": cell, "v": ver}
+    with open(base + ".json.tmp", "w", encoding="utf-8") as fh: json.dump(meta, fh)
+    os.replace(base + ".json.tmp", base + ".json")
+    return dict(meta, bytes=os.path.getsize(base + ".webp"))
+
+
+def sprite_file(rel, size=0):
+    """the sheet's webp, or with size the first view (the still picture) cut from it; None while there is no sheet"""
+    rel = resolve(rel); full = safe(rel); ver = _model_version(full); base = _sprite_base(rel, ver)
+    meta = sprite_info(rel, ver)
+    if not meta: return None
+    if not size: return base + ".webp"
+    out = f"{base}.{size}.webp"
+    if not os.path.exists(out):
+        with Image.open(base + ".webp") as im:
+            im.load(); im.crop((0, 0, meta["cell"], meta["cell"])).resize((size, size), Image.LANCZOS).save(out + ".tmp.webp", "WEBP", quality=82, alpha_quality=90)
+        os.replace(out + ".tmp.webp", out)
     return out
 
 
@@ -833,7 +1134,7 @@ def _layout_after(j, back=False):
 def layout_apply(who="owner", auto=None, wait=0):
     env = layout_env()
     got = foldersync.RUN.acquire(timeout=wait) if wait else foldersync.RUN.acquire(blocking=False)
-    if not got: raise foldersync.Failed("раскладка уже идет")
+    if not got: raise foldersync.Failed(tr("a layout is already running", "раскладка уже идет"))
     try:
         pre = foldersync.plan(env)
         if not pre["moves"] and not pre["fixes"]:   # nothing to do: the lock is not taken (a save in the auto mode, 3 s of plan on Studio North)
@@ -852,7 +1153,7 @@ def layout_apply(who="owner", auto=None, wait=0):
 
 
 def layout_undo():
-    if not foldersync.RUN.acquire(timeout=30): raise foldersync.Failed("раскладка уже идет")
+    if not foldersync.RUN.acquire(timeout=30): raise foldersync.Failed(tr("a layout is already running", "раскладка уже идет"))
     try:
         with LOCK:
             j = foldersync.undo_last(layout_env())
@@ -908,7 +1209,8 @@ def add_image(data, name="", url=""):
         try:
             im = Image.open(io.BytesIO(data)); im.load()
         except Exception:
-            raise ValueError("это не картинка или формат не открывается (подходят jpg, png, webp, gif, tiff)")
+            raise ValueError(tr("not an image, or a format that does not open (jpg, png, webp, gif and tiff work)",
+                                "это не картинка или формат не открывается (подходят jpg, png, webp, gif, tiff)"))
         fmt = (im.format or "").upper()
         ext = {"JPEG": ".jpg", "MPO": ".jpg", "PNG": ".png", "WEBP": ".webp"}.get(fmt)
         if not ext:   # gif, tiff, bmp, heic (if a plugin is there): store the first frame as png
@@ -922,9 +1224,13 @@ def add_image(data, name="", url=""):
         now = time.strftime("%Y-%m-%d %H:%M:%S")
         # what is known about a pasted picture is said in "prompt" and "model", so its card is not empty (owner 2026-10-03); the owner
         # knows the rest and may add it
-        what = f"вставлено владельцем на холст {now[:16]}" + (f" со страницы {url}" if url else f" из файла {name}" if name and name != "image.png" else " из буфера обмена")
+        # written in the app's language at the moment of pasting (owner 2026-10-06: two languages); the owner's data from then on
+        if lang() == "ru":
+            what = f"вставлено владельцем на холст {now[:16]}" + (f" со страницы {url}" if url else f" из файла {name}" if name and name != "image.png" else " из буфера обмена")
+        else:
+            what = f"pasted on the canvas by the owner {now[:16]}" + (f" from the page {url}" if url else f" from the file {name}" if name and name != "image.png" else " from the clipboard")
         meta = {"source": "owner", "how": "url" if url else "file", "added": now, "original_name": name, "url": url,
-                "sha1": sha, "path": rel, "size": [im.width, im.height], "model": "вставлено владельцем", "prompt": what}
+                "sha1": sha, "path": rel, "size": [im.width, im.height], "model": tr("pasted by the owner", "вставлено владельцем"), "prompt": what}
         _write_json(os.path.join(d, base + ".json"), meta)
         return {"path": rel, "ar": im.width / im.height}
 
@@ -938,7 +1244,10 @@ CTYPES = {".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; cha
 
 
 def plugins():
-    roots = [r for r in os.environ.get("HYIMG_PLUGINS", "").split(os.pathsep) if r] + [os.path.expanduser("~/Library/Application Support/Hyimg/plugins")]
+    # the tests (tests/conftest.py sets HY_TEST_ONLY_PLUGINS) see only the plugins they name, never what is installed on the machine:
+    # the installed ones are links to the plugins' working copies, so a test's result depended on someone's unfinished work there
+    user = [] if os.environ.get("HY_TEST_ONLY_PLUGINS") == "1" else [os.path.expanduser("~/Library/Application Support/Hyimg/plugins")]
+    roots = [r for r in os.environ.get("HYIMG_PLUGINS", "").split(os.pathsep) if r] + user
     out = {}
     for root in roots:
         if not os.path.isdir(root): continue
@@ -965,7 +1274,7 @@ def plugin_file(name, rel):
 _PLUGIN_SRV, _PLUGIN_SRV_LOCK = {}, threading.Lock()
 
 
-def plugin_routes(name):
+def plugin_module(name):   # the plugin's server module, loaded once per version of its file (a kind's preview() asks for it too)
     _d, man = plugins()[name]
     if not isinstance(man.get("server"), str): raise KeyError(name)
     full = plugin_file(name, man["server"]); key = (full, os.path.getmtime(full))
@@ -975,9 +1284,36 @@ def plugin_routes(name):
             spec = importlib.util.spec_from_file_location(f"hyimg_plugin_{re.sub(r'[^a-z0-9_]', '_', name)}", full)
             mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
             _PLUGIN_SRV[name] = (key, mod)
-        routes = getattr(_PLUGIN_SRV[name][1], "ROUTES", None)
+        return _PLUGIN_SRV[name][1]
+
+
+def plugin_routes(name):
+    routes = getattr(plugin_module(name), "ROUTES", None)
     if not isinstance(routes, dict): raise KeyError(name)
     return routes
+
+
+# Library pages shown sandboxed (owner 2026-10-06, Dev studio: «Dev mode is for HTML, and on the left the HTML tree»). A plugin shows a
+# library HTML page in <iframe sandbox="allow-scripts"> without allow-same-origin: the page runs with an opaque origin ("null"), so it
+# never reads the app's pages, storage or API (a write from it has Origin null and request_allowed refuses it). Its css, scripts,
+# fonts and pictures come by relative links from the same address, /sandbox/<key>/<library path>. A font or a module script from an
+# opaque origin is a CORS request with «Origin: null»: it is let in only here, only with the key, which the app's own pages get from
+# /api/sandbox, so another site's sandboxed frame cannot read the library. Read-only, GET only; a path with .., an absolute one or one
+# outside the library is refused (safe()). An HTML page is sent with «CSP: sandbox», so it stays sandboxed even opened alone; with
+# ?hyp=<plugin> it gets that plugin's manifest "pageScript" as the first script of its <head> (Dev studio's inspector), served at
+# /sandbox/<key>/~hyp/<plugin> («~» starts no library path). The file itself is never written.
+import hmac, secrets
+SANDBOX_KEY = secrets.token_urlsafe(18)
+SANDBOX_TYPES = {".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8",
+                 ".avif": "image/avif", ".xml": "application/xml", ".map": "application/json", ".mp3": "audio/mpeg", ".wav": "audio/wav"}
+
+
+def sandbox_inject(body, plugin):
+    """the page with <script src=…/~hyp/<plugin>> first in its <head> (after <head>, else after <html>, else in front)"""
+    tag = f'<script src="/sandbox/{SANDBOX_KEY}/~hyp/{plugin}"></script>'.encode()
+    m = re.search(rb"<head\b[^>]*>", body[:65536], re.I) or re.search(rb"<html\b[^>]*>", body[:65536], re.I)
+    at = m.end() if m else 0
+    return body[:at] + tag + body[at:]
 
 
 def save_snapshot(data, name, folder, meta):
@@ -1044,7 +1380,7 @@ def html_still(rel, w, h, port):
 # The Mac app names the file (beside projects.json); a server started without it (tests, by hand) keeps its own in its state folder,
 # so a test never changes the owner's settings.
 SETTINGS = os.environ.get("HYIMG_SETTINGS") or os.path.join(HERE, "app-settings.json")
-APP_KEYS = r"^cv\.(theme|ui|bg|grain|dotsv|dotsgl|lod|glass|shadow|shape|paperDark|paperLight|paperv|notesize|notecolor|nolib|histTab|m3\..+)$|^(view|lw|fw|ftree|notesOn|autonext|rej|lwide|lmode|lsize)$"
+APP_KEYS = r"^cv\.(lang|theme|ui|bg|grain|dotsv|dotsgl|lod|glass|shadow|shape|paperDark|paperLight|paperv|notesize|notecolor|nolib|histTab|m3\..+)$|^(view|lw|fw|ftree|notesOn|autonext|rej|lwide|lmode|lsize)$"
 
 
 def settings_read():
@@ -1070,6 +1406,100 @@ def settings_write(change):
         with open(tmp, "w", encoding="utf-8") as fh: json.dump(cur, fh, ensure_ascii=False, indent=1, sort_keys=True)
         os.replace(tmp, SETTINGS)
     return cur
+
+
+def lang():
+    """the interface's language, the app's setting cv.lang (owner 2026-10-06: «make 2 versions, Russian and English, switchable in
+    settings»): "en" by default, "ru" when chosen"""
+    return "ru" if settings_read().get("cv.lang") == "ru" else "en"
+
+
+def tr(en, ru):
+    """a text the server makes for the interface (a toast, an error, a library collection's name) in the app's language"""
+    return ru if lang() == "ru" else en
+
+
+# the imported modules' texts for the interface (foldersync's reasons and errors, history's and events' labels) in the same language
+foldersync.tr = history.tr = events.tr = tr
+
+# The library's own names in /api/items: the scan keeps them in Russian (its list is cached in memory and on disk, and a language
+# switch must not wait for a new scan), the answer puts them into the app's language: the collections of the files in the board's
+# folder itself and of the pasted pictures. The engine tags tags.py names itself stay as they are: they are the library's filter ids
+# (a saved filter keeps them), the pages show them in the app's language
+LIB_NAMES = {"В корне доски": "Board root", "Добавлено вручную (вставка и перетаскивание на холст)": "Added by hand (pasted or dropped on the canvas)"}
+
+
+def ui_items(items):
+    if lang() == "ru": return items
+    for i in items:   # copies from scan_cached: the cached list keeps its words
+        t = LIB_NAMES.get(i.get("title"))
+        if t: i["title"] = t
+    return items
+
+
+# Copy / paste properties (owner 2026-10-06, canvas.html «Copy properties ›»): the clipboard goes from project to project, so it is one
+# file beside the app's settings (a server started without them keeps its own beside its own settings, as tests do); the presets are
+# the project's, presets.json in its state folder, where hy.py reads them too. Both are JSON at fixed places, size-capped.
+PROPS_CLIP = os.path.join(os.path.dirname(os.path.abspath(SETTINGS)), "props-clipboard.json")
+
+
+PROPS_FILES = PROPS_CLIP[:-5] + "-files"   # the bytes of the files a copied value refers to (a mask's png), by their hash
+
+
+def props_files_keep(paths):
+    """a copy that refers to library files (a kind's files(value), canvas.html copyProps): their bytes beside the clipboard, so a board of
+    another project can have them; {path: blob name}. Only what this project's library holds, at most 64 MB a file"""
+    out = {}
+    os.makedirs(PROPS_FILES, exist_ok=True)
+    for rel in paths[:50]:
+        try: full = safe(resolve(str(rel)))
+        except (PermissionError, OSError): continue
+        if not os.path.isfile(full) or os.path.getsize(full) > 64 << 20: continue
+        data = open(full, "rb").read(); name = hashlib.sha1(data).hexdigest() + os.path.splitext(full)[1].lower()
+        dst = os.path.join(PROPS_FILES, name)
+        if not os.path.exists(dst):
+            with open(dst + ".tmp", "wb") as fh: fh.write(data)
+            os.replace(dst + ".tmp", dst)
+        out[str(rel)] = name
+    keep = set(out.values())   # only the last copy's files stay
+    for f in os.listdir(PROPS_FILES):
+        if f not in keep and not f.endswith(".tmp"):
+            try: os.remove(os.path.join(PROPS_FILES, f))
+            except OSError: pass
+    return out
+
+
+def props_files_take():
+    """the clipboard's files into this project's library before a paste: the same path when it is free or already holds the same bytes,
+    else the same name with the bytes' hash; {path in the clipboard: path here}. Written like a plugin's data (save_plugin_file: only its
+    folders, so a value can bring nothing else)"""
+    try: c = json.load(open(PROPS_CLIP, encoding="utf-8"))
+    except (OSError, ValueError): return {}
+    out = {}
+    for rel, name in (c.get("files") or {}).items():
+        src = os.path.join(PROPS_FILES, os.path.basename(str(name)))
+        if not os.path.isfile(src): continue
+        data = open(src, "rb").read()
+        try: full = safe(rel)
+        except (PermissionError, OSError): full = None
+        if full and os.path.isfile(full) and open(full, "rb").read() == data: out[rel] = rel; continue
+        dst = rel if full is None or not os.path.exists(full) else f"{os.path.splitext(rel)[0]}-{str(name)[:8]}{os.path.splitext(rel)[1]}"
+        try:
+            have = safe(dst)
+            if not (os.path.isfile(have) and open(have, "rb").read() == data): save_plugin_file(dst, data); lib_dirty()
+            out[rel] = dst
+        except (PermissionError, ValueError, OSError): continue
+    return out
+
+
+def presets_path():
+    return os.path.join(HERE, "presets.json")
+
+
+def presets_read():
+    try: L = json.load(open(presets_path(), encoding="utf-8")).get("presets", [])
+    except (OSError, ValueError, AttributeError): L = []
+    return [p for p in L if isinstance(p, dict) and isinstance(p.get("name"), str) and isinstance(p.get("kinds"), dict)]
 
 
 def settings_js():
@@ -1148,7 +1578,7 @@ def notify(d):
     title = str(d.get("title") or "").strip()[:200]
     if not title: raise ValueError("no title")
     n = {"id": time.strftime("%y%m%d%H%M%S") + "-" + os.urandom(2).hex(), "t": time.strftime("%Y-%m-%d %H:%M:%S"), "read": False, "title": title,
-         "text": str(d.get("text") or "")[:2000], "who": str(d.get("who") or "агент")[:60], "page": str(d.get("page") or ""),
+         "text": str(d.get("text") or "")[:2000], "who": str(d.get("who") or tr("agent", "агент"))[:60], "page": str(d.get("page") or ""),
          "ids": [str(x) for x in (d.get("ids") or [])][:500], "previews": [str(x) for x in (d.get("previews") or [])][:8]}
     if isinstance(d.get("area"), dict) and all(isinstance(d["area"].get(k), (int, float)) for k in "xywh"): n["area"] = {k: d["area"][k] for k in "xywh"}
     with LOCK:
@@ -1228,7 +1658,7 @@ def plugins_brief():
     except Exception:
         have = {}
     L = ["## Плагины", ""]
-    L += [f"- Подключен «{m.get('title', n)}» (`{n}`): {d}" for n, (d, m) in have.items()] or ["- Плагинов нет."]
+    L += [f"- Подключен «{m.get('title_ru') or m.get('title', n)}» (`{n}`): {d}" for n, (d, m) in have.items()] or ["- Плагинов нет."]
     missing = [k for k in KNOWN_PLUGINS if k[0] not in have]
     if missing:
         L += ["", "Не установлены плагины Hyimg. Спроси человека про каждый по имени, ставить ли его, и ставь только после «да»"
@@ -1236,6 +1666,44 @@ def plugins_brief():
               " Если человек уже отказался, не спрашивай снова:", ""]
         L += [f"- «{t}» (`{n}`, {url}): {what}." for n, t, url, what in missing]
     return L
+
+
+FEATURES = os.path.join(CODE_DIR, "features.json")   # the feature catalog: what Hyimg can do and how an agent does it (2026-10-06)
+
+
+def features_read():
+    try: d = json.load(open(FEATURES, encoding="utf-8"))
+    except (OSError, ValueError): return {"features": []}
+    return d if isinstance(d, dict) and isinstance(d.get("features"), list) else {"features": []}
+
+
+def features_brief(hy):
+    """Lines for /agent (owner 2026-10-06: «agents that come to our app must get this information about skills, so I don't have to
+    explain things»): every feature in one line with the agent's way to it and its skill, from review/features.json; a plugin's
+    feature says when that plugin is not installed here"""
+    try: have = set(plugins())
+    except Exception: have = set()
+    alias = {"3d": ("3d", "hyimg-3d-studio", "hyimg-3d"), "frames": ("frames", "hyimg-frames"), "dev": ("dev", "hyimg-dev-studio", "dev-studio")}
+    F = features_read()["features"]
+    L = ["## Что умеет Hyimg", "",
+         f"Каталог функций ({len(F)}): что это, как агент это делает и какой скилл объясняет. `hy.py` ниже значит `{hy}`."
+         f" Подробно по слову: `{hy} features <слово>`, весь каталог JSON: `GET /api/features`. Тот же доступ через MCP:"
+         f" `python3 {os.path.join(REPO, 'mcp', 'server.py')}` (как подключить: README репозитория, раздел MCP).", ""]
+    for f in F:
+        pl = f.get("plugin")
+        off = pl and not (set(alias.get(pl, (pl,))) & have)
+        cmd = lambda a, m: f"`{m.group(1)}`{m.group(2) or ''}" if a.startswith(("hy.py", "GET ", "POST ", "python3 ", "scripts/")) else a
+        how = " · ".join(cmd(a, re.match(r"(.*?)( \(.*\))?$", a)) for a in f.get("agent", [])[:2])   # a command in backticks, its note after it
+        L.append(f"- **{f['title']}**" + (f" (плагин `{pl}`" + (", здесь не установлен" if off else "") + ")" if pl else "")
+                 + f": {how}" + (f" · скилл `{f['skill']}`" if f.get("skill") else ""))
+    return L
+
+
+def more_skills():
+    """the skills /agent does not describe by hand: every skills/<name>/SKILL.md is named, so a new skill is never missed (2026-10-06)"""
+    told = ("hyimg", "hyimg-board", "hyimg-generate", "gemini-web")
+    try: return [n for n in sorted(os.listdir(SKILLS)) if n not in told and os.path.isfile(os.path.join(SKILLS, n, "SKILL.md"))]
+    except OSError: return []
 
 
 def agent_page(port):
@@ -1271,11 +1739,14 @@ def agent_page(port):
           f"2. Скиллы Hyimg, читать по задаче: `{SKILLS}/hyimg/SKILL.md` (общее: данные, библиотека, как улучшать эти правила),"
           f" `{SKILLS}/hyimg-board/SKILL.md` (доска: читать, класть, двигать, убирать, проверять),"
           f" `{SKILLS}/hyimg-generate/SKILL.md` (генерация картинок в проект)."
-          f" Те же файлы по HTTP: {base}/agent/hyimg, /agent/hyimg-board, /agent/hyimg-generate.",
+          f" Те же файлы по HTTP: {base}/agent/hyimg, /agent/hyimg-board, /agent/hyimg-generate."
+          + "".join(f" Еще: `{SKILLS}/{n}/SKILL.md` ({base}/agent/{n})." for n in more_skills()),
           f"3. Что владелец выделил и видит: `python3 {os.path.join(REPO, 'scripts', 'active.py')}`; ссылка с `?obj=` или `&at=`:"
           f" `python3 {os.path.join(REPO, 'scripts', 'active.py')} --link '<ссылка>'`.",
           f"4. Доска: `{hy} map` (оглавление), `{hy} find <слово>`, `{hy} do '...'`, `{hy} check`. Этот проект на порту {port}:"
-          f" без HYIMG_PORT={port} (или `--port {port}`) hy.py пойдет на 4180, в другой проект.", "",
+          f" без HYIMG_PORT={port} (или `--port {port}`) hy.py пойдет на 4180, в другой проект.",
+          f"5. Что умеет Hyimg и какой командой: раздел «Что умеет Hyimg» ниже, подробно `{hy} features <слово>`. Не угадывай и не пиши JSON доски:"
+          " у каждой функции есть команда.", "",
           *plugins_brief(), "",
           "## Пять правил, которые нельзя нарушать", "",
           "1. Доску меняй только через `hy.py do`. JSON доски руками не пиши и целиком не отправляй: владелец правит ее вживую,"
@@ -1294,6 +1765,7 @@ def agent_page(port):
           f" через `{hy} save <файлы> --to <папка партии>`: картинку, которая уже есть в библиотеке, она не положит второй раз.",
           "5. Непонятно или правило мешает: спроси владельца коротко, с вариантами. Его поправку запиши туда, где она будет работать"
           " дальше (см. «Как улучшать» в скилле hyimg).", ""]
+    L += features_brief(hy) + [""]
     brief = os.path.join(W, "AGENTS.md")
     L += ["## Правила проекта", "", f"Файл `{brief}`" + (":" if os.path.exists(brief) else
           " пока не создан. Спроси владельца о цели проекта и создай его по шаблону из скилла hyimg."), ""]
@@ -1324,6 +1796,99 @@ def safe(rel):
     if not any(full.startswith(r + os.sep) for r in roots):
         raise PermissionError(rel)
     return full
+
+
+REVEAL_CMD = os.environ.get("HYIMG_REVEAL_CMD") or "/usr/bin/open"   # tests put a recorder here instead of Finder
+
+
+def reveal(paths):
+    """Finder shows library files selected (owner 2026-10-05: «a button to open the folder with the file»). Only files of the library
+    or its mounts: an absolute path or one with .. is refused before anything is resolved. Files of one folder go in one `open -R`
+    (Finder selects them together in one window); at most 5 folders, each its own window."""
+    by_dir = {}
+    for p in dict.fromkeys(paths):
+        if os.path.isabs(p) or p.startswith("~") or ".." in p.replace("\\", "/").split("/"): raise PermissionError(p)
+        full = safe(resolve(p))
+        if not os.path.exists(full): raise FileNotFoundError(p)
+        by_dir.setdefault(os.path.dirname(full), []).append(full)
+    dirs = list(by_dir)[:5]
+    for d in dirs:
+        subprocess.run([REVEAL_CMD, "-R", *by_dir[d]], capture_output=True, timeout=20)   # an argument list, no shell
+    return {"revealed": sum(len(by_dir[d]) for d in dirs), "folders": len(dirs), "skipped": max(0, len(by_dir) - 5)}
+
+
+# «Open in <App>» on a card's right-click menu (owner 2026-10-06: «right click can add "open in the app" that is default, maybe you can also
+# see what's the default app to be opened in so you can right away write it there»): LaunchServices names the app macOS opens a file
+# with (osascript JXA, NSWorkspace), asked once per file extension and kept; its icon is drawn once per app as a 64 px PNG.
+# HYIMG_DEFAULT_APP='{"name": ..., "path": ...}' answers for every file instead (tests: nothing depends on what this Mac has installed)
+DEFAULT_APPS, APP_ICONS = {}, {}
+JXA_DEFAULT_APP = """ObjC.import('AppKit');
+function run(argv) {
+  const u = $.NSWorkspace.sharedWorkspace.URLForApplicationToOpenURL($.NSURL.fileURLWithPath(argv[0]));
+  if (!u || u.isNil()) return "";
+  const p = ObjC.unwrap(u.path), n = ObjC.unwrap($.NSFileManager.defaultManager.displayNameAtPath(p));
+  return JSON.stringify({ name: String(n).replace(/[.]app$/, ""), path: p });
+}"""
+JXA_APP_ICON = """ObjC.import('AppKit');
+function run(argv) {
+  const img = $.NSWorkspace.sharedWorkspace.iconForFile(argv[0]), s = 64;
+  const rep = $.NSBitmapImageRep.alloc.initWithBitmapDataPlanesPixelsWidePixelsHighBitsPerSampleSamplesPerPixelHasAlphaIsPlanarColorSpaceNameBytesPerRowBitsPerPixel(null, s, s, 8, 4, true, false, $.NSDeviceRGBColorSpace, 0, 0);
+  $.NSGraphicsContext.saveGraphicsState;
+  $.NSGraphicsContext.setCurrentContext($.NSGraphicsContext.graphicsContextWithBitmapImageRep(rep));
+  img.drawInRectFromRectOperationFraction($.NSMakeRect(0, 0, s, s), $.NSZeroRect, $.NSCompositingOperationSourceOver, 1);
+  $.NSGraphicsContext.restoreGraphicsState;
+  rep.representationUsingTypeProperties($.NSBitmapImageFileTypePNG, $()).writeToFileAtomically(argv[1], true);
+  return "ok";
+}"""
+
+
+def default_app(full):
+    """{"name": "Adobe Photoshop 2026", "path": "/Applications/..."} for a file, or {} when no app opens it"""
+    fake = os.environ.get("HYIMG_DEFAULT_APP")
+    if fake:
+        try: return json.loads(fake)
+        except ValueError: return {}
+    ext = os.path.splitext(full)[1].lower()
+    if ext in DEFAULT_APPS: return DEFAULT_APPS[ext]
+    try:
+        out = subprocess.run(["/usr/bin/osascript", "-l", "JavaScript", "-e", JXA_DEFAULT_APP, full], capture_output=True, text=True, timeout=10).stdout.strip()
+        app = json.loads(out) if out else {}
+    except (OSError, ValueError, subprocess.SubprocessError):
+        app = {}
+    if not (isinstance(app, dict) and isinstance(app.get("name"), str) and isinstance(app.get("path"), str)): app = {}
+    DEFAULT_APPS[ext] = app
+    return app
+
+
+def app_icon(app_path):
+    """the PNG of an app that default_app named (no other path is drawn), or None"""
+    if app_path in APP_ICONS: return APP_ICONS[app_path]
+    if app_path not in {a.get("path") for a in DEFAULT_APPS.values()} or not app_path.endswith(".app") or not os.path.isdir(app_path): return None
+    png = None
+    with tempfile.TemporaryDirectory() as d:
+        out = os.path.join(d, "icon.png")
+        try:
+            subprocess.run(["/usr/bin/osascript", "-l", "JavaScript", "-e", JXA_APP_ICON, app_path, out], capture_output=True, timeout=10)
+            if os.path.isfile(out): png = open(out, "rb").read()
+        except (OSError, subprocess.SubprocessError):
+            pass
+    APP_ICONS[app_path] = png
+    return png
+
+
+def library_file(p):
+    """a library path from a page, refused when absolute or with .., resolved and kept inside the library (as reveal does)"""
+    if not isinstance(p, str) or not p or os.path.isabs(p) or p.startswith("~") or ".." in p.replace("\\", "/").split("/"): raise PermissionError(p)
+    full = safe(resolve(p))
+    if not os.path.isfile(full): raise FileNotFoundError(p)
+    return full
+
+
+def open_file(p):
+    """the file opens in its default app (`open <file>`, as a double click in Finder would)"""
+    full = library_file(p)
+    subprocess.run([REVEAL_CMD, full], capture_output=True, timeout=20)   # an argument list, no shell
+    return {"opened": p}
 
 
 class H(BaseHTTPRequestHandler):
@@ -1395,15 +1960,53 @@ class H(BaseHTTPRequestHandler):
         self.send_header("Content-Type", CTYPES.get(os.path.splitext(full)[1].lower(), "application/octet-stream"))
         self.send_header("Content-Length", str(size)); self.send_header("Cache-Control", "no-store"); self.end_headers()
 
+    def sandbox_get(self):   # /sandbox/<key>/<library path>: a library page and its files for a sandboxed frame (SANDBOX_KEY above)
+        port = self.server.server_port
+        hosts = {f"localhost:{port}", f"127.0.0.1:{port}"}
+        hh, origins = self.headers.get_all("Host", []), self.headers.get_all("Origin", [])
+        if not (len(hh) == 1 and hh[0] in hosts and (not origins or (len(origins) == 1 and origins[0] in {"null"} | {f"http://{h}" for h in hosts}))):
+            return self.send(403, b"Forbidden request origin", "text/plain")
+        u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)
+        parts = u.path.split("/", 3)
+        if len(parts) < 4 or not hmac.compare_digest(parts[2].encode(), SANDBOX_KEY.encode()): return self.send(404, b"not found", "text/plain")
+        rel = urllib.parse.unquote(parts[3])
+        try:
+            if rel.startswith("~hyp/"):   # a plugin's script for the page (manifest "pageScript")
+                d, man = plugins()[rel[5:]]
+                if not isinstance(man.get("pageScript"), str): raise KeyError(rel)
+                full, ctype = plugin_file(rel[5:], man["pageScript"]), "text/javascript; charset=utf-8"
+            else:
+                if not rel or rel.startswith(("/", "~")) or "\\" in rel or "\x00" in rel or ".." in rel.split("/"): raise PermissionError(rel)
+                full = safe(resolve(rel))
+                if os.path.isdir(full): full = os.path.join(full, "index.html")
+                if not os.path.isfile(full): raise FileNotFoundError(rel)
+                ext = os.path.splitext(full)[1].lower(); ctype = SANDBOX_TYPES.get(ext) or CTYPES.get(ext, "application/octet-stream")
+            body = open(full, "rb").read()
+        except (KeyError, OSError, PermissionError, ValueError):
+            return self.send(404, b"not found", "text/plain")
+        page = ctype.startswith("text/html")
+        if page and q.get("hyp") and re.fullmatch(r"[a-z0-9][a-z0-9_-]*", q["hyp"][0]): body = sandbox_inject(body, q["hyp"][0])
+        self.send_response(200)
+        self.send_header("Content-Type", ctype); self.send_header("Content-Length", str(len(body))); self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff"); self.send_header("Vary", "Origin")
+        if origins == ["null"]: self.send_header("Access-Control-Allow-Origin", "null")
+        if page: self.send_header("Content-Security-Policy", "sandbox allow-scripts")
+        self.end_headers()
+        mv = memoryview(body)
+        for k in range(0, len(mv), 1 << 20): self.wfile.write(mv[k:k + (1 << 20)])
+
     def do_GET(self):
+        if self.path.startswith("/sandbox/"):   # a sandboxed library page: its own origin rule (sandbox_get)
+            return self.sandbox_get()
         if not self.request_allowed():
             return
-        u = urllib.parse.urlparse(self.path)
-        q = urllib.parse.parse_qs(u.query)
+        u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)
+        if u.path == "/api/storage": return storage.http(self, "GET")   # the summary of the last scan, never waits for one (storage.py)
         try:
+            if u.path == "/api/sandbox":   # where the app's own pages find sandboxed library pages (SANDBOX_KEY)
+                return self.send(200, json.dumps({"base": f"/sandbox/{SANDBOX_KEY}/"}).encode(), "application/json")
             if u.path == "/api/health":
-                body = {"app": "Hyimg", "projectId": PROJECT_ID, "libraryRoot": W,
-                        "pid": os.getpid(), "port": self.server.server_port}
+                body = {"app": "Hyimg", "projectId": PROJECT_ID, "libraryRoot": W, "pid": os.getpid(), "port": self.server.server_port}
                 return self.send(200, json.dumps(body).encode(), "application/json")
             # v2 (criteria rows + zoom) is the main page since 2026-09-28; the tag-cloud page stays at /v1
             if u.path in ("/", "/index.html", "/v2", "/v2.html"):
@@ -1416,11 +2019,15 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, json.dumps(settings_read(), ensure_ascii=False).encode(), "application/json")
             if u.path.startswith("/ui/"):   # what every page shares (owner 2026-10-04: one kind of notification): review/ui/<name>.js|css
                 name = u.path[4:]
-                if not re.fullmatch(r"[a-z0-9-]+\.(js|css)", name) or not os.path.isfile(os.path.join(CODE_DIR, "ui", name)):
+                if re.fullmatch(r"fonts/[a-z0-9-]+\.woff2", name) and os.path.isfile(os.path.join(CODE_DIR, "ui", name)):   # Geist, 2026-10-07: no Google Fonts
+                    return self.file(os.path.join(CODE_DIR, "ui", name), "font/woff2")
+                if not re.fullmatch(r"(hy/)?[a-z0-9-]+\.(js|css)", name) or not os.path.isfile(os.path.join(CODE_DIR, "ui", name)):   # hy/: the primitives
                     return self.send(404, b"no such ui file", "text/plain")
                 return self.file(os.path.join(CODE_DIR, "ui", name), "text/javascript; charset=utf-8" if name.endswith(".js") else "text/css; charset=utf-8", cache=False)
             if u.path in ("/agent", "/llms.txt", "/AGENTS.md"):   # instructions for an AI agent given only this address (owner 2026-10-01)
                 return self.send(200, agent_page(self.server.server_port).encode(), "text/markdown; charset=utf-8")
+            if u.path == "/api/features":   # the feature catalog (review/features.json): what Hyimg can do and how an agent does it
+                return self.send(200, json.dumps(features_read(), ensure_ascii=False).encode(), "application/json")
             if u.path.startswith("/agent/"):   # one Hyimg skill: /agent/hyimg-board
                 nm = u.path[len("/agent/"):].strip("/")
                 if not re.fullmatch(r"[a-z0-9-]+", nm): raise FileNotFoundError(nm)
@@ -1444,10 +2051,20 @@ class H(BaseHTTPRequestHandler):
                 return self.file(os.path.join(CODE_DIR, "index.html"), "text/html; charset=utf-8", cache=False)
             if u.path == "/api/taggroups":
                 return self.send(200, json.dumps(tags.groups(), ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/foldercolors":   # {"colors": {folder path: colour}}: the library tree's folder colours (foldercolors.py)
+                return self.send(200, json.dumps(foldercolors.read(), ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/filters":   # {"pins": [filter ids] | null}: what this project pinned in the dock's filter bar; null: not chosen yet (filters.py)
+                return self.send(200, json.dumps(filters.read(), ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/events":   # newest first: what was added, removed, grouped, written, moved on a page
                 nm = q.get("name", ["main"])[0]; board_path(nm)
                 bf = q.get("before", [None])[0]
                 return self.send(200, json.dumps(events.read(nm, int(q.get("limit", ["300"])[0]), float(bf) if bf else None), ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/propsclip":   # the properties copied last, in any project (canvas.html copyProps)
+                try: d = json.load(open(PROPS_CLIP, encoding="utf-8"))
+                except (OSError, ValueError): d = {}
+                return self.send(200, json.dumps(d if isinstance(d, dict) else {}, ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/presets":   # the project's presets of properties: {"presets": [{name, at, from, kinds}]}
+                return self.send(200, json.dumps({"presets": presets_read()}, ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/history":
                 nm = q.get("name", ["main"])[0]; board_path(nm)
                 ex = lambda p: os.path.exists(real(resolve(p)))
@@ -1462,7 +2079,7 @@ class H(BaseHTTPRequestHandler):
             if u.path == "/api/notes":
                 return self.send(200, json.dumps({k: dict(v, pics={p: sorted(x) for p, x in v["pics"].items()}) for k, v in note_index(load_board(q.get("name", ["main"])[0])).items()}, ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/items":   # each picture once; ?all=1 keeps the copies too (copy_of, hidden), the canvas needs them
-                items = dedup.collapse(with_archive(scan_cached()), keep_copies=q.get("all") == ["1"])
+                items = ui_items(lib3d.fresh(dedup.collapse(with_archive(scan_cached()), keep_copies=q.get("all") == ["1"]), sprite_info))
                 return self.send(200, json.dumps(items, ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/project":   # the canvas's plate «⌂ › project › page» (owner 2026-10-04)
                 return self.send(200, json.dumps({"name": project_name(), "root": W}, ensure_ascii=False).encode(), "application/json")
@@ -1476,7 +2093,20 @@ class H(BaseHTTPRequestHandler):
             if u.path == "/thumb":
                 rel = resolve(q["p"][0]); safe(rel)
                 size = int(q.get("s", ["640"])[0])
-                return self.file(thumb(rel, size if size in (96, 320, 640, 1280) else 640), "image/jpeg")   # 96: far-out canvas (fast mode)
+                try: pg = max(1, int(q.get("pg", ["1"])[0]))   # a PDF's page (2026-10-06)
+                except ValueError: pg = 1
+                if size == 2048 and kind_of(rel) == "pdf": return self.file(thumb(rel, 2048, pg), "image/jpeg")   # the large preview's page
+                return self.file(thumb(rel, size if size in (96, 320, 640, 1280) else 640, pg), "image/jpeg")   # 96: far-out canvas (fast mode)
+            if u.path == "/api/defaultapp":   # {name, path}: the app macOS opens this library file with ({} when none), for «Open in <App>»
+                return self.send(200, json.dumps(default_app(library_file(q["p"][0])), ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/appicon":   # that app's icon, a 64 px PNG
+                png = app_icon(q["app"][0])
+                if not png: return self.send(404, b"no icon", "text/plain")
+                return self.send(200, png, "image/png", cache=True)
+            if u.path == "/api/pdf":   # {pages, ars}: a PDF's page count and the shape of each page, for the card's «2 / 5» and the viewer (2026-10-06)
+                rel = resolve(q["p"][0]); full = safe(rel)
+                if kind_of(full) != "pdf" or not os.path.isfile(full): raise FileNotFoundError(full)
+                return self.send(200, json.dumps(pdf_info(rel), ensure_ascii=False).encode(), "application/json")
             if u.path == "/img":
                 rel = resolve(q["p"][0])
                 full = safe(rel)
@@ -1488,10 +2118,21 @@ class H(BaseHTTPRequestHandler):
             if u.path == "/api/notifications":   # newest first, with how many are unread
                 L = notifications()
                 return self.send(200, json.dumps({"items": L[::-1][:int(q.get("limit", ["60"])[0])], "unread": sum(not n.get("read") for n in L)}, ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/models3d":   # the library's 3D files, each with its turntable if one is drawn (the library's «3D» filter, 2026-10-06)
+                return self.send(200, json.dumps(models3d(q.get("fresh") == ["1"]), ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/sprite":   # a 3D file's turntable sheet; &s=<px>: its first view as a still picture; 404 until a page has drawn it
+                try:
+                    size = int(q.get("s", ["0"])[0])
+                    if size not in (0, 96, 160, 240, 320, 480): return self.send(400, b"s: 0, 96, 160, 240, 320 or 480", "text/plain")
+                    out = sprite_file(q["p"][0], size)
+                except ValueError: out = None
+                if not out: return self.send(404, b"no turntable yet", "text/plain")
+                return self.file(out, "image/webp")   # the page's url carries the file's version (v=), so it is kept
             if u.path == "/api/plugins":
-                body = [dict(name=n, title=m.get("title", n), version=m.get("version", ""), canvas=f"/plugins/{n}/{m['canvas']}" if m.get("canvas") else None)
+                body = [dict(name=n, title=tr(m.get("title", n), m.get("title_ru") or m.get("title", n)), version=m.get("version", ""), canvas=f"/plugins/{n}/{m['canvas']}" if m.get("canvas") else None,
+                             sprites=f"/plugins/{n}/{m['sprites']}" if isinstance(m.get("sprites"), str) else None)   # sprites: a module that draws 3D files' turntables for the library (2026-10-06)
                         for n, (d, m) in plugins().items()]
-                return self.send(200, json.dumps(body, ensure_ascii=False).encode(), "application/json")
+                return self.send(200, json.dumps(body, ensure_ascii=False).encode(), "application/json")   # title: the manifest's title_ru in Russian (2026-10-06)
             if u.path.startswith("/plugins/"):
                 parts = u.path.split("/", 3)
                 if len(parts) < 4: return self.send(404, b"no plugin file", "text/plain")
@@ -1503,6 +2144,30 @@ class H(BaseHTTPRequestHandler):
                 if os.path.isdir(full): full = os.path.join(full, "index.html")
                 ext = os.path.splitext(full)[1].lower()
                 return self.file(full, CTYPES.get(ext, "application/octet-stream"), cache=False)
+            if u.path == "/api/vstrip":   # the trim strip's frames, frame i of n along the clip (webvideo.strip, owner 2026-10-06)
+                full = safe(resolve(q["p"][0]))
+                if os.path.splitext(full)[1].lower() not in VIDEO_EXT or not os.path.isfile(full): raise FileNotFoundError(full)
+                try: n, i = max(2, min(24, int(q.get("n", ["10"])[0]))), int(q.get("i", ["0"])[0])
+                except ValueError: return self.send(400, b"n and i are numbers", "text/plain")
+                if not 0 <= i < n: return self.send(400, b"i out of range", "text/plain")
+                dur = video_probe(full)[0]
+                if not dur: return self.send(404, b"length unknown", "text/plain")
+                try: outs = webvideo.strip(full, n, dur)
+                except RuntimeError as ex:
+                    return self.send(501 if str(ex) == "noffmpeg" else 500, json.dumps({"error": str(ex)[:300]}, ensure_ascii=False).encode(), "application/json")
+                return self.file(outs[i], "image/jpeg")
+            if u.path == "/video":   # a WebM copy of a library video for an engine that cannot play it (webvideo.py, owner 2026-10-05)
+                full = safe(resolve(q["p"][0]))
+                if os.path.splitext(full)[1].lower() not in VIDEO_EXT or not os.path.isfile(full): raise FileNotFoundError(full)
+                if q.get("fmt", ["webm"])[0] != "webm": return self.send(400, b"only fmt=webm", "text/plain")
+                if q.get("prep") == ["1"]:   # start it in the background (the card came on screen) and say how it stands
+                    if webvideo.ffmpeg(): webvideo.start(full)
+                    return self.send(200, json.dumps({"state": webvideo.state(full)}).encode(), "application/json")
+                try: out = webvideo.ensure(full)
+                except RuntimeError as ex:
+                    code = 501 if str(ex) == "noffmpeg" else 500
+                    return self.send(code, json.dumps({"error": str(ex)[:300]}, ensure_ascii=False).encode(), "application/json")
+                return self.ranged(out, "video/webm")
             if u.path == "/file":   # any file of the library by its type (3D models for plugins); inside the library only
                 full = safe(resolve(q["p"][0]))
                 ext = os.path.splitext(full)[1].lower()   # a json is plugin data that changes (a 3D scene the canvas rewrites): never cached
@@ -1520,6 +2185,7 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self.request_allowed(writing=True):
             return
+        if self.path.startswith("/api/storage/"): return storage.http(self, "POST")   # «Clear cache», old app copies to the Trash (storage_clean.py)
         if self.path == "/api/pages":
             n = int(self.headers.get("Content-Length", 0))
             try:
@@ -1546,6 +2212,58 @@ class H(BaseHTTPRequestHandler):
                 return self.send(409, json.dumps({"error": str(ex)}, ensure_ascii=False).encode(), "application/json")
             except Exception as ex:
                 return self.send(500, json.dumps({"error": f"{type(ex).__name__}: {str(ex)[:200]}"}, ensure_ascii=False).encode(), "application/json")
+        if self.path == "/api/foldercolors":   # {"path", "color" | null}: one folder's colour set or taken off (foldercolors.py)
+            n = int(self.headers.get("Content-Length", 0))
+            try:
+                d = json.loads(self.rfile.read(n) or b"{}")
+                if not isinstance(d, dict): raise ValueError("body")
+                out = foldercolors.write(d.get("path"), d.get("color"))
+            except ValueError:
+                return self.send(400, b"bad folder colour", "text/plain")
+            except OSError:
+                return self.send(500, b"not saved", "text/plain")
+            return self.send(200, json.dumps(out, ensure_ascii=False).encode(), "application/json")
+        if self.path in ("/api/filters", "/api/tagrule"):   # {"pins": [ids]}: the dock's pinned filters; {"group", "tag", "words"}: a project's own tag (filters.py, owner 2026-10-06)
+            n = int(self.headers.get("Content-Length", 0))
+            try:
+                d = json.loads(self.rfile.read(n) or b"{}")
+                if not isinstance(d, dict): raise ValueError("body")
+                if self.path == "/api/filters":
+                    return self.send(200, json.dumps(filters.write(d.get("pins")), ensure_ascii=False).encode(), "application/json")
+                entry = filters.add_tag(d.get("group"), d.get("tag"), d.get("words"))
+            except KeyError:
+                return self.send(409, b"this tag exists", "text/plain")
+            except (ValueError, re.error):
+                return self.send(400, b"bad filter", "text/plain")
+            except OSError:
+                return self.send(500, b"not saved", "text/plain")
+            tags.configure(filters.reload_rules()); lib_dirty()   # the next list is scanned afresh and carries the tag
+            return self.send(200, json.dumps({"group": entry[0], "tag": entry[1]}, ensure_ascii=False).encode(), "application/json")
+        if self.path == "/api/reveal":   # {"paths": [...]}: Finder shows these library files selected (owner 2026-10-05, «Показать в Finder»)
+            n = int(self.headers.get("Content-Length", 0))
+            try:
+                paths = json.loads(self.rfile.read(n) or b"{}").get("paths")
+                if not isinstance(paths, list) or not paths or not all(isinstance(p, str) and p for p in paths): raise ValueError("paths")
+            except (ValueError, AttributeError):
+                return self.send(400, b"bad reveal", "text/plain")
+            try:
+                return self.send(200, json.dumps(reveal(paths[:500])).encode(), "application/json")
+            except PermissionError:
+                return self.send(403, b"outside the library", "text/plain")
+            except FileNotFoundError:
+                return self.send(404, b"no such file", "text/plain")
+        if self.path == "/api/openfile":   # {"path"}: the library file opens in its default app (owner 2026-10-06, «Open in <App>»)
+            n = int(self.headers.get("Content-Length", 0))
+            try:
+                path = json.loads(self.rfile.read(n) or b"{}").get("path")
+            except (ValueError, AttributeError):
+                return self.send(400, b"bad open", "text/plain")
+            try:
+                return self.send(200, json.dumps(open_file(path), ensure_ascii=False).encode(), "application/json")
+            except PermissionError:
+                return self.send(403, b"outside the library", "text/plain")
+            except FileNotFoundError:
+                return self.send(404, b"no such file", "text/plain")
         if self.path == "/api/known":   # {"sha": [sha1, ...]} -> which of these pictures the library already has, and where
             n = int(self.headers.get("Content-Length", 0))
             try:
@@ -1553,13 +2271,38 @@ class H(BaseHTTPRequestHandler):
             except (ValueError, AttributeError, TypeError):
                 return self.send(400, b"bad request", "text/plain")
             return self.send(200, json.dumps({"known": dedup.known(shas)}, ensure_ascii=False).encode(), "application/json")
+        if self.path == "/api/propsclip/take":   # before a paste: the copied value's files here, {"map": {path there: path here}}
+            try: return self.send(200, json.dumps({"map": props_files_take()}, ensure_ascii=False).encode(), "application/json")
+            except Exception as ex: return self.send(500, str(ex)[:160].encode(), "text/plain")
+        if self.path in ("/api/propsclip", "/api/presets"):   # {from, src, at, kinds} | {name, at, from, kinds} or {name, delete: true}
+            n = int(self.headers.get("Content-Length", 0))
+            if n > 512 * 1024: return self.send(413, b"too big", "text/plain")
+            try:
+                d = json.loads(self.rfile.read(n) or b"{}")
+                if not isinstance(d, dict) or (not isinstance(d.get("kinds"), dict) and not d.get("delete")): raise ValueError("kinds")
+                if self.path == "/api/propsclip":
+                    if isinstance(d.get("files"), list): d["files"] = props_files_keep(d["files"])
+                    with LOCK:
+                        os.makedirs(os.path.dirname(PROPS_CLIP), exist_ok=True); tmp = PROPS_CLIP + ".tmp"
+                        with open(tmp, "w", encoding="utf-8") as fh: json.dump(d, fh, ensure_ascii=False)
+                        os.replace(tmp, PROPS_CLIP)
+                    return self.send(200, b"{}", "application/json")
+                name = str(d.get("name") or "").strip()[:60]
+                if not name: raise ValueError("name")
+                with LOCK:
+                    L = [p for p in presets_read() if p["name"] != name]
+                    if not d.get("delete"): L.append({"name": name, "at": int(d.get("at") or time.time() * 1000), "from": str(d.get("from") or "")[:80], "kinds": d["kinds"]})
+                    L.sort(key=lambda p: p["name"].lower()); _write_json(presets_path(), {"presets": L})
+                return self.send(200, json.dumps({"presets": L}, ensure_ascii=False).encode(), "application/json")
+            except (ValueError, TypeError) as ex:
+                return self.send(400, str(ex)[:120].encode(), "text/plain")
         if self.path == "/api/history":
             n = int(self.headers.get("Content-Length", 0))
             try:
                 req = json.loads(self.rfile.read(n) or b"{}"); nm = req.get("name", "main"); board_path(nm)
                 if req.get("action") == "save":
                     who = req.get("who") if req.get("who") in ("owner", "ai") else "owner"   # hy.py marks its own before/after versions as ai
-                    with LOCK: e = history.snapshot(nm, who, (req.get("label") or "").strip()[:120] or "версия")
+                    with LOCK: e = history.snapshot(nm, who, (req.get("label") or "").strip()[:120] or tr("version", "версия"))
                     return self.send(200, json.dumps(e, ensure_ascii=False).encode(), "application/json")
                 if req.get("action") == "restore":
                     def write(b):
@@ -1567,7 +2310,7 @@ class H(BaseHTTPRequestHandler):
                             cur = load_board(nm); b["revision"] = cur.get("revision", 0) + 1; b["saved"] = time.strftime("%Y-%m-%d %H:%M:%S")
                             p = board_path(nm); tmp = p + ".tmp"
                             json.dump(b, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=1); os.replace(tmp, p)
-                            try: events.record(nm, cur, b, req.get("who") if req.get("who") in ("owner", "ai") else "owner", "возврат к версии")
+                            try: events.record(nm, cur, b, req.get("who") if req.get("who") in ("owner", "ai") else "owner", tr("restored a version", "возврат к версии"))
                             except Exception: pass
                             return b["revision"]
                     rev = history.restore(nm, req["id"], write)
@@ -1602,12 +2345,12 @@ class H(BaseHTTPRequestHandler):
         if self.path.startswith("/api/snapshot"):   # body: png bytes; ?name=&folder=<library folder>&meta=<json>: a picture made by a plugin
             u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)
             n = int(self.headers.get("Content-Length", 0))
-            if n > MAX_UPLOAD: return self.send(413, "Файл больше 80 МБ".encode(), "text/plain; charset=utf-8")
+            if n > MAX_UPLOAD: return self.send(413, tr("The file is over 80 MB", "Файл больше 80 МБ").encode(), "text/plain; charset=utf-8")
             try:
                 meta = json.loads(q.get("meta", ["{}"])[0])
                 res = save_snapshot(self.rfile.read(n), q.get("name", ["shot"])[0], q.get("folder", ["plugins"])[0], meta)
             except Exception as ex:
-                return self.send(400, f"снимок не сохранен: {str(ex)[:160]}".encode(), "text/plain; charset=utf-8")
+                return self.send(400, (tr("snapshot not saved: ", "снимок не сохранен: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
             return self.send(200, json.dumps(res, ensure_ascii=False).encode(), "application/json")
         if self.path == "/api/notifications":   # {"action": "add", title, text, who, page, ids, previews, area} | {"action": "read", "ids": [...] or none for all}
             n = int(self.headers.get("Content-Length", 0))
@@ -1616,7 +2359,7 @@ class H(BaseHTTPRequestHandler):
                 if d.get("action") == "read": return self.send(200, json.dumps({"unread": read_notifications(d.get("ids"))}).encode(), "application/json")
                 return self.send(200, json.dumps(notify(d), ensure_ascii=False).encode(), "application/json")
             except (ValueError, AttributeError, TypeError) as ex:
-                return self.send(400, f"не записано: {str(ex)[:120]}".encode(), "text/plain; charset=utf-8")
+                return self.send(400, (tr("not saved: ", "не записано: ") + str(ex)[:120]).encode(), "text/plain; charset=utf-8")
         if self.path == "/api/stat":   # {"paths": [...]} -> {path: mtime_ns or null}: many files in one look (3D cards and their scenes)
             n = int(self.headers.get("Content-Length", 0))
             try: paths = [str(p) for p in json.loads(self.rfile.read(n) or b"{}").get("paths", [])][:5000]
@@ -1626,6 +2369,18 @@ class H(BaseHTTPRequestHandler):
                 try: out[rel] = os.stat(safe(rel)).st_mtime_ns
                 except (OSError, PermissionError): out[rel] = None
             return self.send(200, json.dumps(out).encode(), "application/json")
+        if self.path == "/api/models3d":   # {"paths": [...]} -> [entry | null, ...]: given 3D files, for a card's recent list (no walk of the library)
+            n = int(self.headers.get("Content-Length", 0))
+            try: paths = [str(p) for p in json.loads(self.rfile.read(n) or b"{}").get("paths", [])]
+            except (ValueError, AttributeError, TypeError): return self.send(400, b"bad request", "text/plain")
+            return self.send(200, json.dumps(models3d_info(paths), ensure_ascii=False).encode(), "application/json")
+        if self.path.startswith("/api/sprite"):   # ?p=<3D file>&n=&cols=&cell=: the png sheet of its turntable, drawn by a page with three.js
+            u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)
+            n = int(self.headers.get("Content-Length", 0))
+            if n > SPRITE_MAX: return self.send(413, b"the sheet is over 32 MB", "text/plain")
+            try: res = save_sprite(q["p"][0], self.rfile.read(n), int(q["n"][0]), int(q["cols"][0]), int(q["cell"][0]))
+            except (KeyError, ValueError, PermissionError, OSError) as ex: return self.send(400, ("not saved: " + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
+            return self.send(200, json.dumps(res).encode(), "application/json")
         if self.path == "/api/settings":   # {key: value | null}: settings of the whole app
             n = int(self.headers.get("Content-Length", 0))
             try: change = json.loads(self.rfile.read(n) or b"{}"); assert isinstance(change, dict)
@@ -1634,7 +2389,7 @@ class H(BaseHTTPRequestHandler):
         if self.path.startswith("/api/htmlstill"):   # ?p=<page.html>&w=&h=: a still of an HTML frame (Hyimg-frames)
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             try: res = html_still(q["p"][0], q.get("w", ["1440"])[0], q.get("h", ["900"])[0], self.server.server_port)
-            except (KeyError, ValueError, PermissionError, FileNotFoundError) as ex: return self.send(400, f"нет снимка: {str(ex)[:160]}".encode(), "text/plain; charset=utf-8")
+            except (KeyError, ValueError, PermissionError, FileNotFoundError) as ex: return self.send(400, (tr("no snapshot: ", "нет снимка: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
             return self.send(200, json.dumps(res).encode(), "application/json")
         if self.path.startswith("/api/plugin/"):   # /api/plugin/<plugin>/<route>: a plugin's own server route (plugin_routes above)
             u = urllib.parse.urlparse(self.path); parts = u.path.split("/")
@@ -1652,15 +2407,15 @@ class H(BaseHTTPRequestHandler):
         if self.path.startswith("/api/file"):   # body: the bytes; ?p=3d/<...>.json|.glb: plugin data (a 3D scene and its geometry)
             u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)
             n = int(self.headers.get("Content-Length", 0))
-            if n > (FRAME_MAX if q.get("p", [""])[0].startswith("frames/") else MAX_UPLOAD): return self.send(413, "Файл слишком большой".encode(), "text/plain; charset=utf-8")
+            if n > (FRAME_MAX if q.get("p", [""])[0].startswith("frames/") else MAX_UPLOAD): return self.send(413, tr("The file is too large", "Файл слишком большой").encode(), "text/plain; charset=utf-8")
             try: res = save_plugin_file(q.get("p", [""])[0], self.rfile.read(n))
-            except (ValueError, PermissionError) as ex: return self.send(400, f"не записано: {str(ex)[:160]}".encode(), "text/plain; charset=utf-8")
+            except (ValueError, PermissionError) as ex: return self.send(400, (tr("not saved: ", "не записано: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
             return self.send(200, json.dumps(res).encode(), "application/json")
         if self.path.startswith("/api/upload"):   # body: the image bytes (?name=file name), or JSON {"url": ...} for a picture dragged from a web page
             u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)
             n = int(self.headers.get("Content-Length", 0))
             if n > MAX_UPLOAD:
-                return self.send(413, "Файл больше 80 МБ".encode(), "text/plain; charset=utf-8")
+                return self.send(413, tr("The file is over 80 MB", "Файл больше 80 МБ").encode(), "text/plain; charset=utf-8")
             body = self.rfile.read(n)
             try:
                 if (self.headers.get("Content-Type") or "").startswith("application/json"):
@@ -1669,7 +2424,7 @@ class H(BaseHTTPRequestHandler):
                 else:
                     res = add_image(body, name=q.get("name", [""])[0])
             except Exception as ex:
-                return self.send(400, f"Не получилось добавить картинку: {str(ex)[:160]}".encode(), "text/plain; charset=utf-8")
+                return self.send(400, (tr("Couldn't add the image: ", "Не получилось добавить картинку: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
             return self.send(200, json.dumps(res, ensure_ascii=False).encode(), "application/json")
         if self.path.startswith("/api/board"):
             n = int(self.headers.get("Content-Length", 0))
@@ -1681,7 +2436,7 @@ class H(BaseHTTPRequestHandler):
                 new = json.loads(self.rfile.read(n) or b"{}")
                 code, res = save_board(nm, new)
                 if code == 200:
-                    try: events.record(nm, old, new, (q.get("who") or ["owner"])[0][:20], (q.get("label") or [""])[0])
+                    try: events.record(nm, old, new, (q.get("who") or ["owner"])[0][:20], (q.get("label") or [""])[0], (q.get("agent") or [""])[0])
                     except Exception as ex: res["events_error"] = str(ex)[:160]
                     try:
                         if history.auto(nm, load_board(nm)): res["snapshot"] = True
@@ -1714,6 +2469,37 @@ class H(BaseHTTPRequestHandler):
         except PermissionError:
             return self.send(400, b"bad image path", "text/plain")
         self.send(200, json.dumps(cur, ensure_ascii=False).encode(), "application/json")
+
+
+# One guard for every request (2026-10-06, found by the unit tests): a handler that raised answered nothing, the connection was dropped
+# and the page saw a network error instead of a status it could show (/api/events?limit=abc, /thumb?s=big, feedback for a file that is
+# gone, an answer for a picture without questions, a body that is not JSON). Now a bad value is a 400, a missing file a 404, anything
+# else a 500 with its message and a line in the log; a client that went away is left alone. Nothing is sent twice: once the status
+# line is out (send_response marks it), the error only goes to the log.
+def _guarded(method):
+    def run(self):
+        self._answered = False
+        try:
+            return method(self)
+        except (BrokenPipeError, ConnectionResetError):
+            raise
+        except Exception as ex:
+            code = 400 if isinstance(ex, (ValueError, TypeError, json.JSONDecodeError)) else 404 if isinstance(ex, FileNotFoundError) else 500
+            if code == 500 or self._answered:
+                sys.stderr.write(f"{self.command} {self.path}: {type(ex).__name__}: {ex}\n")
+            if not self._answered:
+                self.send(code, f"{type(ex).__name__}: {str(ex)[:200]}".encode(), "text/plain; charset=utf-8")
+    run.__name__ = method.__name__
+    return run
+
+
+_send_response = H.send_response
+def _marked_send_response(self, *a, **k):
+    self._answered = True
+    return _send_response(self, *a, **k)
+H.send_response = _marked_send_response
+for _m in ("do_GET", "do_POST", "do_HEAD"):
+    if hasattr(H, _m): setattr(H, _m, _guarded(getattr(H, _m)))
 
 
 # Live updates (owner 2026-10-01: "when the AI adds pictures, the board and the library should update without a reload").
@@ -1787,30 +2573,11 @@ def warm():
             pass
 
 
-def monitor_parent(parent_pid: int) -> None:
-    """Release listeners and the writer lease if the launching app disappears."""
-    while os.getppid() == parent_pid:
-        try:
-            os.kill(parent_pid, 0)
-        except ProcessLookupError:
-            break
-        time.sleep(0.5)
-    os._exit(0)
-
-
 def main() -> None:
     """Hold one writer lease for the state folder across every listener."""
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 4180
     compat = int(os.environ.get("HYIMG_COMPAT_PORT", "0"))
-    parent_setting = os.environ.get("HYIMG_PARENT_PID")
-    if parent_setting is not None:
-        try:
-            parent_pid = int(parent_setting)
-        except ValueError as exc:
-            raise SystemExit("HYIMG_PARENT_PID must be an integer greater than one") from exc
-        if parent_pid <= 1 or parent_pid != os.getppid():
-            raise SystemExit("HYIMG_PARENT_PID must identify the launching parent process")
-        threading.Thread(target=monitor_parent, args=(parent_pid,), daemon=True).start()
+    lifetime.start(H)   # the app's server lives with the app; any other ends with its parent or after 20 idle minutes (lifetime.py)
     ports = list(dict.fromkeys([port] + ([compat] if compat else [])))
     os.makedirs(HERE, exist_ok=True)
     with open(os.path.join(HERE, ".hyimg-server.lock"), "a+", encoding="utf-8") as lease:
@@ -1827,7 +2594,7 @@ def main() -> None:
                     raise SystemExit(f"Cannot bind Hyimg port {listener}: {exc}") from exc
                 stack.callback(server.server_close)
                 servers.append(server)
-            os.makedirs(THUMBS, exist_ok=True)
+            thumbcache.start()   # the old <state>/_thumbs moved into the cache, its ceiling kept behind
             threading.Thread(target=watch_library, daemon=True).start()   # live updates of the library (/api/changes)
             for server in servers[1:]:
                 threading.Thread(target=server.serve_forever, daemon=True).start()

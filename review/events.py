@@ -6,6 +6,10 @@ import json, os, time
 
 from config import BOARDS
 
+# The labels this file writes for the interface in the app's language (owner 2026-10-06: «make 2 versions, Russian and English,
+# switchable in settings»): server.py sets tr to its own (the app's setting cv.lang); alone, English.
+tr = lambda en, ru: en
+
 KEEP = 3000          # events per page; about a month of busy work
 SAMPLE = 24          # pictures remembered per event for the thumbnails
 FOLD_S = 150         # moves of one author closer than this fold into one event
@@ -36,7 +40,7 @@ def diff(old, new):
     for g in new_groups:
         mem = ng[g].get("members", [])
         pics = [m for m in mem if _is_pic(ni.get(m))]
-        out.append({"kind": "group", "ids": [g], "title": _first(ng[g].get("title"), 80) or "Группа", "count": len(pics),
+        out.append({"kind": "group", "ids": [g], "title": _first(ng[g].get("title"), 80) or tr("Group", "Группа"), "count": len(pics),
                     "paths": [ni[m]["path"] for m in pics[:SAMPLE]], "new": sum(1 for m in pics if m in added)})
     rest = [i for i in added if i not in in_new_group]
     if rest:
@@ -45,7 +49,7 @@ def diff(old, new):
         out.append({"kind": "remove", "ids": gone[:200], "count": len(gone), "paths": [oi[i]["path"] for i in gone[:SAMPLE]]})
     for g in og:
         if g not in ng:
-            out.append({"kind": "group-remove", "ids": [g], "title": _first(og[g].get("title"), 80) or "Группа",
+            out.append({"kind": "group-remove", "ids": [g], "title": _first(og[g].get("title"), 80) or tr("Group", "Группа"),
                         "count": sum(1 for m in og[g].get("members", []) if _is_pic(oi.get(m)))})
         elif (og[g].get("title") or "") != (ng[g].get("title") or ""):
             out.append({"kind": "rename", "ids": [g], "title": _first(ng[g].get("title"), 80), "was": _first(og[g].get("title"), 80)})
@@ -68,7 +72,8 @@ def diff(old, new):
     return out
 
 
-def record(page, old, new, who="owner", label=""):
+def record(page, old, new, who="owner", label="", agent=""):
+    """agent: the name of the agent behind an AI save (hy.py sends HYIMG_AGENT, e.g. Codex): Home names it in a board's news"""
     evs = diff(old, new)
     if not evs: return 0
     p = _path(page); os.makedirs(os.path.dirname(p), exist_ok=True)
@@ -79,7 +84,8 @@ def record(page, old, new, who="owner", label=""):
     for e in evs:
         e.update(t=t, ts=now, who=who, rev=new.get("revision"))
         if label: e["label"] = label[:120]
-        if e["kind"] == "move" and last and last.get("kind") == "move" and last.get("who") == who and now - last.get("ts", 0) < FOLD_S:
+        if agent: e["agent"] = agent[:40]
+        if e["kind"] == "move" and last and last.get("kind") == "move" and last.get("who") == who and last.get("agent", "") == e.get("agent", "") and now - last.get("ts", 0) < FOLD_S:
             ids = list(dict.fromkeys(e["ids"] + last["ids"]))[:200]
             paths = list(dict.fromkeys(e["paths"] + last.get("paths", [])))[:SAMPLE]
             titles = list(dict.fromkeys(e.get("titles", []) + last.get("titles", [])))[:4]

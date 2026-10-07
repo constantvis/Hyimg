@@ -46,8 +46,6 @@
   font: 500 12px var(--sans); box-shadow: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 :root[data-ui="studio"] #sets .opts button:hover { color: var(--ink); }
 :root[data-ui="studio"] #sets .opts button[aria-pressed=true] { background: var(--raise2); color: var(--ink); box-shadow: var(--st-shadow-s); }
-:root[data-ui="studio"] #sets .range { height: var(--st-h); border-radius: var(--st-r); background: var(--raise); padding: 0 10px; }
-:root[data-ui="studio"] #sets input[type=range] { accent-color: var(--ink); }
 
 /* notifications, keys, pages, the right-click menu */
 :root[data-ui="studio"] #ntf .nt { border-radius: var(--st-r); }
@@ -109,14 +107,8 @@
 :root[data-ui="studio"] .th { border-radius: 6px; }
 :root[data-ui="studio"] .th.on::after { border-radius: 6px; }
 
-/* sliders as DialKit draws them: a field filled up to the value, the label and the number inside (canvas.html sets --p) */
-:root[data-ui="studio"] #sets .sh:has(+ .range) { position: relative; z-index: 1; height: var(--st-h); margin: 4px 0 calc(-1 * var(--st-h) - 6px); padding: 0 10px;
-  display: flex; align-items: center; justify-content: space-between; color: var(--ink); font: 500 12px var(--sans); pointer-events: none; }
-:root[data-ui="studio"] #sets .sh:has(+ .range) span { float: none; color: var(--ink); }
-:root[data-ui="studio"] #sets .range { -webkit-appearance: none; appearance: none; height: var(--st-h); margin: 0; padding: 0; border-radius: var(--st-r);
-  background: linear-gradient(to right, color-mix(in srgb, var(--ink) 16%, var(--raise)) var(--p, 50%), var(--raise) var(--p, 50%)); }
-:root[data-ui="studio"] #sets .range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 3px; height: 16px; border-radius: 2px; background: var(--sub); }
-:root[data-ui="studio"] #sets .range::-moz-range-thumb { width: 3px; height: 16px; border: 0; border-radius: 2px; background: var(--sub); }
+/* the app's one slider (ui/slider.css) takes this look's height and corners */
+:root[data-ui="studio"] .hy-slider { --hy-sl-h: var(--st-h); --hy-sl-r: var(--st-r); }
 
 /* what is on the board keeps its own type: titles and notes measure their boxes with it, a change of look must not move them */
 :root[data-ui="studio"] #world { font-family: "Geist", -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 13px; }

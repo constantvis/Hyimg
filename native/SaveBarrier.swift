@@ -5,7 +5,7 @@ final class SaveBarrier {
                       evaluate: (@escaping (Result<Bool, Error>) -> Void) -> Void,
                       completion: @escaping (Result<Void, Error>) -> Void) {
         if loading {
-            completion(.failure(RegistryError.invalid("Страница еще загружается. Дождитесь открытия доски и повторите действие.")))
+            completion(.failure(RegistryError.invalid(L("The page is still loading. Wait for the board to open and try again."))))
             return
         }
         guard loaded else { completion(.success(())); return }
@@ -19,14 +19,14 @@ final class SaveBarrier {
             completion(result)
         }
         let timer = DispatchWorkItem {
-            finish(.failure(RegistryError.invalid("Страница не подтвердила сохранение за 15 секунд. Проверьте соединение с сервером и повторите действие.")))
+            finish(.failure(RegistryError.invalid(L("The page did not confirm saving within 15 seconds. Check the connection to the server and try again."))))
         }
         timeoutWork = timer
         DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: timer)
         evaluate { result in
             switch result {
             case .success(true): finish(.success(()))
-            case .success(false): finish(.failure(RegistryError.invalid("Страница не смогла сохранить изменения. Действие отменено, доска остается открытой.")))
+            case .success(false): finish(.failure(RegistryError.invalid(L("The page could not save the changes. The action was canceled, the board stays open."))))
             case .failure(let error): finish(.failure(error))
             }
         }

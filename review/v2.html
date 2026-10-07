@@ -1,16 +1,26 @@
 <!doctype html>
-<html lang="ru" translate="no">
+<html lang="en" translate="no">
 <head>
 <meta name="google" content="notranslate">
 <meta charset="utf-8">
 <script src="/ui/settings.js"></script>   <!-- the app's settings, the same in every project (owner 2026-10-04); first, before anything reads them -->
+<script src="/ui/i18n.js"></script>   <!-- English or Russian, the app's setting cv.lang (owner 2026-10-06); its words in lang-*.js -->
+<script src="/ui/lang-common.js"></script>
+<script src="/ui/lang-library.js"></script>
 <script src="/ui/paper.js"></script>
+<script src="/ui/seg.js"></script><script src="/ui/entrance.js"></script>   <!-- the one choice switch; the entrance plays once -->
+<script src="/ui/slider.js"></script>   <!-- the app's one slider, the 3D editor's look: the card size (owner 2026-10-06: «why are the sliders everywhere not the same as in 3D») -->
 <script>hyPaper.fromStorage();   // the paper's colours (--paper, ui/look.css), before the first paint</script>
 <script>// the window is dragged by the empty part of its top band (ui/dragband.js): the library's bar is background when it fills the top
 window.HY_DRAG = { flat: "body:not(.cv-on) header.hy-dock, body:not(.cv-on) .filters" };</script>
 <script src="/ui/dragband.js"></script>
 <script src="/ui/keyhints.js"></script>   <!-- key caps on buttons only while ⌘ is held (owner 2026-10-05) -->
+<script src="/ui/icons.js"></script>   <!-- the app's icons, one per meaning (owner 2026-10-07); before the menus, which draw theirs from it -->
 <script src="/ui/menu.js"></script>
+<script src="/ui/spin.js"></script><script src="/ui/lib3d.js"></script>   <!-- the hover turn of a 3D file's preview (2026-10-06), a 3D file in the viewer -->
+<script src="/ui/video.js"></script>   <!-- the original video, or a WebM copy for an engine without H.264 (owner 2026-10-05) -->
+<script src="/ui/libvideo.js"></script>   <!-- a video card plays under the pointer (owner 2026-10-06) -->
+<script src="/ui/libanchor.js" defer></script>   <!-- the picture in view stays in place when the library's width changes (owner 2026-10-06) -->
 <script>   // the theme before the first paint (owner 2026-10-04: a white flash before the page loaded); the page's own code keeps it after
 try { const t = localStorage.getItem("cv.theme") || "auto"; document.documentElement.dataset.theme = t === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : t; } catch {}
 // beside the canvas the view switch waits for the board (owner: «no sense in showing it while loading»)
@@ -33,31 +43,28 @@ setTimeout(() => document.documentElement.classList.remove("cv-wait", "lib-wait"
 <title>Hyimg</title>
 <!-- ИИ-агенту: инструкция к этому проекту по адресу /agent на этом же сервере (например http://localhost:4180/agent). -->
 <link rel="help" href="/agent" title="Инструкция для ИИ-агента">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap">
 <!-- the look the canvas settings chose (owner 2026-10-04): «Классика» or «Студия», set before the first paint -->
 <script>try { document.documentElement.dataset.ui = localStorage.getItem("cv.ui") || "classic"; } catch { document.documentElement.dataset.ui = "classic"; }
 try { const de = document.documentElement; de.dataset.shadow = localStorage.getItem("cv.shadow") || "1"; de.dataset.shape = localStorage.getItem("cv.shape") || "round"; } catch {}   // ui/look.css</script>
-<link rel="stylesheet" href="/ui/ui.css"><link rel="stylesheet" href="/ui/studio.css"><link rel="stylesheet" href="/ui/studio-lib.css"><link rel="stylesheet" href="/ui/look.css">
+<link rel="stylesheet" href="/ui/tokens.css">   <!-- the app's tokens, one source: the palette, heights, corners (ui/tokens.css) -->
+<link rel="stylesheet" href="/ui/ui.css"><link rel="stylesheet" href="/ui/slider.css"><link rel="stylesheet" href="/ui/studio.css"><link rel="stylesheet" href="/ui/studio-lib.css">
+<link rel="stylesheet" href="/ui/hy/hy.css"><link rel="stylesheet" href="/ui/look.css"><script type="module" src="/ui/hy/index.js"></script>   <!-- the primitives (ui/hy) -->
 <style>
 /* Review page v2.2 (2026-09-28): minimal, v0 / shadcn look — Geist, zinc neutrals, rounded pills, strong type contrast */
-:root {
-  --bg: #fafafa; --panel: #ffffff; --raise: #f4f4f5; --ink: #09090b; --sub: #52525b; --muted: #a1a1aa; --line: #e4e4e7;
-  --on: #09090b; --on-ink: #fafafa;
+:root {   /* the palette is ui/tokens.css (the selection's blue the board's, owner 2026-10-07: «консистентные цвета»); the library's own here */
+  --bg: #fafafa; --on: #09090b; --on-ink: #fafafa;   /* the light ground is the library's own (the dark one is the palette's) */
   --good: #16a34a; --good-bg: #dcfce7; --mid: #52525b; --mid-bg: #e4e4e7; --bad: #e11d48; --bad-bg: #ffe4e6; --idea: #d97706; --idea-bg: #fef3c7;
   --shade: rgba(250, 250, 250, .96); --ring: rgba(9, 9, 11, .12);
   --sans: "Geist", "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #09090b; --panel: #0c0c0e; --raise: #18181b; --ink: #fafafa; --sub: #a1a1aa; --muted: #71717a; --line: #27272a;
     --on: #fafafa; --on-ink: #09090b;
     --good: #22c55e; --good-bg: rgba(34, 197, 94, .14); --mid: #d4d4d8; --mid-bg: #27272a; --bad: #fb7185; --bad-bg: rgba(244, 63, 94, .14); --idea: #fbbf24; --idea-bg: rgba(251, 191, 36, .13);
     --shade: rgba(9, 9, 11, .97); --ring: rgba(250, 250, 250, .14);
   }
 }
 :root[data-theme="dark"] {
-  --bg: #09090b; --panel: #0c0c0e; --raise: #18181b; --ink: #fafafa; --sub: #a1a1aa; --muted: #71717a; --line: #27272a;
   --on: #fafafa; --on-ink: #09090b;
   --good: #22c55e; --good-bg: rgba(34, 197, 94, .14); --mid: #d4d4d8; --mid-bg: #27272a; --bad: #fb7185; --bad-bg: rgba(244, 63, 94, .14); --idea: #fbbf24; --idea-bg: rgba(251, 191, 36, .13);
   --shade: rgba(9, 9, 11, .97); --ring: rgba(250, 250, 250, .14);
@@ -103,9 +110,8 @@ section h2 span { font-size: 13px; font-weight: 400; color: var(--muted); letter
 h3.batch { font-size: 13px; font-weight: 500; color: var(--sub); margin: 20px 0 10px; display: flex; gap: 8px; align-items: baseline; }
 h3.batch b { color: var(--ink); font-weight: 600; }
 .grid { --cardmin: 168px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cardmin), 1fr)); gap: 12px; }
-.card { position: relative; background: var(--raise); border: 0; padding: 0; border-radius: 14px; overflow: hidden; aspect-ratio: 3 / 4; display: block; width: 100%;
-  transition: transform .15s ease, box-shadow .15s ease; }
-.card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+.card { position: relative; background: var(--raise); border: 0; padding: 0; border-radius: 14px; overflow: hidden; aspect-ratio: 3 / 4; display: block; width: 100%; }
+/* no lift under the pointer (owner 2026-10-06: «remove the rising animation on hover over a picture or an object in the library») */
 .card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .card .nm { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 10px 8px; font-size: 11px; font-weight: 500; color: #fff; text-align: left;
   background: linear-gradient(transparent, rgba(0,0,0,.6)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity .15s; }
@@ -113,7 +119,7 @@ h3.batch b { color: var(--ink); font-weight: 600; }
 .card .st { position: absolute; top: 8px; left: 8px; right: 38px; display: flex; flex-wrap: wrap; gap: 4px; }   /* pills wrap to a second line instead of running off the card */
 /* canvas state as an icon, bottom right (owner 2026-09-29) */
 .card .cvs { position: absolute; right: 8px; bottom: 8px; width: 22px; height: 22px; border-radius: 999px; display: grid; place-items: center; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
-.card .cvs.onb { background: #0a84ff; } .card .cvs.rmv { background: rgba(0,0,0,.65); color: #d4d4d8; }
+.card .cvs.onb { background: var(--sel); } .card .cvs.rmv { background: rgba(0,0,0,.65); color: #d4d4d8; }
 body.cv-on .pill { font-size: 10px; padding: 2px 6px; }
 body.cv-on .card .st { top: 6px; left: 6px; gap: 3px; }
 .pill { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; color: #fff; backdrop-filter: blur(6px); line-height: 1.2; }
@@ -128,10 +134,10 @@ body.cv-on .card .st { top: 6px; left: 6px; gap: 3px; }
 #qblock .qa { width: 100%; min-height: 44px; resize: vertical; font-size: 14px; line-height: 1.45; }
 #qblock .qs { font-size: 11px; color: var(--muted); }
 /* filter "?" (owner 2026-09-29): the same round badge as on the cards; orange while unanswered questions exist, grey when all answered */
-.seg .askf { display: grid; place-items: center; padding: 0 8px; }
-.seg .askf .qi { width: 22px; height: 22px; border-radius: 999px; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--raise); color: var(--muted); }
-.seg .askf.has .qi { background: #ff9f0a; color: #111; }
-.seg .askf[aria-pressed=true] .qi { box-shadow: 0 0 0 2px color-mix(in srgb, #ff9f0a 45%, transparent); }
+:is(.seg, .fcap) .askf { display: grid; place-items: center; padding: 0 8px; }
+:is(.seg, .fcap) .askf .qi { width: 22px; height: 22px; border-radius: 999px; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--raise); color: var(--muted); }
+:is(.seg, .fcap) .askf.has .qi { background: #ff9f0a; color: #111; }
+:is(.seg, .fcap) .askf[aria-pressed=true] .qi { box-shadow: 0 0 0 2px color-mix(in srgb, #ff9f0a 45%, transparent); }
 /* the entrance (owner 2026-10-04: «the UI comes in scaling 1.3 > 1 with easing»): the library's own controls; the board in the canvas does its own */
 @keyframes hyInS { from { scale: 1.3; } to { scale: 1; } } @keyframes hyInO { from { opacity: 0; } to { opacity: 1; } }
 
@@ -143,12 +149,26 @@ body.cv-on .card .st { top: 6px; left: 6px; gap: 3px; }
 /* (their origins: layOrigins, at the window's centre) */
 .pill.kd { background: rgba(20,20,22,.72); letter-spacing: .04em; }   /* the format of a PSD, AI, TIFF, SVG; ▶ and the length of a video */
 #vid { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; line-height: normal; }
-.pill.onb { background: #0a84ff; } .pill.rmv { background: rgba(0,0,0,.55); color: #d4d4d8; }
+.pill.onb { background: var(--sel); } .pill.rmv { background: rgba(0,0,0,.55); color: #d4d4d8; }
 .pill.note { background: rgba(0,0,0,.5); } .pill.new { background: rgba(255,255,255,.9); color: #09090b; } .pill.chg { background: rgba(124,58,237,.9); } .pill.qa { background: rgba(0,0,0,.6); color: #fda4af; }
 .card .sc { position: absolute; right: 8px; top: 8px; font-size: 11px; font-weight: 600; background: rgba(0,0,0,.5); color: #fff; padding: 3px 8px; border-radius: 999px; backdrop-filter: blur(6px); }
 .card.v-no img { opacity: .35; }
 .empty { color: var(--sub); padding: 48px 0; }
-
+/* a file with nothing in it or one that cannot be read (owner 2026-10-06: Dropbox had not brought down 105 of 111 files and the library
+   showed almost nothing): its card is there, drawn as an outline with the reason, its name always on; the note above says how many */
+.card.empty { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); cursor: default; padding: 0; color: var(--muted); }
+.card.empty .ph { position: absolute; inset: 0; display: grid; place-content: center; gap: 4px; padding: 14px 10px 30px; text-align: center; font-size: 11px; line-height: 1.35; }
+.card.empty .ph b { font-weight: 600; color: var(--sub); } .card.empty .ph small { font-size: 10px; color: var(--muted); overflow-wrap: anywhere; }
+.card.empty .nm { opacity: 1; background: none; color: var(--sub); }
+.emptynote { margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+/* a PDF in the viewer (owner 2026-10-06): the page, and ‹ 2 / 5 › over its top edge; PageUp and PageDown (or [ and ]) step, ← → still go to the next frame */
+.pgbar { position: absolute; top: 20px; left: 50%; z-index: 2; display: inline-flex; align-items: center; gap: 2px; height: 36px; padding: 0 4px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--sub); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums;
+  opacity: 0; visibility: hidden; transform: translate(-50%, -6px); transition: opacity .25s cubic-bezier(.32,.72,0,1), transform .25s cubic-bezier(.32,.72,0,1), visibility 0s linear .25s; }
+.pgbar.on { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition: opacity .25s cubic-bezier(.32,.72,0,1), transform .25s cubic-bezier(.32,.72,0,1), visibility 0s; }
+.pgbar button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--sub); display: grid; place-items: center; transition: color .15s cubic-bezier(.32,.72,0,1), background .15s cubic-bezier(.32,.72,0,1); }
+.pgbar button:hover:not(:disabled) { color: var(--ink); background: var(--raise); } .pgbar button:disabled { opacity: .35; }
+.pgbar #pgN { min-width: 3.6em; text-align: center; }
 /* ---- viewer */
 .viewer { position: fixed; inset: 0; z-index: 20; background: var(--shade); display: none; }
 .viewer.open { display: grid; grid-template-columns: 1fr 400px; }
@@ -170,9 +190,7 @@ body.cv-on .card .st { top: 6px; left: 6px; gap: 3px; }
 .icon:hover { background: var(--raise); color: var(--ink); }
 .helpbox { font-size: 13px; color: var(--sub); display: grid; gap: 8px; padding-bottom: 18px; }
 .helpbox[hidden] { display: none; }
-/* keys look like keycaps (owner 2026-09-29) */
-kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; margin: 0 1px; vertical-align: 1px;
-  font: 600 11px/1 var(--sans); color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; }
+/* keys look like keycaps (owner 2026-09-29): ui/hy/kbd.css, the key cap of the whole app */
 
 /* verdict: one pill track, like shadcn tabs */
 .verdicts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; margin: 0 24px 24px; background: var(--raise); border-radius: 999px; }
@@ -208,7 +226,7 @@ kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; 
 .use button[aria-pressed=true] { background: var(--on); border-color: var(--on); color: var(--on-ink); }
 textarea { width: 100%; min-height: 88px; resize: vertical; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-size: 14px; line-height: 1.5; }
 textarea::placeholder { color: var(--muted); }
-textarea:focus { outline: none; border-color: var(--muted); box-shadow: 0 0 0 3px var(--ring); }
+textarea:focus { outline: none; border-color: var(--muted); }   /* no focus ring (owner 2026-10-05), the border's colour shows the typing */
 .saved { font-size: 12px; color: var(--muted); margin-top: 8px; min-height: 16px; }
 .pfoot { border-top: 1px solid var(--line); padding-top: 16px; padding-bottom: 24px; display: grid; gap: 14px; margin-top: auto; }
 details summary { cursor: pointer; font-size: 13px; color: var(--sub); list-style: none; }
@@ -240,7 +258,7 @@ details summary::after { content: " ↓"; color: var(--muted); } details[open] s
 #ann { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .stage[data-tool=arrow] .frame, .stage[data-tool=mark] .frame, .stage[data-tool=box] .frame, .stage[data-tool=box] img, .stage[data-tool=arrow] img, .stage[data-tool=mark] img { cursor: crosshair; }
 #ann .hl { opacity: 1; } #ann g.dim { opacity: .35; }
-.hint2 { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); font-size: 12px; color: var(--muted); pointer-events: none; white-space: nowrap; }
+.hint2 { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); pointer-events: none; white-space: nowrap; }   /* a footnote: ui/look.css .hy-hint */
 .stage .frame, .stage img { cursor: crosshair; }
 .tools { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); display: inline-flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
 .tools button { height: 32px; padding: 0 14px; border: 0; background: transparent; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--sub); }
@@ -375,8 +393,8 @@ body:not(.cv-on) .fbar { position: sticky; top: 0; z-index: 6; margin: 0 24px; b
 .fdrawer { position: fixed; left: 13px; top: calc(var(--lt, 12px) + 49px); width: calc(var(--lw, 560px) - 2px); bottom: 13px; z-index: 12; overflow: auto; overscroll-behavior: contain;
   padding: 8px 10px 150px; box-sizing: border-box; border-radius: 0 0 17px 17px;
   background: color-mix(in srgb, var(--bg) 80%, transparent); -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1);
-  clip-path: inset(0 0 100% 0); visibility: hidden; transition: clip-path .22s cubic-bezier(.2,.8,.2,1), visibility 0s .22s; }
-.fdrawer.open { clip-path: inset(0 0 0 0); visibility: visible; transition: clip-path .22s cubic-bezier(.2,.8,.2,1), visibility 0s; }
+  clip-path: inset(0 0 100% 0); visibility: hidden; transition: clip-path .22s cubic-bezier(.32,.72,0,1), visibility 0s .22s; }
+.fdrawer.open { clip-path: inset(0 0 0 0); visibility: visible; transition: clip-path .22s cubic-bezier(.32,.72,0,1), visibility 0s; }
 body:not(.cv-on) .fdrawer { left: 24px; top: 120px; width: min(560px, calc(100vw - 48px)); bottom: 24px; border-radius: 14px; border: 1px solid var(--line); }
 @media (prefers-reduced-motion: reduce) { .fdrawer, .fdrawer.open { transition: none; } }
 .fdrawer .ftree { border: 0; background: transparent; padding: 0; margin: 0; }
@@ -402,7 +420,7 @@ body.fdock.cv-on header { left: calc(12px + var(--fw) + (var(--lw, 560px) - var(
 body.fdock #fgrip { display: block; }
 body.fdock.cv-on #fgrip { top: calc(var(--lt) + 1px); bottom: 13px; left: calc(13px + var(--fw) - 5px); }
 #fgrip::after { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 2px; border-radius: 1px; background: transparent; transition: background .15s; }
-#fgrip:hover::after, body.fg-drag #fgrip::after { background: #0a84ff; }
+#fgrip:hover::after, body.fg-drag #fgrip::after { background: var(--sel); }
 body.fg-drag { user-select: none; cursor: col-resize; }
 body.fg-drag #cvFrame { pointer-events: none; }
 /* with the folders docked beside the frames the path stands over the frames only and the folders go up to the panel's top (owner
@@ -425,7 +443,7 @@ body.fdock.cv-on main#list { padding-left: calc(var(--fw, 268px) + 16px); }
 .fcr.all { cursor: default; color: var(--ink); line-height: 30px; } .fcr.all:hover { background: transparent; }
 .fsep { display: grid; place-items: center; flex: 0 0 auto; padding: 0 1px; }   /* one chevron app-wide (ui/look.css .hy-chev) */
 .fcnt { margin-left: 4px; color: var(--muted); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
-.fbar .fpk { flex: 0 0 auto; color: #0a84ff; font-size: 11px; font-weight: 600; }
+.fbar .fpk { flex: 0 0 auto; color: var(--sel); font-size: 11px; font-weight: 600; }
 .ftree { margin: 4px 0 14px; padding: 6px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
 .ftree.shut { display: none; }
 .ftree .fhbtn { border: 0; background: transparent; color: var(--sub); font: 600 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
@@ -435,9 +453,12 @@ body.fdock.cv-on main#list { padding-left: calc(var(--fw, 268px) + 16px); }
 .frow { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px 0 calc(4px + var(--d) * 16px); border-radius: 8px; color: var(--sub); cursor: pointer; -webkit-user-drag: element; }
 .frow:hover { background: color-mix(in srgb, var(--raise) 85%, transparent); color: var(--ink); }
 .frow.on { background: var(--raise); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-.frow.picked { background: color-mix(in srgb, #0a84ff 22%, transparent); color: var(--ink); box-shadow: inset 0 0 0 1px #0a84ff; }
+.frow.picked { background: color-mix(in srgb, var(--sel) 22%, transparent); color: var(--ink); box-shadow: inset 0 0 0 1px var(--sel); }
 .frow .fx { width: 16px; height: 16px; flex: 0 0 auto; border: 0; background: transparent; color: var(--muted); padding: 0; font-size: 11px; cursor: pointer; }
 .frow .fi { flex: 0 0 auto; opacity: .8; }
+/* a folder's colour (owner 2026-10-06), a mark for finding your way, its own or a coloured folder's above it: the folder tinted, the name a touch */
+.frow.col .fi { color: var(--fcol); opacity: 1; } .frow.col .fi path { fill: color-mix(in srgb, var(--fcol) 28%, transparent); }
+.frow.col .fn { color: color-mix(in srgb, var(--fcol) 55%, var(--ink)); }
 .frow .fx { display: grid; place-items: center; }
 .frow .fx .tri { transition: transform .16s ease; } .frow .fx .hy-chev { color: inherit; }
 .frow .fx .tri.open { transform: rotate(90deg); }
@@ -456,8 +477,8 @@ body.fdock.cv-on main#list { padding-left: calc(var(--fw, 268px) + 16px); }
 .frow:hover .fi, .picking .frow .fi, .frow.picked .fi, .frow.inherited .fi { visibility: hidden; }
 .frow .fck:hover { border-color: var(--ink); }
 .frow.inherited .fck { opacity: .55; cursor: default; }
-.frow.inherited { background: color-mix(in srgb, #0a84ff 9%, transparent); color: var(--ink); }
-.frow .fck[aria-checked=true] { background: #0a84ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center / 12px no-repeat; border-color: #0a84ff; }
+.frow.inherited { background: color-mix(in srgb, var(--sel) 9%, transparent); color: var(--ink); }
+.frow .fck[aria-checked=true] { background: var(--sel) var(--hy-ic-check-on) center / 12px no-repeat; border-color: var(--sel); }
 .frow .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .frow .fc { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 body.cv-on header #coll { display: none; }
@@ -473,7 +494,7 @@ body.cv-on header #coll { display: none; }
 /* one round button before the crumb opens and closes the library (owner 2026-10-04, instead of the three view buttons top right) */
 #tlibR { position: fixed; top: 12px; left: 12px; z-index: 17; width: 38px; height: 38px; box-sizing: border-box; padding: 0; border-radius: 999px; display: grid; place-items: center;
   cursor: pointer; border: 1px solid var(--line); color: var(--sub); background: color-mix(in srgb, var(--panel) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-:root.in-app:not(.hy-fs) #tlibR { left: 98px; }
+:root.in-app:not(.hy-fs) #tlibR { left: 100px; }   /* the row's gap after the capsule (ui/look.css --hy-row-gap) */
 /* the library opens only once the board's content is there (owner 2026-10-04): until the board's entrance the button is dimmed and takes no click */
 #tlibR { transition: opacity .35s ease, background-color .2s ease, color .2s ease, left .5s cubic-bezier(.32,.72,0,1); }
 :root.lib-wait #tlibR { opacity: .4; pointer-events: none; }
@@ -500,7 +521,8 @@ body.lwide { --lw: calc(100vw - 24px); }
 /* it comes in from the window's left edge, narrow, and widens as it slows down, one move on one clock (libMove; owner 2026-10-04:
    «drive in from the left and widen», then «it steps: the stop and the go on must be one smooth move, no delay after the press») */
 @media (prefers-reduced-motion: reduce) { body { transition: none; } }
-body.lwide #lgrip { display: none !important; }
+body.ed-open #lwide { display: none !important; }   /* a plugin's editor is open: the library opens at its normal width only (owner 2026-10-06) */
+body.lwide:not(.cv-drag) #lgrip { display: none !important; }   /* while it is dragged it stays, so the same drag can come back from full width */
 body:not(.cv-on) #tlibR { display: none; }   /* the library alone (?view=lib, for agents and tests) is its own page */
 /* the library panel starts under the top line (the capsule, the round button, the crumb): nothing of it goes under the window buttons */
 body.cv-on { --lt: 58px; }
@@ -544,11 +566,32 @@ body.cv-on:not(.cv-only) #lviewBtn { display: grid; }
   transition: opacity .2s ease, transform .3s cubic-bezier(.3, .8, .25, 1), visibility 0s .3s; }
 #lview.open { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .2s ease, transform .3s cubic-bezier(.3, .8, .25, 1), visibility 0s; }
 #lview .lvh { font: 500 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-#lview .lvm { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-#lview .lvm button { width: auto; height: 32px; border: 1px solid var(--line); border-radius: 999px; background: var(--raise); color: var(--sub); display: grid; place-items: center; cursor: pointer; }
-:root[data-shape=pro] #lview .lvm button { border-radius: 8px; }
-#lview .lvm button[aria-pressed=true] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-#lview input { width: 100%; margin: 0; accent-color: var(--ink); cursor: pointer; }
+/* the card view's choice is the app's one switch (ui/look.css .seg, owner 2026-10-06), as wide as the panel */
+#lview .lvm { display: flex; width: 100%; box-sizing: border-box; }
+#lview .lvm > button { flex: 1 1 0; min-width: 0; height: 28px; padding: 0; display: grid; place-items: center; }
+/* with room in the path bar the view and the size sit right in it, no button and no panel (owner 2026-10-06: «if there is room, why do
+   you hide these settings in a panel»); lvFit moves #lview into the bar after ⋯, where its button was, and back when the folder's name needs the room */
+#lview.inl { position: static; display: flex; align-items: center; gap: 10px; flex: none; width: auto; padding: 0 0 0 6px; margin-right: -34px;   /* into the button's place, before ⤢ */ border: 0; border-radius: 0; background: transparent;
+  box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; opacity: 1; transform: none; visibility: visible; pointer-events: auto; transition: none; }
+#lview.inl .lvh { display: none; }
+#lview.inl .lvm { width: 64px; }
+#lview.inl .lvm > button { height: 26px; }
+#lview.inl .hy-slider { width: 96px; }   /* the compact slider (lvFit gives it .sm) */
+body.lv-inline #lviewBtn { display: none !important; }
+
+/* ⌘. hides the interface (owner 2026-10-06): the library leaves with the canvas's controls, the same animation at the same time, as one
+   block (owner: «it blinks strangely»: it went through its own view change, a clip sliding left, apart from the rest); once out of
+   sight the view becomes the canvas alone, and it comes back as it was with a short fade */
+/* how they leave is a setting (owner 2026-10-06: «when items get back we don't need the full animation; maybe all the UI just zooms and
+   goes out of the screen; two options in the settings, zoom or slide»): Home's gear, cv.hideui, «zoom» by default. Coming back is only
+   a short fade, no slide or zoom (owner: «we don't need additional animation when they slide back in») */
+@keyframes hyUiOut { to { opacity: 0; translate: var(--hx, 0px) var(--hy, 0px); } }
+@keyframes hyUiZoom { to { opacity: 0; scale: 1.18; } }   /* around the window's centre (layOrigins in setUiHidden), as the board's */
+@keyframes hyUiBack { from { opacity: 0; } }
+#tlibR, #lwide, #lviewBtn, #lview, header.hy-dock, main, .fbar, .fdrawer, #lgrip, #fgrip { --hx: -16px; }
+:root.hy-hideui :is(#tlibR, #lwide, #lviewBtn, #lview, body.cv-on header.hy-dock, body.cv-on main, body.cv-on .fbar, body.cv-on .fdrawer, #lgrip, #fgrip) { animation: hyUiOut .36s cubic-bezier(.32,.72,0,1) both; pointer-events: none !important; }
+:root.hy-hideui[data-hideui=zoom] :is(#tlibR, #lwide, #lviewBtn, #lview, body.cv-on header.hy-dock, body.cv-on main, body.cv-on .fbar, body.cv-on .fdrawer, #lgrip, #fgrip) { animation-name: hyUiZoom; }
+:root.hy-ui-in:not(.hy-hideui) :is(#tlibR, #lwide, #lviewBtn, body.cv-on header.hy-dock, body.cv-on main, body.cv-on .fbar, body.cv-on .fdrawer) { animation: hyUiBack .2s cubic-bezier(.32,.72,0,1); }
 
 /* the library dock wraps onto new lines when narrow instead of scrolling sideways (owner 2026-09-29) */
 header { flex-wrap: wrap; justify-content: center; overflow: visible; }
@@ -562,46 +605,82 @@ header:has(.filters > :nth-child(2)) { border-radius: 24px; }
 .card .pick { position: absolute; top: 8px; right: 8px; z-index: 2; width: 22px; height: 22px; border-radius: 999px; border: 2px solid rgba(255,255,255,.9);
   background: rgba(0,0,0,.25); box-shadow: 0 1px 4px rgba(0,0,0,.35); opacity: 0; transition: opacity .12s; cursor: pointer; }
 .card:hover .pick, body.picking .card .pick { opacity: 1; }
-.card.picked .pick { background: #0a84ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12.5 4 4 8-9'/%3E%3C/svg%3E") center / 14px no-repeat; border-color: #0a84ff; }
-.card.picked { outline: 3px solid #0a84ff; outline-offset: -3px; }
+.card.picked .pick { background: var(--sel) var(--hy-ic-check-on) center / 14px no-repeat; border-color: var(--sel); }
+.card.picked { outline: 3px solid var(--sel); outline-offset: -3px; }
 .card:hover .sc, body.picking .card .sc { right: 38px; }
 /* floating select bar (owner 2026-09-29): appears once a card is picked, top centre of the library */
 .pickbar { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 16; display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 14px;
-  border-radius: 999px; background: #0a84ff; color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  border-radius: 999px; background: var(--sel); color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
 body.cv-on .pickbar { left: calc(12px + var(--lw, 560px) / 2); top: calc(var(--lt) + 12px); }
 .pickbar[hidden] { display: none; }
 .pickbar span { margin-right: 6px; }
 .pickbar button { height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: rgba(255,255,255,.18); color: #fff; font-size: 13px; font-weight: 500; }
 .pickbar button:hover { background: rgba(255,255,255,.3); }
 .pickbar button.x { width: 30px; padding: 0; display: grid; place-items: center; }
-/* tag filter (owner 2026-09-29): funnel in the dock opens every tag; each tag cycles off -> include (+) -> exclude (−);
-   only the active tags stay visible in the dock */
-.tfbtn { position: relative; width: 34px; height: 34px; border: 0; border-radius: 999px; background: var(--raise); color: var(--sub); display: inline-grid; place-items: center; padding: 0; flex: 0 0 auto; }
+/* The filter bar (owner 2026-10-06: «one block with a filter where some default filters already are, and they can be pinned in the
+   filter itself»). One capsule in the dock: the filter button (funnel, the number of active filters), the filters this project pinned,
+   then the active ones that are not pinned («+ Звери ×»). A chip cycles off -> shown (+) -> excluded (−) -> off; a rating chip and the 3D
+   files' mode are single choices. Chosen is the plate the app's .seg thumb is (var(--panel) with its ring); excluded is red; every change
+   of state eases (renderTF() updates a chip in place, so the colour moves instead of jumping). The window above holds every filter
+   the frames' json offers, with counts and a pin on each. */
+.fcap { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--raise); max-width: 100%; box-sizing: border-box; }
+.fc { border: 0; background: transparent; height: 28px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--sub); white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+  transition: background .3s cubic-bezier(.32,.72,0,1), color .3s cubic-bezier(.32,.72,0,1), box-shadow .3s cubic-bezier(.32,.72,0,1); }
+.fc:hover { color: var(--ink); }
+/* shown and excluded look as the window's chips do (owner 2026-10-06: «why does the filter below differ from the one above»): shown is
+   the ink plate, excluded is solid red, with the same + and − before the name */
+.fc.inc { background: var(--ink); color: var(--panel); box-shadow: none; }
+.fc.exc { background: var(--bad); color: #fff; box-shadow: none; }
+.fcap .fc.askf { display: inline-flex; align-items: center; gap: 4px; }
+.fc.exc .qi, .fc.inc .qi { background: transparent; color: inherit; box-shadow: none; }
+.fc i { font-style: normal; font-size: 10px; opacity: .6; }
+.fc.in { animation: fcIn .3s cubic-bezier(.32,.72,0,1); }
+@keyframes fcIn { from { opacity: 0; transform: scale(.85); } }
+.tfbtn { position: relative; width: 28px; height: 28px; border: 0; border-radius: 999px; background: transparent; color: var(--sub); display: inline-grid; place-items: center; padding: 0; flex: 0 0 auto; cursor: pointer;
+  transition: background .3s cubic-bezier(.32,.72,0,1), color .3s cubic-bezier(.32,.72,0,1); }
+.tfbtn:hover { color: var(--ink); }
 .tfbtn[aria-expanded=true], .tfbtn.on { background: var(--ink); color: var(--panel); }
-.tfbtn b { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #0a84ff; color: #fff; font: 600 10px/16px var(--sans); }
-.tfbtn b[hidden] { display: none; }
-.tfactive { display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 100%; justify-content: center; }
-.tfactive[hidden] { display: none; }
-.tfchip { height: 26px; padding: 0 10px; border: 0; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
-.tfchip.inc { background: #0a84ff; color: #fff; } .tfchip.exc { background: var(--bad); color: #fff; }
-.tfchip i { font-style: normal; opacity: .75; }
+.tfbtn hy-badge { position: absolute; top: -5px; right: -5px; }   /* the count of filters on: the app's badge (ui/hy/badge.css), placed here */
 .tfpanel { position: fixed; z-index: 17; bottom: 96px; left: 50%; transform: translateX(-50%); width: min(620px, calc(100vw - 32px)); max-height: 62vh; overflow: auto;
   padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: 20px; background: color-mix(in srgb, var(--panel) 92%, transparent);
   backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 16px 48px rgba(0,0,0,.4); }
+.tfpanel:not([hidden]) { animation: tfIn .32s cubic-bezier(.32,.72,0,1); }
+@keyframes tfIn { from { opacity: 0; translate: 0 10px; } }
 .tfpanel[hidden] { display: none; }
 body.cv-on .tfpanel { left: calc(12px + var(--lw, 560px) / 2); width: min(620px, calc(var(--lw, 560px) - 24px)); }
 .tfhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-.tfhead b.inc { color: #0a84ff; } .tfhead b.exc { color: var(--bad); }
-.tfhead button { border: 0; background: var(--raise); color: var(--sub); height: 28px; padding: 0 12px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+.tfhead b.inc { color: var(--ink); } .tfhead b.exc { color: var(--bad); }
+.tfhead button.hy-reset { height: 34px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 500; cursor: pointer; flex: none; }
+/* one Reset everywhere (owner 2026-10-06: «the reset buttons differ, they must be the same, and with too little room only the reset icon»):
+   the dock's and the window's are the same red button; where the room runs out it keeps only its icon */
+.hy-reset.ico > span { display: none; }
+.reset.hy-reset.ico { width: 34px !important; padding: 0 !important; }
 .tfg { margin-top: 10px; } .tfg h4 { margin: 0 0 6px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-.tfg div { display: flex; flex-wrap: wrap; gap: 6px; }
-.tfg button { height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--raise); color: var(--sub); font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
-.tfg button i { font-style: normal; font-size: 11px; color: var(--muted); }
-.tfg button.inc { background: #0a84ff; color: #fff; } .tfg button.exc { background: var(--bad); color: #fff; }
-.tfg button.inc i, .tfg button.exc i { color: rgba(255,255,255,.75); }
-.tfg button.zero { opacity: .4; }
-body.cv-on header .tfbtn { order: 3; }
-body.cv-on header .tfactive { order: 8; }
+.tfg > div { display: flex; flex-wrap: wrap; gap: 6px; }
+/* a filter in the window: its name and count, and the pin at the right; shown = the ink plate as the settings' options, excluded = red */
+.fchip { display: inline-flex; align-items: stretch; height: 30px; border-radius: 999px; background: var(--raise); color: var(--sub);
+  transition: background .3s cubic-bezier(.32,.72,0,1), color .3s cubic-bezier(.32,.72,0,1), opacity .3s cubic-bezier(.32,.72,0,1); }
+.fchip button { border: 0; background: none; color: inherit; cursor: pointer; }
+.fchip .fl { padding: 0 4px 0 12px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.fchip .fl i { font-style: normal; font-size: 11px; opacity: .6; }
+.fchip .fl b { font-weight: 500; }
+.fchip .pn { width: 26px; padding: 0 4px 0 0; display: grid; place-items: center; opacity: .3; transition: opacity .3s cubic-bezier(.32,.72,0,1); }
+.fchip:hover .pn { opacity: .7; } .fchip .pn:hover, .fchip .pn[aria-pressed=true] { opacity: 1; }
+.fchip .pn[aria-pressed=true] svg { fill: currentColor; }
+.fchip.inc { background: var(--ink); color: var(--panel); }
+.fchip.exc { background: var(--bad); color: #fff; }
+.fchip.zero { opacity: .4; }
+.tfadd { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.tfaddb { border: 0; background: none; color: var(--sub); height: 28px; padding: 0 4px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: color .3s cubic-bezier(.32,.72,0,1); }
+.tfaddb:hover { color: var(--ink); }
+#tgForm { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+#tgForm[hidden] { display: none; }
+#tgForm input { height: 32px; min-width: 0; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--raise); color: var(--ink); font-size: 13px; transition: border-color .3s cubic-bezier(.32,.72,0,1); }
+#tgForm input:focus { border-color: var(--sel); }
+#tgName { flex: 1 1 140px; } #tgWords { flex: 2 1 220px; } #tgGroup { flex: 1 1 120px; }
+#tgGo { height: 32px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--ink); color: var(--panel); font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity .3s cubic-bezier(.32,.72,0,1); }
+#tgGo:disabled { opacity: .5; }
+:root[data-shape=pro] #tgForm input, :root[data-shape=pro] #tgGo { border-radius: 8px; }
 .chk .ico { display: none; pointer-events: none; }   /* Safari: a click on an svg inside a label may not reach the checkbox */
 .chk.idle { opacity: .35; }
 /* compact floating library dock: row 1 = ↑↓ · collection · search · Брак · reset · counter, row 2 = verdict filters */
@@ -614,12 +693,11 @@ body.cv-on header .chk { order: 4; }
 body.cv-on header #reset { order: 5; }
 body.cv-on header .progress { order: 6; padding: 0 6px 0 2px; }
 body.cv-on header #vf { order: 7; flex: 1 1 100%; justify-content: space-between; }
-body.cv-on header #vf button { padding: 0 8px; }
-body.cv-on header #vf .lg { display: none; }
+body.cv-on header #vf .fc { padding: 0 8px; }
 body.cv-on .chk { width: 34px; padding: 0; justify-content: center; }
 body.cv-on .chk .ico { display: block; } body.cv-on .chk span { display: none; }
 /* search collapses to a magnifier while empty, opens on click */
-body.cv-on header #q { background: var(--raise) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 9px center; padding-left: 32px; width: 150px; }
+body.cv-on header #q { background: var(--raise) var(--hy-ic-search-sub) no-repeat 9px center / 16px; padding-left: 32px; width: 150px; }
 body.cv-on header #q:placeholder-shown:not(:focus) { width: 34px; padding: 0; color: transparent; cursor: pointer; }
 body.cv-on header #q:placeholder-shown:not(:focus)::placeholder { color: transparent; }
 body.cv-on header #q::-webkit-search-cancel-button { display: none; }
@@ -752,7 +830,7 @@ html:has(.viewer.open), body:has(.viewer.open) { overflow: hidden; overscroll-be
 .verdicts .fav[aria-pressed=true] { background: transparent !important; box-shadow: none; color: #ff2d6f !important; }
 .verdicts .fav[aria-pressed=true] svg { fill: #ff2d6f; stroke: #ff2d6f; transform: scale(1.12); }
 .pill.fav { background: #ff2d6f; color: #fff; }
-.seg .favf, .seg .favf[aria-pressed=true] { color: #ff2d6f; }
+:is(.seg, .fcap) .favf, :is(.seg, .fcap) .favf.inc, .fchip.favf .fl { color: #ff2d6f; }
 .reset { height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--ink); color: var(--panel); font-size: 13px; font-weight: 500; white-space: nowrap; }
 .reset[hidden] { display: none; }
 #iP a, #vPrompt a { color: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; -webkit-user-select: text; user-select: text; word-break: break-all; }
@@ -764,6 +842,17 @@ html:has(.viewer.open), body:has(.viewer.open) { overflow: hidden; overscroll-be
 #lctx button { display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: 9px; background: none; color: var(--sub); font: 500 13px var(--sans); text-align: left; cursor: default; white-space: nowrap; }
 #lctx button:hover:not(:disabled), #lctx button:focus-visible { background: var(--raise); color: var(--ink); outline: none; }
 #lctx button:disabled { color: var(--muted); }
+#lctx .sep { height: 1px; margin: 5px 6px; background: var(--line); }   /* under «Open in <App>», as the board's #ctx has it */
+/* the «3D» filter (owner 2026-10-06): a 3D file is a square tile whose picture is its turntable's first view and turns under the pointer (ui/spin.js) */
+.card.m3d { aspect-ratio: 1 / 1 !important; }
+.card.m3d .m3s { position: absolute; inset: 0; display: grid; place-items: center; background: var(--raise) center / cover no-repeat; color: var(--muted); }
+.card.m3d .m3s svg { width: 30%; height: 30%; }
+.card.m3d.nosp .m3s svg { animation: m3pulse 1.6s cubic-bezier(.32, .72, 0, 1) infinite alternate; }
+.card.m3d.nosp.bad .m3s svg { animation: none; }
+/* a STEP or IGES file is converted by FreeCAD before its turntable is drawn (owner 2026-10-06): the tile says so while it waits, and why when it cannot */
+.card.m3d[data-note]::after { content: attr(data-note); position: absolute; left: 8%; right: 8%; top: 64%; text-align: center; font: 500 11px/1.3 var(--sans); color: var(--sub); pointer-events: none; text-wrap: balance; }
+@keyframes m3pulse { from { opacity: .35; } to { opacity: .9; } }
+@media (prefers-reduced-motion: reduce) { .card.m3d.nosp .m3s svg { animation: none; } }
 </style>
 </head>
 <body>
@@ -773,65 +862,65 @@ html:has(.viewer.open), body:has(.viewer.open) { overflow: hidden; overscroll-be
 <script src="/ui/layout-sync.js"></script>   <!-- folders as on the board: the ⋯ in the path bar, its dialog (owner 2026-10-05) -->
 <script>document.querySelectorAll(".agentnote a").forEach(a => { a.textContent = location.origin + "/agent"; });</script>
 <header class="hy-dock">
-  <h1>Hyimg</h1><a href="/v1" style="font-size:12px;color:var(--muted)">старая страница</a>
+  <h1>Hyimg</h1><a href="/v1" style="font-size:12px;color:var(--muted)">Old page</a>
   <div class="filters">
-    <div class="seg updown" role="group" aria-label="Галереи">
-      <button id="secUp" title="Предыдущая коллекция" aria-label="Предыдущая коллекция"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></button>
-      <button id="secDn" title="Следующая коллекция" aria-label="Следующая коллекция"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+    <div class="seg updown" role="group" aria-label="Galleries">
+      <button id="secUp" title="Previous collection" aria-label="Previous collection"><svg data-ic="up" width="14" height="14" stroke-width="2.4"></svg></button>
+      <button id="secDn" title="Next collection" aria-label="Next collection"><svg data-ic="down" width="14" height="14" stroke-width="2.4"></svg></button>
     </div>
-    <select id="coll" aria-label="Коллекция"><option value="">Все коллекции</option></select>
-    <div class="seg" id="vf" role="group" aria-label="Оценка">
-      <button data-f="" aria-pressed="true">Все</button>
-      <button data-f="none" aria-pressed="false">Новые</button>
-      <button data-f="take" aria-pressed="false">Беру</button>
-      <button data-f="idea" aria-pressed="false">Идея</button>
-      <button data-f="no" aria-pressed="false">Нет</button>
-      <button data-f="fav" aria-pressed="false" aria-label="Избранное" class="favf">♥</button>
-      <button data-f="ask" aria-pressed="false" class="askf" id="askf" aria-label="Вопросы" title="Мои вопросы: что ты имел в виду"><span class="qi">?</span></button>
-      <button data-f="metal" aria-pressed="false" title="Материал: настоящий металл">Металл</button>
-      <button data-f="exact" aria-pressed="false" title="Чехол точный">Точный<span class="lg"> чехол</span></button>
-    </div>
-    <input type="search" id="q" placeholder="Поиск">
-    <button class="tfbtn" id="tfBtn" title="Фильтр по тегам" aria-label="Фильтр по тегам" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/></svg><b id="tfN" hidden></b></button>
-    <label class="chk" title="Показывать брак"><input type="checkbox" id="showRej"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg><span>Брак</span></label>
-    <button class="reset hy-reset" id="reset" title="Сбросить фильтры и показать все коллекции" aria-label="Сбросить фильтры" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>Сбросить</span></button>
+    <select id="coll" aria-label="Collection"><option value="">All collections</option></select>
+    <!-- the filter bar (owner 2026-10-06): one capsule, the filter button, the filters this project pinned and the active ones that are not pinned;
+         the chips are drawn by renderTF() from the project's data, the window above it (#tfPanel) lists everything with its pins -->
+    <div class="fcap" id="vf" role="group" aria-label="Filters"><button class="tfbtn" id="tfBtn" title="Filters" aria-label="Filters" aria-expanded="false"><svg data-ic="filter" width="16" height="16" stroke-width="2"></svg><hy-badge id="tfN" hidden></hy-badge></button><span id="vfChips" style="display:contents"></span></div>
+    <input type="search" id="q" placeholder="Search">
+    <label class="chk" title="Show rejects" hidden><input type="checkbox" id="showRej"><svg data-ic="rejected" class="ico" width="16" height="16" stroke-width="2" aria-hidden="true"></svg><span>Rejects</span></label>
+    <button class="reset hy-reset" id="reset" title="Reset filters and show all collections" aria-label="Reset filters" disabled><svg data-ic="reset" width="16" height="16" stroke-width="2" aria-hidden="true"></svg><span>Reset</span></button>
   </div>
   <div class="progress" id="prog"></div>
-  <div class="tfactive" id="tfActive" hidden></div>
 
   <div class="bar"><i id="barFill"></i></div>
 </header>
-<div id="fbar" class="fbar"></div><div id="fdrawer" class="fdrawer" aria-label="Папки"><div class="fdhead"><label class="hy-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><input id="ffilt" type="search" placeholder="Найти папку" aria-label="Найти папку" autocomplete="off"></label></div><div id="fnav"></div></div><div id="fgrip" title="Потяни, чтобы сделать папки шире или уже"></div>
+<div id="fbar" class="fbar"></div><div id="fdrawer" class="fdrawer" aria-label="Folders"><div class="fdhead"><label class="hy-search"><svg data-ic="search" stroke-width="2"></svg><input id="ffilt" type="search" placeholder="Find folder" aria-label="Find folder" autocomplete="off"></label></div><div id="fnav"></div></div><div id="fgrip" title="Drag to make the folders wider or narrower"></div>
 <main id="list"></main>
 <!-- canvas is the base, the library floats over it on the left (owner 2026-09-29, like Figma): drag its right edge to resize.
      View switch top right: library only (the old page) · library over the canvas · canvas only -->
-<iframe id="cvFrame" title="Холст"></iframe>
-<div id="lctx" role="menu" aria-label="Действия с кадром"></div>
-<div class="pickbar" id="pickinfo" hidden><span id="pickn"></span><button id="pickall" title="Выбрать все видимые кадры · ⌘A">Выбрать все</button><button id="pickclr" class="x" title="Снять выбор · Esc" aria-label="Снять выбор"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
-<div class="tfpanel" id="tfPanel" hidden role="dialog" aria-label="Фильтр по тегам">
-  <div class="tfhead"><span>Теги · клик: показать <b class="inc">+</b>, еще клик: исключить <b class="exc">−</b>, третий: снять</span><button id="tfClear">Сбросить теги</button></div>
+<iframe id="cvFrame" title="Canvas" allow="fullscreen" allowfullscreen></iframe>
+<div id="lctx" role="menu" aria-label="Frame actions"></div>
+<div class="pickbar" id="pickinfo" hidden><span id="pickn"></span><button id="pickall" title="Select all visible frames · ⌘A">Select all</button><button id="pickclr" class="x" title="Deselect · Esc" aria-label="Deselect"><svg data-ic="close" width="12" height="12" stroke-width="2.4"></svg></button></div>
+<div class="tfpanel" id="tfPanel" hidden role="dialog" aria-label="Filters">
+  <div class="tfhead"><span class="hy-hint">Click: show <b class="inc">+</b>, click again: exclude <b class="exc">−</b>, third: clear</span><button class="reset hy-reset" id="tfClear" title="Reset filters" aria-label="Reset filters" disabled><svg data-ic="reset" width="16" height="16" stroke-width="2" aria-hidden="true"></svg><span>Reset</span></button></div>
   <div id="tfGroups"></div>
+  <div class="tfadd" id="tfAdd">
+    <button class="tfaddb" id="tgOpen" type="button" aria-expanded="false"><svg data-ic="plus" width="14" height="14" stroke-width="2.2"></svg><span>Add a tag</span></button>
+    <form id="tgForm" hidden autocomplete="off">
+      <input id="tgName" placeholder="Tag name" aria-label="Tag name" maxlength="60">
+      <input id="tgWords" placeholder="Words to find, separated by commas" aria-label="Words to find, separated by commas">
+      <input id="tgGroup" list="tgGroupList" placeholder="Group" aria-label="Group" maxlength="40"><datalist id="tgGroupList"></datalist>
+      <button id="tgGo" type="submit">Add</button>
+    </form>
+  </div>
 </div>
-<div id="lgrip" title="Потяни, чтобы изменить ширину библиотеки"></div>
+<div id="lgrip" title="Drag to resize the library"></div>
 <div id="wl" aria-hidden="true"></div>
-<button id="tlibR" class="hy-pop" aria-pressed="false" title="Библиотека · ⌘." aria-label="Библиотека"><svg class="lbi" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><rect class="pane" x="5.5" y="6.5" width="6" height="11" rx="1" fill="currentColor" stroke="none"/></svg></button>
-<button id="lviewBtn" aria-expanded="false" title="Вид карточек и их размер" aria-label="Вид карточек"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
-<div id="lview" role="dialog" aria-label="Вид карточек"><div class="lvh">Вид</div><div class="lvm"><button data-lm="grid" title="Квадратная сетка" aria-label="Квадратная сетка"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></button><button data-lm="rows" title="Ряды одной высоты, у каждой картинки своя пропорция" aria-label="Ряды одной высоты"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.5" y="5" width="6" height="6" rx="1.5"/><rect x="11.5" y="5" width="9" height="6" rx="1.5"/><rect x="3.5" y="13" width="10" height="6" rx="1.5"/><rect x="15.5" y="13" width="5" height="6" rx="1.5"/></svg></button></div><div class="lvh">Размер</div><input id="lsize" type="range" min="70" max="360" step="2" aria-label="Размер карточек" title="Размер карточек"></div>
-<button id="lwide" aria-pressed="false" title="Библиотека во всю ширину" aria-label="Библиотека во всю ширину"><svg class="out" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h5v5M9 20H4v-5M20 4l-6 6M4 20l6-6"/></svg><svg class="in" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v6h6M10 20v-6H4M14 10l6-6M10 14l-6 6"/></svg></button>
+<button id="tlibR" class="hy-pop" aria-pressed="false" title="Library · ⌘M" aria-label="Library"><svg data-ic="library" class="lbi" width="18" height="18" stroke-width="1.8"></svg></button>
+<button id="lviewBtn" aria-expanded="false" title="Card view and size" aria-label="Card view"><svg data-ic="properties" width="16" height="16" stroke-width="1.9"></svg></button>
+<div id="lview" role="dialog" aria-label="Card view"><div class="lvh">View</div><div class="seg lvm"><button data-lm="grid" title="Square grid" aria-label="Square grid"><svg data-ic="grid" width="16" height="16" stroke-width="1.9"></svg></button><button data-lm="rows" title="Rows of one height, each image keeps its proportions" aria-label="Rows of one height"><svg data-ic="rows" width="16" height="16" stroke-width="1.9"></svg></button></div><div class="hy-slider" data-unit=" px" title="Card size"><input id="lsize" type="range" min="70" max="360" step="2" aria-label="Card size"><span class="hy-slider-l">Size</span><output class="hy-slider-v"></output></div></div>
+<button id="lwide" aria-pressed="false" title="Full-width library" aria-label="Full-width library"><svg data-ic="expand" class="out" width="16" height="16" stroke-width="2"></svg><svg data-ic="collapse" class="in" width="16" height="16" stroke-width="2"></svg></button>
 
-<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Просмотр кадра">
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Frame viewer">
   <div class="stage">
-    <div class="frame" id="frame"><img id="big" alt=""><video id="vid" controls playsinline preload="metadata" hidden></video><svg id="ann" xmlns="http://www.w3.org/2000/svg"></svg></div>
-    <div class="hint2" id="hint2">Выдели область на кадре и напиши, что с ней · комментарии правятся справа в «Пометках»</div>
-    <button class="ntog" id="ntog" role="switch" aria-checked="true" aria-label="Пометки" title="Показать или скрыть пометки · N"><span class="lamp" id="lamp"></span><span class="ncount" id="ncount"></span><span class="sw"><i></i></span></button>
+    <div class="frame" id="frame"><img id="big" alt=""><video id="vid" controls loop playsinline preload="metadata" hidden></video><svg id="ann" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div class="hint2 hy-hint" id="hint2" data-th="<b>Drag</b> over an area to comment · edit under <b>“Marks”</b>"><b>Drag</b> over an area to comment · edit under <b>“Marks”</b></div>
+    <button class="ntog" id="ntog" role="switch" aria-checked="true" aria-label="Marks" title="Show or hide marks · N"><span class="lamp" id="lamp"></span><span class="ncount" id="ncount"></span><span class="sw"><i></i></span></button>
     <div class="pop" id="pop" hidden>
       <div class="popn" id="popn"></div>
-      <textarea id="poptext" rows="3" placeholder="Что здесь не так или что круто"></textarea>
-      <div class="popb"><button id="popdel" class="ghost">Удалить</button><button id="popok" class="solid">Готово <kbd>↵</kbd></button></div>
+      <textarea id="poptext" rows="3" placeholder="What is wrong here, or what is great"></textarea>
+      <div class="popb"><button id="popdel" class="ghost">Delete</button><button id="popok" class="solid">Done <kbd>↵</kbd></button></div>
     </div>
-    <button class="nav prev" id="prev" aria-label="Предыдущий"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M16 4 L6 12 L16 20 Z" fill="currentColor"/></svg></button>
-    <button class="nav next" id="next" aria-label="Следующий"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 4 L18 12 L8 20 Z" fill="currentColor"/></svg></button>
+    <button class="nav prev" id="prev" aria-label="Previous"><svg data-ic="prev" width="22" height="22" stroke-width="2.4"></svg></button>
+    <button class="nav next" id="next" aria-label="Next"><svg data-ic="next" width="22" height="22" stroke-width="2.4"></svg></button>
     <span class="zoomhint" id="zh" hidden></span>
+    <div class="pgbar" id="pgbar" role="group" aria-label="Pages"><button id="pgPrev" title="Previous page · PageUp" aria-label="Previous page"><svg data-ic="prev" width="14" height="14" stroke-width="2.4"></svg></button><span id="pgN"></span><button id="pgNext" title="Next page · PageDown" aria-label="Next page"><svg data-ic="next" width="14" height="14" stroke-width="2.4"></svg></button></div>
   </div>
   <aside class="side">
     <div class="phead">
@@ -839,42 +928,42 @@ html:has(.viewer.open), body:has(.viewer.open) { overflow: hidden; overscroll-be
         <div class="pname" id="vName"></div>
         <div class="psub"><span id="vPos"></span><span class="dot">·</span><span id="vSub"></span></div>
       </div>
-      <button class="icon" id="help" aria-label="Клавиши" aria-expanded="false">?</button>
-      <button class="icon" id="close" aria-label="Закрыть">✕</button>
+      <button class="icon" id="help" aria-label="Shortcuts" aria-expanded="false">?</button>
+      <button class="icon" id="close" aria-label="Close">✕</button>
     </div>
     <div class="helpbox" id="helpbox" hidden>
-      <div><kbd>Tab</kbd> следующий блок: критерии, «Годится для», пометки, комментарий · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> оценка</div>
-      <div><kbd>0</kbd> не про этот кадр · <kbd>↑</kbd><kbd>↓</kbd> строка</div>
-      <div><kbd>Q</kbd> беру · <kbd>W</kbd> доработать · <kbd>E</kbd> нет · <kbd>R</kbd> ♥ избранное</div>
-      <div>Выдели область мышью: откроется поле для комментария · щелчок по рамке — править · <kbd>N</kbd> скрыть пометки</div>
-      <div><kbd>←</kbd><kbd>→</kbd> кадр · <kbd>C</kbd> комментарий · <kbd>Esc</kbd> закрыть</div>
-      <div>Зум: щипок на тачпаде, двумя пальцами двигать</div>
+      <div><kbd>Tab</kbd> next block: criteria, “Good for”, marks, comment · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> score</div>
+      <div><kbd>0</kbd> not about this frame · <kbd>↑</kbd><kbd>↓</kbd> row</div>
+      <div><kbd>Q</kbd> take · <kbd>W</kbd> rework · <kbd>E</kbd> no · <kbd>R</kbd> ♥ like</div>
+      <div>Drag over an area: a comment · click a box: edit · <kbd>N</kbd> hide marks</div>
+      <div><kbd>←</kbd><kbd>→</kbd> frame · <kbd>C</kbd> comment · <kbd>Esc</kbd> close</div>
+      <div>Zoom: pinch on the trackpad, move with two fingers</div>
     </div>
     <div class="verdicts" id="verdicts">
-      <button data-v="take" aria-pressed="false">Беру</button>
-      <button data-v="idea" aria-pressed="false">Доработать</button>
-      <button data-v="no" aria-pressed="false">Нет</button>
-      <button id="fav" class="fav" aria-pressed="false" aria-label="В избранное" title="В избранное · R"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.4C1.6 7.6 3.9 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.6 3.1 4.4 6.6-1.7 4.8-9.2 9.4-9.2 9.4z"/></svg></button>
+      <button data-v="take" aria-pressed="false">Take</button>
+      <button data-v="idea" aria-pressed="false">Rework</button>
+      <button data-v="no" aria-pressed="false">No</button>
+      <button id="fav" class="fav" aria-pressed="false" aria-label="Like" title="Like · R"><svg data-ic="heart" width="18" height="18" stroke-width="1.8" aria-hidden="true"></svg></button>
     </div>
     <div id="qblock" hidden></div>
     <div class="crit" id="crit"></div>
     <div class="useblock">
-      <div class="gh">Годится для</div>
+      <div class="gh">Good for</div>
       <div class="use" id="use"></div>
     </div>
     <div class="useblock" id="bnotes" hidden>
-      <div class="gh">Заметки с доски</div>
+      <div class="gh">Notes from the board</div>
       <div class="bn" id="bnlist"></div>
     </div>
-    <ol class="notes" id="notesblock" hidden><li class="nhead">Пометки на кадре</li></ol>
+    <ol class="notes" id="notesblock" hidden><li class="nhead">Marks on the frame</li></ol>
     <div class="block">
-      <textarea id="comment" placeholder="Комментарий: что поправить, куда развивать"></textarea>
+      <textarea id="comment" placeholder="Comment: what to fix, where to take it"></textarea>
       <div class="saved" id="saved"></div>
     </div>
     <div class="pfoot">
-      <label class="check"><input type="checkbox" id="autonext"> Нажал «Беру», «Доработать» или «Нет» — сразу следующий кадр</label>
+      <label class="check"><input type="checkbox" id="autonext"> After “Take”, “Rework” or “No”, go straight to the next frame</label>
       <details id="det">
-        <summary>Промпт и эталоны</summary>
+        <summary>Prompt and references</summary>
         <div class="model" id="vModel"></div>
         <div class="prompt" id="vPrompt"></div>
         <div class="refs" id="vRefs"></div>
@@ -883,32 +972,35 @@ html:has(.viewer.open), body:has(.viewer.open) { overflow: hidden; overscroll-be
   </aside>
 </div>
 
+<script>T.dom();   // the markup above in the app's language, before anything puts the owner's data in it</script>
 <script>
 // One row per criterion, pairs of old tags merged: [key, name, bad end (old BAD tag), good end (old GOOD tag)]
 const CRIT = [
-  // [key, name, old bad tag, old good tag, what 1 / 2 / 3 mean]
-  ["idea", "Идея", "Скучно / шаблон", "Идея", ["Скучно, шаблон", "Есть, но слабая", "Сильная идея"]],
-  ["humor", "Юмор", "Мимо", "Юмор", ["Мимо", "Улыбает", "Цепляет"]],
-  ["world", "Наш мир", "Не наш мир", "Наш мир", ["Не наш мир", "Близко", "Наш мир"]],
-  ["future", "Футуризм", "Сегодняшний день", "Футуризм", ["Сегодняшний день", "Намек", "Будущее"]],
-  ["casting", "Кастинг", "Не те лица / анатомия", "Кастинг", ["Не те лица, анатомия", "Нормально", "Сильный кастинг"]],
-  ["costume", "Костюм", "Кич", "Костюм", ["Кич", "Нормально", "Стильно"]],
-  ["pose", "Поза", "Немотивирована", "Поза", ["Немотивирована", "Нормально", "Крутая"]],
-  ["light", "Свет", "Теплый / old money", "Свет", ["Не тот, теплый, old money", "Нормально", "Отличный"]],
-  ["color", "Цвет", "Цвет не тот", "Цвет", ["Не тот", "Нормально", "Цветовая система"]],
-  ["comp", "Композиция", "Лишнее в кадре", "Композиция", ["Лишнее в кадре", "Нормально", "Сильная"]],
-  ["phone", "Телефон", "Не тот / не виден", "Тот, виден", ["Не тот, не виден", "Так себе", "Тот, виден"]],
-  ["case", "Чехол", "Кривой", "Точный", ["Кривой", "Почти", "Точный"]],
-  ["real", "Материал", "Пластик / CGI", "Натурально", ["Пластик, CGI", "Почти", "Настоящий металл"]],   // realism of the CASE (owner 2026-09-28)
+  // [key, name, old bad tag, old good tag, what 1 / 2 / 3 mean]; the name and the levels are shown through T (ui/lang-library.js),
+  // the old tags are what the frame's json keeps, so they stay the stored Russian words (owner 2026-10-06: two languages)
+  ["idea", "Idea", "Скучно / шаблон", "Идея", ["Boring, cliché", "There, but weak", "Strong idea"]],
+  ["humor", "Humor", "Мимо", "Юмор", ["Misses", "Makes you smile", "Hooks"]],
+  ["world", "Our world", "Не наш мир", "Наш мир", ["Not our world", "world::Close", "Our world"]],
+  ["future", "Futurism", "Сегодняшний день", "Футуризм", ["Present day", "A hint", "Future"]],
+  ["casting", "Casting", "Не те лица / анатомия", "Кастинг", ["Wrong faces, anatomy", "Fine", "Strong casting"]],
+  ["costume", "Costume", "Кич", "Костюм", ["Kitsch", "Fine", "Stylish"]],
+  ["pose", "Pose", "Немотивирована", "Поза", ["Unmotivated", "Fine", "Great"]],
+  ["light", "Light", "Теплый / old money", "Свет", ["Wrong, warm, old money", "Fine", "Excellent"]],
+  ["color", "Color", "Цвет не тот", "Цвет", ["Wrong", "Fine", "Color system"]],
+  ["comp", "Composition", "Лишнее в кадре", "Композиция", ["Clutter in the frame", "Fine", "Strong"]],
+  ["phone", "Phone", "Не тот / не виден", "Тот, виден", ["Wrong, not visible", "So-so", "Right, visible"]],
+  ["case", "Case", "Кривой", "Точный", ["Crooked", "Almost", "Exact"]],
+  ["real", "Material", "Пластик / CGI", "Натурально", ["Plastic, CGI", "Almost", "Real metal"]],   // realism of the CASE (owner 2026-09-28)
 ];
-const USE = ["Реклама", "Анимация", "Сайт", "Серия"];
-// short words on the wide buttons of layout C: the button itself says what the level means
-const SHORT = { idea: ["Скучно", "Слабая", "Сильная"], humor: ["Мимо", "Улыбает", "Цепляет"], world: ["Не наш", "Близко", "Наш"],
-  casting: ["Не те", "Норм", "Сильный"], costume: ["Кич", "Норм", "Стильно"], future: ["Сегодня", "Намек", "Будущее"], pose: ["Не та", "Норм", "Крутая"],
-  light: ["Не тот", "Норм", "Отличный"], color: ["Не тот", "Норм", "Система"], comp: ["Лишнее", "Норм", "Сильная"], real: ["Пластик", "Почти", "Металл"],
-  phone: ["Не тот", "Так себе", "Тот"], case: ["Кривой", "Почти", "Точный"] };
-const GROUPS = [["Идея", 0], ["Люди", 4], ["Картинка", 7], ["Продукт", 10]];   // futurism belongs to the idea (owner 2026-09-28)   // group title and the index of its first row
-const V = { take: "Беру", idea: "Идея", no: "Нет" };
+// «Годится для»: the json keeps these Russian words (canvas.html reads them too); the buttons show them in the app's language
+const USE = ["Реклама", "Анимация", "Сайт", "Серия"], USE_EN = { "Реклама": "Ads", "Анимация": "Animation", "Сайт": "Website", "Серия": "Series" };
+// short words on the wide buttons of layout C: the button itself says what the level means (shown through T; "ctx::" where Russian needs another form)
+const SHORT = { idea: ["Boring", "Weak", "Strong"], humor: ["Misses", "Smiles", "Hooks"], world: ["Not ours", "world::Close", "Ours"],
+  casting: ["casting::Wrong", "OK", "casting::Strong"], costume: ["Kitsch", "OK", "Stylish"], future: ["Today", "A hint", "Future"], pose: ["pose::Wrong", "OK", "Great"],
+  light: ["Wrong", "OK", "Excellent"], color: ["Wrong", "OK", "System"], comp: ["Clutter", "OK", "Strong"], real: ["Plastic", "Almost", "Metal"],
+  phone: ["Wrong", "So-so", "Right"], case: ["Crooked", "Almost", "Exact"] };
+const GROUPS = [["Idea", 0], ["People", 4], ["Image", 7], ["Product", 10]];   // futurism belongs to the idea (owner 2026-09-28)   // group title and the index of its first row
+const V = { take: "Take", idea: "Idea", no: "No" };
 let items = [], view = [], cur = -1, vfilter = "", saveTimer = null;
 const $ = s => document.querySelector(s);
 // one theme with the canvas: graphite paper = dark, light paper = light (the canvas reports it; the saved choice applies at once)
@@ -919,7 +1011,7 @@ const $ = s => document.querySelector(s);
 })();
 addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.type === "theme") document.documentElement.dataset.theme = e.data.theme; });
 // the app's settings changed in another project (ui/settings.js): the library alone takes its look and theme again; beside the canvas the canvas sends them
-window.hyimgSettingsChanged = () => { const ui = localStorage.getItem("cv.ui"); if (ui) document.documentElement.dataset.ui = ui; hyPaper.fromStorage();
+window.hyimgSettingsChanged = () => { if (T.changed()) return; const ui = localStorage.getItem("cv.ui"); if (ui) document.documentElement.dataset.ui = ui; hyPaper.fromStorage();
   try { const f = document.getElementById("cvFrame"); f && f.contentWindow && f.contentWindow.hyimgSettingsChanged && f.contentWindow.hyimgSettingsChanged(); } catch {}
   try { const de = document.documentElement; de.dataset.shadow = localStorage.getItem("cv.shadow") || "1"; de.dataset.shape = localStorage.getItem("cv.shape") || "round"; } catch {}
   const t = localStorage.getItem("cv.theme") || "auto"; document.documentElement.dataset.theme = t === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : t; };
@@ -959,10 +1051,11 @@ async function load() {
   assignBatches();
   const colls = [...new Map(items.map(i => [i.folder, i.start + " · " + i.title + (i.folder.includes("/") ? " · " + i.folder : "")])).entries()];
   const sel = $("#coll");
-  sel.innerHTML = '<option value="">Все коллекции</option>' + colls.map(([f, t]) => `<option value="${f}">${t}</option>`).join("");
+  sel.innerHTML = `<option value="">${T("All collections")}</option>` + colls.map(([f, t]) => `<option value="${f}">${t}</option>`).join("");
   sel.value = new URLSearchParams(location.search).get("coll") ?? pref("coll", "");
-  $("#showRej").checked = pref("rej", "0") === "1";
+  $("#showRej").checked = pref("rej", "0") !== "0";   // shown with the rest («1») or alone («2»), see REJ
   $("#autonext").checked = pref("autonext", "0") === "1";
+  await loadPins();
   render();
 }
 
@@ -974,14 +1067,14 @@ async function refreshItems() {
   libPending = false;
   const sx = scrollY, ms = $("main") ? $("main").scrollTop : 0, before = items.length;
   const fresh = await (await fetch("/api/items")).json();
-  items = fresh; assignBatches();
+  items = fresh; assignBatches(); if (MODE3D) loadModels();
   const sel = $("#coll"), keep = sel.value;
   const colls = [...new Map(items.map(i => [i.folder, i.start + " · " + i.title + (i.folder.includes("/") ? " · " + i.folder : "")])).entries()];
-  sel.innerHTML = '<option value="">Все коллекции</option>' + colls.map(([f, t]) => `<option value="${f}">${t}</option>`).join("");
+  sel.innerHTML = `<option value="">${T("All collections")}</option>` + colls.map(([f, t]) => `<option value="${f}">${t}</option>`).join("");
   sel.value = keep;
   render(); if (typeof treeShown !== "undefined") renderFolders();
   scrollTo(0, sx); if ($("main")) $("main").scrollTop = ms;
-  const d = items.length - before; if (d > 0) libNote(`В библиотеке новые кадры: ${d}`);
+  const d = items.length - before; if (d > 0) libNote(T("New frames in the library: {n}", { n: d }));
 }
 // the entrance of the page, and again when the app brings this project back to the front (it calls window.hyimgIntro)
 const LIB_LAYER = ["header.hy-dock", "body.cv-on main", "body.cv-on .fbar", "body.fdock.cv-on .fdrawer"];
@@ -996,11 +1089,27 @@ function layOrigins(sels, clear) {   // as on the canvas: each scales around the
 function introLib() {
   document.documentElement.classList.remove("lib-wait");
   if (matchMedia("(prefers-reduced-motion: reduce)").matches || (navigator.webdriver && !/[?&]intro=1/.test(location.search))) return;   // automation skips it
+  // a library open at the start (an empty board, or left open) comes in with its own opening, all its parts on one clock, as from its
+  // button: not with the controls' zoom out of 1.5 (owner 2026-10-06: «why does the media library zoom out at the start, it should
+  // open the standard way»)
+  const b = document.body;
+  if (b.classList.contains("cv-on") && !b.classList.contains("cv-only")) { document.documentElement.classList.remove("intro"); inset.ms = 720; inset(); libMove(true, inset); return; }
   const de = document.documentElement; de.classList.remove("lib-wait", "intro"); void de.offsetWidth; layOrigins(LIB_LAYER); de.classList.add("intro"); clearTimeout(introLib.t); introLib.t = setTimeout(() => { de.classList.remove("intro"); layOrigins(LIB_LAYER, true); }, 2900);
 }
 addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.type === "canvasReady") document.documentElement.classList.remove("cv-wait"); });
 // beside the canvas this page's controls come in when the canvas's do, with the landing of its stars (it says «uiIn»)
-addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.type === "uiIn") introLib(); });
+// a board opened with nothing on its page opens its library by itself, the pictures are where you start (owner 2026-10-06: «when
+// first opening an empty board, open the media library after the page is loaded»); once per load. It is put in place while the
+// library still waits unseen (lib-wait) and comes in with the controls' entrance as one block (owner, same day: «a strange animation
+// of the library, it is one block, why does it fly in in parts»: opened a moment after the entrance, its list slid out alone while
+// the path bar, folders and dock were still entering)
+let emptyOpened = false;
+addEventListener("message", e => {
+  if (e.origin !== location.origin || !e.data || e.data.type !== "uiIn") return;
+  const b = document.body;
+  if (e.data.empty && !emptyOpened && !(b.classList.contains("cv-on") && !b.classList.contains("cv-only"))) { emptyOpened = true; showView("panel"); }
+  introLib();
+});
 window.hyimgPrep = () => { document.documentElement.classList.add("cv-wait", "lib-wait"); if (typeof showView === "function" && document.body.classList.contains("cv-on")) { clearTimeout(setView.t); cancelAnimationFrame(libReveal.raf); cancelAnimationFrame(libMove.raf); libClear(); showView("canvas"); }   /* a board opened again: its library closed */ try { const f = document.querySelector("#cvFrame"); if (f && f.contentWindow && f.contentWindow.hyimgPrep) f.contentWindow.hyimgPrep(); } catch {} };
 window.hyimgIntro = o => { try { const f = document.querySelector("#cvFrame"); if (f && f.contentWindow && f.contentWindow.hyimgIntro) f.contentWindow.hyimgIntro(o); } catch {} };
 if (!document.documentElement.classList.contains("cv-wait")) introLib();   // the library alone; beside the canvas it waits for «uiIn»
@@ -1027,7 +1136,7 @@ function kindBadge(i) {
 // A frame counts as reviewed once it has any verdict, tag or comment. "Changed" = the image file is newer than the review.
 function reviewed(i) { const f = fb(i); return !!(f.verdict || f.fav || (f.good || []).length || (f.bad || []).length || f.comment || Object.keys(f.scores || {}).length || (f.notes || []).length); }
 function changed(i) { const f = fb(i); if (!reviewed(i) || !f.updated) return false; return i.mtime > Date.parse(f.updated.replace(" ", "T")) / 1000 + 60; }
-function isNew(i) { return !reviewed(i) || changed(i); }
+function isNew(i) { return !i.empty && (!reviewed(i) || changed(i)); }   // an empty file has nothing to look at
 // Batches: within a folder, files made less than 20 minutes apart belong to one batch.
 function assignBatches() {
   const byFolder = new Map();
@@ -1040,9 +1149,9 @@ function assignBatches() {
   }
 }
 let folderOrder = new Map();
-const fmt = t => new Date(t * 1000).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+const fmt = t => new Date(t * 1000).toLocaleString(T.locale, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).replace(",", "");   // 24 h in both languages: the batch's end is cut after the space
 // scores of a frame, old tag reviews converted the same way the panel converts them (good tag -> 3, bad tag -> 1)
-const ACROSS = ["fav", "metal", "exact", "ask"];
+const ACROSS = ["fav", "ask", "score:real:3", "score:case:3"];   // filters that look through every collection (the filter bar, owner 2026-10-06; they were the ♥, ? and the hard-coded Metal and Exact)
 // ---- folders (owner 2026-09-30): collections as a folder tree on top of the library instead of the drop-down. A click shows a folder
 // with everything under it, ⌘-click picks several, and a folder dragged onto the canvas lands as its own group, one block per folder.
 function inFolder(folder, c) { return folder === c || folder.startsWith(c + "/") || folder.split("/")[0] === c; }
@@ -1052,15 +1161,15 @@ let FPICK = new Set(), treeShown = pref("ftree", "1") === "1", DRAWER = false, F
 // until «Папки» is pressed (open by itself it covered every frame)
 const roomy = () => !document.body.classList.contains("cv-on") || $("main").getBoundingClientRect().width >= 480;
 const docks = () => treeShown && roomy();
-const FNAME = { ext: "Внешние", research: "Research", arc: "arc", added: "Добавлено вручную", ".": "В корне доски" };   // files lying right in the project folder
+const FNAME = { ext: T("External"), research: "Research", arc: "arc", added: T("Added by hand"), ".": T("Board root") };   // files lying right in the project folder
 function folderTree() {
   const root = { path: "", kids: new Map(), n: 0, title: "" };
-  items.forEach(i => {
+  pool().forEach(i => {
     if (i.folder.split("/")[0] === "_rejected" && !$("#showRej").checked) return;
     let node = root; root.n++;
     i.folder.split("/").forEach((seg, k, a) => {
       const path = a.slice(0, k + 1).join("/");
-      if (!node.kids.has(seg)) node.kids.set(seg, { path, seg, kids: new Map(), n: 0, title: "", start: i.start });
+      if (!node.kids.has(seg)) node.kids.set(seg, { path, seg, kids: new Map(), n: 0, title: "" });
       node = node.kids.get(seg); node.n++;
       if (k === a.length - 1) node.title = i.title;
     });
@@ -1070,45 +1179,61 @@ function folderTree() {
 // the folder's triangle points right and turns down when it opens (owner 2026-10-01); the tree is redrawn on each toggle, so the
 // toggled one plays the turn as an animation
 let FTURN = "";
+// the folders by name, A–Z, numbers in their order (owner 2026-10-06: «A–Z, no other orders»; by the batch's start date it looked random)
+const fsortCmp = label => (a, b) => label(a).localeCompare(label(b), undefined, { numeric: true, sensitivity: "base" }) || a.seg.localeCompare(b.seg, undefined, { numeric: true });
+// a folder's own title when it has one (titles.json, a batch json); a plain folder is its name, not its whole path
+const fLabel = n => n.title && n.title !== n.path && !n.kids.size ? n.title.replace(/^Research · /, "") : (FNAME[n.seg] || (n.title !== n.path && n.title) || n.seg);
+// the folders' colours of this project (foldercolors.py, /api/foldercolors): {path: colour name}; a folder without its own takes the
+// nearest coloured folder's above it
+let FCOL = {};
+fetch("/api/foldercolors").then(r => r.ok ? r.json() : { colors: {} }).then(d => { FCOL = d.colors || {}; if (Object.keys(FCOL).length) renderFolders(); }).catch(() => {});
+function fcolOf(path) { for (let p = path; p; p = p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "") if (FCOL[p]) return FCOL[p]; return ""; }
+function setFolderColor(path, color) {
+  if (color) FCOL[path] = color; else delete FCOL[path];
+  renderFolders();
+  fetch("/api/foldercolors", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path, color: color || null }) })
+    .then(r => { if (!r.ok) throw r.status; }).catch(() => libNote(T("The folder's colour was not saved")));
+}
 function treeHtml() {
-  const c = $("#coll").value, root = folderTree();
-  // a folder's own title when it has one (titles.json, a batch json); a plain folder is its name, not its whole path
-  const label = n => n.title && n.title !== n.path && !n.kids.size ? n.title.replace(/^Research · /, "") : (FNAME[n.seg] || (n.title !== n.path && n.title) || n.seg);
+  const c = $("#coll").value, root = folderTree(), label = fLabel;
   // «Найти папку»: a folder shows when its name or a folder inside it matches, and opens on the way
   const q = FQ.trim().toLowerCase(), hits = new Map();
   const hit = n => { if (!hits.has(n.path)) hits.set(n.path, !q || (label(n) + " " + n.path).toLowerCase().includes(q) || [...n.kids.values()].some(hit)); return hits.get(n.path); };
   const row = (n, d) => {
     if (!hit(n)) return "";
-    const kids = [...n.kids.values()].sort((a, b) => (b.start || "").localeCompare(a.start || "") || a.seg.localeCompare(b.seg));
+    const kids = [...n.kids.values()].sort(fsortCmp(label));
     const open = OPEN.has(n.path) || (!!q && kids.some(hit)), on = c === n.path, picked = FPICK.has(n.path);
     const inherited = !picked && [...FPICK].some(p => n.path.startsWith(p + "/"));   // a picked parent carries this folder along
-    return `<div class="frow ${on ? "on" : ""} ${picked ? "picked" : ""} ${inherited ? "inherited" : ""}" data-f="${n.path}" draggable="true" style="--d:${d}" title="${n.path} · перетащи на холст: папка встанет блоком">
-      <button class="fx" data-tog="${n.path}" aria-label="${open ? "Свернуть" : "Развернуть"}" ${kids.length ? "" : "disabled"}>${kids.length ? `${HY_CHEV.replace('class="hy-chev"', `class="hy-chev tri ${open ? "open" : ""} ${FTURN === n.path ? "turn" : ""}"`)}` : ""}</button>
-      <span class="fslot"><svg class="fi" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>
-      <span class="fck" data-ck="${inherited ? "" : n.path}" role="checkbox" aria-checked="${picked || inherited}" aria-label="Отметить папку" title="${inherited ? "Отмечена вместе с папкой выше" : "Отметить: отмеченные папки перетаскиваются на холст вместе"}"></span></span>
-      <span class="fn">${label(n)}</span><span class="fc">${n.n.toLocaleString("ru-RU")}</span></div>`
+    const col = fcolOf(n.path), hex = col && window.HY_COLORS ? HY_COLORS[col] : "";
+    return `<div class="frow ${on ? "on" : ""} ${picked ? "picked" : ""} ${inherited ? "inherited" : ""} ${hex ? "col" : ""}" data-f="${n.path}" draggable="true" style="--d:${d}${hex ? `;--fcol:${hex}` : ""}" title="${n.path} · ${T("drag onto the canvas to place the folder as a block")}">
+      <button class="fx" data-tog="${n.path}" aria-label="${open ? T("Collapse") : T("Expand")}" ${kids.length ? "" : "disabled"}>${kids.length ? `${HY_CHEV.replace('class="hy-chev"', `class="hy-chev tri ${open ? "open" : ""} ${FTURN === n.path ? "turn" : ""}"`)}` : ""}</button>
+      <span class="fslot">${hyIcon("folder", 15, 1.8, "fi")}
+      <span class="fck" data-ck="${inherited ? "" : n.path}" role="checkbox" aria-checked="${picked || inherited}" aria-label="${T("Mark folder")}" title="${inherited ? T("Marked with the folder above") : T("Mark: marked folders are dragged onto the canvas together")}"></span></span>
+      <span class="fn">${label(n)}</span><span class="fc">${T.num(n.n)}</span></div>`
       + (open ? kids.map(k => row(k, d + 1)).join("") : "");
   };
-  const top = [...root.kids.values()].sort((a, b) => (b.start || "").localeCompare(a.start || "") || a.seg.localeCompare(b.seg));
+  const top = [...root.kids.values()].sort(fsortCmp(label));
   // the chosen folder as a path, always in view at the top of the library (owner 2026-09-30: "you can't see which folder is chosen");
   // every step of it opens that folder
   const crumbs = []; let node = root;
   if (c) for (const seg of c.split("/")) { node = node && node.kids.get(seg); if (!node) break; crumbs.push(`<button class="fcr" data-go="${node.path}" title="${node.path}">${label(node)}</button>`); }
   // the path starts right after the folders' toggle (owner 2026-10-04: «only the side panel's icon, then the folder's name»)
-  const path = crumbs.length ? crumbs.join(`<span class="fsep">${HY_CHEV}</span>`) + `<span class="fcnt">${(node ? node.n : 0).toLocaleString("ru-RU")}</span>` : `<span class="fcr all">Все папки</span>`;
+  // «All folders» first, so the whole path is there and one click goes back up (owner 2026-10-06: «why is there no All on the left of the path»)
+  if (crumbs.length) crumbs.unshift(`<button class="fcr" data-go="" title="${T("All folders")}">${T("All folders")}</button>`);
+  const path = crumbs.length ? crumbs.join(`<span class="fsep">${HY_CHEV}</span>`) + `<span class="fcnt">${T.num(node ? node.n : 0)}</span>` : `<span class="fcr all">${T("All folders")}</span>`;
   const shown = docks() || DRAWER;
-  const bar = `<button class="fticon" data-ftree aria-pressed="${shown}" title="${shown ? "Свернуть папки" : "Открыть папки"}" aria-label="${shown ? "Свернуть папки" : "Открыть папки"}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/><path class="ar" d="M15.5 10 13 12l2.5 2"/></svg></button><span class="fpath">${path}</span>`
+  const bar = `<button class="fticon" data-ftree aria-pressed="${shown}" title="${shown ? T("Hide folders") : T("Show folders")}" aria-label="${shown ? T("Hide folders") : T("Show folders")}">${hyIcon("sidebar", 16, 2)}</button><span class="fpath">${path}</span>`
     + (window.hyFsBar ? hyFsBar() : "")   // «Разложить по папкам как на доске» and the «Как на доске» plate (ui/layout-sync.js, 2026-10-05)
-    + (FPICK.size ? `<span class="fpk" title="Отмеченные папки перетаскиваются на холст вместе">✓ ${FPICK.size}</span><button class="fhbtn" data-fclear title="Снять отметки">снять</button>` : "");
+    + (FPICK.size ? `<span class="fpk" title="${T("Marked folders are dragged onto the canvas together")}">✓ ${FPICK.size}</span><button class="fhbtn" data-fclear title="${T("Clear marks")}">${T("clear")}</button>` : "");
   return [bar, `<nav class="ftree">`
-    + (true ? `<div class="frow ${c ? "" : "on"}" data-f="" style="--d:0"><button class="fx" disabled></button><svg class="fi" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span class="fn">Все папки</span><span class="fc">${root.n.toLocaleString("ru-RU")}</span></div>`
+    + (true ? `<div class="frow ${c ? "" : "on"}" data-f="" style="--d:0"><button class="fx" disabled></button>${hyIcon("grid", 15, 1.8, "fi")}<span class="fn">${T("All folders")}</span><span class="fc">${T.num(root.n)}</span></div>`
       + top.map(n => row(n, 0)).join("") : "") + `</nav>`];
 }
 // the path bar is always there; the folders slide down over the whole library as a see-through drawer (owner 2026-09-30),
 // so a click on a folder shows the frames switching under it; ▾ Папки or Esc opens and closes it
 function renderFolders() {
   const [bar, tree] = treeHtml(), d = $("#fdrawer"), top = d.scrollTop, dock = docks(), shown = dock || DRAWER;
-  $("#fbar").innerHTML = bar;
+  $("#fbar").innerHTML = bar; if (window.lvFit) lvFit();
   if (shown) { $("#fnav").innerHTML = tree; d.scrollTop = top; }
   d.classList.toggle("open", shown); d.classList.toggle("picking", FPICK.size > 0);
   if (document.body.classList.contains("fdock") !== dock) { document.body.classList.toggle("fdock", dock); if (typeof watchGrids === "function" && GRIDS.length) render(); }
@@ -1141,6 +1266,7 @@ function folderBlocks(paths) {
   const byF = new Map();
   items.forEach(i => {
     if (i.folder.split("/")[0] === "_rejected" && !$("#showRej").checked) return;
+    if (i.empty) return;   // an empty file is not a picture to place
     if (!paths.some(p => inFolder(i.folder, p) || !p)) return;
     if (!byF.has(i.folder)) byF.set(i.folder, { folder: i.folder, title: i.title, paths: [] });
     byF.get(i.folder).paths.push(i.path);
@@ -1162,8 +1288,8 @@ document.addEventListener("dragstart", e => {
   const p = r.dataset.f, paths = FPICK.has(p) ? [...FPICK] : [p];
   const blocks = folderBlocks(paths), n = blocks.reduce((a, b) => a + b.paths.length, 0);
   e.dataTransfer.setData("text/x-folders", JSON.stringify(blocks)); e.dataTransfer.setData("text/x-frame", ""); e.dataTransfer.effectAllowed = "copy";
-  const g = document.createElement("div"); g.textContent = `${blocks.length > 1 ? blocks.length + " папки · " : ""}${n} кадров`;
-  g.style.cssText = "position:fixed;left:-1000px;top:0;padding:8px 14px;border-radius:999px;background:#0a84ff;color:#fff;font:600 13px var(--sans);white-space:nowrap";
+  const g = document.createElement("div"); g.textContent = (blocks.length > 1 ? T("{n} folders", { n: blocks.length }) + " · " : "") + T("{n} frames", { n });
+  g.style.cssText = "position:fixed;left:-1000px;top:0;padding:8px 14px;border-radius:999px;background:var(--sel);color:#fff;font:600 13px var(--sans);white-space:nowrap";
   document.body.appendChild(g); e.dataTransfer.setDragImage(g, 20, 16); setTimeout(() => g.remove());
 });
 // a question is open until it has a text answer; a "pick" question (heart on a whole grid) also closes when the cell gets its own verdict or heart
@@ -1199,11 +1325,17 @@ fetch("/api/pages").then(r => r.json()).then(b => {
   if (ONBOARD.size || REMOVED.size) return;
   setBoard(b.on || [], b.removed || []);
 }).catch(() => {});
-const FACETS = [["Холст", "На холсте", i => ONBOARD.has(i.path)], ["Холст", "В архиве", i => REMOVED.has(i.path)],["Разбор", "Есть комментарий", i => !!(fb(i).comment || "").trim()], ["Разбор", "Есть пометки на кадре", i => (fb(i).notes || []).length > 0],
-  ["Разбор", "Есть вопрос", i => (i.questions || []).length > 0], ["Разбор", "Есть оценки по критериям", i => Object.keys(fb(i).scores || {}).length > 0],
-  ["Разбор", "Не разобран", i => !reviewed(i)]];
+// [group, tag id, test, shown as]: the id is the Russian name the saved filters (localStorage "tf") keep; it is shown through T
+const FACETS = [["Canvas", "На холсте", i => ONBOARD.has(i.path), "On the canvas"], ["Canvas", "В архиве", i => REMOVED.has(i.path), "Archived"],["Review", "Есть комментарий", i => !!(fb(i).comment || "").trim(), "Has a comment"], ["Review", "Есть пометки на кадре", i => (fb(i).notes || []).length > 0, "Has marks on the frame"],
+  ["Review", "Есть вопрос", i => (i.questions || []).length > 0, "Has a question"], ["Review", "Есть оценки по критериям", i => Object.keys(fb(i).scores || {}).length > 0, "Has criteria scores"],
+  ["Review", "Не разобран", i => !reviewed(i), "Not reviewed"]];
+// the engine tags tags.py gives (its Russian words are the tag ids); the board's own tags are the owner's data and show as they are
+const ENGINE_EN = { "3D и перекраска": "3D and recolor", "Движок не указан": "Engine not set" };
+const TGROUP_EN = { Canvas: 1, Engine: 1, Review: 1 };
+function tagLabel(t) { const f = FACETS.find(x => x[1] === t); return f ? T(f[3]) : ENGINE_EN[t] ? T(ENGINE_EN[t]) : t; }
+function groupLabel(g) { return TGROUP_EN[g] ? T(g) : g; }
 function tagsOf(i) { return [...(i.tags || []), ...FACETS.filter(f => f[2](i)).map(f => f[1])]; }
-function groupOfTag(t) { const f = FACETS.find(x => x[1] === t); if (f) return f[0]; const g = TGROUPS.find(x => x[1] === t); return g ? g[0] : "Движок"; }
+function groupOfTag(t) { const f = FACETS.find(x => x[1] === t); if (f) return f[0]; const g = TGROUPS.find(x => x[1] === t); return g ? g[0] : "Engine"; }
 // include: within a group any of the included tags (Птицы or Конь), across groups all of them; exclude: none of the excluded
 function tagPass(i) {
   const on = Object.entries(TF); if (!on.length) return true;
@@ -1211,23 +1343,104 @@ function tagPass(i) {
   for (const [t, m] of on) { if (m === "exc" && have.has(t)) return false; if (m === "inc") (inc[groupOfTag(t)] = inc[groupOfTag(t)] || []).push(t); }
   return Object.values(inc).every(ts => ts.some(t => have.has(t)));
 }
-function filtered(noTags) {
-  const c = $("#coll").value, q = $("#q").value.trim().toLowerCase(), rej = $("#showRej").checked;
+// ---- the filter bar (owner 2026-10-06: «one block with a filter where some default filters already are, and they can be pinned in the
+// filter itself; many of these things should not be pre-programmed but gathered from what is in the json files, so each new project can
+// have its own set of tags besides the standard built-in ones»). One id per filter:
+//   "all"                     nothing chosen; the rating ones ("none" "take" "idea" "no") are one choice, kept in vfilter as before
+//   "3d"                      the library's 3D files, a mode of its own (vfilter too)
+//   "fav", "ask"              ♥ and my open questions
+//   "kind:<video|pdf|image|EXT>"   what the file is; only the kinds this project's files are
+//   "score:<scale>:<1|2|3>"   a criterion's level, for the scales the frames' scores hold («Metal» is score:real:3, «Exact» score:case:3)
+//   "tag:<tag>"               a tag (tags.py rules, the canvas and review marks, engines), kept in TF as before
+// Everything but the rating and the mode cycles off -> shown (+) -> excluded (−) -> off; within one group the shown ones are "any of
+// them", across groups "all of them" (as the tags always were). Which ones stand in the dock's capsule is the project's (PINS, server).
+let GF = {}; try { GF = JSON.parse(pref("gf", "{}")) || {}; } catch { GF = {}; }   // the ones that are not tags: id -> "inc" | "exc"
+// the rejected frames (the top «_rejected» folder) are a filter of the window and the capsule now (owner 2026-10-06: «make it part of the
+// filter»; it was a separate crossed-circle toggle in the dock): hidden by default, a click shows them with the rest, the next shows them
+// alone, the third hides them again. The old checkbox #showRej stays as the state the folder tree reads.
+let REJ = { "1": "with", "2": "only" }[pref("rej", "0")] || "";
+let PINS = null, ASKN = 0;   // PINS: the ids pinned in this project, null until it chooses (then the defaults of defaultPins())
+const RATING = ["none", "take", "idea", "no"], RATE_L = { none: "New", take: "Take", idea: "Idea", no: "No" };
+const kindKey = i => i.kind === "doc" ? (i.ext || "doc") : (i.kind || "image");
+const kindWord = k => k === "image" ? T("Images") : k === "video" ? T("Video") : k === "pdf" ? "PDF" : k;
+const scaleName = k => { const c = CRIT.find(x => x[0] === k); return c ? T(c[1]) : k; };   // a scale the json holds that the review panel does not know: its own key
+const levelWord = (k, n) => SHORT[k] ? T(SHORT[k][n - 1]) : String(n);
+let LEVEL_USE = null;
+function levelLabel(k, n) {   // a level's word alone when no other scale uses it («Metal»), else with its scale («Light · Excellent»)
+  if (!LEVEL_USE) { LEVEL_USE = {}; for (const w of Object.values(SHORT).flat()) { const s = T(w); LEVEL_USE[s] = (LEVEL_USE[s] || 0) + 1; } }
+  const w = levelWord(k, n); return LEVEL_USE[w] > 1 || !SHORT[k] ? `${scaleName(k)} · ${w}` : w;
+}
+const FD = new Map();
+function fdef(id) {
+  if (FD.has(id)) return FD.get(id);
+  let d = null, m;
+  if (id === "all") d = { type: "all", label: T("All"), short: T("All") };
+  else if (id === "rej") d = { type: "rej", label: T("Rejected"), short: T("Rejected"), title: T("The «_rejected» folder: a click shows them with the rest, the next shows them alone") };
+  else if (id === "3d") d = { type: "mode", label: "3D", short: "3D", title: T("3D files of the library: they turn under the pointer") };
+  else if (RATING.includes(id)) d = { type: "radio", label: T(RATE_L[id]), short: T(RATE_L[id]) };
+  else if (id === "fav") d = { type: "tri", group: "fav", label: "♥", short: "♥ " + T("Liked"), title: T("Liked"), cls: "favf", test: i => !!fb(i).fav };
+  else if (id === "ask") d = { type: "tri", group: "ask", label: "?", short: T("Questions"), title: T("Questions"), cls: "askf", test: i => openQs(i).length > 0 };
+  else if ((m = /^kind:(.+)$/.exec(id))) d = { type: "tri", group: "kind", label: kindWord(m[1]), short: kindWord(m[1]), test: i => kindKey(i) === m[1] };
+  else if ((m = /^score:([\w-]+):([123])$/.exec(id))) { const k = m[1], n = +m[2]; d = { type: "tri", group: "score:" + k, label: levelLabel(k, n), short: levelWord(k, n), title: scaleName(k) + " · " + levelWord(k, n), test: i => effScores(fb(i))[k] === n }; }
+  else if ((m = /^tag:(.+)$/.exec(id))) d = { type: "tri", tag: m[1], label: tagLabel(m[1]), short: tagLabel(m[1]) };
+  if (d) d.id = id;
+  FD.set(id, d); return d;
+}
+// "inc" | "exc" | "": a rating, the 3D mode and «All» are either on ("inc") or off
+function fstate(d) {
+  return d.type === "rej" ? (REJ ? "inc" : "")
+    : d.type === "all" ? (!vfilter && !Object.keys(GF).length && !Object.keys(TF).length ? "inc" : "")   // «All» is chosen only when nothing filters the list, the tags too (it read chosen beside an active tag chip, 2026-10-06)
+    : d.type === "radio" || d.type === "mode" ? (vfilter === d.id ? "inc" : "")
+    : d.tag !== undefined ? TF[d.tag] || "" : GF[d.id] || "";
+}
+function setRej(v) { REJ = v || ""; $("#showRej").checked = !!REJ; setPref("rej", REJ === "only" ? "2" : REJ ? "1" : "0"); }
+function fset(d, to) {
+  if (d.type === "rej") { setRej(to); return; }
+  if (d.type === "all") { vfilter = ""; GF = {}; TF = {}; }
+  else if (d.type === "radio" || d.type === "mode") vfilter = to ? d.id : (vfilter === d.id ? "" : vfilter);
+  else {
+    if (vfilter === "3d") vfilter = "";   // a filter on frames takes the 3D files' mode off
+    const S = d.tag !== undefined ? TF : GF, k = d.tag !== undefined ? d.tag : d.id;
+    if (to) S[k] = to; else delete S[k];
+  }
+  setPref("tf", JSON.stringify(TF)); setPref("gf", JSON.stringify(GF));
+}
+function fcycle(id, alt) {
+  const d = fdef(id); if (!d) return;
+  const cur = fstate(d);
+  fset(d, d.type === "rej" ? (!cur ? "with" : REJ === "with" ? "only" : "") : d.type === "all" ? "inc" : d.type === "radio" || d.type === "mode" ? (cur ? "" : "inc") : alt ? (cur === "exc" ? "" : "exc") : !cur ? "inc" : cur === "inc" ? "exc" : "");
+  render();
+}
+const acrossOn = () => ACROSS.some(id => GF[id] === "inc");
+function gfPass(i) {
+  const on = Object.entries(GF); if (!on.length) return true;
+  const inc = {};
+  for (const [id, m] of on) {
+    const d = fdef(id); if (!d || !d.test) continue;
+    const hit = d.test(i);
+    if (m === "exc" && hit) return false;
+    if (m === "inc") (inc[d.group] = inc[d.group] || []).push(hit);
+  }
+  return Object.values(inc).every(h => h.some(Boolean));
+}
+// noFilters: the frames of the chosen collection and search only (what the window's counts are counted over)
+function filtered(noFilters) {
+  if (vfilter === "3d") return filtered3d();
+  const c = $("#coll").value, q = $("#q").value.trim().toLowerCase(), rej = $("#showRej").checked, across = !noFilters && acrossOn();
   return items.filter(i => {
-    if (!noTags && !tagPass(i)) return false;
+    if (!noFilters && !(tagPass(i) && gfPass(i))) return false;
     const top = i.folder.split("/")[0];
     if (!rej && top === "_rejected" && c !== "_rejected") return false;
-    if (c && !ACROSS.includes(vfilter) && !inFolder(i.folder, c)) return false;   // ♥, Металл, Точный look through every collection
+    if (REJ === "only" && top !== "_rejected") return false;
+    if (c && !across && !inFolder(i.folder, c)) return false;   // ♥, ?, Metal, Exact look through every collection
     const v = fb(i).verdict || "";
-    if (vfilter === "none" && !isNew(i)) return false;
-    if (vfilter === "fav" && !fb(i).fav) return false;
-    if (vfilter === "ask" && !openQs(i).length) return false;
-    if (vfilter === "metal" && effScores(fb(i)).real !== 3) return false;
-    if (vfilter === "exact" && effScores(fb(i)).case !== 3) return false;
-    if (vfilter && !["none", ...ACROSS].includes(vfilter) && v !== vfilter) return false;
+    if (!noFilters) {
+      if (vfilter === "none" && !isNew(i)) return false;
+      if (RATING.includes(vfilter) && vfilter !== "none" && v !== vfilter) return false;
+    }
     if (q && !(i.name.toLowerCase().includes(q) || (i.prompt || "").toLowerCase().includes(q))) return false;
     return true;
-  }).sort((a, b) => (vfilter === "ask" ? realQ(b) - realQ(a) : 0) || (folderOrder.get(a.folder) - folderOrder.get(b.folder)) || (b.batch - a.batch) || a.name.localeCompare(b.name));
+  }).sort((a, b) => (GF.ask === "inc" ? realQ(b) - realQ(a) : 0) || (folderOrder.get(a.folder) - folderOrder.get(b.folder)) || (b.batch - a.batch) || a.name.localeCompare(b.name));
 }
 
 // a picture's proportion (width / height): from its file's metadata, else from its thumbnail once loaded, else 3:4 until then
@@ -1238,11 +1451,85 @@ document.addEventListener("load", e => {
   const i = view[+c.dataset.i]; if (!i || /:/.test(i.aspect || "")) return;
   const ar = im.naturalWidth / im.naturalHeight; AR.set(i.path, ar); c.style.setProperty("--ar", ar.toFixed(3));
 }, true);
+// ---- the «3D» filter (owner 2026-10-06: «Open media library, where everything is already filtered to 3D files, and on hover they rotate
+// so you can judge them»). The library's 3D files are not frames: /api/models3d lists them, each with its turntable (a sheet of views
+// around the vertical axis) once a page has drawn it; ui/spin.js steps the views under the pointer, no WebGL context per tile. A card of
+// the canvas can ask for it (3D card, «Media library»): the filter comes on over everything, a click on a file sends it to that card.
+let models = null, MODE3D = false, ASK3D = null;
+const pool = () => (MODE3D ? models || [] : items);
+function loadModels() {
+  return fetch("/api/models3d").then(r => r.json()).then(m => { models = m; if (MODE3D) render(); }).catch(() => { models = models || []; });
+}
+function modeSync() {   // called by render: the filter came on or went off
+  const on = vfilter === "3d"; if (on === MODE3D) return;
+  MODE3D = on; document.body.classList.toggle("m3dmode", on);
+  if (on) loadModels();   // asked at each opening: a file may have come
+  if (!on) { const sel = $("#coll"), c = pref("coll", ""); sel.value = [...sel.options].some(o => o.value === c) ? c : ""; }
+}
+function filtered3d() {
+  const c = $("#coll").value, q = $("#q").value.trim().toLowerCase();
+  return (models || []).filter(i => (!c || inFolder(i.folder, c)) && (!q || i.name.toLowerCase().includes(q) || i.path.toLowerCase().includes(q)));
+}
+const m3attr = s => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;");
+const SPR = i => `/api/sprite?p=${enc(i.path)}&v=${i.sprite ? i.sprite.v : i.ver}`;
+const m3cube = `${hyIcon("scene3d", 0, 1.8)}`;
+function m3paint(el, i) {   // the picture of a 3D card: its first view, and the sheet that turns
+  const s = el.querySelector(".m3s"), sp = i.sprite;
+  el.classList.toggle("nosp", !sp);
+  if (!sp) { s.innerHTML = m3cube; s.style.backgroundImage = ""; delete s.dataset.spin; return; }
+  s.innerHTML = ""; s.style.backgroundImage = `url('${SPR(i)}&s=320')`; s.dataset.spin = JSON.stringify({ sheet: SPR(i), n: sp.n, cols: sp.cols });
+}
+// STEP and IGES: FreeCAD converts the file first (the plugin's cad.py); its progress arrives as "hy3d-cad" events (loaders.js) and is kept on the entry
+const CADWHY = { nofreecad: "FreeCAD is needed to read STEP files", empty: "The file is empty", toobig: "The file is too big to convert", timeout: "FreeCAD took too long on this file", nogeometry: "No solids in the file", unreadable: "FreeCAD could not read this file" };
+const m3note = i => (!i.cad || i.cad.state === "ready" ? "" : i.cad.state === "working" ? T("converting…") : T(CADWHY[i.cad.reason] || CADWHY.unreadable));
+const cadTold = {};
+addEventListener("hy3d-cad", e => {
+  const d = e.detail || {}, i = d.path && pool().find(x => x.path === d.path); if (!i) return;
+  i.cad = { state: d.state, reason: d.reason };
+  const el = [...document.querySelectorAll(".card.m3d")].find(c => c.getAttribute("title") === d.path), note = m3note(i);
+  if (el) { if (note) el.dataset.note = note; else delete el.dataset.note; el.classList.toggle("bad", i.cad.state === "failed"); }
+  if (d.state === "failed" && !cadTold[d.reason]) { cadTold[d.reason] = 1; libNote(m3note(i)); }   // said once for the kind of failure; each tile keeps its own line
+});
+function card3d(i, idx) {
+  const sp = i.sprite, note = m3note(i);
+  return `<button class="card m3d ${sp ? "" : "nosp"}${note && i.cad.state === "failed" ? " bad" : ""}" data-i="${idx}" aria-label="${m3attr(i.name)}" draggable="true" style="--ar:1" title="${m3attr(i.path)}"${note ? ` data-note="${m3attr(note)}"` : ""}><i class="m3s" ${sp ? `data-spin='${m3attr(JSON.stringify({ sheet: SPR(i), n: sp.n, cols: sp.cols }))}' style="background-image:url('${SPR(i)}&s=320')"` : ""}>${sp ? "" : m3cube}</i><span class="st"><span class="pill kd">${m3attr(i.ext)}</span></span><span class="nm">${m3attr(i.name)}</span></button>`;
+}
+// the turntables that are missing are drawn by the plugin's module (manifest "sprites": three.js, one file at a time) and the tiles turn into their pictures
+let SPRMOD = null;
+function spritesMod() {
+  return SPRMOD || (SPRMOD = fetch("/api/plugins").then(r => r.json()).then(l => { const p = l.find(x => x.sprites); return p ? import(p.sprites) : null; }).catch(() => null));
+}
+function want3d(g) {
+  const cards = [...g.querySelectorAll(".card.m3d.nosp:not(.bad)")]; if (!cards.length) return;
+  spritesMod().then(m => { if (!m) return cards.forEach(c => c.classList.add("bad")); cards.forEach(c => { const i = view[+c.dataset.i]; if (i) m.ensure(i).then(sp => { if (sp) { i.sprite = sp; m3paint(c, i); } else c.classList.add("bad"); }); }); });
+}
+hySpin.bind($("#list"), ".card.m3d");
+// a click on a file: into the card that asked, or onto the canvas as a new 3D card
+function pick3d(i) {
+  const f = $("#cvFrame"), msg = { type: "model3dPick", card: ASK3D && ASK3D.card, path: i.path, ver: i.ver }, was = ASK3D; ASK3D = null;
+  const go = () => f.contentWindow.postMessage(msg, location.origin);
+  if (!document.body.classList.contains("cv-on")) setView("panel");
+  if (cvReady) go(); else f.addEventListener("load", go, { once: true });
+  if (was) { vfilter = ""; $("#q").value = was.q; $("#coll").value = was.coll; render(); if (was.view !== "panel") setView(was.view); }
+}
+addEventListener("message", e => {   // «Media library» in an empty 3D card (the plugin's empty.js)
+  if (e.origin !== location.origin || !e.data || e.data.type !== "open3d") return;
+  ASK3D = { card: e.data.card || null, view: pref("view", "canvas"), coll: $("#coll").value, q: $("#q").value };
+  $("#q").value = ""; $("#coll").value = ""; vfilter = "3d";
+  render(); $("main").scrollTop = 0;
+  if (document.body.classList.contains("cv-only") || !document.body.classList.contains("cv-on")) setView("panel");
+});
+const emptyWhy = i => i.size === 0 ? T("Empty file · 0 bytes") : T("Empty file · cannot be read");
 function card(i, idx) {
+  if (i.kind === "model") return card3d(i, idx);
+  if (i.empty) {   // listed with its name, folder and the kind from its extension; no picture, nothing to drag
+    const ext = (i.ext || i.path.split(".").pop() || "").toUpperCase().replace(/[<>&"]/g, "");
+    return `<button class="card empty" data-i="${idx}" aria-label="${m3attr(i.name)}" draggable="false" style="--ar:1" title="${m3attr(i.path)} · ${m3attr(emptyWhy(i))}"><span class="ph"><b>${emptyWhy(i)}</b><small>${m3attr(i.folder === "." ? "" : i.folder)}</small></span><span class="st"><span class="pill kd">${ext}</span></span><span class="nm">${m3attr(i.name)}</span></button>`;
+  }
   const f = fb(i), v = f.verdict;
-  const pills = (i.kind ? `<span class="pill kd">${kindBadge(i)}</span>` : "") + (changed(i) ? `<span class="pill chg">Изменено</span>` : !reviewed(i) ? `<span class="pill new">Новое</span>` : "")
-    + (f.fav ? `<span class="pill fav">♥</span>` : "") + (v ? `<span class="pill ${v}">${V[v]}</span>` : "") + (f.comment || (f.notes || []).length ? `<span class="pill note">✎${(f.notes || []).length ? " " + f.notes.length : ""}</span>` : "")
-    + (i.gate && i.gate.status === "fail" ? `<span class="pill qa">QA: брак</span>` : "")
+  const pills = (i.kind ? `<span class="pill kd">${kindBadge(i)}</span>` : "") + (changed(i) ? `<span class="pill chg">${T("Changed")}</span>` : !reviewed(i) ? `<span class="pill new">${T("pill::New")}</span>` : "")
+    + (f.fav ? `<span class="pill fav">♥</span>` : "") + (v ? `<span class="pill ${v}">${T(V[v])}</span>` : "") + (f.comment || (f.notes || []).length ? `<span class="pill note">✎${(f.notes || []).length ? " " + f.notes.length : ""}</span>` : "")
+    + (i.gate && i.gate.status === "fail" ? `<span class="pill qa">${T("QA: rejected")}</span>` : "")
     + ((i.questions || []).length ? `<span class="pill ask ${openQs(i).length ? "" : "done"}">?${openQs(i).length > 1 ? " " + openQs(i).length : ""}</span>` : "");
   const scv = Object.values(f.scores || {}); const avg = scv.length ? (scv.reduce((a, b) => a + b, 0) / scv.length).toFixed(1) : "";
   return `<button class="card ${v ? "v-" + v : ""} ${picked.has(i.path) ? "picked" : ""}" data-i="${idx}" aria-label="${i.name}" draggable="true" style="--ar:${arOf(i).toFixed(3)}"><span class="pick" aria-hidden="true"></span>${avg ? `<span class="sc">★ ${avg}</span>` : ""}
@@ -1251,13 +1538,13 @@ function card(i, idx) {
     ${cvsHtml(i.path)}</button>`;
 }
 function cvsHtml(path) {
-  return `${ONBOARD.has(path) ? `<span class="cvs onb" title="На холсте"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><rect x="7" y="7" width="4" height="4" fill="currentColor"/><rect x="13" y="12" width="4" height="5" fill="currentColor"/></svg></span>` : REMOVED.has(path) ? `<span class="cvs rmv" title="В архиве: убран с холста, в работу и в контекст ИИ не берется"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M4 20 20 4"/></svg></span>` : ""}`;
+  return `${ONBOARD.has(path) ? `<span class="cvs onb" title="${T("On the canvas")}">${hyIcon("onBoard", 12, 2.4)}</span>` : REMOVED.has(path) ? `<span class="cvs rmv" title="${T("Archived: taken off the canvas, left out of the work and the AI's context")}">${hyIcon("archived", 12, 2.4)}</span>` : ""}`;
 }
 
 // Cards are drawn per batch as the list scrolls near them (2026-09-30): with 8 000+ frames the whole list was 5 MB of HTML and
 // 1.1 s of work in the Mac app's WebKit on every render. Empty batches keep their exact height (sizeGrids), so scrolling does not jump.
 let GRIDS = [], gridIO = null;
-function fillGrid(g) { if (g.dataset.filled) return; g.dataset.filled = "1"; g.innerHTML = (GRIDS[+g.dataset.g] || []).map(([i, idx]) => card(i, idx)).join(""); g.style.minHeight = ""; }
+function fillGrid(g) { if (g.dataset.filled) return; g.dataset.filled = "1"; g.innerHTML = (GRIDS[+g.dataset.g] || []).map(([i, idx]) => card(i, idx)).join(""); g.style.minHeight = ""; want3d(g); }
 function watchGrids() {
   if (gridIO) gridIO.disconnect();
   const box = document.body.classList.contains("cv-on") ? $("main") : null, grids = [...document.querySelectorAll("#list .grid")];
@@ -1266,37 +1553,39 @@ function watchGrids() {
   grids.forEach(g => { if (!g.dataset.filled) gridIO.observe(g); });
 }
 function render() {
-  view = filtered(); GRIDS = [];
-  const nq = items.reduce((a, i) => a + (openQs(i).length ? 1 : 0), 0);
-  $("#askf").classList.toggle("has", nq > 0); $("#askf").title = nq ? `Вопросы ждут ответа: ${nq} кадров` : "Все вопросы отвечены";
+  modeSync(); view = filtered(); GRIDS = [];
+  ASKN = items.reduce((a, i) => a + (openQs(i).length ? 1 : 0), 0);   // the «?» chip of the filter bar says how many (renderTF)
   const groups = new Map();
   view.forEach((i, idx) => { const k = i.folder; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([i, idx]); });
   const batchHtml = arr => {
+    if (MODE3D) { GRIDS.push(arr); return `<div class="grid" data-g="${GRIDS.length - 1}" data-n="${arr.length}"></div>`; }   // 3D files: no batches
     const bs = new Map(); arr.forEach(x => { const b = x[0].batch; if (!bs.has(b)) bs.set(b, []); bs.get(b).push(x); });
     return [...bs.entries()].map(([b, xs]) => {
       const n = xs.filter(([i]) => isNew(i)).length, end = Math.max(...xs.map(([i]) => i.mtime));
       const when = fmt(b) + (end - b > 120 ? "–" + fmt(end).split(" ")[1] : "");
       GRIDS.push(xs);
-      return `<h3 class="batch">Партия ${when} · ${xs.length} кадров${n ? ` · <b>${n} новых</b>` : " · всё просмотрено"}</h3>
+      return `<h3 class="batch">${T("Batch {when}", { when })} · ${T("{n} frames", { n: xs.length })}${n ? ` · <b>${T("{n} new", { n })}</b>` : " · " + T("all viewed")}</h3>
         <div class="grid" data-g="${GRIDS.length - 1}" data-n="${xs.length}"></div>`;
     }).join("");
   };
   renderFolders();
-  $("#list").innerHTML = (view.length ? [...groups.entries()].map(([k, arr]) =>
+  const c0 = $("#coll").value, emptyN = MODE3D ? 0 : items.filter(i => i.empty && i.folder.split("/")[0] !== "_rejected" && (!c0 || inFolder(i.folder, c0))).length;
+  const emptyNote = emptyN ? `<p class="emptynote">${c0 ? T("{n} files here are empty", { n: emptyN }) : T("{n} files in all folders are empty", { n: emptyN })}</p>` : "";
+  $("#list").innerHTML = emptyNote + (view.length ? [...groups.entries()].map(([k, arr]) =>
     `<section><h2>${arr[0][0].title} <span>${k} · ${arr.length}</span></h2>${batchHtml(arr)}</section>`).join("")
-    : `<p class="empty">Под эти фильтры ничего не попало.</p>`);
+    : `<p class="empty">${T("Nothing matches these filters")}</p>`);
   // counter (owner 2026-09-29): frames shown now / frames in the chosen collection; filters and search make the left number shrink
   const c = $("#coll").value;
-  const main = items.filter(i => { const top = i.folder.split("/")[0]; return c && !ACROSS.includes(vfilter) ? inFolder(i.folder, c) : top !== "_rejected"; });   // ♥, Металл, Точный count against everything
+  const main = pool().filter(i => { const top = i.folder.split("/")[0]; return c && !acrossOn() ? inFolder(i.folder, c) : top !== "_rejected"; });   // ♥, Металл, Точный count against everything
   const done = main.filter(reviewed).length, fresh = main.filter(isNew).length;
-  $("#prog").textContent = `${view.length.toLocaleString("ru-RU")} / ${main.length.toLocaleString("ru-RU")}`;
-  $("#prog").title = `показано ${view.length} из ${main.length} · просмотрено ${done} · новых ${fresh}`;
+  $("#prog").textContent = `${T.num(view.length)} / ${T.num(main.length)}`;
+  $("#prog").title = T("Shown {shown} of {total} · viewed {done} · new {fresh}", { shown: view.length, total: main.length, done, fresh });
   sizeGrids(); watchGrids(); renderTF(); if (picked.size) syncPick();
-  $("#reset").disabled = !($("#coll").value || vfilter || $("#q").value.trim() || $("#showRej").checked || Object.keys(TF).length);   // always there, red when there is something to reset (2026-10-04)
+  $("#reset").disabled = !($("#coll").value || vfilter || $("#q").value.trim() || $("#showRej").checked || Object.keys(TF).length || Object.keys(GF).length);   // always there, red when there is something to reset (2026-10-04)
   // «Брак» adds the _rejected folder; inside one chosen collection it changes nothing, so it looks switched off there
   const solo = !!$("#coll").value && $("#coll").value !== "_rejected";
   $(".chk").classList.toggle("idle", solo);
-  $(".chk").title = solo ? "Брак лежит отдельной папкой: выбери «Все коллекции» или коллекцию «Брак»" : "Показывать брак";
+  $(".chk").title = solo ? T("Rejects are a folder of their own: choose “All collections” or the “Rejects” collection") : T("Show rejects");
   $("#barFill").style.width = (main.length ? done / main.length * 100 : 0) + "%";
 }
 
@@ -1308,19 +1597,19 @@ const OLDUSE = { "Для рекламы": "Реклама", "Ярко, для р
 function rows(sc) {
   // each group is one card: title + its rows (row order stays 0..12, so index lookups keep working)
   const bounds = GROUPS.map((g, n) => [g[0], g[1], n + 1 < GROUPS.length ? GROUPS[n + 1][1] : CRIT.length]);
-  $("#crit").innerHTML = bounds.map(([title, from, to]) => `<div class="cg"><div class="gh">${title}</div>` + CRIT.slice(from, to).map(([k, n, lo, hi, L], j) => {
+  $("#crit").innerHTML = bounds.map(([title, from, to]) => `<div class="cg"><div class="gh">${T(title)}</div>` + CRIT.slice(from, to).map(([k, n, lo, hi, L], j) => {
     const r = from + j;
     return `<div class="row ${r === rowFocus ? "focus" : ""}" data-k="${k}" data-r="${r}">
-    <div><div class="name">${n}</div><div class="mean"></div></div>
-    <div class="stars" role="group" aria-label="${n}">${[1,2,3].map(x => `<button data-s="${x}" class="${sc[k] === x ? "on" : ""}" aria-label="${L[x - 1]}" title="${x} · ${L[x - 1]}"><span class="n">${x}</span><span class="w">${SHORT[k][x - 1]}</span></button>`).join("")}</div></div>`;
+    <div><div class="name">${T(n)}</div><div class="mean"></div></div>
+    <div class="stars" role="group" aria-label="${T(n)}">${[1,2,3].map(x => `<button data-s="${x}" class="${sc[k] === x ? "on" : ""}" aria-label="${T(L[x - 1])}" title="${x} · ${T(L[x - 1])}"><span class="n">${x}</span><span class="w">${T(SHORT[k][x - 1])}</span></button>`).join("")}</div></div>`;
   }).join("") + `</div>`).join("");
   means();
 }
 // under the name: the chosen level's words; on the focused unrated row, what 1 / 2 / 3 would mean; otherwise nothing
-function meaning(L, v) { return v ? `<b class="m${v}">${L[v - 1]}</b>` : ""; }
+function meaning(L, v) { return v ? `<b class="m${v}">${T(L[v - 1])}</b>` : ""; }
 function means() { document.querySelectorAll("#crit .row").forEach((el, n) => { const on = el.querySelector("button.on"); el.querySelector(".mean").innerHTML = meaning(CRIT[n][4], on ? +on.dataset.s : 0); }); }
 // hovering a number shows what it means in the row's second line (the line is always reserved, so nothing jumps)
-document.addEventListener("mouseover", e => { const b = e.target.closest(".stars button"); if (!b) return; const row = b.closest(".row"), L = CRIT[+row.dataset.r][4]; row.querySelector(".mean").innerHTML = `<span class="hov m${b.dataset.s}">${L[+b.dataset.s - 1]}</span>`; });
+document.addEventListener("mouseover", e => { const b = e.target.closest(".stars button"); if (!b) return; const row = b.closest(".row"), L = CRIT[+row.dataset.r][4]; row.querySelector(".mean").innerHTML = `<span class="hov m${b.dataset.s}">${T(L[+b.dataset.s - 1])}</span>`; });
 document.addEventListener("mouseout", e => { const b = e.target.closest(".stars button"); if (b && !b.contains(e.relatedTarget)) means(); });
 function focusRow(r) { rowFocus = Math.max(0, Math.min(CRIT.length - 1, r)); document.querySelectorAll("#crit .row").forEach((el, n) => el.classList.toggle("focus", n === rowFocus)); means(); document.querySelectorAll("#crit .row")[rowFocus].scrollIntoView({ block: "nearest" }); }
 function curScores() { const o = {}; document.querySelectorAll("#crit .row").forEach(el => { const on = el.querySelector("button.on"); if (on) o[el.dataset.k] = +on.dataset.s; }); return o; }
@@ -1331,21 +1620,33 @@ function setScore(r, x) {
   save();
 }
 
-function open(idx) {
+// o = what the board's ⤢ asks for (owner 2026-10-06: «the full-screen preview is THIS viewer»; canvas.html bigOpen sends it with openFrame):
+// {page} a PDF opens on that page, {start, end} a video starts at the trim's start and loops its piece, {play} a video plays at once.
+function open(idx, o) {
   if (idx < 0 || idx >= view.length) return;
+  o = o || {};
   if (typeof commitPop === "function") commitPop();
   focusUse(false);
   cur = idx; const i = view[idx], f = fb(i); reportLib(); if (typeof resetZ === "function") resetZ();
   notes = (f.notes || []).map(n => ({ ...n, pts: n.pts.map(p => [...p]) })); drawing = null; renderList();
-  $("#big").src = "/thumb?p=" + enc(i.path);
+  const pg0 = i.kind === "pdf" ? Math.max(1, Math.min(i.pages || 1e9, Math.floor(+o.page) || 1)) : 1;
+  $("#big").src = i.kind === "pdf" ? pdfUrl(i, pg0, 1280) : "/thumb?p=" + enc(i.path);
   // a video plays in place of its frame, from the file itself (the server gives it in pieces)
   const vid = $("#vid"); vid.pause(); vid.hidden = i.kind !== "video"; $("#big").style.visibility = vid.hidden ? "" : "hidden";
-  if (!vid.hidden) { vid.poster = "/thumb?p=" + enc(i.path) + "&s=1280"; vid.src = "/file?p=" + enc(i.path); } else vid.removeAttribute("src");
-  const full = new Image(); full.onload = () => { if (view[cur] === i) $("#big").src = full.src; }; full.src = "/img?p=" + enc(i.path);
+  VTRIM = null; vid.onloadedmetadata = null;
+  if (!vid.hidden) {
+    vid.poster = "/thumb?p=" + enc(i.path) + "&s=1280"; vid.src = hyVideo.src(i.path, i, "");   // ui/video.js
+    const t0 = +o.start > 0 ? +o.start : 0; if (+o.end > t0) VTRIM = [t0, +o.end];
+    if (t0) vid.onloadedmetadata = () => { if (view[cur] === i) { try { vid.currentTime = t0; } catch {} } };   // each load of the file (the WebM copy too) starts at the trim
+    if (o.play) vid.play().catch(() => {});
+    vtKeep();
+  } else vid.removeAttribute("src");
+  const full = new Image(); full.onload = () => { if (view[cur] === i && (i.kind !== "pdf" || PGV.pg === pg0)) $("#big").src = full.src; }; full.src = i.kind === "pdf" ? pdfUrl(i, pg0, 2048) : "/img?p=" + enc(i.path);
+  pdfView(i.kind === "pdf" ? i : null, pg0); if (window.hyLib3d) hyLib3d.view(i);   // a 3D file: the model to turn (ui/lib3d.js)
   $("#vName").textContent = i.name;
-  const g = i.gate, qa = g ? ` · Моя проверка: ${g.status === "fail" ? "брак (" + g.reasons.join(", ") + ")" : "прошел"}${g.warnings && g.warnings.length ? "; критик сомневается: " + g.warnings.join(", ") : ""}` : "";
-  $("#vPos").textContent = `${idx + 1} из ${view.length}`;
-  $("#vSub").textContent = i.title + (ONBOARD.has(i.path) ? " · на холсте" : REMOVED.has(i.path) ? " · в архиве" : "");
+  const g = i.gate, qa = g ? ` · ${T("My check")}: ${g.status === "fail" ? T("rejected ({reasons})", { reasons: g.reasons.join(", ") }) : T("passed")}${g.warnings && g.warnings.length ? "; " + T("the critic doubts: {list}", { list: g.warnings.join(", ") }) : ""}` : "";
+  $("#vPos").textContent = T("{n} of {total}", { n: idx + 1, total: view.length });
+  $("#vSub").textContent = i.title + (ONBOARD.has(i.path) ? " · " + T("on the canvas") : REMOVED.has(i.path) ? " · " + T("archived") : "");
   $("#vModel").textContent = [i.model, i.folder, qa.replace(/^ · /, "")].filter(Boolean).join(" · ");
   document.querySelectorAll("#verdicts button[data-v]").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === f.verdict)); $("#fav").setAttribute("aria-pressed", !!f.fav);
   rowFocus = 0; oldTags = { good: f.good || [], bad: f.bad || [] };
@@ -1354,26 +1655,26 @@ function open(idx) {
   if (!sc || !Object.keys(sc).length) { sc = {}; (f.good || []).forEach(t => { if (OLDG[t]) sc[OLDG[t]] = 3; }); (f.bad || []).forEach(t => { if (OLDB[t]) sc[OLDB[t]] = 1; }); }
   rows(sc);
   const use0 = new Set([...(f.use || []), ...(f.good || []).map(t => OLDUSE[t]).filter(Boolean)]);
-  $("#use").innerHTML = USE.map(t => `<button aria-pressed="${use0.has(t)}">${t}</button>`).join("");
+  $("#use").innerHTML = USE.map(t => `<button data-u="${t}" aria-pressed="${use0.has(t)}">${T(USE_EN[t])}</button>`).join("");
   $("#comment").value = f.comment || "";
   renderQs(i);
-  $("#saved").textContent = f.updated ? "сохранено " + f.updated : "";
-  const bn = i.board_notes || [], VIA = { overlap: "под стикером", zone: "в области стикера", arrow: "стрелка", group: "стикер на всю группу" };
+  $("#saved").textContent = f.updated ? T("Saved {when}", { when: f.updated }) : "";
+  const bn = i.board_notes || [], VIA = { overlap: T("under a note"), zone: T("in a note's area"), arrow: T("arrow"), group: T("a note for the whole group") };
   $("#bnotes").hidden = !bn.length; $("#bnlist").textContent = "";
   const NC = { yellow: "#f4c430", orange: "#f59a3d", red: "#ef6a6a", pink: "#f08cc4", purple: "#b79cf2", blue: "#7dbbf5", green: "#7fd49b", grey: "#d9d9de" };
-  bn.forEach(n => { const row = document.createElement("div"); row.className = "bnote"; const d = document.createElement("span"); d.className = "dot"; d.style.background = NC[n.color] || NC.yellow; const b = document.createElement("div"); b.innerHTML = mdHtml(n.text); const sm = document.createElement("small"); sm.textContent = [n.group ? "группа: " + n.group : "", (n.via || []).map(v => VIA[v] || v).join(", "), n.board === "main" ? "" : "страница " + n.board].filter(Boolean).join(" · "); b.appendChild(sm); row.append(d, b); $("#bnlist").appendChild(row); });
-  linkify($("#vPrompt"), i.prompt || "Промпта нет: кадр без json-описания.");
-  $("#vRefs").innerHTML = (i.refpaths && i.refpaths.length ? i.refpaths.map(r => `<img src="/thumb?p=${enc(r)}&s=320" title="${r} · открыть" alt="" data-ref="${r}" style="cursor: zoom-in">`)
+  bn.forEach(n => { const row = document.createElement("div"); row.className = "bnote"; const d = document.createElement("span"); d.className = "dot"; d.style.background = NC[n.color] || NC.yellow; const b = document.createElement("div"); b.innerHTML = mdHtml(n.text); const sm = document.createElement("small"); sm.textContent = [n.group ? T("group: {name}", { name: n.group }) : "", (n.via || []).map(v => VIA[v] || v).join(", "), n.board === "main" ? "" : T("page {name}", { name: n.board })].filter(Boolean).join(" · "); b.appendChild(sm); row.append(d, b); $("#bnlist").appendChild(row); });
+  linkify($("#vPrompt"), i.prompt || T("No prompt: the frame has no json description"));
+  $("#vRefs").innerHTML = (i.refpaths && i.refpaths.length ? i.refpaths.map(r => `<img src="/thumb?p=${enc(r)}&s=320" title="${r} · ${T("open")}" alt="" data-ref="${r}" style="cursor: zoom-in">`)
     : (i.refs || []).map(r => `<img src="/ref?n=${enc(r)}" title="${r}" alt="${r}">`)).join("");
   $("#viewer").classList.add("open");
 }
 // open any picture by its path: from the list when it is there, else a picture outside the list (a reference in refs/, a folded copy)
 // opens with what the path says (owner 2026-10-03: references of a frame open in the viewer by a click)
-function openPath(p) {
+function openPath(p, o) {
   let k = view.findIndex(i => i.path === p);
   if (k < 0) { const it = items.find(i => i.path === p) || { path: p, name: p.split("/").pop().replace(/\.[^.]+$/, ""), folder: p.split("/").slice(0, -1).join("/"),
     title: p.split("/").slice(0, -1).join("/"), prompt: "", model: "", refs: [], refpaths: [], tags: [], feedback: {}, questions: [], board_notes: [], outside: true }; view = [it]; k = 0; }
-  open(k);
+  open(k, o);
 }
 document.addEventListener("click", e => { const r = e.target.closest && e.target.closest("#vRefs [data-ref]"); if (r) openPath(r.dataset.ref); });
 // basic Markdown of the canvas notes (same rules as canvas.html): **bold**, *italic*, bullets, numbers, "# " heading; escaped first
@@ -1387,7 +1688,38 @@ function mdHtml(src) {
     else { close(); out += (m = line.match(/^(#{1,3})\s*(\S.*)$/)) ? `<div style="font-weight:700">${inl(m[2])}</div>` : `<div>${line.trim() ? inl(line) : "<br>"}</div>`; } });
   close(); return src ? out : "";
 }
-function closeV() { const vid = $("#vid"); vid.pause(); vid.removeAttribute("src"); vid.hidden = true; $("#big").style.visibility = ""; flush(); $("#viewer").classList.remove("open"); cur = -1; render(); reportLib(); if (libPending) refreshItems(); }
+// A PDF in the viewer (owner 2026-10-06): its pages are pictures the server draws (/thumb ... &pg=n, 2048 px), ‹ 2 / 5 › above the page steps
+const pdfUrl = (i, pg, size) => `/thumb?p=${enc(i.path)}&s=${size}&pg=${pg}${i.mtime ? "&v=" + i.mtime : ""}`;
+let PGV = { i: null, n: 0, pg: 1 };
+function pdfPaint() {
+  const { i, n, pg } = PGV;
+  $("#pgbar").classList.toggle("on", !!i && n !== 1);   // one page: nothing to step (owner 2026-10-06)
+  if (!i) return;
+  $("#pgN").textContent = `${pg} / ${n || "…"}`;
+  $("#pgPrev").disabled = pg <= 1; $("#pgNext").disabled = !n || pg >= n;
+}
+function pdfView(i, pg) {
+  PGV = { i, n: i && i.pages || 0, pg: pg || 1 }; pdfPaint();
+  if (!i) return;
+  fetch("/api/pdf?p=" + enc(i.path)).then(r => r.json()).then(d => { if (PGV.i === i) { PGV.n = d.pages || 0; pdfPaint(); } }).catch(() => {});
+}
+function pdfGo(d) {
+  const { i, n, pg } = PGV; if (!i || !n) return;
+  const next = Math.max(1, Math.min(n, pg + d)); if (next === pg) return;
+  PGV.pg = next; pdfPaint();
+  const pre = new Image(); pre.onload = () => { if (PGV.i === i && PGV.pg === next) { $("#big").src = pre.src; } }; pre.src = pdfUrl(i, next, 1280);   // the old page stays until the new one is there
+  const full = new Image(); full.onload = () => { if (PGV.i === i && PGV.pg === next) $("#big").src = full.src; }; full.src = pdfUrl(i, next, 2048);
+}
+$("#pgPrev").onclick = () => pdfGo(-1); $("#pgNext").onclick = () => pdfGo(1);
+// a trimmed video from the board (open's {start, end}) loops its piece: back to the start when the end is reached (the viewer's own controls still scrub freely)
+let VTRIM = null, vtRaf = 0, cvAsked = false;
+function vtKeep() {
+  cancelAnimationFrame(vtRaf); if (!VTRIM) return;
+  const v = $("#vid");
+  if (!v.hidden && !v.paused && !v.seeking && v.readyState >= 1 && v.currentTime >= Math.min(VTRIM[1], v.duration || VTRIM[1]) - 0.03) v.currentTime = VTRIM[0];
+  vtRaf = requestAnimationFrame(vtKeep);
+}
+function closeV() { if (window.hyLib3d) hyLib3d.view(null); if (cvAsked) { cvAsked = false; try { document.getElementById("cvFrame").contentWindow.focus(); } catch {} } PGV.i = null; pdfPaint(); VTRIM = null; cancelAnimationFrame(vtRaf); const vid = $("#vid"); vid.onloadedmetadata = null; vid.pause(); vid.removeAttribute("src"); vid.hidden = true; $("#big").style.visibility = ""; flush(); $("#viewer").classList.remove("open"); cur = -1; render(); reportLib(); if (libPending) refreshItems(); }
 
 function state() {
   const vb = document.querySelector("#verdicts button[data-v][aria-pressed=true]"), sc = curScores();
@@ -1396,7 +1728,7 @@ function state() {
   const keepG = oldTags.good.filter(t => !OLDG[t]), keepB = oldTags.bad.filter(t => !OLDB[t]);
   const good = [...new Set([...CRIT.filter(([k]) => sc[k] === 3).map(c => c[3]), ...keepG])];
   const bad = [...new Set([...CRIT.filter(([k]) => sc[k] === 1).map(c => c[2]), ...keepB])];
-  const use = [...document.querySelectorAll("#use button[aria-pressed=true]")].map(b => b.textContent);
+  const use = [...document.querySelectorAll("#use button[aria-pressed=true]")].map(b => b.dataset.u);   // the stored word, not the shown one
   return { verdict: vb ? vb.dataset.v : "", fav: $("#fav").getAttribute("aria-pressed") === "true", scores: sc, use, good, bad, comment: $("#comment").value.trim(), notes: notes.map(n => ({ kind: n.kind, pts: n.pts, text: n.text || "" })) };
 }
 let feedbackTail = Promise.resolve(true);
@@ -1406,7 +1738,7 @@ function save() {
   if (cur < 0) return feedbackTail;
   const i = view[cur], s = state();
   const body = JSON.stringify({ path: i.path, name: i.name, ...s });
-  $("#saved").textContent = "сохраняю…";
+  $("#saved").textContent = T("Saving…");
   feedbackTail = feedbackTail.then(async () => {
     try {
       const r = await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body });
@@ -1414,11 +1746,11 @@ function save() {
       const res = await r.json();
       items.forEach(x => { if (res.paths.includes(x.path)) x.feedback = res.feedback; });
       failedFeedback.delete(i.path);
-      $("#saved").textContent = res.feedback.updated ? "сохранено в json кадра · " + res.feedback.updated : "оценка снята";
+      $("#saved").textContent = res.feedback.updated ? T("Saved to the frame's json · {when}", { when: res.feedback.updated }) : T("Rating cleared");
       return true;
     } catch (e) {
       failedFeedback.add(i.path);
-      $("#saved").textContent = "не сохранилось: сервер не отвечает, попробуй еще раз";
+      $("#saved").textContent = T("Not saved: the server is not responding, try again");
       return false;
     }
   });
@@ -1442,51 +1774,195 @@ function sizeGrids() {
 // once the width rests (owner 2026-10-04: the library opening and widening stuttered): measuring 2 200 batches on every frame of
 // the panel's widening took 80-120 ms a frame on Studio North; their placeholder heights only matter for the scroll bar
 { let t = 0; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(sizeGrids, 160); }).observe(document.querySelector("#list")); }
+// What the project's frames hold, for the window and the default pins: the scales that have scores, the kinds of file
+const FACT = { for: null, sc: {}, kinds: {} };
+function facts() {
+  if (FACT.for === items) return FACT;
+  const sc = {}, kinds = {};
+  for (const i of items) {
+    kinds[kindKey(i)] = 1;
+    const s = effScores(fb(i)); for (const k in s) if (s[k] >= 1 && s[k] <= 3) sc[k] = 1;
+  }
+  return Object.assign(FACT, { for: items, sc, kinds });
+}
+// A new project starts with All, New, Take, Idea, No, ♥ and ?; one whose frames carry scores.real or scores.case and that has 3D files also
+// gets Metal, Exact and 3D, so the Atlas boards look as they did (owner 2026-10-06). Used until the project pins or unpins something.
+function defaultPins() {
+  const f = facts(), p = ["all", ...RATING, "fav", "ask"];
+  if (f.sc.real) p.push("score:real:3");
+  if (f.sc.case) p.push("score:case:3");
+  if (models && models.length) p.push("3d");
+  return p;
+}
+const pins = () => PINS || defaultPins();
+async function loadPins() {   // the pins of this project (server: filters.json beside the boards)
+  try { PINS = (await (await fetch("/api/filters")).json()).pins || null; } catch { PINS = null; }
+  if (!PINS && !models) loadModels().then(renderTF);   // the default of «3D» waits for the list of 3D files
+}
+function togglePin(id) {
+  const cur = pins().slice(), at = cur.indexOf(id);
+  if (at >= 0) cur.splice(at, 1); else cur.push(id);
+  PINS = cur; renderTF();
+  fetch("/api/filters", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pins: cur }) })
+    .then(r => { if (!r.ok) throw 0; }).catch(() => libNote(T("The pins could not be saved")));
+}
+// the capsule's chips: kept by their id and changed in place, so a chip's colour eases between its states
+function chipSpec(d, st, x) {
+  const single = d.type === "radio" || d.type === "mode" || d.type === "all";
+  // the same marks as the window's chips (owner 2026-10-06: «why does the filter below look different from the one above»)
+  const sign = st === "exc" ? "− " : st === "inc" && !single && d.type !== "rej" ? "+ " : "";
+  const inner = d.id === "ask" ? `<span class="qi">?</span>` : d.type === "rej" && REJ === "only" ? esc(T("Only rejected")) : d.type === "rej" && REJ ? "+ " + esc(d.label) : esc(d.label);
+  return { k: d.id, f: d.type === "all" ? "" : d.id, x, pressed: st === "inc",
+    cls: `fc ${d.cls || ""} ${st} ${d.id === "ask" && ASKN > 0 ? "has" : ""}`.replace(/\s+/g, " ").trim(),
+    html: `${sign}${inner}${x ? " <i>✕</i>" : ""}`,
+    title: x ? T("Remove") : d.id === "ask" ? (ASKN ? T("Questions waiting for an answer: {n} frames", { n: ASKN }) : T("All questions answered")) : d.title || "" };
+}
+function syncChips(box, specs) {
+  const have = new Map([...box.children].map(el => [el.dataset.k, el]));
+  let prev = null;
+  for (const s of specs) {
+    let el = have.get(s.k), fresh = !el;
+    if (fresh) { el = document.createElement("button"); el.dataset.k = s.k; }
+    have.delete(s.k);
+    if (el.dataset.html !== s.html) { el.innerHTML = s.html; el.dataset.html = s.html; }
+    el.className = s.cls + (fresh ? " in" : "");
+    el.dataset.f = s.f; el.setAttribute("aria-pressed", s.pressed);
+    if (s.x) el.dataset.x = "1"; else delete el.dataset.x;
+    if (s.title) el.title = s.title; else el.removeAttribute("title");
+    if (el.previousElementSibling !== prev || !el.parentNode) box.insertBefore(el, prev ? prev.nextSibling : box.firstChild);
+    prev = el;
+  }
+  have.forEach(el => el.remove());
+}
 function renderTF() {
-  const on = Object.entries(TF);
-  $("#tfN").hidden = !on.length; $("#tfN").textContent = on.length; $("#tfBtn").classList.toggle("on", on.length > 0);
-  $("#tfActive").hidden = !on.length;
-  $("#tfActive").innerHTML = on.map(([t, m]) => `<button class="tfchip ${m}" data-t="${esc(t)}" title="Убрать">${m === "inc" ? "+" : "−"} ${esc(t)} <i>✕</i></button>`).join("");
+  const act = (vfilter ? 1 : 0) + Object.keys(GF).length + Object.keys(TF).length + (REJ ? 1 : 0);
+  $("#tfClear").disabled = !act;
+  $("#tfN").hidden = !act; $("#tfN").setAttribute("count", act); $("#tfBtn").classList.toggle("on", act > 0);
+  const pinned = pins(), specs = [], active = [];
+  for (const id of pinned) { const d = fdef(id); if (d) specs.push(chipSpec(d, fstate(d), false)); }
+  // what is active and not pinned stays in the capsule as «+ Звери ×»; a click takes it off
+  if (vfilter && !pinned.includes(vfilter)) active.push(vfilter);
+  Object.keys(GF).forEach(k => { if (!pinned.includes(k)) active.push(k); });
+  Object.keys(TF).forEach(t => { if (!pinned.includes("tag:" + t)) active.push("tag:" + t); });
+  if (REJ && !pinned.includes("rej")) active.push("rej");
+  for (const id of active) { const d = fdef(id); if (d) specs.push(chipSpec(d, fstate(d), true)); }
+  syncChips($("#vfChips"), specs);
   if (!$("#tfPanel").hidden) { placeTF(); renderTFPanel(); }
 }
-function renderTFPanel() {
-  // counts: frames in the current collection and verdict filter that carry the tag (the tag filter itself not applied)
-  const base = filtered(true), cnt = {};
-  base.forEach(i => tagsOf(i).forEach(t => cnt[t] = (cnt[t] || 0) + 1));
+// the window's sections, from the data: the rating, the kinds present, a scale for each one the frames hold scores of, then the tags
+function tfSections(f) {
+  const out = [[T("Rating"), ["all", ...RATING, "fav", "ask"]]];
+  const kinds = Object.keys(f.kinds).sort((a, b) => a === "image" ? -1 : b === "image" ? 1 : a.localeCompare(b));
+  const has3d = !!(models && models.length) || vfilter === "3d" || pins().includes("3d");
+  if (kinds.some(k => k !== "image") || has3d) out.push([T("Kind"), [...kinds.map(k => "kind:" + k), ...(has3d ? ["3d"] : [])]]);
+  if (items.some(i => i.folder.split("/")[0] === "_rejected")) out.push([T("Rejected"), ["rej"]]);
+  const known = CRIT.map(c => c[0]);
+  for (const k of [...known, ...Object.keys(f.sc).filter(k => !known.includes(k)).sort()]) if (f.sc[k]) out.push([T("Score: {name}", { name: scaleName(k) }), [1, 2, 3].map(n => `score:${k}:${n}`)]);
   const engines = [...new Set(items.flatMap(i => (i.tags || []).filter(t => !TGROUPS.some(g => g[1] === t))))].sort();
   const groups = [...new Set(TGROUPS.map(g => g[0]))].map(g => [g, TGROUPS.filter(x => x[0] === g).map(x => x[1])]);
-  groups.unshift(["Холст", FACETS.filter(f => f[0] === "Холст").map(f => f[1])]);
-  groups.push(["Движок", engines], ["Разбор", FACETS.filter(f => f[0] === "Разбор").map(f => f[1])]);
-  $("#tfGroups").innerHTML = groups.map(([g, ts]) => `<div class="tfg"><h4>${g}</h4><div>${ts.map(t =>
-    `<button data-t="${esc(t)}" class="${TF[t] || ""} ${cnt[t] ? "" : "zero"}">${TF[t] === "inc" ? "+ " : TF[t] === "exc" ? "− " : ""}${esc(t)} <i>${cnt[t] || 0}</i></button>`).join("")}</div></div>`).join("");
+  groups.unshift(["Canvas", FACETS.filter(x => x[0] === "Canvas").map(x => x[1])]);
+  groups.push(["Engine", engines], ["Review", FACETS.filter(x => x[0] === "Review").map(x => x[1])]);
+  groups.forEach(([g, ts]) => { if (ts.length) out.push([groupLabel(g), ts.map(t => "tag:" + t)]); });
+  return out;
+}
+const PIN_SVG = '' + hyIcon("pin", 14, 1.9) + '';
+function renderTFPanel() {
+  // counts: the frames of the chosen collection and search that carry each filter (the filters themselves not applied)
+  const base = filtered(true), cnt = { all: base.length }, bump = k => { cnt[k] = (cnt[k] || 0) + 1; };
+  for (const i of base) {
+    const f = fb(i), v = f.verdict || "";
+    if (isNew(i)) bump("none");
+    if (RATING.includes(v)) bump(v);
+    if (f.fav) bump("fav");
+    if (openQs(i).length) bump("ask");
+    bump("kind:" + kindKey(i));
+    const s = effScores(f); for (const k in s) if (s[k] >= 1 && s[k] <= 3) bump(`score:${k}:${s[k]}`);
+    tagsOf(i).forEach(t => bump("tag:" + t));
+  }
+  cnt["3d"] = models ? models.length : 0;
+  cnt.rej = items.filter(i => i.folder.split("/")[0] === "_rejected").length;
+  const secs = tfSections(facts()), sig = JSON.stringify(secs.map(s => s[1])), box = $("#tfGroups"), pinned = pins();
+  if (box.dataset.sig !== sig) {
+    box.dataset.sig = sig;
+    box.innerHTML = secs.map(([title, ids]) => `<div class="tfg"><h4>${esc(title)}</h4><div>${ids.map(id => `<span class="fchip" data-id="${esc(id)}"><button class="fl" data-id="${esc(id)}"><b></b><span></span> <i></i></button><button class="pn" data-pin="${esc(id)}">${PIN_SVG}</button></span>`).join("")}</div></div>`).join("");
+  }
+  box.querySelectorAll(".fchip").forEach(el => {
+    const d = fdef(el.dataset.id); if (!d) return;
+    const st = fstate(d), n = cnt[d.id] || 0, on = pinned.includes(d.id), single = d.type === "radio" || d.type === "mode" || d.type === "all";
+    el.className = `fchip ${d.cls || ""} ${st} ${n || st ? "" : "zero"}`.replace(/\s+/g, " ").trim();
+    const fl = el.querySelector(".fl"), pn = el.querySelector(".pn");
+    fl.querySelector("b").textContent = st === "exc" ? "− " : st === "inc" && !single ? "+ " : "";
+    fl.querySelector("span").textContent = d.type === "rej" && REJ === "only" ? T("Only rejected") : d.short; fl.querySelector("i").textContent = T.num(n);
+    if (d.type === "rej" && REJ === "with") fl.querySelector("b").textContent = "+ ";
+    if (d.title) fl.title = d.title; else fl.removeAttribute("title");
+    pn.setAttribute("aria-pressed", on); pn.title = on ? T("Unpin from the bar") : T("Pin to the bar"); pn.setAttribute("aria-label", pn.title);
+  });
 }
 function placeTF() {   // sit right above the dock, whatever its height
-  const top = $("header").getBoundingClientRect().top, p = $("#tfPanel");
-  p.style.bottom = (innerHeight - top + 10) + "px"; p.style.maxHeight = Math.max(200, top - 24) + "px";
-}
-function cycleTag(t, alt) {
-  TF[t] = alt ? (TF[t] === "exc" ? undefined : "exc") : (!TF[t] ? "inc" : TF[t] === "inc" ? "exc" : undefined);
-  if (!TF[t]) delete TF[t];
-  setPref("tf", JSON.stringify(TF)); render();
+  const r = $("header").getBoundingClientRect(), top = r.top, p = $("#tfPanel");
+  // no higher than the library's own top (owner 2026-10-06: «why does the filter climb over the media library's edge»); alone, the window's
+  const b = document.body, m = $("main"), ceil = b.classList.contains("cv-on") && !b.classList.contains("cv-only") && m ? m.getBoundingClientRect().top : 12;
+  p.style.bottom = (innerHeight - top + 10) + "px"; p.style.maxHeight = Math.max(200, top - 10 - ceil - 12) + "px";
+  // its left and right edges on the dock's (owner 2026-10-06: «why is it crooked here, it must be in line»): one column with the capsule
+  if (r.width) Object.assign(p.style, { left: r.left + "px", width: r.width + "px", transform: "none" });
 }
 $("#tfBtn").onclick = async () => {
   const p = $("#tfPanel"), open1 = p.hidden;
+  if (open1) FACT.for = null;   // what the frames hold is read afresh each time the window opens
   if (open1 && !TGROUPS.length) TGROUPS = await (await fetch("/api/taggroups")).json();
-  p.hidden = !open1; $("#tfBtn").setAttribute("aria-expanded", open1); if (open1) { placeTF(); renderTFPanel(); }
+  p.hidden = !open1; $("#tfBtn").setAttribute("aria-expanded", open1); if (open1) { placeTF(); renderTFPanel(); if (!models) loadModels().then(() => { if (!p.hidden) renderTFPanel(); }); }
 };
-$("#tfGroups").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (b) cycleTag(b.dataset.t, e.altKey); });
-$("#tfActive").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (b) { delete TF[b.dataset.t]; setPref("tf", JSON.stringify(TF)); render(); } });
-$("#tfClear").onclick = () => { TF = {}; setPref("tf", "{}"); render(); };
-document.addEventListener("pointerdown", e => { const p = $("#tfPanel"); if (!p.hidden && !e.target.closest("#tfPanel, #tfBtn")) { p.hidden = true; $("#tfBtn").setAttribute("aria-expanded", false); } });
+$("#tfGroups").addEventListener("click", e => {
+  const pn = e.target.closest("[data-pin]"); if (pn) { togglePin(pn.dataset.pin); return; }
+  const b = e.target.closest(".fl"); if (b) fcycle(b.dataset.id, e.altKey);
+});
+$("#vf").addEventListener("click", e => {
+  const b = e.target.closest("button[data-f]"); if (!b) return;
+  const id = b.dataset.f === "" ? "all" : b.dataset.f;
+  if (b.dataset.x) { const d = fdef(id); if (d) { fset(d, ""); render(); } return; }   // an active filter that is not pinned: a click takes it off
+  fcycle(id, e.altKey);
+});
+{ const fit = () => { const h = $("header.hy-dock"), p = $("#tfPanel");
+    $("#reset").classList.toggle("ico", !!h && h.clientWidth < 560); $("#tfClear").classList.toggle("ico", !!p && p.clientWidth > 0 && p.clientWidth < 520); };
+  // the classes and the filter window follow a frame later, not inside the observer: they change the size it watches (a loop)
+  const ro = new ResizeObserver(() => requestAnimationFrame(() => { fit(); if (!$("#tfPanel").hidden) placeTF(); })); [$("header.hy-dock"), $("#tfPanel")].forEach(el => el && ro.observe(el)); fit(); }
+$("#tfClear").onclick = () => { TF = {}; GF = {}; vfilter = ""; setRej(""); setPref("tf", "{}"); setPref("gf", "{}"); render(); };
+document.addEventListener("pointerdown", e => { const p = $("#tfPanel"); if (!p.hidden && !e.target.closest("#tfPanel, #vf")) { p.hidden = true; $("#tfBtn").setAttribute("aria-expanded", false); } });
+// a tag of the project's own (owner 2026-10-06): a name, the words that find it, a group; the server adds it to this board's tag rules and
+// scans the library again, so it shows on the frames that match
+$("#tgOpen").onclick = () => {
+  const f = $("#tgForm"), open1 = f.hidden; f.hidden = !open1; $("#tgOpen").setAttribute("aria-expanded", open1);
+  if (open1) {
+    $("#tgGroupList").innerHTML = [...new Set(TGROUPS.map(g => g[0]))].map(g => `<option value="${esc(g)}"></option>`).join("");
+    if (!$("#tgGroup").value) $("#tgGroup").value = T("Own tags");
+    $("#tgName").focus();
+  }
+};
+$("#tgForm").onsubmit = async e => {
+  e.preventDefault();
+  const tag = $("#tgName").value.trim(), words = $("#tgWords").value.trim(), group = $("#tgGroup").value.trim() || T("Own tags"), go = $("#tgGo");
+  if (!tag || !words) { libNote(T("Give the tag a name and the words to find")); return; }
+  go.disabled = true; go.textContent = T("Adding…");
+  try {
+    const r = await fetch("/api/tagrule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ group, tag, words }) });
+    if (r.status === 409) libNote(T("This tag already exists"));
+    else if (!r.ok) libNote(T("The tag was not saved: check the name and the words"));
+    else {
+      TGROUPS = await (await fetch("/api/taggroups")).json(); await refreshItems();
+      $("#tgName").value = ""; $("#tgWords").value = ""; libNote(T("Tag «{tag}» added", { tag }));
+    }
+  } catch { libNote(T("The tag was not saved: check the name and the words")); }
+  go.disabled = false; go.textContent = T("Add");
+};
 fetch("/api/taggroups").then(r => r.json()).then(g => { TGROUPS = g; render(); });
 function renderQs(i) {
   const qs = i.questions || [], b = $("#qblock");
   b.hidden = !qs.length; if (!qs.length) { b.innerHTML = ""; return; }
   const open1 = new Set(openQs(i).map(q => q.id));
-  b.innerHTML = `<div class="qh">Вопросы от Claude · ${open1.size ? "ждут ответа: " + open1.size : "все отвечены"}</div>` + qs.map(q =>
+  b.innerHTML = `<div class="qh">${T("Questions from Claude")} · ${open1.size ? T("waiting for an answer: {n}", { n: open1.size }) : T("all answered")}</div>` + qs.map(q =>
     `<div class="q ${open1.has(q.id) ? "" : "done"}"><div class="qt">${esc(q.q)}</div>
-     <textarea class="qa" data-q="${q.id}" rows="2" placeholder="Ответ текстом, как есть">${esc(q.a || "")}</textarea>
-     <div class="qs" data-s="${q.id}">${q.answered ? "ответ сохранен " + q.answered : ""}</div></div>`).join("");
+     <textarea class="qa" data-q="${q.id}" rows="2" placeholder="${T("Answer in your own words")}">${esc(q.a || "")}</textarea>
+     <div class="qs" data-s="${q.id}">${q.answered ? T("Answer saved {when}", { when: q.answered }) : ""}</div></div>`).join("");
   b.querySelectorAll(".qa").forEach(grow);
 }
 function esc(t) { return String(t || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
@@ -1503,7 +1979,7 @@ function saveAnswer(key) {
 $("#qblock").addEventListener("input", e => {
   const t = e.target.closest(".qa"); if (!t || cur < 0) return; grow(t);
   const i = view[cur], id = t.dataset.q, a = t.value;
-  const st = $(`#qblock [data-s="${id}"]`); st.textContent = "сохраняю…";
+  const st = $(`#qblock [data-s="${id}"]`); st.textContent = T("Saving…");
   const key = i.path + "\n" + id;
   clearTimeout(ansTimers[key]);
   pendingAnswers.set(key, async () => {
@@ -1511,10 +1987,10 @@ $("#qblock").addEventListener("input", e => {
       const r = await fetch("/api/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: i.path, id, a }) });
       if (!r.ok) throw new Error(r.status);
       i.questions = (await r.json()).questions;
-      const q = i.questions.find(x => x.id === id); st.textContent = q && q.answered ? "ответ сохранен " + q.answered : "ответ пустой";
+      const q = i.questions.find(x => x.id === id); st.textContent = q && q.answered ? T("Answer saved {when}", { when: q.answered }) : T("Answer is empty");
       t.closest(".q").classList.toggle("done", !!(q && q.answered));
       failedAnswers.delete(key); return true;
-    } catch (err) { failedAnswers.add(key); st.textContent = "не сохранилось: сервер не отвечает"; return false; }
+    } catch (err) { failedAnswers.add(key); st.textContent = T("Not saved: the server is not responding"); return false; }
   });
   ansTimers[key] = setTimeout(() => saveAnswer(key), 700);
 });
@@ -1555,19 +2031,22 @@ function reportLib() {
 function syncPick() {
   reportLib();
   document.body.classList.toggle("picking", picked.size > 0);
-  $("#pickinfo").hidden = !picked.size; $("#pickn").textContent = `Выбрано ${picked.size}`;
-  const all = view.length && view.every(i => picked.has(i.path)); $("#pickall").hidden = all; $("#pickall").textContent = `Выбрать все ${view.length}`;
+  $("#pickinfo").hidden = !picked.size; $("#pickn").textContent = T("{n} selected", { n: picked.size });
+  const all = view.length && view.every(i => picked.has(i.path)); $("#pickall").hidden = all; $("#pickall").textContent = T("Select all {n}", { n: view.length });
 }
 function togglePick(c) {
+  if (view[+c.dataset.i].empty) return;
   const p = view[+c.dataset.i].path; picked.has(p) ? picked.delete(p) : picked.add(p);
   c.classList.toggle("picked", picked.has(p)); syncPick();
 }
 function clearPick() { picked.clear(); document.querySelectorAll(".card.picked").forEach(c => c.classList.remove("picked")); syncPick(); }
 $("#pickclr").onclick = clearPick;
-function pickAll() { view.forEach(i => picked.add(i.path)); document.querySelectorAll("#list .card").forEach(c => c.classList.add("picked")); syncPick(); }
+function pickAll() { view.forEach(i => { if (!i.empty) picked.add(i.path); }); document.querySelectorAll("#list .card").forEach(c => c.classList.add("picked")); syncPick(); }
 $("#pickall").onclick = pickAll;
 $("#list").addEventListener("click", e => {
   const c = e.target.closest(".card"); if (!c) return;
+  if (c.classList.contains("m3d") && MODE3D) { e.preventDefault(); const i = view[+c.dataset.i]; if (i) pick3d(i); return; }   // the 3D filter: into a 3D card; a folder: the viewer
+  if (c.classList.contains("empty")) { e.preventDefault(); libNote(T("This file is empty: there is nothing to open or to put on the board")); return; }
   if (e.target.closest(".pick") || picked.size) { e.preventDefault(); togglePick(c); return; }   // in pick mode a click on the picture picks it
   open(+c.dataset.i);
 });
@@ -1578,19 +2057,46 @@ $("#cvFrame").addEventListener("load", () => { cvReady = true; });
 function showOnBoard(path) {
   closeLctx();
   if (pref("view", "canvas") === "lib") setView("panel");
+  else if (document.body.classList.contains("lwide")) $("#lwide").click();   // full width covers the board: back to the normal width (owner 2026-10-06)
   const f = $("#cvFrame"), go = () => f.contentWindow.postMessage({ type: "showPath", path }, location.origin);
   if (cvReady) go(); else f.addEventListener("load", go, { once: true });
 }
 function closeLctx() { $("#lctx").classList.remove("open"); }
+// the app's Chromium has no H.264 (owner 2026-10-05): the original's error switches the player to the server's WebM copy (ui/video.js)
+$("#vid").addEventListener("error", () => { const v = $("#vid"), i = view[cur]; if (!i || v.hidden || !v.getAttribute("src")) return; if (hyVideo.fallback(v, i.path, "")) v.play().catch(() => {}); });
 $("#list").addEventListener("contextmenu", e => {
   const c = e.target.closest(".card"), i = c && view[+c.dataset.i]; if (!i) return;
   e.preventDefault();
   const on = ONBOARD.has(i.path), m = $("#lctx");
-  m.innerHTML = hyMenuItem('data-a="show"', "show", on ? "Показать на доске" : "Этого кадра нет на досках", null, on ? "" : " disabled");
-  m.onclick = ev => { if (ev.target.closest("[data-a=show]:not(:disabled)")) showOnBoard(i.path); };
+  // «Показать в Finder» (owner 2026-10-05): the card, or every picked card when it is one of them
+  const files = picked.has(i.path) ? view.map(x => x.path).filter(p => picked.has(p)) : [i.path];
+  // «Open in <App>» first, as on the board's card menu (owner 2026-10-06; ui/menu.js names the app)
+  m.innerHTML = hyOpenItem('data-a="open"') + `<div class="sep"></div>`
+    + hyMenuItem('data-a="show"', "show", T("Show on board"), null, on ? "" : hyMenuOff(T("This frame is on no board")))   // grey with its reason (owner 2026-10-06)
+    + hyMenuItem('data-a="reveal"', "finder", files.length > 1 ? T("Show in Finder ({n})", { n: files.length }) : T("Show in Finder"));
+  hyOpenFill(m.querySelector("[data-a=open]"), i.path);
+  m.onclick = ev => {
+    if (ev.target.closest("[data-a=open]")) { closeLctx(); hyOpenFile(i.path, (t, k) => (window.hyToast || console.log)(t, k)); }
+    else if (ev.target.closest("[data-a=show]:not([aria-disabled=true])")) showOnBoard(i.path);
+    else if (ev.target.closest("[data-a=reveal]")) { closeLctx(); hyReveal(files, (t, k) => (window.hyToast || console.log)(t, k)); }
+  };
   m.classList.add("open"); const r = m.getBoundingClientRect();
   m.style.left = Math.max(8, Math.min(e.clientX, innerWidth - r.width - 8)) + "px"; m.style.top = Math.max(8, Math.min(e.clientY, innerHeight - r.height - 8)) + "px";
-  const b = m.querySelector("button:not(:disabled)"); if (b) b.focus();
+  const b = m.querySelector("button:not(:disabled):not([aria-disabled=true])"); if (b) b.focus();
+});
+// a folder's right-click menu (owner 2026-10-06: «right mouse click has our dropdown and on top we have color change same as for notes»):
+// the colours first, then Show in Finder
+document.addEventListener("contextmenu", e => {
+  const r = e.target.closest && e.target.closest(".frow[data-f]"), path = r && r.dataset.f; if (!path) return;
+  e.preventDefault();
+  const m = $("#lctx");
+  m.innerHTML = hyMenuColors(FCOL[path] || "") + hyMenuItem('data-a="reveal"', "finder", T("Show in Finder"));
+  m.onclick = ev => {
+    const c = ev.target.closest("[data-color]"); if (c) { setFolderColor(path, c.dataset.color); closeLctx(); return; }
+    if (ev.target.closest("[data-a=reveal]")) { closeLctx(); hyReveal([path], (t, k) => (window.hyToast || console.log)(t, k)); }
+  };
+  m.classList.add("open"); const b = m.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(e.clientX, innerWidth - b.width - 8)) + "px"; m.style.top = Math.max(8, Math.min(e.clientY, innerHeight - b.height - 8)) + "px";
 });
 document.addEventListener("pointerdown", e => { if (!e.target.closest("#lctx")) closeLctx(); }, true);
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeLctx(); });
@@ -1606,6 +2112,7 @@ document.addEventListener("selectstart", e => { const t = e.target.nodeType === 
 // drag a card onto the canvas (the canvas lives in an iframe of the same origin; the payload is the frame path)
 $("#list").addEventListener("dragstart", e => {
   const c = e.target.closest(".card"); if (!c) return;
+  if (view[+c.dataset.i].empty) { e.preventDefault(); return; }   // nothing to place
   const p = view[+c.dataset.i].path;
   // dragging a picked card carries every picked card, in the order they appear in the library
   const paths = picked.has(p) ? view.map(i => i.path).filter(x => picked.has(x)) : [p];
@@ -1616,7 +2123,7 @@ $("#list").addEventListener("dragstart", e => {
     g.innerHTML = `<img src="${im ? im.src : ""}"><b>${paths.length}</b>`;
     Object.assign(g.style, { position: "fixed", left: "-1000px", top: "0", width: "96px", height: "128px", borderRadius: "12px", overflow: "hidden", boxShadow: "6px 6px 0 -2px rgba(255,255,255,.5), 12px 12px 0 -4px rgba(255,255,255,.3)" });
     g.querySelector("img").style.cssText = "width:100%;height:100%;object-fit:cover;display:block";
-    g.querySelector("b").style.cssText = "position:absolute;right:6px;top:6px;background:#0a84ff;color:#fff;font:600 12px/22px var(--sans);min-width:22px;height:22px;border-radius:999px;text-align:center;padding:0 6px";
+    g.querySelector("b").style.cssText = "position:absolute;right:6px;top:6px;background:var(--sel);color:#fff;font:600 12px/22px var(--sans);min-width:22px;height:22px;border-radius:999px;text-align:center;padding:0 6px";
     document.body.appendChild(g); e.dataTransfer.setDragImage(g, 48, 64); setTimeout(() => g.remove());
   } else if (im) e.dataTransfer.setDragImage(im, im.width / 2, im.height / 2);
 });
@@ -1634,21 +2141,32 @@ function jumpSection(dir) {
 }
 // ↑ ↓ switch the chosen collection in the list (owner 2026-09-29): up = the one above in the menu, down = the one below.
 // From «Все коллекции» down opens the first collection; up from the first goes back to «Все коллекции».
+// ↑ ↓ (owner 2026-10-06: «switching with the arrows I see no highlight of the folders on the left»): they walk the folders in the order
+// the tree shows them (A–Z, a parent before its subfolders), skip the ones the filters leave empty, and the chosen folder opens its
+// parents and comes into view on the left, highlighted
 function stepCollection(dir) {
-  const sel = $("#coll"), opts = [...sel.options].map(o => o.value);
-  const k = Math.min(opts.length - 1, Math.max(0, opts.indexOf(sel.value) + dir));
-  if (opts[k] === sel.value) return;
-  sel.value = opts[k]; sel.onchange();
+  const sel = $("#coll"), was = sel.value, own = new Set([...sel.options].map(o => o.value).filter(Boolean));
+  sel.value = ""; const hit = new Set(); filtered().forEach(i => { const a = i.folder.split("/"); a.forEach((_, k) => hit.add(a.slice(0, k + 1).join("/"))); }); sel.value = was;
+  const order = [""], walk = n => [...n.kids.values()].sort(fsortCmp(fLabel)).forEach(k => { if (own.has(k.path)) order.push(k.path); walk(k); });
+  walk(folderTree());
+  let k = Math.max(0, order.indexOf(was)), next = was;   // from where it stands, to the next folder with something in it (All counts)
+  for (let j = k + dir; j >= 0 && j < order.length; j += dir) if (!order[j] || hit.has(order[j])) { next = order[j]; break; }
+  if (next === was) return;
+  chooseFolder(next);
   const box = document.body.classList.contains("cv-on") ? $("main") : document.scrollingElement; box.scrollTop = 0;
+  const row = $("#fnav .frow.on"); if (row) row.scrollIntoView({ block: "nearest" });
 }
 $("#secUp").onclick = () => stepCollection(-1); $("#secDn").onclick = () => stepCollection(1);
 // view switch: library only (old page) / library floating over the canvas / canvas only; the library width is remembered
-function inset() {   // tell the canvas how much of the screen the library covers, so its dock and "show all" use the free part
+function inset(to) {   // tell the canvas how much of the screen the library covers, so its dock and "show all" use the free part
   const on = document.body.classList.contains("cv-on") && !document.body.classList.contains("cv-only");
-  const left = on ? 24 + $("main").getBoundingClientRect().width : 0, de = document.documentElement;
-  // where the canvas's crumb starts on the top line: after the window buttons' capsule (in the app, not in full screen) and the round button
-  const row = (de.classList.contains("in-app") && !de.classList.contains("hy-fs") ? 98 : 12) + 38 + 6;
-  const f = $("#cvFrame"); if (f.contentWindow) f.contentWindow.postMessage({ type: "inset", left, row }, location.origin);
+  // to: the edge a move is going to (a closing library tells it at the start); inset.ms: how long the library's move takes, so the canvas's editor panels
+  // glide the same time on the same curve (owner 2026-10-06: «it should move in unison»); 0 when nothing moves
+  const left = typeof to === "number" ? to : on ? 24 + $("main").getBoundingClientRect().width : 0, de = document.documentElement, ms = inset.ms || 0; inset.ms = 0;
+  // where the canvas's crumb starts on the top line: after the window buttons' capsule (in the app, not in full screen) and the round button,
+  // each the row's gap (8, ui/look.css --hy-row-gap) after the one before
+  const row = (de.classList.contains("in-app") && !de.classList.contains("hy-fs") ? 100 : 12) + 38 + 8;
+  const f = $("#cvFrame"); if (f.contentWindow) f.contentWindow.postMessage({ type: "inset", left, row, ms }, location.origin);
   // the notes stay in the window's middle whether the library is open or not (owner 2026-10-04), ui/toasts.js
 }
 // The library's panel uncovered from its left part to its right edge, or covered back (libReveal): a mask (clip-path) moving on the
@@ -1683,8 +2201,8 @@ function setView(v) {
   const b = document.body, shown = b.classList.contains("cv-on") && !b.classList.contains("cv-only"), open = v === "panel";
   clearTimeout(setView.t); cancelAnimationFrame(libReveal.raf); cancelAnimationFrame(libMove.raf); libClear();
   if (!setView.ready || v === "lib" || !b.classList.contains("cv-on") || shown === open || matchMedia("(prefers-reduced-motion: reduce)").matches) return showView(v);
-  if (open) { showView(v); libMove(true, inset); }
-  else { $("#tlibR").setAttribute("aria-pressed", false); setPref("view", foldedFor || v); libMove(false, () => showView(v)); }
+  if (open) { inset.ms = 720; showView(v); libMove(true, inset); }
+  else { $("#tlibR").setAttribute("aria-pressed", false); setPref("view", foldedFor || v); inset.ms = 560; inset(0); libMove(false, () => showView(v)); }
 }
 function showView(v) {
   document.body.classList.toggle("cv-on", v !== "lib"); document.body.classList.toggle("cv-only", v === "canvas");
@@ -1703,7 +2221,7 @@ $("#tlibR").addEventListener("click", () => toggleCanvasFull());
 // the cards' layout and size (#lview), remembered for the whole app
 function lview(mode, size) {
   const b = document.body; b.classList.toggle("lrows", mode === "rows"); b.style.setProperty("--ls", size + "px");
-  $("#lview").querySelectorAll("[data-lm]").forEach(x => x.setAttribute("aria-pressed", x.dataset.lm === mode)); $("#lsize").value = size;
+  $("#lview").querySelectorAll("[data-lm]").forEach(x => x.setAttribute("aria-pressed", x.dataset.lm === mode)); hySlider.mount($("#lsize").closest(".hy-slider")).set(size);
   sizeGrids();
 }
 lview(pref("lmode", "grid"), +pref("lsize", "150"));
@@ -1714,10 +2232,28 @@ document.addEventListener("pointerdown", e => { if (!e.target.closest("#lview, #
 addEventListener("keydown", e => { if (e.key === "Escape") lviewOpen(false); });
 addEventListener("blur", () => lviewOpen(false));   // a click on the board (its own frame) takes the focus from this page
 $("#lview").addEventListener("click", e => { const x = e.target.closest("[data-lm]"); if (!x) return; setPref("lmode", x.dataset.lm); lview(x.dataset.lm, +$("#lsize").value); });
+// in the path bar when the folder's names leave room for it (CSS #lview.inl). Its slider is found through LV, not the document: between
+// #fbar's rebuild and LV's return into it the panel is out of the page, and a document query found nothing (with the 3D editor open); measured on every change of the bar's size or names
+const LVW = 64 + 10 + 96 + 4, LV = $("#lview"), LVEND = document.createElement("span");   // LVEND: the place after the bar's last button   // #fbar is rebuilt from a string (renderFolders), LV keeps the element across that
+function lvFit() {
+  const b = document.body, bar = $("#fbar"), path = bar && bar.querySelector(".fpath"), more = bar && (bar.querySelector(".fsMore") || bar.appendChild(LVEND));
+  if (!path || !b.classList.contains("cv-on") || b.classList.contains("cv-only")) {
+    if (LV.classList.contains("inl")) { LV.classList.remove("inl"); b.classList.remove("lv-inline"); LV.querySelector(".hy-slider").classList.remove("sm"); $("#lviewBtn").after(LV); }
+    return;
+  }
+  if (LV.classList.contains("inl") && LV.parentElement !== more.parentElement) more.after(LV);   // the bar was rebuilt: back in its place
+  const inl = LV.classList.contains("inl"), need = [...path.children].reduce((a, c) => a + (c.getClientRects().length ? Math.max(c.scrollWidth, c.offsetWidth) : 0), 0);
+  const free = path.clientWidth + (inl ? LV.offsetWidth + 6 : 0) - need, on = free >= LVW + (inl ? 12 : 24);   // a few px of slack against flicker
+  if (on === inl) return;
+  lviewOpen(false); b.classList.toggle("lv-inline", on); LV.classList.toggle("inl", on); LV.querySelector(".hy-slider").classList.toggle("sm", on);   // inline: the thin one, no words
+  if (on) more.after(LV); else $("#lviewBtn").after(LV);
+}
+if ($("#fbar")) new ResizeObserver(() => lvFit()).observe($("#fbar"));
+window.lvFit = lvFit; lvFit();
 $("#lsize").addEventListener("input", e => { lview(pref("lmode", "grid"), +e.target.value); clearTimeout(e.target.t); e.target.t = setTimeout(() => setPref("lsize", e.target.value), 250); });
 $("#lwide").addEventListener("click", () => {
   const b = document.body, on = !b.classList.contains("lwide"), r0 = $("main").getBoundingClientRect().right + 1;
-  $("#lwide").setAttribute("aria-pressed", on); $("#lwide").title = on ? "Библиотека обычной ширины" : "Библиотека во всю ширину"; setPref("lwide", on ? "1" : "");
+  $("#lwide").setAttribute("aria-pressed", on); $("#lwide").title = on ? T("Normal-width library") : T("Full-width library"); setPref("lwide", on ? "1" : "");
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) { b.classList.toggle("lwide", on); inset(); return; }
   if (on) { b.classList.add("lwide"); libReveal(r0, $("main").getBoundingClientRect().right + 1, 550, inset); }   // wide at once, uncovered to its new edge
   else {   // covered back to the normal edge, then narrow
@@ -1725,21 +2261,51 @@ $("#lwide").addEventListener("click", () => {
     libReveal(r0, 12 + lw + 1, 450, () => { b.classList.remove("lwide"); inset(); });
   }
 });
-// ⌘. flips between the canvas alone and the library over the canvas (owner 2026-09-29); the canvas iframe asks for it by message
-let foldedFor = null;   // the view to bring back when a plugin's editor closes
+// ⌘M flips between the canvas alone and the library over the canvas (owner 2026-09-29 as ⌘., 2026-10-06 ⌘M as in Figma, ⌘. now hides all the
+// interface); the canvas iframe asks for it by message
+let foldedFor = null, edWide = false;   // the view to bring back when a plugin's editor closes; the full width put aside meanwhile
 // open or closed as it is on screen, not as remembered: the remembered view is the whole app's (another board or Home may have opened
 // theirs), and the first press here did nothing then (owner 2026-10-04: «the button stays locked though the content is there»)
 function toggleCanvasFull() { if (document.documentElement.classList.contains("lib-wait")) return; const b = document.body; setView(b.classList.contains("cv-on") && !b.classList.contains("cv-only") ? "canvas" : "panel"); }   // not before the board's content is there
-const isCmdDot = e => (e.metaKey || e.ctrlKey) && (e.code === "Period" || e.key === "." || e.key === "ю" || e.key === "Ю");
-document.addEventListener("keydown", e => { if (isCmdDot(e)) { e.preventDefault(); toggleCanvasFull(); } }, true);
+const isCmdKey = (e, code, ...keys) => (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.code === code || keys.includes(e.key));
+// ⌘. hides everything around the canvas and brings it back as it was (owner 2026-10-06, Figma's «hide UI»): here the library (it slides away,
+// and returns only if it was open) and the buttons over the canvas; the canvas page hides its own and is told by message. ⌘M while it is hidden
+// brings the interface back with the library open.
+let uiHidden = false, uiLibWas = false;
+const UI_HIDE = ["#tlibR", "#lwide", "#lviewBtn", "#lview", "body.cv-on header.hy-dock", "body.cv-on main", "body.cv-on .fbar", "body.cv-on .fdrawer", "#lgrip", "#fgrip"];
+function setUiHidden(on, fromCanvas) {
+  on = !!on; if (on === uiHidden) return;
+  const b = document.body, root = document.documentElement;
+  if (on && !b.classList.contains("cv-on")) return;   // the library alone, no canvas under it: nothing to hide to
+  uiHidden = on; clearTimeout(setUiHidden.t); root.classList.remove("hy-ui-in"); root.dataset.hideui = localStorage.getItem("cv.hideui") === "slide" ? "slide" : "zoom";
+  if (on) {   // it leaves with the rest (CSS above), then the view is the canvas alone, without a second animation
+    uiLibWas = b.classList.contains("cv-on") && !b.classList.contains("cv-only");
+    layOrigins(UI_HIDE);   // the zoom grows away from the window's centre, one with the board's (canvas.html uiOrigins)
+    if (uiLibWas) setUiHidden.t = setTimeout(() => { if (uiHidden) showView("canvas"); }, 380);
+  } else { if (uiLibWas) showView("panel"); uiLibWas = false; void root.offsetWidth; root.classList.add("hy-ui-in"); setUiHidden.t = setTimeout(() => { root.classList.remove("hy-ui-in"); layOrigins(UI_HIDE, true); }, 260); }
+  root.classList.toggle("hy-hideui", on); hyEntranceDone();   // the entrance never plays again (ui/entrance.js)
+  if (!fromCanvas) { try { $("#cvFrame").contentWindow.postMessage({ type: "hyHideUI", on }, location.origin); } catch {} }
+}
+function toggleLibraryKey() { if (uiHidden) { uiLibWas = true; setUiHidden(false); try { $("#cvFrame").contentWindow.postMessage({ type: "hyHideUI", on: false }, location.origin); } catch {} return; } toggleCanvasFull(); }
+window.hyimgMenu = what => { if (what === "library") toggleLibraryKey(); else if (what === "hideui") setUiHidden(!uiHidden); };   // the app's View menu
+document.addEventListener("keydown", e => {
+  if (isCmdKey(e, "KeyM", "m", "M", "ь", "Ь")) { e.preventDefault(); toggleLibraryKey(); }
+  else if (isCmdKey(e, "Period", ".", "ю", "Ю")) { e.preventDefault(); setUiHidden(!uiHidden); }
+}, true);
 // a file dropped outside the canvas must not make the browser open it in place of the page (the canvas takes drops itself)
 ["dragover", "drop"].forEach(t => addEventListener(t, e => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) e.preventDefault(); }));
 addEventListener("message", e => {
   if (e.origin !== location.origin || !e.data) return;
-  if (e.data.type === "toggleCanvasFull") toggleCanvasFull();
+  if (e.data.type === "toggleCanvasFull") toggleLibraryKey();
+  if (e.data.type === "hideUI") setUiHidden(e.data.on, true);
   // a plugin's editor on the canvas (the 3D editor) wants the whole screen: the library folds while it is open and comes back after
   // (owner 2026-10-03); the remembered view does not change, also when the fold's move ends later (setView and showView keep foldedFor)
+  // While the editor is open the library only ever opens at its normal width (owner 2026-10-06: «at this stage the media library only ever
+  // opens half»): a remembered full width is put aside after the fold and comes back with the library when the editor closes.
   if (e.data.type === "canvasFull") {
+    document.body.classList.toggle("ed-open", !!e.data.on);
+    if (e.data.on && document.body.classList.contains("lwide")) { edWide = true; setTimeout(() => { if (edWide) document.body.classList.remove("lwide"); }, foldedFor || pref("view", "canvas") === "panel" ? 800 : 0); }
+    if (!e.data.on && edWide) { edWide = false; document.body.classList.add("lwide"); }
     if (e.data.on && pref("view", "canvas") === "panel") { foldedFor = "panel"; setView("canvas"); }
     else if (!e.data.on && foldedFor) { setView(foldedFor); foldedFor = null; }
   }
@@ -1747,18 +2313,36 @@ addEventListener("message", e => {
   if (e.data.type === "board") setBoard(e.data.on || [], e.data.removed || []);
   if (e.data.type === "feedback") { items.filter(i => i.path === e.data.path).forEach(i => { i.feedback = e.data.feedback || {}; }); }   // ♥ set on the canvas
   // «Открыть» on the canvas: the frame opens in this viewer; if the library filters hide it, it opens on its own
-  if (e.data.type === "openFrame") openPath(e.data.path);
+  if (e.data.type === "openFrame") {
+    openPath(e.data.path, e.data);
+    // the keys (Esc, the arrows, PageDown) belong to the viewer now, not to the canvas that asked; the canvas gets them back when it closes
+    const fr = document.getElementById("cvFrame"); if (fr) { fr.blur(); window.focus(); cvAsked = true; }
+  }
 });
 {
   const w = +pref("lw", "0"); if (w) document.documentElement.style.setProperty("--lw", w + "px");
-  let dragging = false;
-  $("#lgrip").addEventListener("pointerdown", e => { dragging = true; document.body.classList.add("cv-drag"); $("#lgrip").setPointerCapture(e.pointerId); });
-  $("#lgrip").addEventListener("pointermove", e => { if (!dragging) return; const lw = Math.min(innerWidth - 100, Math.max(300, e.clientX - 12)); document.documentElement.style.setProperty("--lw", lw + "px"); });
-  $("#lgrip").addEventListener("pointerup", () => { dragging = false; document.body.classList.remove("cv-drag"); setPref("lw", Math.round($("main").getBoundingClientRect().width)); inset(); renderFolders(); });
+  // dragged past its widest normal width (100 px of board left) the library snaps to full width, and dragged back from full width it is
+  // normal again (owner 2026-10-06: «if I drag the library to the maximum I go into full width; this limits me artificially»); the
+  // normal width is kept for the ⤢ button to come back to
+  let dragging = false, full = false;
+  const MAXL = () => innerWidth - 100, SNAP = 36;
+  const setWide = on => { $("#lwide").setAttribute("aria-pressed", on); $("#lwide").title = on ? T("Normal-width library") : T("Full-width library"); };
+  $("#lgrip").addEventListener("pointerdown", e => { dragging = true; full = document.body.classList.contains("lwide"); document.body.classList.add("cv-drag"); $("#lgrip").setPointerCapture(e.pointerId); });
+  $("#lgrip").addEventListener("pointermove", e => {
+    if (!dragging) return;
+    const raw = e.clientX - 12, on = raw > MAXL() + SNAP && !document.body.classList.contains("ed-open");
+    if (on !== full) { full = on; document.body.classList.toggle("lwide", on); setWide(on); }
+    if (!on) document.documentElement.style.setProperty("--lw", Math.min(MAXL(), Math.max(300, raw)) + "px");
+  });
+  $("#lgrip").addEventListener("pointerup", () => {
+    dragging = false; document.body.classList.remove("cv-drag"); setPref("lwide", full ? "1" : "");
+    if (!full) setPref("lw", Math.round($("main").getBoundingClientRect().width));
+    inset(); renderFolders();
+  });
   addEventListener("resize", inset);
   // the canvas is what opens first (owner 2026-09-30), the library is one click away; the Mac app asks for it with ?view=canvas
   const askedView = new URLSearchParams(location.search).get("view");
-  if (pref("lwide", "") === "1") { document.body.classList.add("lwide"); $("#lwide").setAttribute("aria-pressed", "true"); $("#lwide").title = "Библиотека обычной ширины"; }
+  if (pref("lwide", "") === "1") { document.body.classList.add("lwide"); $("#lwide").setAttribute("aria-pressed", "true"); $("#lwide").title = T("Normal-width library"); }
   // the library alone has no button any more (owner 2026-10-04): a remembered «lib» opens the library over the canvas, a link may still ask for it
   // in the app a board always opens with its library closed (owner 2026-10-04); a link may still ask for it (?view=panel, ?view=lib);
   // a browser keeps the remembered view
@@ -1804,8 +2388,8 @@ $("#help").onclick = () => { const h = $("#helpbox"); h.hidden = !h.hidden; $("#
 $("#coll").onchange = () => { setPref("coll", $("#coll").value); render(); };
 // one click back to the full library (owner 2026-09-29): all collections, no verdict filter, empty search, no rejects
 $("#reset").onclick = () => {
-  $("#coll").value = ""; setPref("coll", ""); $("#q").value = ""; $("#showRej").checked = false; setPref("rej", "0"); TF = {}; setPref("tf", "{}");
-  vfilter = ""; document.querySelectorAll("#vf button").forEach(x => x.setAttribute("aria-pressed", x.dataset.f === ""));
+  $("#coll").value = ""; setPref("coll", ""); $("#q").value = ""; setRej(""); TF = {}; setPref("tf", "{}"); GF = {}; setPref("gf", "{}");
+  vfilter = "";
   if (location.search) history.replaceState(null, "", location.pathname);
   render();
 };
@@ -1819,19 +2403,16 @@ $("#showRej").onchange = () => {
 };
 $("#autonext").onchange = () => setPref("autonext", $("#autonext").checked ? "1" : "0");
 $("#q").oninput = render;
-$("#vf").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  vfilter = b.dataset.f;
-  document.querySelectorAll("#vf button").forEach(x => x.setAttribute("aria-pressed", x === b));
-  render();
-});
+// the filter bar's chips: see renderTF() and the handlers beside it
 document.addEventListener("keydown", e => {
   if (cur < 0) return;
   const typing = ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName);
   if (e.key === "Escape") { if (typing) document.activeElement.blur(); else if (z.s > 1) resetZ(); else closeV(); return; }
   if (e.key === "Tab" && document.activeElement.id !== "poptext") { e.preventDefault(); tabStep(e.shiftKey ? -1 : 1); return; }
   if (typing) return;
-  if (e.key === "ArrowRight") { flush(); open(cur + 1); }
+  if (PGV.i && (e.key === "PageDown" || e.key === "]")) { e.preventDefault(); pdfGo(1); }
+  else if (PGV.i && (e.key === "PageUp" || e.key === "[")) { e.preventDefault(); pdfGo(-1); }
+  else if (e.key === "ArrowRight") { flush(); open(cur + 1); }
   else if (e.key === "ArrowLeft") { flush(); open(cur - 1); }
   else if (e.key === "ArrowDown") { e.preventDefault(); focusUse(false); focusRow(rowFocus + 1); }
   else if (e.key === "ArrowUp") { e.preventDefault(); focusUse(false); focusRow(rowFocus - 1); }
@@ -1884,6 +2465,7 @@ const RED = "#ff2d55", MAG = "#ff2d9b", MAGA = "rgba(255, 45, 155, .62)";  // ma
 function setTool(t) { tool = t; stage.dataset.tool = t; }  // only area selection since 2026-09-28 (owner: boxes are exact coordinates)
 function dims() { const w = 1000, h = big.naturalWidth ? 1000 * big.naturalHeight / big.naturalWidth : 1333; return [w, h]; }
 function norm(e) { const r = big.getBoundingClientRect(); const c = v => Math.round(Math.max(0, Math.min(1, v)) * 10000) / 10000; return [c((e.clientX - r.left) / r.width), c((e.clientY - r.top) / r.height)]; }
+// hy-allow-begin: icon-inline the marks a person draws on a frame (boxes, arrows, strokes and their numbers), not icons
 function shape(n, i, hl) {
   const [w, h] = dims(), P = n.pts.map(([x, y]) => [x * w, y * h]), sw = 7;
   const nx = n.kind === "box" ? Math.min(P[0][0], P[1][0]) : P[0][0], ny = n.kind === "box" ? Math.min(P[0][1], P[1][1]) : P[0][1];
@@ -1908,9 +2490,10 @@ function drawNotes(hi) {
   $("#notesblock").hidden = !notes.length;
   $("#ntog").classList.toggle("has", notes.length > 0); $("#ncount").textContent = notes.length || "";
 }
+// hy-allow-end
 function renderList() {
   const esc = t => (t || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  $("#notesblock").innerHTML = `<li class="nhead">Пометки на кадре</li>` + notes.map((n, i) => `<li class="${n.kind}" data-i="${i}"><span class="num">${i + 1}</span><textarea class="ntext" rows="1" data-i="${i}" placeholder="Комментарий к области ${i + 1}">${esc(n.text)}</textarea><button class="x" data-del="${i}" aria-label="Удалить пометку ${i + 1}">✕</button></li>`).join("");
+  $("#notesblock").innerHTML = `<li class="nhead">${T("Marks on the frame")}</li>` + notes.map((n, i) => `<li class="${n.kind}" data-i="${i}"><span class="num">${i + 1}</span><textarea class="ntext" rows="1" data-i="${i}" placeholder="${T("Comment on area {n}", { n: i + 1 })}">${esc(n.text)}</textarea><button class="x" data-del="${i}" aria-label="${T("Delete mark {n}", { n: i + 1 })}">✕</button></li>`).join("");
   $("#notesblock").hidden = !notes.length;   // the list decides its own visibility (was only set after the image loaded)
   $("#ntog").classList.toggle("has", notes.length > 0); $("#ncount").textContent = notes.length || "";
   requestAnimationFrame(() => document.querySelectorAll("#notesblock .ntext").forEach(grow));
@@ -1957,7 +2540,7 @@ function placePop() {
   pop.style.left = Math.max(12, x) + "px"; pop.style.top = Math.max(12, y) + "px";
 }
 function openPop(i) {
-  editing = i; $("#popn").textContent = `Пометка ${i + 1} · ${{ arrow: "стрелка", box: "рамка", mark: "маркер" }[notes[i].kind]}`;
+  editing = i; $("#popn").textContent = `${T("Mark {n}", { n: i + 1 })} · ${{ arrow: T("arrow"), box: T("box"), mark: T("marker") }[notes[i].kind]}`;
   $("#poptext").value = notes[i].text || ""; $("#pop").hidden = false; placePop(); drawNotes(i); $("#poptext").focus();
 }
 function commitPop() {

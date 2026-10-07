@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" translate="no" data-theme="dark" data-shape="round" data-shadow="1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyimg UI primitives</title>
+<!-- The primitives' showcase, live from the app's core (ui/hy/showcase.js). This page is the pattern of the board's frames
+     html/hy-primitives/<family>.html: copy it into a library's html/ folder and set data-family on <body> to buttons, choices, marks or
+     all. What it shows comes from /ui/ of the server that serves it (a snapshot beside it only until that server is restarted). -->
+<link rel="stylesheet" href="/ui/tokens.css"><link rel="stylesheet" href="/ui/look.css">
+<script src="/ui/settings.js"></script>
+<script src="/ui/i18n.js"></script>
+<script src="/ui/lang-common.js"></script>
+<script src="/ui/lang-hy.js"></script>
+<script src="/ui/icons.js"></script>
+<script src="/ui/menu.js"></script>
+<script src="/ui/keyhints.js"></script>
+<script>
+// the primitives from the app's core, /ui/hy/; a server started before they existed answers 404 there (until ⇧⌘R), then a snapshot
+// beside this page (_snapshot/hy/, a copy of review/ui/hy made when the page was put on the board) stands in; with neither, say so
+(async () => {
+  let base = "/ui/hy/";
+  try { if (!(await fetch(base + "index.js", { cache: "no-store" })).ok) throw new Error("404"); } catch { base = "./_snapshot/hy/"; }   // "./": import() takes no bare path
+  document.documentElement.dataset.hyFrom = base === "/ui/hy/" ? "core" : "snapshot";
+  for (const f of ["hy.css", "showcase.css"]) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = base + f; document.head.appendChild(l); }
+  try { await import(base + "showcase.js"); } catch {
+    const p = document.createElement("p"); p.className = "sc-fail";
+    p.textContent = window.T ? T("The primitives did not load: restart the server (⇧⌘R)") : "The primitives did not load: restart the server (⇧⌘R)";
+    document.body.prepend(p);
+  }
+})();
+</script>
+</head>
+<body data-family="all"></body>
+</html>

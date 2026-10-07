@@ -127,6 +127,8 @@ def project(tmp_path):
     # the board's library rules: files in the root are not frames, «refs» is a skipped name (the page «Refs» gets «(страница)»), the
     # reference folder's «moodboard» is a collection
     (tmp_path / "rules.json").write_text(json.dumps({pid: {"rootFiles": False, "skip": ["refs"], "mounts": [{"prefix": "ext/moodboard", "path": "moodboard"}]}}))
+    # the interface in Russian: these tests check its Russian words (owner 2026-10-06: English by default, Russian by the setting)
+    (tmp_path / "settings.json").write_text(json.dumps({"cv.lang": "ru"}))
     env.update(HYIMG_LIBRARY_ROOT=str(lib), HYIMG_STATE_ROOT=str(state), HYIMG_PROJECT_ID=pid, HYIMG_STYLE_REFS=str(refs),
                HYIMG_LIBRARY_RULES=str(tmp_path / "rules.json"), HYIMG_SETTINGS=str(tmp_path / "settings.json"), PYTHONDONTWRITEBYTECODE="1", HOME=str(tmp_path / "home"))
     log = open(tmp_path / "server.log", "w+")

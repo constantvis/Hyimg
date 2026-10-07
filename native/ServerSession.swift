@@ -42,7 +42,13 @@ final class ServerSession {
         if semaphore.wait(timeout: .now() + 1.0) == .timedOut { task.cancel(); return (nil, false) }
         return box.value
     }
-    private func python() throws -> URL {
+    private func python() throws -> URL { try Self.findPython(sourceRoot: sourceRoot) }
+    // the Python 3.10+ with Pillow the servers run on; found once (each probe starts a Python), shared with Settings › Storage
+    private static var foundPython: URL?
+    private static let pythonLock = NSLock()
+    static func findPython(sourceRoot: URL) throws -> URL {
+        pythonLock.lock(); defer { pythonLock.unlock() }
+        if let found = foundPython, FileManager.default.isExecutableFile(atPath: found.path) { return found }
         let fm = FileManager.default
         var candidates: [String] = []
         if let override = ProcessInfo.processInfo.environment["HYIMG_PYTHON"], !override.isEmpty { candidates.append(override) }
@@ -60,20 +66,20 @@ final class ServerSession {
             probe.arguments = ["-c", "import sys; import PIL; sys.exit(0 if sys.version_info >= (3, 10) else 1)"]
             probe.standardOutput = FileHandle.nullDevice
             probe.standardError = FileHandle.nullDevice
-            do { try probe.run(); probe.waitUntilExit(); if probe.terminationStatus == 0 { return URL(fileURLWithPath: candidate) } } catch { continue }
+            do { try probe.run(); probe.waitUntilExit(); if probe.terminationStatus == 0 { foundPython = URL(fileURLWithPath: candidate); return foundPython! } } catch { continue }
         }
-        throw RegistryError.invalid("Не найден Python 3.10+ с Pillow. В Terminal выполните python3 -m pip install Pillow для вашего Python 3.10+ или установите Pillow в .venv папки Hyimg. Затем откройте доску снова.")
+        throw RegistryError.invalid(L("Python 3.10+ with Pillow not found. In Terminal run python3 -m pip install Pillow for your Python 3.10+, or install Pillow into the .venv of the Hyimg folder. Then open the board again."))
     }
     func ensure(restart: Bool = false, completion: @escaping (Result<URL, Error>) -> Void) {
         queue.async {
             do {
                 guard !self.cancelled else { return }
-                guard let base = self.baseURL else { throw RegistryError.invalid("Некорректный адрес доски.") }
+                guard let base = self.baseURL else { throw RegistryError.invalid(L("Invalid board address.")) }
                 if restart {
                     guard let owned = self.process, owned.isRunning else {
                         let (existing, _) = self.health()
                         if existing?.matches(self.project) == true {
-                            throw RegistryError.invalid("Сервер запущен другим процессом. Hyimg не будет его останавливать. Завершите его в приложении, которое его запустило.")
+                            throw RegistryError.invalid(L("The server was started by another process. Hyimg will not stop it. Quit it in the app that started it."))
                         }
                         try self.startAndWait(base: base)
                         DispatchQueue.main.async { completion(.success(base)) }
@@ -86,10 +92,10 @@ final class ServerSession {
                 let (existing, responds) = self.health()
                 if existing?.matches(self.project) == true {
                     if let owned = self.process, owned.isRunning, existing?.pid != owned.processIdentifier {
-                        throw RegistryError.invalid("Порт доски отвечает от другого процесса. Перезапуск отменен.")
+                        throw RegistryError.invalid(L("Another process answers on the board's port. Restart canceled."))
                     }
                 } else {
-                    if responds { throw RegistryError.invalid("Порт \(self.project.port) занят другим сервером. Освободите порт и повторите открытие доски.") }
+                    if responds { throw RegistryError.invalid(L("Port %ld is in use by another server. Free the port and open the board again.", self.project.port)) }
                     try self.startAndWait(base: base)
                 }
                 guard !self.cancelled else { return }
@@ -103,7 +109,7 @@ final class ServerSession {
         _ = try ProjectRegistry.folder(project.libraryRoot)
         let script = sourceRoot.appendingPathComponent("review/server.py")
         guard FileManager.default.fileExists(atPath: script.path) else {
-            throw RegistryError.invalid("Не найден \(script.path). Пересоберите Hyimg из текущей папки исходников.")
+            throw RegistryError.invalid(L("%@ not found. Rebuild Hyimg from the current source folder.", script.path))
         }
         let executable = try python()
         let task = Process()
@@ -129,14 +135,14 @@ final class ServerSession {
         try task.run()
         process = task
         for _ in 0..<100 {
-            if cancelled { task.terminate(); throw RegistryError.invalid("Запуск отменен.") }
+            if cancelled { task.terminate(); throw RegistryError.invalid(L("Start canceled.")) }
             let (result, _) = health()
             if let result, result.matches(project), result.pid == task.processIdentifier { return }
-            if !task.isRunning { throw RegistryError.invalid("Сервер завершился с кодом \(task.terminationStatus). Лог: \(logURL.path)") }
+            if !task.isRunning { throw RegistryError.invalid(L("The server exited with code %ld. Log: %@", Int(task.terminationStatus), logURL.path)) }
             Thread.sleep(forTimeInterval: 0.2)
         }
         task.terminate()
-        throw RegistryError.invalid("Сервер не подтвердил доску за 30 секунд. Лог: \(logURL.path)")
+        throw RegistryError.invalid(L("The server did not confirm the board within 30 seconds. Log: %@", logURL.path))
     }
     func stop() {
         queue.async {

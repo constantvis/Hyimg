@@ -1,12 +1,14 @@
 <!doctype html>
-<html lang="ru" translate="no">
+<html lang="en" translate="no">
 <head>
 <meta name="google" content="notranslate">
 <meta charset="utf-8">
+<script src="/ui/settings.js"></script>   <!-- the app's settings (owner 2026-10-04): the language cv.lang among them -->
+<script src="/ui/i18n.js"></script>   <!-- English or Russian, the app's setting cv.lang (owner 2026-10-06); its words in lang-*.js -->
+<script src="/ui/lang-common.js"></script>
+<script src="/ui/lang-library.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hyimg</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 :root {
   --bg: #eef0f2;
@@ -135,27 +137,27 @@ summary { cursor: pointer; color: var(--muted); font-size: 12px; }
 <header>
   <h1>Hyimg</h1>
   <div class="filters">
-    <select id="coll" aria-label="Коллекция"><option value="">Все коллекции</option></select>
-    <div class="seg" id="vf" role="group" aria-label="Оценка">
-      <button data-f="" aria-pressed="true">Все</button>
-      <button data-f="none" aria-pressed="false">Новые</button>
-      <button data-f="take" aria-pressed="false">Беру</button>
-      <button data-f="idea" aria-pressed="false">Идея</button>
-      <button data-f="no" aria-pressed="false">Нет</button>
+    <select id="coll" aria-label="Collection"><option value="">All collections</option></select>
+    <div class="seg" id="vf" role="group" aria-label="Rating">
+      <button data-f="" aria-pressed="true">All</button>
+      <button data-f="none" aria-pressed="false">New</button>
+      <button data-f="take" aria-pressed="false">Take</button>
+      <button data-f="idea" aria-pressed="false">Idea</button>
+      <button data-f="no" aria-pressed="false">No</button>
     </div>
-    <input type="search" id="q" placeholder="Поиск по имени или промпту">
-    <label class="check"><input type="checkbox" id="showRej"> показывать брак</label>
+    <input type="search" id="q" placeholder="Search by name or prompt">
+    <label class="check"><input type="checkbox" id="showRej"> <span data-t="v1::Show rejects">Show rejects</span></label>
   </div>
   <div class="progress" id="prog"></div>
   <div class="bar"><i id="barFill"></i></div>
 </header>
 <main id="list"></main>
 
-<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Просмотр кадра">
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Frame viewer">
   <div class="stage">
     <img id="big" alt="">
-    <button class="nav prev" id="prev" aria-label="Предыдущий">‹</button>
-    <button class="nav next" id="next" aria-label="Следующий">›</button>
+    <button class="nav prev" id="prev" aria-label="Previous">‹</button>
+    <button class="nav next" id="next" aria-label="Next">›</button>
   </div>
   <aside class="side">
     <div class="top">
@@ -163,31 +165,38 @@ summary { cursor: pointer; color: var(--muted); font-size: 12px; }
       <button class="close" id="close">Esc</button>
     </div>
     <div class="verdicts" id="verdicts">
-      <button data-v="take" aria-pressed="false">Беру<small>1</small></button>
-      <button data-v="idea" aria-pressed="false">Идея, доработать<small>2</small></button>
-      <button data-v="no" aria-pressed="false">Нет<small>3</small></button>
+      <button data-v="take" aria-pressed="false">Take<small>1</small></button>
+      <button data-v="idea" aria-pressed="false">Idea, rework<small>2</small></button>
+      <button data-v="no" aria-pressed="false">No<small>3</small></button>
     </div>
-    <div><div class="lbl">Что хорошо</div><div class="chips good" id="good"></div></div>
-    <div><div class="lbl">Что плохо</div><div class="chips bad" id="bad"></div></div>
+    <div><div class="lbl">What works</div><div class="chips good" id="good"></div></div>
+    <div><div class="lbl">What does not</div><div class="chips bad" id="bad"></div></div>
     <div>
-      <div class="lbl">Комментарий</div>
-      <textarea id="comment" placeholder="Что понравилось, что поправить, куда развивать"></textarea>
+      <div class="lbl">Comment</div>
+      <textarea id="comment" placeholder="What you liked, what to fix, where to take it"></textarea>
       <div class="saved" id="saved"></div>
     </div>
-    <label class="check"><input type="checkbox" id="autonext"> после оценки открывать следующий</label>
+    <label class="check"><input type="checkbox" id="autonext"> <span data-t="v1::Open the next frame after rating">Open the next frame after rating</span></label>
     <details id="det">
-      <summary>Промпт, модель, эталоны</summary>
+      <summary>Prompt, model, references</summary>
       <div class="prompt" id="vPrompt"></div>
       <div class="refs" id="vRefs"></div>
     </details>
-    <div class="keys">← → листать · 1 2 3 оценка · 0 снять · C комментарий · Esc закрыть</div>
+    <div class="keys">← → browse · 1 2 3 rate · 0 clear · C comment · Esc close</div>
   </aside>
 </div>
 
+<script>T.dom();   // the markup above in the app's language, before anything puts the owner's data in it</script>
 <script>
 const GOOD = ["Идея", "Юмор", "Эмоция", "Поза", "Костюм", "Футуризм", "Кастинг", "Свет", "Цвет", "Композиция", "Чехол точный", "Для рекламы", "Для анимации", "Натурально", "Ярко, для рекламы"];
 const BAD = ["Чехол кривой", "Телефон не тот", "Телефон не виден", "Пространство", "Анатомия", "Теплый / old money", "Кич", "Скучно", "Шаблон", "Лишнее в кадре", "Пластик / CGI", "Не наш мир", "Цвет не тот", "Края / маска", "Блок камер не тот"];
-const V = { take: "Беру", idea: "Идея", no: "Нет" };
+// how each stored tag reads in English; the Russian is the tag itself (ui/lang-library.js has the pairs)
+const TAG_EN = { "Идея": "Idea", "Юмор": "Humor", "Эмоция": "Emotion", "Поза": "Pose", "Костюм": "Costume", "Футуризм": "Futurism", "Кастинг": "Casting", "Свет": "Light",
+  "Цвет": "Color", "Композиция": "Composition", "Чехол точный": "Exact case", "Для рекламы": "For ads", "Для анимации": "For animation", "Натурально": "Natural",
+  "Ярко, для рекламы": "Bright, for ads", "Чехол кривой": "Crooked case", "Телефон не тот": "Wrong phone", "Телефон не виден": "Phone not visible", "Пространство": "Space",
+  "Анатомия": "Anatomy", "Теплый / old money": "Warm / old money", "Кич": "Kitsch", "Скучно": "Boring", "Шаблон": "Cliché", "Лишнее в кадре": "Clutter in the frame",
+  "Пластик / CGI": "Plastic / CGI", "Не наш мир": "Not our world", "Цвет не тот": "Wrong color", "Края / маска": "Edges / mask", "Блок камер не тот": "Wrong camera block" };
+const V = { take: "Take", idea: "Idea", no: "No" };
 let items = [], view = [], cur = -1, vfilter = "", saveTimer = null;
 const $ = s => document.querySelector(s);
 const enc = encodeURIComponent;
@@ -199,7 +208,7 @@ async function load() {
   assignBatches();
   const colls = [...new Map(items.map(i => [i.folder, i.title + (i.folder.includes("/") ? " · " + i.folder : "")])).entries()];
   const sel = $("#coll");
-  sel.innerHTML = '<option value="">Все коллекции</option>' + colls.map(([f, t]) => `<option value="${f}">${t}</option>`).join("");
+  sel.innerHTML = `<option value="">${T("All collections")}</option>` + colls.map(([f, t]) => `<option value="${f}">${t}</option>`).join("");
   sel.value = new URLSearchParams(location.search).get("coll") ?? pref("coll", "");
   $("#showRej").checked = pref("rej", "0") === "1";
   $("#autonext").checked = pref("autonext", "0") === "1";
@@ -223,7 +232,7 @@ function assignBatches() {
   }
 }
 let folderOrder = new Map();
-const fmt = t => new Date(t * 1000).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+const fmt = t => new Date(t * 1000).toLocaleString(T.locale, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).replace(",", "");   // 24 h in both languages: the batch's end is cut after the space
 function filtered() {
   const c = $("#coll").value, q = $("#q").value.trim().toLowerCase(), rej = $("#showRej").checked;
   return items.filter(i => {
@@ -240,9 +249,9 @@ function filtered() {
 
 function card(i, idx) {
   const f = fb(i), v = f.verdict;
-  const pills = (changed(i) ? `<span class="pill chg">Изменено</span>` : !reviewed(i) ? `<span class="pill new">Новое</span>` : "")
-    + (v ? `<span class="pill ${v}">${V[v]}</span>` : "") + (f.comment ? `<span class="pill note">✎</span>` : "")
-    + (i.gate && i.gate.status === "fail" ? `<span class="pill qa">QA: брак</span>` : "");
+  const pills = (changed(i) ? `<span class="pill chg">${T("Changed")}</span>` : !reviewed(i) ? `<span class="pill new">${T("pill::New")}</span>` : "")
+    + (v ? `<span class="pill ${v}">${T(V[v])}</span>` : "") + (f.comment ? `<span class="pill note">✎</span>` : "")
+    + (i.gate && i.gate.status === "fail" ? `<span class="pill qa">${T("QA: rejected")}</span>` : "");
   return `<button class="card ${v ? "v-" + v : ""}" data-i="${idx}" aria-label="${i.name}">
     <img loading="lazy" src="/thumb?p=${enc(i.path)}" alt="">
     <span class="st">${pills}</span><span class="nm">${i.name}</span></button>`;
@@ -257,21 +266,21 @@ function render() {
     return [...bs.entries()].map(([b, xs]) => {
       const n = xs.filter(([i]) => isNew(i)).length, end = Math.max(...xs.map(([i]) => i.mtime));
       const when = fmt(b) + (end - b > 120 ? "–" + fmt(end).split(" ")[1] : "");
-      return `<h3 class="batch">Партия ${when} · ${xs.length} кадров${n ? ` · <b>${n} новых</b>` : " · всё просмотрено"}</h3>
+      return `<h3 class="batch">${T("Batch {when}", { when })} · ${T("{n} frames", { n: xs.length })}${n ? ` · <b>${T("{n} new", { n })}</b>` : " · " + T("all viewed")}</h3>
         <div class="grid">${xs.map(([i, idx]) => card(i, idx)).join("")}</div>`;
     }).join("");
   };
   $("#list").innerHTML = view.length ? [...groups.entries()].map(([k, arr]) =>
     `<section><h2>${arr[0][0].title} <span>${k} · ${arr.length}</span></h2>${batchHtml(arr)}</section>`).join("")
-    : `<p class="empty">Под эти фильтры ничего не попало.</p>`;
+    : `<p class="empty">${T("Nothing matches these filters")}</p>`;
   const main = items.filter(i => i.folder.split("/")[0] !== "_rejected");
   const done = main.filter(reviewed).length, fresh = main.filter(isNew).length;
-  $("#prog").textContent = `просмотрено ${done} из ${main.length} · новых ${fresh}`;
+  $("#prog").textContent = T("Viewed {done} of {total} · new {fresh}", { done, total: main.length, fresh });
   $("#barFill").style.width = (main.length ? done / main.length * 100 : 0) + "%";
 }
 
 function chips(el, list, sel) {
-  el.innerHTML = list.map(t => `<button aria-pressed="${sel.includes(t)}">${t}</button>`).join("");
+  el.innerHTML = list.map(t => `<button data-tag="${t}" aria-pressed="${sel.includes(t)}">${T(TAG_EN[t])}</button>`).join("");
 }
 
 function open(idx) {
@@ -280,21 +289,21 @@ function open(idx) {
   $("#big").src = "/thumb?p=" + enc(i.path);
   const full = new Image(); full.onload = () => { if (view[cur] === i) $("#big").src = full.src; }; full.src = "/img?p=" + enc(i.path);
   $("#vName").textContent = i.name;
-  const g = i.gate, qa = g ? ` · Моя проверка: ${g.status === "fail" ? "брак (" + g.reasons.join(", ") + ")" : "прошел"}${g.warnings && g.warnings.length ? "; критик сомневается: " + g.warnings.join(", ") : ""}` : "";
+  const g = i.gate, qa = g ? ` · ${T("My check")}: ${g.status === "fail" ? T("rejected ({reasons})", { reasons: g.reasons.join(", ") }) : T("passed")}${g.warnings && g.warnings.length ? "; " + T("the critic doubts: {list}", { list: g.warnings.join(", ") }) : ""}` : "";
   $("#vSub").textContent = `${i.title} · ${i.folder}${i.model ? " · " + i.model : ""}${i.aspect ? " · " + i.aspect : ""}${qa}`;
   document.querySelectorAll("#verdicts button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === f.verdict));
   chips($("#good"), GOOD, f.good || []);
   chips($("#bad"), BAD, f.bad || []);
   $("#comment").value = f.comment || "";
-  $("#saved").textContent = f.updated ? "сохранено " + f.updated : "";
-  $("#vPrompt").textContent = i.prompt || "Промпта нет: кадр без json-описания.";
+  $("#saved").textContent = f.updated ? T("Saved {when}", { when: f.updated }) : "";
+  $("#vPrompt").textContent = i.prompt || T("No prompt: the frame has no json description");
   $("#vRefs").innerHTML = (i.refs || []).map(r => `<img src="/ref?n=${enc(r)}" title="${r}" alt="${r}">`).join("");
   $("#viewer").classList.add("open");
 }
 function closeV() { flush(); $("#viewer").classList.remove("open"); cur = -1; render(); }
 
 function state() {
-  const pressed = sel => [...document.querySelectorAll(sel + " button[aria-pressed=true]")].map(b => b.textContent);
+  const pressed = sel => [...document.querySelectorAll(sel + " button[aria-pressed=true]")].map(b => b.dataset.tag);   // the stored tag, not the shown words
   const vb = document.querySelector("#verdicts button[aria-pressed=true]");
   return { verdict: vb ? vb.dataset.v : "", good: pressed("#good"), bad: pressed("#bad"), comment: $("#comment").value.trim() };
 }
@@ -302,15 +311,15 @@ async function save() {
   clearTimeout(saveTimer); saveTimer = null;
   if (cur < 0) return;
   const i = view[cur], s = state();
-  $("#saved").textContent = "сохраняю…";
+  $("#saved").textContent = T("Saving…");
   try {
     const r = await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: i.path, name: i.name, ...s }) });
     if (!r.ok) throw new Error(r.status);
     const res = await r.json();
     items.forEach(x => { if (res.paths.includes(x.path)) x.feedback = res.feedback; });
-    $("#saved").textContent = res.feedback.updated ? "сохранено в json кадра · " + res.feedback.updated : "оценка снята";
+    $("#saved").textContent = res.feedback.updated ? T("Saved to the frame's json · {when}", { when: res.feedback.updated }) : T("Rating cleared");
   } catch (e) {
-    $("#saved").textContent = "не сохранилось: сервер не отвечает, попробуй еще раз";
+    $("#saved").textContent = T("Not saved: the server is not responding, try again");
   }
 }
 function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 700); }

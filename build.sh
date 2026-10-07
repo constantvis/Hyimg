@@ -38,6 +38,7 @@ fi
 "$SWIFTC" -module-cache-path "$TMP/modules" -swift-version 5 -sdk "$SDK" -target "$TARGET" -O \
   -import-objc-header "$ROOT/native/cef/HyimgCEF.h" \
   "$ROOT/native/ProjectRegistry.swift" "$ROOT/native/ServerSession.swift" "$ROOT/native/SaveBarrier.swift" "$ROOT/native/Chrome.swift" "$ROOT/native/main.swift" \
+  "$ROOT/native/Storage.swift" "$ROOT/native/StorageBridge.swift" \
   "$TMP/cef.o" ${CEF_LINK[@]+"${CEF_LINK[@]}"} -framework AppKit -framework WebKit -o "$APP/Contents/MacOS/Hyimg"
 "$TMP/icon" "$ROOT/native/assets/hyimg.svg" "$TMP/png"
 cp "$TMP/png/Hyimg.icns" "$APP/Contents/Resources/Hyimg.icns"

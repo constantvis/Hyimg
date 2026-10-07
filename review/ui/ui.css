@@ -1,9 +1,7 @@
-/* What every page shares in both looks (owner 2026-10-04: «standardised»). */
+/* What every page shares in both looks (owner 2026-10-04: «standardised»). The tokens (--hy-red, --hy-sh-ctl, --hy-sh-pop) are in ui/tokens.css. */
 
 /* Reset buttons: the library's filters, the 3D editor's dock (everything) and the end of each editor panel. Always in their place:
    pale and not pressable while there is nothing to take back, red once there is. */
-:root { --hy-red: #ff453a; }
-:root[data-theme="light"] { --hy-red: #d70015; }
 .hy-reset { transition: color .15s, background-color .15s, opacity .15s; }
 .hy-reset:disabled { opacity: .4; cursor: default; }
 .hy-reset:not(:disabled) { color: var(--hy-red) !important; background: color-mix(in srgb, var(--hy-red) 15%, transparent) !important; }
@@ -24,7 +22,5 @@
    - a panel or a menu opened over it: settings, history, notifications, keys, pages, the right-click menu, the frame card, the
      library beside the canvas, the viewer's side, popovers, the 3D editor's panels.
    Darker in the dark theme, where a light shadow does not show. */
-:root { --hy-sh-ctl: 0 1px 2px rgba(0,0,0,.10), 0 6px 18px rgba(0,0,0,.12); --hy-sh-pop: 0 2px 6px rgba(0,0,0,.10), 0 18px 48px rgba(0,0,0,.18); }
-:root[data-theme="dark"] { --hy-sh-ctl: 0 1px 2px rgba(0,0,0,.40), 0 6px 18px rgba(0,0,0,.35); --hy-sh-pop: 0 2px 6px rgba(0,0,0,.35), 0 18px 48px rgba(0,0,0,.50); }
 :is(#bset, #bhist, #bkeys, #bntf, #crumb, #jump, #pv, #hint, .bar, .tidy, .vsw, header.hy-dock, #hyToasts .ht, .tools, .pickbar) { box-shadow: var(--hy-sh-ctl) !important; }
 :is(#sets, #hist, #ntf, #keys, #pages, #ctx, #info, .pop, .side, .tfpanel, body.cv-on main, .fdrawer.open:not(body.fdock .fdrawer), .m3p) { box-shadow: var(--hy-sh-pop) !important; }

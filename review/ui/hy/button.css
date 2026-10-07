@@ -1,0 +1,48 @@
+/* <hy-button> and <hy-icon-button> (docs/ui-inventory.md §2.1: one solid button at five heights and two weights, the 38 px plate key in
+   seven copies, close × at six sizes, four pressed looks for one meaning). The element is the look; the script moves its words into a real
+   <button> that fills it, so the keyboard, VoiceOver, menu.js and keyhints.js (a key cap in the button shows under ⌘) work as they did.
+   Heights are the scale's tokens: s 24, m 28 (the default, a panel's row), l 30 (a button inside a plate), row 32, dock 34, plate 38.
+   variant: plain (the raised ground), solid (the ink plate: the one action of a panel or a row), ghost (no ground until the pointer),
+   danger (red words on a red tint), reset (the resets: red once there is something to take back, solid red in a dock).
+   pressed: an option that is on is the ink plate inside a bar; a plate of the top row lifts to the raised ground with ink words. */
+hy-button, hy-icon-button { --hy-bh: var(--hy-h-m); position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box;
+  height: var(--hy-bh); border: 0; border-radius: var(--hy-btn-r); vertical-align: middle; background: var(--raise); color: var(--sub);
+  font: 500 12.5px/1 var(--sans); white-space: nowrap; cursor: pointer; -webkit-user-select: none; user-select: none;
+  transition: background-color .2s cubic-bezier(.32,.72,0,1), color .2s cubic-bezier(.32,.72,0,1), opacity .2s ease, box-shadow .2s ease; }
+hy-button { gap: 6px; padding: 0 var(--hy-cap-pad); }
+hy-button:defined { padding: 0; }
+:is(hy-button, hy-icon-button) > button { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: inherit;
+  width: 100%; height: 100%; border-radius: inherit; color: inherit; font: inherit; cursor: inherit; white-space: nowrap; }
+hy-button > button { padding: 0 var(--hy-cap-pad); }
+:is(hy-button, hy-icon-button) svg { flex: none; display: block; }
+:is(hy-button, hy-icon-button)[size=s] { --hy-bh: var(--hy-h-s); font-size: 12px; }
+hy-button[size=s], hy-button[size=s] > button { --hy-cap-pad: 8px; }
+:is(hy-button, hy-icon-button)[size=xs] { --hy-bh: var(--hy-h-xs); }
+:is(hy-button, hy-icon-button)[size=l] { --hy-bh: var(--hy-h-l); font-size: 13px; }
+:is(hy-button, hy-icon-button)[size=row] { --hy-bh: var(--hy-h-row); font-size: 13px; }
+:is(hy-button, hy-icon-button)[size=dock] { --hy-bh: var(--hy-h-dock); font-size: 13px; }
+:is(hy-button, hy-icon-button)[size=plate] { --hy-bh: var(--hy-h-plate); font-size: 13px; border-radius: var(--hy-plate-r); border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--plate-sh); }
+/* an icon button is a square of its height, a circle in the round look, no ground until the pointer unless plain */
+hy-icon-button { width: var(--hy-bh); padding: 0; background: transparent; }
+hy-icon-button[variant=plain] { background: var(--raise); }
+:is(hy-button, hy-icon-button):hover { color: var(--ink); }
+:is(hy-button, hy-icon-button)[variant=ghost] { background: transparent; }
+:is(hy-button, hy-icon-button)[variant=ghost]:hover { background: var(--raise); }
+:is(hy-button, hy-icon-button)[variant=solid] { background: var(--ink); color: var(--panel); }
+:is(hy-button, hy-icon-button)[variant=solid]:hover { background: color-mix(in srgb, var(--ink) 86%, var(--panel)); color: var(--panel); }
+:is(hy-button, hy-icon-button)[variant=danger] { background: color-mix(in srgb, var(--hy-red) 14%, transparent); color: var(--hy-red); }
+:is(hy-button, hy-icon-button)[variant=danger]:hover { background: color-mix(in srgb, var(--hy-red) 22%, transparent); color: var(--hy-red); }
+:is(hy-button, hy-icon-button)[variant=reset]:not([disabled]) { background: color-mix(in srgb, var(--hy-red) 15%, transparent); color: var(--hy-red); }
+:is(hy-button, hy-icon-button)[variant=reset]:not([disabled]):hover { background: color-mix(in srgb, var(--hy-red) 24%, transparent); }
+:is(hy-button, hy-icon-button)[variant=reset][size=dock]:not([disabled]) { background: var(--hy-red); color: var(--hy-on-accent); }
+:is(hy-button, hy-icon-button)[pressed] { background: var(--ink); color: var(--panel); }
+:is(hy-button, hy-icon-button)[size=plate][pressed] { background: var(--raise); color: var(--ink); }
+:is(hy-button, hy-icon-button)[disabled] { opacity: .45; cursor: default; }
+:is(hy-button, hy-icon-button)[disabled]:hover { color: var(--sub); }
+:is(hy-button, hy-icon-button)[variant=reset][disabled] { opacity: .4; }
+/* an icon button: shape= keeps one shape whatever the setting */
+hy-icon-button[shape=round] { border-radius: 50%; }
+hy-icon-button[shape=square] { border-radius: 8px; }
+hy-icon-button[shape=square][size=plate] { border-radius: 11px; }
+@media (prefers-reduced-motion: reduce) { hy-button, hy-icon-button { transition: none; } }

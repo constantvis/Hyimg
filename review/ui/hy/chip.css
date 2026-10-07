@@ -1,0 +1,14 @@
+/* <hy-chip>: a filter (docs/ui-inventory.md §2.2: the library's capsule chips 28 and its window's 30). A click shows (+), the second
+   leaves it out (−), the third takes it off (the library's filters, DESIGN.md «Панель фильтров библиотеки»); cycle=two is a plain on/off.
+   Included: the ink plate; left out: red and struck through. count: a quiet number after the words; pinned: the pin before them. */
+hy-chip { display: inline-flex; align-items: center; gap: 6px; box-sizing: border-box; height: var(--hy-h-m); padding: 0 var(--hy-cap-pad); border-radius: var(--hy-chip-r);
+  vertical-align: middle; background: transparent; color: var(--sub); font: 500 13px var(--sans); white-space: nowrap; cursor: pointer;
+  transition: background-color .2s cubic-bezier(.32,.72,0,1), color .2s cubic-bezier(.32,.72,0,1); }
+hy-chip:hover { background: var(--raise); color: var(--ink); }
+hy-chip[state=include] { background: var(--ink); color: var(--panel); }
+hy-chip[state=exclude] { background: color-mix(in srgb, var(--hy-red) 14%, transparent); color: var(--hy-red); }
+hy-chip[state=exclude] > .hy-lbl { text-decoration: line-through; }
+hy-chip[disabled] { opacity: .45; cursor: default; }
+hy-chip > .hy-n { color: var(--muted); font-variant-numeric: tabular-nums; }
+hy-chip[state=include] > .hy-n { color: inherit; opacity: .6; }
+hy-chip > svg { flex: none; margin-left: -2px; }

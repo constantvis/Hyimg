@@ -1,0 +1,17 @@
+/* Hints (owner 2026-10-06, about the 3D studio's Scene panel in white body text: «Вот эти комментарии никто не читает. Нужно сделать их
+   либо меньше, прям таким микро шрифтом, как Apple обычно делает ... и выделял важное ... Если текст не ключевой, то зачем он вообще нужен
+   ... каким-то элементом дал описание, если оно необходимо»). The rule for every panel, popover, empty state and setting, plugins too:
+     not key           not written at all
+     key but long      one footnote line, <hy-hint> (or .hy-hint): 11 px, the quiet colour, the words that matter in <b> (or .k)
+     really unclear    a ⓘ beside the title, <hy-info tip="…"> (or .hy-info): a round button whose explanation is its tooltip
+   A paragraph of more than 14 words in body text fails scripts/validate.py «panel-prose» and the design audit's «prose». */
+:is(.hy-hint, hy-hint) { margin: 0; font: 400 11px/1.35 var(--sans); letter-spacing: .01em; color: var(--hy-hint); text-wrap: pretty; }
+hy-hint { display: block; }
+:is(.hy-hint, hy-hint) :is(b, strong, .k) { font-weight: 500; color: var(--ink); }
+/* ⓘ: ui/icons.js «info» as a mask (--hy-ic-info, which icons.js sets on every page), drawn from the class or the tag alone; 14 px in a
+   24 px target that takes no room in the line (negative margins) */
+:is(.hy-info, hy-info) { display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -5px -6px -5px -2px; padding: 0; border: 0; border-radius: 50%; background: none;
+  color: var(--muted); cursor: help; vertical-align: middle; flex: none; transition: color .2s ease; }
+:is(.hy-info, hy-info)::before { content: ""; width: 14px; height: 14px; background: currentColor;   /* ui/icons.js «info» */
+  -webkit-mask: var(--hy-ic-info) center / contain no-repeat; mask: var(--hy-ic-info) center / contain no-repeat; }
+:is(.hy-info, hy-info):hover { color: var(--ink); }

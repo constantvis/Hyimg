@@ -1,0 +1,67 @@
+/* The app's tokens, one source (2026-10-07, step 0 of docs/ui-inventory.md: the palette was written four times, in canvas.html,
+   v2.html, home.html and the image studio). Every page links this file first, before ui.css, look.css and its own <style>; a page
+   keeps in its own :root only what is its own (the board's --dot, the library's --on, the studio's --track) and writes no colour of
+   the palette again. The values are the pages' own, unchanged.
+
+   A part of a page can wear the other theme or shape (the primitives' showcase puts dark and light, round and pro side by side):
+   data-hy-theme="dark|light" and data-hy-shape="round|pro" on any element redefine the same tokens under it. The page's own look
+   stays on the root: data-theme, data-shape, data-shadow. */
+
+/* Geist and Geist Mono from the app's own files (ui/fonts.css, owner 2026-10-07: no request to Google Fonts) */
+@import url("fonts.css");
+
+/* the palette: light, dark by the system until the page sets its theme, dark */
+:root, [data-hy-theme=light] {
+  --bg: #f4f4f5; --panel: #ffffff; --raise: #f4f4f5; --ink: #09090b; --sub: #52525b; --muted: #a1a1aa; --line: #e4e4e7; --sel: #2563eb;
+  --sans: "Geist", -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #09090b; --panel: #0c0c0e; --raise: #18181b; --ink: #fafafa; --sub: #a1a1aa; --muted: #71717a; --line: #27272a; --sel: #3b82f6; }
+}
+:root[data-theme="dark"], [data-hy-theme=dark] { --bg: #09090b; --panel: #0c0c0e; --raise: #18181b; --ink: #fafafa; --sub: #a1a1aa; --muted: #71717a; --line: #27272a; --sel: #3b82f6; }
+
+/* the red of what removes or takes back (the resets, a danger button, a count of errors) */
+:root, [data-hy-theme=dark] { --hy-red: #ff453a; }
+:root[data-theme="light"], [data-hy-theme=light] { --hy-red: #d70015; }
+:root { --hy-on-accent: #ffffff; }   /* words and marks on a solid accent (a count badge, a checked box) */
+/* the small depths of the primitives: a switch's knob, a swatch's rim against any paper */
+:root { --hy-knob-sh: 0 1px 3px rgba(0, 0, 0, .3); --hy-swatch-rim: rgba(0, 0, 0, .35); }
+
+/* the plates' shadow (owner 2026-10-04, ui/look.css): on the dark paper (#17171a) a soft shadow hardly shows, it is deep and dark there,
+   with a hairline of light along the plate's top; «Тени: без теней» (data-shadow="0") lays them flat */
+:root, [data-hy-theme=dark] { --plate-sh: 0 14px 40px rgba(0, 0, 0, .72), 0 4px 12px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .05); }
+:root[data-theme=light], [data-hy-theme=light] { --plate-sh: 0 10px 28px rgba(40, 30, 15, .13), 0 2px 6px rgba(40, 30, 15, .1); }
+:root[data-shadow="0"] { --plate-sh: none; }
+/* two depths for what floats over the board or the library (ui/ui.css): a control lying on the surface, a panel or a menu over it */
+:root { --hy-sh-ctl: 0 1px 2px rgba(0,0,0,.10), 0 6px 18px rgba(0,0,0,.12); --hy-sh-pop: 0 2px 6px rgba(0,0,0,.10), 0 18px 48px rgba(0,0,0,.18); }
+:root[data-theme="dark"] { --hy-sh-ctl: 0 1px 2px rgba(0,0,0,.40), 0 6px 18px rgba(0,0,0,.35); --hy-sh-pop: 0 2px 6px rgba(0,0,0,.35), 0 18px 48px rgba(0,0,0,.50); }
+
+/* the selection's colour, the page's --sel (blue), and what is drawn from it */
+:root, [data-hy-theme] { --hy-sel: var(--sel, #3b82f6); }
+:root[data-theme=light], [data-hy-theme=light] { --hy-sel: var(--sel, #2563eb); }
+/* A row of a tree list (ui/look.css): 28 px tall, 8 px corners, a grey hover; the selected row a fill and a line in the selection colour */
+:root, [data-hy-theme] { --hy-trow-h: 28px; --hy-trow-r: 8px; --hy-trow-hover: color-mix(in srgb, var(--raise) 85%, transparent);
+  --hy-trow-on: color-mix(in srgb, var(--hy-sel) 14%, transparent); --hy-trow-ring: inset 0 0 0 1px color-mix(in srgb, var(--hy-sel) 55%, transparent); }
+/* a footnote's colour (owner 2026-10-06): --muted is too faint at 11 px on the light paper */
+:root, [data-hy-theme] { --hy-hint: var(--muted); } :root[data-theme=light], [data-hy-theme=light] { --hy-hint: var(--sub); }
+/* the paper (owner 2026-10-04): --paper-d / --paper-l are the settings cv.paperDark / cv.paperLight, put on the root by each page */
+:root, [data-hy-theme=dark] { --paper: var(--paper-d, #17171a); }
+:root[data-theme=light], [data-hy-theme=light] { --paper: var(--paper-l, #ebe6dc); }
+
+/* The top row, one rule in every mode (owner 2026-10-07: «breadcrumb area тоже разношерстная»; ui/look.css says how it is laid out) */
+:root { --hy-row-top: 12px; --hy-row-gut: 12px; --hy-row-gap: 8px; --hy-plate-h: 38px; --hy-row-under: calc(var(--hy-row-top) + var(--hy-plate-h) + var(--hy-row-gap)); }
+/* a thumb's inset in its track on all 4 sides; a capsule's words from its round ends (owner 2026-10-06) */
+:root { --hy-seg-pad: 3px; --hy-cap-pad: 10px; }
+
+/* Heights, one scale for every control (contract.json heights): a key cap 20, a small control 24, a panel's row control 28, a button
+   inside a plate 30, a panel row 32, a dock button 34, a plate of the top row 38 */
+:root { --hy-h-xs: 20px; --hy-h-s: 24px; --hy-h-m: 28px; --hy-h-l: 30px; --hy-h-row: 32px; --hy-h-dock: 34px; --hy-h-plate: var(--hy-plate-h); }
+/* The app's curve for new work (contract.json easing) */
+:root { --hy-ease: cubic-bezier(.32,.72,0,1); }
+
+/* Corners by the setting «Углы» (owner 2026-10-04): round pills, or «pro», a moderate radius. A plate of the top row 11, a bar 14, a
+   control in a row or a plate 8 (--hy-row-r, owner 2026-10-06: «одни круглые другие квадратные»), a choice's track 8, a chip 6 */
+:root, [data-hy-shape=round] { --hy-row-r: 999px; --pl-r: 19px; --hy-plate-r: 999px; --hy-bar-r: 999px; --hy-btn-r: 999px; --hy-seg-r: 999px;
+  --hy-chip-r: 999px; --hy-switch-r: 999px; --hy-check-r: 5px; --hy-kbd-r: 5px; }
+:root[data-shape=pro], [data-hy-shape=pro] { --hy-row-r: 8px; --pl-r: 11px; --hy-plate-r: 11px; --hy-bar-r: 14px; --hy-btn-r: 8px; --hy-seg-r: 8px;
+  --hy-chip-r: 6px; --hy-switch-r: 6px; --hy-check-r: 4px; --hy-kbd-r: 5px; }

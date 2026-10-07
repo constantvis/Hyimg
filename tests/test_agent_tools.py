@@ -49,7 +49,9 @@ def hyimg(tmp_path):
     (state / "boards/pages.json").write_text(json.dumps({"pages": [{"id": "main", "title": "Главная"}, {"id": "p2", "title": "Вторая"}]}))
     port = free_port()
     env = {k: v for k, v in os.environ.items() if not k.startswith(("HYIMG_", "REVIEW_"))}
-    env.update(HYIMG_LIBRARY_ROOT=str(lib), HYIMG_PROJECT_ID=str(uuid.uuid4()), PYTHONDONTWRITEBYTECODE="1")
+    # the interface in Russian: these tests check its Russian words (owner 2026-10-06: English by default, Russian by the setting)
+    (tmp_path / "settings.json").write_text(json.dumps({"cv.lang": "ru"}))
+    env.update(HYIMG_LIBRARY_ROOT=str(lib), HYIMG_PROJECT_ID=str(uuid.uuid4()), HYIMG_SETTINGS=str(tmp_path / "settings.json"), PYTHONDONTWRITEBYTECODE="1")
     log = open(tmp_path / "server.log", "w+")
     proc = subprocess.Popen([sys.executable, str(ROOT / "review/server.py"), str(port)], env=env, stdout=log, stderr=log)
     for _ in range(100):

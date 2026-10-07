@@ -1,0 +1,13 @@
+/* <hy-check>: a checkbox with its words (docs/ui-inventory.md §2.8: six boxes and three native accent colours before it). A 16 px box,
+   the row's corner of the shape, the selection's colour with the registry's check when checked, a bar when indeterminate; the words
+   are the element's own text. The script puts a real checkbox over the whole element. */
+hy-check { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: var(--hy-h-s); vertical-align: middle;
+  color: var(--ink); font: 500 13px var(--sans); cursor: pointer; }
+hy-check::before { content: ""; flex: none; box-sizing: border-box; width: 16px; height: 16px; border: 1.5px solid var(--muted); border-radius: var(--hy-check-r);
+  background: transparent center / 12px no-repeat; transition: background-color .18s cubic-bezier(.32,.72,0,1), border-color .18s cubic-bezier(.32,.72,0,1); }
+hy-check:hover::before { border-color: var(--sub); }
+hy-check[checked]::before { border-color: var(--hy-sel); background-color: var(--hy-sel); background-image: var(--hy-ic-check-on); }
+hy-check[indeterminate]::before { border-color: var(--hy-sel); background-color: var(--hy-sel); background-image: var(--hy-ic-minus-on); }
+hy-check[disabled] { opacity: .45; cursor: default; }
+hy-check > .hy-in { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0; cursor: inherit; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { hy-check::before { transition: none; } }

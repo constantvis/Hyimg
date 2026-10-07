@@ -30,6 +30,12 @@ import hashlib, json, os, re, shutil, threading, time, unicodedata
 
 from config import BOARDS, HERE, W
 
+# The reasons and errors this file gives for the interface in the app's language (owner 2026-10-06: «make 2 versions, Russian and English,
+# switchable in settings»): server.py sets tr to its own (the app's setting cv.lang); alone, English.
+tr = lambda en, ru: en
+# The names of the folders it makes on disk stay as they are in every language: they are the library's data, a language switch
+# must not make the layout move files.
+
 JDIR = os.path.join(HERE, "layout-sync")
 AUTO = os.path.join(JDIR, "auto.json")
 MULTI_HIDDEN_ROOT = "В нескольких местах"   # where copies go when the library does not show files lying right in the root
@@ -211,7 +217,7 @@ def page_folders(b, bad=lambda name: False):
 def load_pages():
     try: L = json.load(open(os.path.join(BOARDS, "pages.json"), encoding="utf-8"))["pages"]
     except (OSError, ValueError, KeyError): L = []
-    return L or [{"id": "main", "title": "Страница 1"}]
+    return L or [{"id": "main", "title": tr("Page 1", "Страница 1")}]   # as server.py load_pages names it: the page the owner sees (owner 2026-10-06)
 
 
 def load_board(name):
@@ -229,14 +235,14 @@ class Env:
 
 def protected(rel, env):
     """why a library path must stay where it is, or None"""
-    if not rel or rel.startswith("/") or ".." in rel.split("/"): return "вне библиотеки"
-    if any(rel.startswith(m + "/") for m in env.mounts) or rel.startswith("ext/"): return "внешняя папка"
+    if not rel or rel.startswith("/") or ".." in rel.split("/"): return tr("outside the library", "вне библиотеки")
+    if any(rel.startswith(m + "/") for m in env.mounts) or rel.startswith("ext/"): return tr("external folder", "внешняя папка")
     full = os.path.realpath(os.path.join(W, rel))
-    if not full.startswith(os.path.realpath(W) + os.sep): return "вне библиотеки"
-    if full.startswith(os.path.realpath(HERE) + os.sep): return "папка состояния"
+    if not full.startswith(os.path.realpath(W) + os.sep): return tr("outside the library", "вне библиотеки")
+    if full.startswith(os.path.realpath(HERE) + os.sep): return tr("state folder", "папка состояния")
     parts = rel.split("/")[:-1]
-    if parts and k(parts[0]) in PROTECTED_TOP: return "служебная папка"
-    if any(p.startswith(".") or k(p) in env.skip for p in parts): return "служебная папка"
+    if parts and k(parts[0]) in PROTECTED_TOP: return tr("service folder", "служебная папка")
+    if any(p.startswith(".") or k(p) in env.skip for p in parts): return tr("service folder", "служебная папка")
     return None
 
 
@@ -358,7 +364,7 @@ def _plan(env, count_library):
             tdir = _on_disk(multi, cache) if multi else ""
         sdir = os.path.dirname(p)
         if k(sdir) == k(tdir):
-            stay.append(p); reasons["уже на месте"] = reasons.get("уже на месте", 0) + 1; continue
+            why = tr("already in place", "уже на месте"); stay.append(p); reasons[why] = reasons.get(why, 0) + 1; continue
         moves.append({"from": p, "dir": tdir, "multi": len(where[p]) > 1})
     # names: what is in a folder keeps its name; what comes in takes a free one. A name freed by a file leaving in the same run is
     # not reused, so the moves need no order
@@ -676,9 +682,9 @@ def apply(env, who="owner", candidates=None, pl=None):
         return dict(j, status="nothing")
     # every source there, every target free (case-insensitively, as the Mac sees it)
     for m in moves:
-        if not os.path.isfile(os.path.join(W, m["from"])): raise Failed(f"нет файла {m['from']}")
+        if not os.path.isfile(os.path.join(W, m["from"])): raise Failed(tr("no file ", "нет файла ") + m["from"])
         for t in [m["to"]] + [t for _f, t, _w in m["side"]]:
-            if _exists(t): raise Failed(f"место занято: {t}")
+            if _exists(t): raise Failed(tr("the place is taken: ", "место занято: ") + t)
     j["planned"] = [{"from": m["from"], "to": m["to"], "side": m["side"]} for m in moves]
     _save_journal(j)
     undo = []
@@ -689,7 +695,7 @@ def apply(env, who="owner", candidates=None, pl=None):
         amap = {}
         for m in moves:
             src, dst = os.path.join(W, m["from"]), os.path.join(W, m["to"])
-            if _exists(m["to"]): raise Failed(f"место занято: {m['to']}")
+            if _exists(m["to"]): raise Failed(tr("the place is taken: ", "место занято: ") + m["to"])
             os.rename(src, dst); undo.append(lambda s=src, d=dst: os.rename(d, s))
             amap[os.path.normpath(src)] = os.path.normpath(dst)
             done_side = []
@@ -739,18 +745,19 @@ def apply(env, who="owner", candidates=None, pl=None):
             except Exception: errs += 1
         j.update(status="failed", error=f"{type(ex).__name__}: {str(ex)[:300]}", rollback_errors=errs, moves=[], dirs_made=[], dirs_removed=[])
         _save_journal(j)
-        raise Failed(f"раскладка остановлена и отменена: {str(ex)[:200]}" + (f" (не вернулось шагов: {errs})" if errs else "")) from ex
+        raise Failed(tr("the layout stopped and was undone: ", "раскладка остановлена и отменена: ") + str(ex)[:200]
+                     + (tr(" (steps not undone: {})", " (не вернулось шагов: {})").format(errs) if errs else "")) from ex
 
 
 def undo_last(env):
     """moves the last run's files back, puts its rewritten jsons back as they were, recreates the folders it removed"""
     js = [j for j in _journals() if j.get("status") == "done"]
-    if not js: raise Failed("нечего отменять")
+    if not js: raise Failed(tr("nothing to undo", "нечего отменять"))
     j = js[-1]
     moves = j.get("moves", [])
     for m in moves:   # the old places must be free again
         for f in [m["from"]] + [f for f, _t, w in m.get("side", []) if w == "move"]:
-            if _exists(f): raise Failed(f"на старом месте уже есть файл: {f}")
+            if _exists(f): raise Failed(tr("there is already a file in the old place: ", "на старом месте уже есть файл: ") + f)
     missing = []
     # jsons this run wrote: back to their text, unless they were changed since (then only the paths are turned back)
     inv_abs = {}

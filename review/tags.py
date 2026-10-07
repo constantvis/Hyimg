@@ -4,7 +4,8 @@
 # A frame without a prompt only gets the engine tag and the tags its name codes give.
 # The rules are the board's own data (config.py RULES: "tags" [[group, tag, regex]], "tagCodes" {name part: tag}, "pinnedTags"
 # [[group, tag]]); the server hands them over with configure(). To add or fix a tag: edit the rules file and restart the server
-# (⇧⌘R); nothing is written to the sidecars.
+# (⇧⌘R); nothing is written to the sidecars. The library's filter window also adds a tag of the project's own (a name, the words that
+# find it, a group; filters.py appends it to this board's "tags" rules and the server re-reads them, owner 2026-10-06).
 import re
 
 RULES = []
@@ -23,7 +24,7 @@ def configure(rules):
         except re.error: continue
         RULES.append(tuple(r))
     _CODES.update({k: v for k, v in (rules.get("tagCodes") or {}).items() if isinstance(k, str) and isinstance(v, str)})
-    PINNED.extend([g, t] for g, t in (p for p in rules.get("pinnedTags") or [] if isinstance(p, (list, tuple)) and len(p) == 2))
+    PINNED.extend([g, t] for g, t in (p for p in rules.get("pinnedTags") or [] if isinstance(p, (list, tuple)) and len(p) == 2 and all(isinstance(x, str) for x in p)))
 
 
 def engine(model, folder):
@@ -78,7 +79,8 @@ def _tags(item, sc):
 
 
 def groups():
-    seen, out = set(), [list(p) for p in PINNED]
+    # a pinned tag is listed once: it has its rule too, and the library's filter drew it twice (unit test, 2026-10-06)
+    seen, out = {tuple(p) for p in PINNED}, [list(p) for p in PINNED]
     for g, t, _ in RULES:
         if (g, t) not in seen:
             seen.add((g, t)); out.append([g, t])

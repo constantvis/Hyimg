@@ -40,7 +40,7 @@ final class TabBar: NSView {
         wantsLayer = true
         layer?.backgroundColor = Palette.bar.cgColor
         home.onClick = { [weak self] in self?.onHome() }
-        home.toolTip = "Главная · ⌘⇧H"
+        home.toolTip = L("Home · ⌘⇧H")
         if !TabBar.inPage { addSubview(home) }
         let rule = NSView(); rule.wantsLayer = true; rule.layer?.backgroundColor = Palette.line.cgColor
         rule.autoresizingMask = [.width, .maxYMargin]; rule.frame = NSRect(x: 0, y: 0, width: frame.width, height: 1)
@@ -49,6 +49,12 @@ final class TabBar: NSView {
         if !TabBar.inPage { addSubview(rule) }
     }
     required init?(coder: NSCoder) { nil }
+    // the interface language changed (owner 2026-10-06: «make 2 versions, Russian and English, switchable in settings»)
+    func relabel() {
+        home.toolTip = L("Home · ⌘⇧H")
+        home.setAccessibilityLabel(L("Home"))
+        rebuild()   // the tabs' close buttons are made again with their new label
+    }
     override var mouseDownCanMoveWindow: Bool { true }
     override var isFlipped: Bool { false }
     override func viewDidMoveToWindow() {
@@ -151,7 +157,7 @@ final class TabView: NSView {
             label.lineBreakMode = .byTruncatingTail
             label.cell?.truncatesLastVisibleLine = true
             addSubview(label)
-            close.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: "Закрыть вкладку")?.withSymbolConfiguration(.init(pointSize: 9, weight: .semibold))
+            close.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: L("Close Tab"))?.withSymbolConfiguration(.init(pointSize: 9, weight: .semibold))
             close.isBordered = false
             close.bezelStyle = .regularSquare
             close.target = self; close.action = #selector(closeTab)
@@ -159,11 +165,11 @@ final class TabView: NSView {
             addSubview(close)
         }
         if let symbol {
-            icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Главная")?.withSymbolConfiguration(.init(pointSize: 13, weight: .medium))
+            icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: L("Home"))?.withSymbolConfiguration(.init(pointSize: 13, weight: .medium))
             addSubview(icon)
         }
         setAccessibilityRole(.button)
-        setAccessibilityLabel(title ?? "Главная")
+        setAccessibilityLabel(title ?? L("Home"))
         restyle()
     }
     required init?(coder: NSCoder) { nil }
@@ -205,6 +211,13 @@ enum HomeData {
     static func sanitize(_ rel: String) -> String {
         String(rel.unicodeScalars.map { ("a"..."z").contains($0) || ("A"..."Z").contains($0) || ("0"..."9").contains($0) || $0 == "." || $0 == "_" || $0 == "-" ? Character($0) : "_" })
     }
+    // where the board's server keeps its thumbnails: the app's cache since 2026-10-07 (review/thumbcache.py), the state folder before
+    static func thumbsFolder(_ p: Project) -> URL {
+        let env = ProcessInfo.processInfo.environment["HYIMG_CACHE_ROOT"]
+        let root = env.map { URL(fileURLWithPath: $0) } ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Caches/Hyimg")
+        let cache = root.appendingPathComponent(p.id.uuidString).appendingPathComponent("thumbs")
+        return FileManager.default.fileExists(atPath: cache.path) ? cache : URL(fileURLWithPath: p.stateRoot).appendingPathComponent("_thumbs")
+    }
     static func info(for p: Project) -> [String: Any] {
         let fm = FileManager.default
         let boards = URL(fileURLWithPath: p.stateRoot).appendingPathComponent("boards")
@@ -222,7 +235,7 @@ enum HomeData {
             }
         }
         var covers: [String] = []
-        let thumbs = URL(fileURLWithPath: p.stateRoot).appendingPathComponent("_thumbs")
+        let thumbs = thumbsFolder(p)
         if let names = try? fm.contentsOfDirectory(atPath: thumbs.path) {
             var byKey: [String: String] = [:]
             for n in names where n.hasSuffix(".jpg") {

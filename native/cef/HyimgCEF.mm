@@ -51,6 +51,9 @@ class HYApp : public CefApp, public CefBrowserProcessHandler {
     if (!process_type.empty()) return;
     command_line->AppendSwitch("use-mock-keychain");   // no macOS keychain prompt for Chromium's own storage
     command_line->AppendSwitchWithValue("autoplay-policy", "no-user-gesture-required");
+    // the HTTP cache of each board's profile at most 256 MB (owner 2026-10-07, docs/storage-plan.md): it held 800 MB of copies of
+    // thumbnails the board's server already keeps on disk; Chromium drops the oldest entries itself
+    command_line->AppendSwitchWithValue("disk-cache-size", "268435456");
   }
  private:
   IMPLEMENT_REFCOUNTING(HYApp);
@@ -61,6 +64,7 @@ static CefRefPtr<HYApp> gApp;
 @interface HYCefView ()
 - (void)browserCreated:(CefRefPtr<CefBrowser>)browser;
 - (void)browserClosed;
+- (void)pageFullscreen:(BOOL)on;
 @end
 
 class HYClient : public CefClient, public CefLifeSpanHandler, public CefLoadHandler, public CefDisplayHandler,
@@ -75,6 +79,14 @@ class HYClient : public CefClient, public CefLifeSpanHandler, public CefLoadHand
   CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
 
   void OnAfterCreated(CefRefPtr<CefBrowser> browser) override { gBrowsers.insert(browser->GetIdentifier()); [view_ browserCreated:browser]; }
+  // a board's browser lies inside the app's one window. Left to itself, its close sends that window performClose:, and closing the
+  // main window quits Hyimg: «Remove board…» and a tab's × closed the board and the whole app with it (owner 2026-10-06: «приложение
+  // вылетело опять»). Its own view leaves the window instead, which ends the browser, and OnBeforeClose follows
+  bool DoClose(CefRefPtr<CefBrowser> browser) override {
+    NSView *v = (__bridge NSView *)browser->GetHost()->GetWindowHandle();
+    dispatch_async(dispatch_get_main_queue(), ^{ [v removeFromSuperview]; });
+    return true;
+  }
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
     gBrowsers.erase(browser->GetIdentifier());
     [view_ browserClosed];
@@ -83,6 +95,8 @@ class HYClient : public CefClient, public CefLifeSpanHandler, public CefLoadHand
       for (void (^b)(void) in w) b();
     }
   }
+  // a page element asks for full screen (a video's ⤢, owner 2026-10-06): the window goes full screen, so the element fills the whole display
+  void OnFullscreenModeChange(CefRefPtr<CefBrowser>, bool fullscreen) override { [view_ pageFullscreen:fullscreen ? YES : NO]; }
   // links that open a new window (target=_blank, a picture's source on Instagram) go to the system browser
   bool OnBeforePopup(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, int, const CefString &target_url, const CefString &,
                      WindowOpenDisposition, bool, const CefPopupFeatures &, CefWindowInfo &, CefRefPtr<CefClient> &,
@@ -138,6 +152,7 @@ static unsigned int gGround = 0x17171a;   // the board's paper (ui/paper.js BOAR
   NSString *_pending;        // a URL asked for before the browser exists
   NSString *_pendingHTML;
   BOOL _creating;
+  BOOL _enteredFS;           // the window went full screen because the page asked: it goes back when the page leaves
 }
 + (void)setGround:(unsigned int)rgb { gGround = rgb; [NSNotificationCenter.defaultCenter postNotificationName:@"HYCefGround" object:nil]; }
 // the view under Chromium's own is the paper too: before Chromium has a frame (a reload, a new page) it showed black (owner 2026-10-04)
@@ -186,6 +201,12 @@ static unsigned int gGround = 0x17171a;   // the board's paper (ui/paper.js BOAR
   if (!self.isHiddenOrHasHiddenAncestor && self.superview.subviews.lastObject == self) [self focusPage];   // a page loading under Home does not take the keys
 }
 - (void)browserClosed { _browser = nullptr; _client = nullptr; }
+- (void)pageFullscreen:(BOOL)on {
+  NSWindow *w = self.window; if (!w) return;
+  BOOL isFS = (w.styleMask & NSWindowStyleMaskFullScreen) != 0;
+  if (on && !isFS) { _enteredFS = YES; [w toggleFullScreen:nil]; }
+  else if (!on && _enteredFS) { _enteredFS = NO; if (isFS) [w toggleFullScreen:nil]; }
+}
 - (void)resizeSubviewsWithOldSize:(NSSize)old { [super resizeSubviewsWithOldSize:old]; for (NSView *v in self.subviews) v.frame = self.bounds; }
 
 - (void)loadURL:(NSString *)url {

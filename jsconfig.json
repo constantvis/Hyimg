@@ -1,0 +1,15 @@
+{
+  "//": "Types of the primitives (review/ui/hy), checked by scripts/check.sh with `tsc -p jsconfig.json`: JSDoc in plain .js, no build. The older review/ui files join one by one once they are type-clean (docs/ui-inventory.md §6).",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "skipLibCheck": true
+  },
+  "include": ["review/ui/hy/**/*.js", "review/ui/hy/**/*.d.ts"]
+}

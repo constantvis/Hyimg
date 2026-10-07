@@ -1,0 +1,46 @@
+/* THE slider of the app (owner 2026-10-06), with ui/slider.js; the markup is described at the top of that file.
+   One geometry: --p (0..1) on .hy-slider says where the fill ends and where the line stands. The line is centred on the fill's end and
+   clamped inside the track's round ends (--hy-sl-end: a tenth of the height and 1 px, where the end is tall enough for the whole line),
+   so at 0 and at 1 it stands just inside the curve, never cut by it (owner 2026-10-06: at 0 a thin crescent «(» stuck out of the row's
+   rounded edge, the line clipped by the curve), and elsewhere exactly on the end.
+   Tokens (override on a parent): --hy-sl-h height, --hy-sl-r radius, --hy-sl-bg track, --hy-sl-fill fill, --hy-sl-line line, --hy-sl-accent. */
+.hy-slider { --hy-sl-h: 34px; --hy-sl-accent: var(--sel, var(--ink, #ececef)); --hy-sl-bg: color-mix(in srgb, var(--ink, #ececef) 7%, transparent);
+  --hy-sl-fill: color-mix(in srgb, var(--hy-sl-accent) 22%, transparent); --hy-sl-line: var(--ink, #ececef); --p: 0; --hy-sl-end: calc(var(--hy-sl-h) * .1 + 1px);
+  position: relative; display: block; box-sizing: border-box; width: 100%; height: var(--hy-sl-h); border-radius: var(--hy-sl-r, calc(var(--hy-sl-h) / 2)); background: var(--hy-sl-bg);
+  overflow: hidden; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none; color: var(--sub, #9a9ba3); font: 500 13px/1 var(--sans, -apple-system, system-ui, sans-serif);
+  transition: background-color .25s cubic-bezier(.32, .72, 0, 1); }
+.hy-slider { --hy-sl-r: var(--hy-row-r); }   /* the app's one row radius (ui/look.css, owner 2026-10-06: a slider and the select beside it never differ): a pill, 8 px in «pro»; without look.css the height's half */
+.hy-slider > input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0; appearance: none; -webkit-appearance: none; pointer-events: none; }
+.hy-slider-f { position: absolute; left: calc(var(--fl, 0) * 100%); top: 0; bottom: 0; width: calc(var(--fw, var(--p)) * 100%); background: var(--hy-sl-fill); pointer-events: none; }
+.hy-slider-t { position: absolute; top: 50%; left: clamp(var(--hy-sl-end), calc(var(--p) * 100%), calc(100% - var(--hy-sl-end))); width: 2px; height: 58%; transform: translate(-50%, -50%); border-radius: 2px; background: var(--hy-sl-line);
+  opacity: .55; pointer-events: none; transition: opacity .2s cubic-bezier(.32, .72, 0, 1); }
+.hy-slider.jump .hy-slider-f { transition: left .22s cubic-bezier(.32, .72, 0, 1), width .22s cubic-bezier(.32, .72, 0, 1); } .hy-slider.jump .hy-slider-t { transition: left .22s cubic-bezier(.32, .72, 0, 1), opacity .2s cubic-bezier(.32, .72, 0, 1); }
+.hy-slider:hover { background: color-mix(in srgb, var(--ink, #ececef) 11%, transparent); }
+.hy-slider:hover .hy-slider-t, .hy-slider.drag .hy-slider-t, .hy-slider:has(> input:focus-visible) .hy-slider-t { opacity: 1; }
+.hy-slider.hy-under .hy-slider-t { opacity: 0 !important; }   /* the line under the label or the number fades out, never crosses the words (slider.js), also under the pointer or the keyboard */
+.hy-slider.drag { --hy-sl-fill: color-mix(in srgb, var(--hy-sl-accent) 32%, transparent); }
+/* no focus ring (owner 2026-10-06: «why does this damn outline appear around the slider»), the line brightening is the focus */
+.hy-slider-l, .hy-slider-v, .hy-slider-ed { position: absolute; top: 50%; transform: translateY(-50%); pointer-events: none; white-space: nowrap; transition: color .15s cubic-bezier(.32, .72, 0, 1); }
+.hy-slider-l { left: 12px; display: inline-flex; align-items: center; max-width: calc(100% - 78px); overflow: hidden; text-overflow: ellipsis; }
+.hy-slider-v { right: 12px; font: 500 13px/1 "Geist Mono", ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; pointer-events: auto; cursor: text; border-bottom: 1px solid transparent; padding-bottom: 1px; }
+.hy-slider-v:hover { border-bottom-color: currentColor; }
+.hy-slider-v[hidden] { display: none; }
+.hy-slider-ed { right: 10px; width: 5ch; font: inherit; font-family: "Geist Mono", ui-monospace, Menlo, monospace; text-align: right; color: var(--ink, #ececef); background: transparent; border: 0; border-bottom: 1px solid currentColor; outline: 0; padding: 0 0 1px; pointer-events: auto; }
+.hy-slider:hover :is(.hy-slider-l, .hy-slider-v), .hy-slider.drag :is(.hy-slider-l, .hy-slider-v) { color: var(--ink, #ececef); }
+/* the compact one: a thin track with no words, the number is the page's own («◐ ——— 100%» of the selection bar) */
+.hy-slider.sm { --hy-sl-h: 18px; --hy-sl-r: 0; --hy-sl-end: 1px; background: none; overflow: visible; width: 90px; display: inline-block; vertical-align: middle; }
+.hy-slider.sm::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 4px; transform: translateY(-50%); border-radius: 999px; background: var(--hy-sl-bg); }
+.hy-slider.sm .hy-slider-f { top: 50%; bottom: auto; height: 4px; transform: translateY(-50%); border-radius: 999px; background: color-mix(in srgb, var(--hy-sl-accent) 55%, transparent); }
+.hy-slider.sm .hy-slider-t { height: 14px; opacity: 1; }
+/* a signed slider (data-center): a tick where the fill starts; a colour slider (.grad, --hy-sl-grad): the colours along the bottom edge, no fill */
+.hy-slider[data-center]::after { content: ""; position: absolute; left: calc(var(--c, 0) * 100%); top: 22%; bottom: 22%; width: 1px; background: currentColor; opacity: .4; pointer-events: none; }
+.hy-slider.grad::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--hy-sl-grad); pointer-events: none; }
+.hy-slider.grad .hy-slider-f { display: none; }
+.hy-slider.sm > :is(.hy-slider-l, .hy-slider-v) { display: none; }   /* one markup, two shapes: a slider that moves to a bar (the library's card size) hides its words there */
+:root[data-shape="pro"] .hy-slider.sm::before, :root[data-shape="pro"] .hy-slider.sm .hy-slider-f { border-radius: 1px; }
+.hy-slider.sm:hover { background: none; }
+.hy-slider[aria-disabled="true"], .hy-slider:has(> input:disabled) { opacity: .45; pointer-events: none; }
+/* DialKit's row: the wrapper holds the row's height */
+.hy-slider-wrapper { position: relative; height: var(--dial-row-height, 34px); }
+.hy-slider-wrapper > .hy-slider { --hy-sl-h: var(--dial-row-height, 34px); --hy-sl-bg: var(--dial-surface, color-mix(in srgb, var(--ink, #ececef) 7%, transparent)); --hy-sl-fill: var(--dial-surface-active, color-mix(in srgb, var(--hy-sl-accent) 22%, transparent)); --hy-sl-line: var(--dial-text-primary, var(--ink, #ececef)); color: var(--dial-text-label, var(--sub, #9a9ba3)); }
+@media (prefers-reduced-motion: reduce) { .hy-slider, .hy-slider-t, .hy-slider.jump .hy-slider-f, .hy-slider.jump .hy-slider-t { transition: none; } }

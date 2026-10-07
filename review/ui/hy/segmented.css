@@ -1,0 +1,20 @@
+/* <hy-segmented>: one choice of a few, the app's one choice component (owner 2026-10-06: «why isn't this a switch like ours»). It is the
+   .seg capsule of ui/look.css with the thumb ui/seg.js slides under the chosen option; the element takes the class seg when the script
+   upgrades it, this file gives it its size before that and its variants. Options are <button value> children, 28 px (size=s 24, l 30);
+   full stretches it to its row, each option an equal share; variant=tabs is the same look with tab roles (a panel's sections). */
+hy-segmented { --hy-so: var(--hy-h-m); display: inline-flex; align-items: center; gap: 2px; box-sizing: border-box; vertical-align: middle; }
+hy-segmented:not(.seg) { padding: var(--hy-seg-pad); border-radius: var(--hy-seg-r); background: var(--raise); }
+/* the corners from the tokens, so a part of a page in the other shape (data-hy-shape) gets its own: the track, its thumb, its options */
+hy-segmented.seg { border-radius: var(--hy-seg-r); }
+hy-segmented.seg > .st { border-radius: max(0px, calc(var(--hy-seg-r) - var(--hy-seg-pad))); }
+hy-segmented[size=s] { --hy-so: var(--hy-h-s); }
+hy-segmented[size=l] { --hy-so: var(--hy-h-l); }
+hy-segmented[full] { display: flex; width: 100%; }
+:is(hy-segmented, hy-segmented.seg) > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; height: var(--hy-so); min-width: var(--hy-so);
+  padding: 0 var(--hy-cap-pad); border: 0; border-radius: max(0px, calc(var(--hy-seg-r) - var(--hy-seg-pad))); background: transparent; color: var(--sub);
+  font: 500 12px/1 var(--sans); white-space: nowrap; cursor: pointer; }
+hy-segmented > button:has(> svg:only-child) { padding: 0; }
+:is(hy-segmented[full], hy-segmented[full].seg) > button { flex: 1 1 0; min-width: 0; }
+hy-segmented > button:disabled { opacity: .45; cursor: default; }
+hy-segmented > button > svg { flex: none; display: block; }
+hy-segmented:not(.has-st) > button.on { background: var(--panel); color: var(--ink); }

@@ -67,10 +67,11 @@ def fill(skip=()):
     files = library_files(skip)
     with _LOCK:
         idx = _index()
-        gone = [p for p in idx if p not in files]
+        # a file with no bytes is not a picture to fold: they all hash alike, so the library showed one of 105 and lost the rest (owner 2026-10-06)
+        gone = [p for p in idx if p not in files or files[p][0] == 0]
         for p in gone:
             del idx[p]
-        todo = [p for p, (size, mt) in files.items() if (idx.get(p) or [None, None])[:2] != [size, mt]]
+        todo = [p for p, (size, mt) in files.items() if size and (idx.get(p) or [None, None])[:2] != [size, mt]]
     n = 0
     for p in todo:
         size, mt = files[p]
@@ -113,7 +114,7 @@ def collapse(items, keep_copies=False):
     Every copy is marked copy_of=<first>. A copy the owner reacted to (♥, rating, comment) is never hidden."""
     groups = {}
     for i in items:
-        s = sha_of(i.get("path", ""))
+        s = None if i.get("empty") or not i.get("size") else sha_of(i.get("path", ""))   # empty files are never copies of each other (2026-10-06)
         if s:
             groups.setdefault(s, []).append(i)
     hide = set()

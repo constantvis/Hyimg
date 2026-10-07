@@ -13,7 +13,7 @@ LAMA_URL="https://huggingface.co/Carve/LaMa-ONNX/resolve/main/lama_fp32.onnx"
 
 usage() {
   cat <<'EOF'
-Использование: scripts/install_plugins.sh [--frames] [--3d] [--lama] [--yes] [--remove]
+Использование: scripts/install_plugins.sh [--frames] [--3d] [--dev] [--lama] [--yes] [--remove]
 
 Без флагов в терминале скрипт спрашивает про каждый плагин.
 
@@ -21,6 +21,8 @@ usage() {
              https://github.com/constantvis/hyimg-frames, папка плагина frames
   --3d       3D-объекты: 3D-сцена карточкой на доске, перенос в Blender (Blender не обязателен)
              https://github.com/constantvis/hyimg-3d-studio, папка плагина 3d
+  --dev      Dev studio: HTML-страницы карточками на доске, дерево HTML и свойства элемента (пока только просмотр)
+             локальный репозиторий ../hyimg-dev-studio, папка плагина dev
   --lama     скачать модель LaMa для заливки (около 208 МБ) в ~/Library/Caches/Hyimg/models/lama
   --yes      не задавать вопросов: ставить только то, что названо флагами
   --remove   убрать наши ссылки на плагины (репозитории и модель остаются)
@@ -35,11 +37,12 @@ usage() {
 EOF
 }
 
-want_frames=0; want_3d=0; want_lama=0; yes=0; remove=0; named=0
+want_frames=0; want_3d=0; want_dev=0; want_lama=0; yes=0; remove=0; named=0
 for arg in "$@"; do
   case "$arg" in
     --frames) want_frames=1; named=1 ;;
     --3d) want_3d=1; named=1 ;;
+    --dev) want_dev=1; named=1 ;;
     --lama) want_lama=1; named=1 ;;
     --yes|-y) yes=1 ;;
     --remove) remove=1 ;;
@@ -52,6 +55,7 @@ done
 PLUGIN_LIST=(
   "frames|hyimg-frames|https://github.com/constantvis/hyimg-frames.git|Фреймы: редактор картинок на доске (слои, маски, Color Grading, заливка) и HTML-фреймы"
   "3d|hyimg-3d-studio|https://github.com/constantvis/hyimg-3d-studio.git|3D-объекты: 3D-сцена карточкой на доске, свой редактор, перенос в Blender"
+  "dev|hyimg-dev-studio||Dev studio: HTML-страницы карточками на доске, дерево HTML и свойства элемента (пока только просмотр)"
 )
 
 ask() {   # ask "question" -> 0 on yes; only in an interactive terminal
@@ -63,7 +67,7 @@ ask() {   # ask "question" -> 0 on yes; only in an interactive terminal
 interactive=0
 if [ "$yes" = 0 ] && [ -t 0 ] && [ -t 1 ]; then interactive=1; fi
 if [ "$remove" = 0 ] && [ "$interactive" = 0 ] && [ "$named" = 0 ]; then
-  echo "Не терминал и нет флагов: ничего не ставлю. Спроси человека и передай ответ флагами (--frames, --3d, --lama, --yes)." >&2
+  echo "Не терминал и нет флагов: ничего не ставлю. Спроси человека и передай ответ флагами (--frames, --3d, --dev, --lama, --yes)." >&2
   usage >&2; exit 2
 fi
 
@@ -76,16 +80,17 @@ for entry in "${PLUGIN_LIST[@]}"; do
     elif [ -e "$link" ] || [ -L "$link" ]; then echo "не наша ссылка, не трогаю: $link"; fi
     continue
   fi
-  flag=$want_frames; [ "$name" = "3d" ] && flag=$want_3d
+  case "$name" in frames) flag=$want_frames ;; 3d) flag=$want_3d ;; dev) flag=$want_dev ;; *) flag=0 ;; esac
   if [ "$flag" = 0 ]; then
     [ "$interactive" = 1 ] || continue
     echo
     echo "$about"
-    echo "  источник: ${repo%.git}"
+    if [ -n "$repo" ]; then echo "  источник: ${repo%.git}"; else echo "  источник: локальный репозиторий $src"; fi
     [ "$name" = "frames" ] && echo "  нужно: macOS Vision (встроен), по желанию модель LaMa около 208 МБ"
     [ "$name" = "3d" ] && echo "  нужно: по желанию Blender для переноса сцен"
     ask "Поставить плагин «${about%%:*}»?" || { echo "пропускаю $name"; continue; }
   fi
+  if [ ! -d "$src" ] && [ -z "$repo" ]; then echo "нет $src, а репозитория в сети у плагина пока нет: пропускаю $name"; continue; fi
   if [ ! -d "$src" ]; then
     echo "клонирую $repo в $src"
     git clone --quiet "$repo" "$src"

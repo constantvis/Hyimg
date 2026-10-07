@@ -22,9 +22,6 @@
 #fsMenu button:disabled { color: var(--muted); }
 #fsMenu button > svg { flex: none; opacity: .75; }
 #fsMenu .ml { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-#fsMenu .sw { flex: none; width: 28px; height: 16px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 24%, transparent); position: relative; transition: background .22s cubic-bezier(.32,.72,0,1); }
-#fsMenu .sw::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform .22s cubic-bezier(.32,.72,0,1); }
-#fsMenu .sw.on { background: #30d158; } #fsMenu .sw.on::after { transform: translateX(12px); }
 #fsMenu hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
 #fsDlg { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; padding: 16px; box-sizing: border-box; background: rgba(0,0,0,.34);
   opacity: 0; visibility: hidden; transition: opacity .28s cubic-bezier(.32,.72,0,1), visibility 0s .28s; }
@@ -53,10 +50,6 @@
 #fsDlg .ex .was span:last-child { color: var(--sub); }
 #fsDlg .note { color: var(--sub); font-size: 12px; margin: -6px 0 14px; }
 #fsDlg label.tg { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--fs-tile); cursor: pointer; }
-#fsDlg label.tg input { position: absolute; opacity: 0; width: 0; height: 0; }
-#fsDlg label.tg .sw { flex: none; width: 36px; height: 21px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 24%, transparent); position: relative; transition: background .25s cubic-bezier(.32,.72,0,1); }
-#fsDlg label.tg .sw::after { content: ""; position: absolute; left: 2px; top: 2px; width: 17px; height: 17px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .25s cubic-bezier(.32,.72,0,1); }
-#fsDlg label.tg input:checked + .sw { background: #30d158; } #fsDlg label.tg input:checked + .sw::after { transform: translateX(15px); }
 #fsDlg label.tg b { display: block; font-weight: 600; } #fsDlg label.tg small { display: block; color: var(--sub); font-size: 12px; }
 #fsDlg .act { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 #fsDlg .act button { height: 34px; padding: 0 16px; border: 0; border-radius: 999px; font: 500 13px var(--sans); cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
@@ -72,19 +65,18 @@
   const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
   const $ = q => document.querySelector(q);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const ru = (n, a, b, c) => { const m = n % 10, h = n % 100; return `${n.toLocaleString("ru-RU")} ${m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 12 || h > 14) ? b : c}`; };
-  const files = n => ru(n, "файл", "файла", "файлов"), dirs = n => ru(n, "папка", "папки", "папок");
+  // the words in the app's language (ui/i18n.js; its Russian in ui/lang-common.js, owner 2026-10-06), numbers in its grouping
+  const t = (k, v) => window.T ? window.T(k, v) : String(k).replace(/^\w+::/, "").replace(/\{(\w+)\}/g, (m, x) => (v && x in v ? String(v[x]) : m));
+  const num = n => window.T ? window.T.num(n) : Number(n).toLocaleString();
+  const files = n => t("{n} files", { n });
   const mid = (s, n = 70) => s.length <= n ? s : s.slice(0, Math.ceil((n - 1) * .42)) + "…" + s.slice(-(n - 1 - Math.ceil((n - 1) * .42)));
   const toast = (t, k) => (window.hyToast || console.log)(t, k);
   const FS = { auto: false, last: null, stamp: null };
-  const ICON = s => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${s}</svg>`;
-  const IC_LAY = ICON('<path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M8 13h8M13 10l3 3-3 3"/>');
-  const IC_UNDO = ICON('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>');
-  const IC_SYNC = ICON('<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/>');
+  const ICON = n => (window.hyIcon ? window.hyIcon(n, 15, 1.9) : "");   // a menu item's icon (ui/icons.js), the menus' 15 px and line
 
   // the path bar's end: the plate while «always» is on, and the ⋯ button
-  window.hyFsBar = () => (FS.auto ? `<button class="fsPill" data-fsmenu title="Папки на диске повторяют доску: каждая правка доски раскладывает файлы заново. Клик: меню, там можно выключить"><i></i>Как на доске</button>` : "")
-    + `<button class="fticon fsMore" data-fsmenu aria-label="Папки как на доске" title="Папки как на доске"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/></svg></button>`;
+  window.hyFsBar = () => (FS.auto ? `<button class="fsPill" data-fsmenu title="${esc(t("Folders on disk follow the board: every board edit arranges the files again. Click for the menu, where you can turn it off"))}"><i></i>${esc(t("Like the board"))}</button>` : "")
+    + `<button class="fticon fsMore" data-fsmenu aria-label="${esc(t("Folders like the board"))}" title="${esc(t("Folders like the board"))}">${window.hyIcon ? hyIcon("more", 16) : ""}</button>`;
   const redraw = () => { if (typeof window.renderFolders === "function") window.renderFolders(); };
 
   async function state() {
@@ -98,8 +90,8 @@
     const was = FS.last && FS.last.id, auto = FS.auto;
     await state();
     if (!first && FS.last && FS.last.id !== was && FS.last.who === "auto" && FS.last.status === "done" && FS.last.moved)
-      toast(`Папки разложены как на доске: ${files(FS.last.moved)}`, "info");
-    if (!first && FS.last && FS.last.who === "auto" && FS.last.status === "failed" && FS.last.id !== was) toast("Не получилось разложить по папкам: " + (FS.last.error || ""), "error");
+      toast(t("Folders arranged like the board: {files}", { files: files(FS.last.moved) }), "info");
+    if (!first && FS.last && FS.last.who === "auto" && FS.last.status === "failed" && FS.last.id !== was) toast(t("Couldn't arrange the folders: ") + (FS.last.error || ""), "error");
     if (first || auto !== FS.auto) redraw();
   };
 
@@ -111,9 +103,9 @@
     if (!menu) { menu = document.createElement("div"); menu.id = "fsMenu"; menu.setAttribute("role", "menu"); document.body.appendChild(menu); }
     const canUndo = FS.last && FS.last.status === "done";
     const item = (act, icon, label, extra = "", tail = "") => `<button role="menuitem" data-fs="${act}"${extra}>${icon}<span class="ml">${label}</span>${tail}</button>`;
-    menu.innerHTML = item("plan", IC_LAY, "Разложить по папкам как на доске…")
-      + item("auto", IC_SYNC, "Всегда держать папки как на доске", "", `<span class="sw ${FS.auto ? "on" : ""}"></span>`)
-      + "<hr>" + item("undo", IC_UNDO, "Отменить последнюю раскладку", canUndo ? "" : " disabled");
+    menu.innerHTML = item("plan", ICON("toFolders"), esc(t("Arrange folders like the board…")))
+      + item("auto", ICON("sync"), esc(t("Always keep folders like the board")), "", `<hy-switch static${FS.auto ? " checked" : ""}></hy-switch>`)
+      + "<hr>" + item("undo", ICON("undo"), esc(t("Undo the last layout")), canUndo ? "" : " disabled");
     const r = btn.getBoundingClientRect();
     menu.classList.add("open");
     const mw = menu.offsetWidth, mh = menu.offsetHeight;
@@ -135,8 +127,8 @@
       const r = await fetch("/api/layout/auto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on }) });
       if (!r.ok) throw new Error(r.status);
       FS.auto = (await r.json()).auto; redraw();
-      toast(FS.auto ? "Папки будут повторять доску: после каждой правки доски файлы разложатся сами" : "Папки больше не следуют за доской", FS.auto ? "success" : "info");
-    } catch (ex) { toast("Не удалось переключить режим: " + ex.message, "error"); }
+      toast(FS.auto ? t("Folders will follow the board: after every board edit the files arrange themselves") : t("Folders no longer follow the board"), FS.auto ? "success" : "info");
+    } catch (ex) { toast(t("Couldn't switch the mode: ") + ex.message, "error"); }
   }
 
   async function undoLast() {
@@ -144,17 +136,17 @@
       const r = await fetch("/api/layout/undo", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
       const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
       const u = d.undo || {};
-      toast(`Раскладка отменена: ${files(u.back || 0)} на прежних местах` + (u.missing && u.missing.length ? `, не нашлось ${u.missing.length}` : "") + (d.auto_was ? ". Режим «как на доске» выключен" : ""), "success");
+      toast(t("Layout undone: {files} back in place", { files: files(u.back || 0) }) + (u.missing && u.missing.length ? t(", {n} not found", { n: u.missing.length }) : "") + (d.auto_was ? t(". “Like the board” mode is off") : ""), "success");
       await state(); redraw();
-    } catch (ex) { toast("Не удалось отменить раскладку: " + ex.message, "error"); }
+    } catch (ex) { toast(t("Couldn't undo the layout: ") + ex.message, "error"); }
   }
 
   // ---- the dialog
   let dlg = null, busy = false;
   function shell() {
     if (dlg) return dlg;
-    dlg = document.createElement("div"); dlg.id = "fsDlg"; dlg.setAttribute("role", "dialog"); dlg.setAttribute("aria-modal", "true"); dlg.setAttribute("aria-label", "Разложить по папкам как на доске");
-    dlg.innerHTML = `<div class="card"><h2>Разложить по папкам как на доске</h2><div class="body"></div></div>`;
+    dlg = document.createElement("div"); dlg.id = "fsDlg"; dlg.setAttribute("role", "dialog"); dlg.setAttribute("aria-modal", "true"); dlg.setAttribute("aria-label", t("Arrange folders like the board"));
+    dlg.innerHTML = `<div class="card"><h2>${esc(t("Arrange folders like the board"))}</h2><div class="body"></div></div>`;
     document.body.appendChild(dlg);
     dlg.addEventListener("pointerdown", e => { if (e.target === dlg && !busy) closeDialog(); });
     document.addEventListener("keydown", e => { if (e.key === "Escape" && dlg.classList.contains("open") && !busy) { e.stopPropagation(); closeDialog(); } }, true);
@@ -163,39 +155,43 @@
   function closeDialog() { if (dlg) dlg.classList.remove("open"); }
   async function openDialog() {
     const d = shell(), body = d.querySelector(".body");
-    body.innerHTML = `<div class="wait"><span class="spin"></span>Смотрю доску и папки…</div>`;
+    body.innerHTML = `<div class="wait"><span class="spin"></span>${esc(t("Looking at the board and folders…"))}</div>`;
     void d.offsetWidth; d.classList.add("open");
     let p;
     try { const r = await fetch("/api/layout/plan"); p = await r.json(); if (!r.ok) throw new Error(p.error || r.status); }
-    catch (ex) { body.innerHTML = `<div class="warn">Не удалось посчитать раскладку: ${esc(ex.message)}</div><div class="act"><button class="no" data-x>Закрыть</button></div>`; body.querySelector("[data-x]").onclick = closeDialog; return; }
+    catch (ex) { body.innerHTML = `<div class="warn">${esc(t("Couldn't work out the layout: "))}${esc(ex.message)}</div><div class="act"><button class="no" data-x>${esc(t("Close"))}</button></div>`; body.querySelector("[data-x]").onclick = closeDialog; return; }
     const stay = p.stay + (p.off_board || 0);
-    const ex = (p.examples || []).map(e => `<li title="${esc(e.from)} → ${esc(e.to)}"><div class="r was"><span>было</span><span>${esc(mid(e.from))}</span></div><div class="r"><span>стало</span><span>${esc(mid(e.to))}</span></div></li>`).join("");
-    const pages = (p.pages || []).map(t => `«${esc(t)}»`).join(", ");
+    const ex = (p.examples || []).map(e => `<li title="${esc(e.from)} → ${esc(e.to)}"><div class="r was"><span>${esc(t("before"))}</span><span>${esc(mid(e.from))}</span></div><div class="r"><span>${esc(t("after"))}</span><span>${esc(mid(e.to))}</span></div></li>`).join("");
+    const pages = (p.pages || []).map(x => t("“{name}”", { name: esc(x) })).join(", ");
     body.innerHTML = `
-      <div class="warn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.1"/></svg>
-        <div>Файлы картинок переедут на диске в папки по страницам, группам и заметкам доски${pages ? ` (страницы ${pages})` : ""}. Появятся новые папки, а старые, в которых не останется ни одного файла, будут удалены. Доска, фреймы и старые ссылки продолжат открывать картинки. Отменить можно в этом же меню.</div></div>
-      <div class="nums"><div class="hot"><b>${p.move.toLocaleString("ru-RU")}</b><span>переедут</span></div><div><b>${p.make.toLocaleString("ru-RU")}</b><span>новых папок</span></div>
-        <div class="${p.remove ? "hot" : ""}"><b>${p.remove.toLocaleString("ru-RU")}</b><span>пустых папок удалим</span></div><div><b>${stay.toLocaleString("ru-RU")}</b><span>останутся на месте</span></div></div>
-      ${p.move ? `<h3>Например</h3><ul class="ex">${ex}</ul>` : `<p class="note" style="margin:0 0 14px">Все картинки с доски уже лежат в своих папках.</p>`}
-      ${p.move ? `<p class="note">Вместе с картинками едут их json (${files(p.sidecars)}). ${p.renamed ? `Совпали имена у ${files(p.renamed)}: к имени добавится папка, откуда файл пришел. ` : ""}${p.multi ? `${ru(p.multi, "картинка лежит", "картинки лежат", "картинок лежат")} в нескольких местах доски, ${p.multi === 1 ? "она ляжет" : "они лягут"} ${p.multi_dir ? `в папку «${esc(p.multi_dir)}» в корне проекта` : "в корень проекта"}. ` : ""}${p.off_board ? `Файлы, которых нет на досках (${p.off_board.toLocaleString("ru-RU")}), не трогаем.` : ""}</p>` : ""}
-      <label class="tg"><input type="checkbox" id="fsAuto" ${p.auto ? "checked" : ""}><span class="sw"></span><span><b>Всегда держать папки как на доске</b><small>Включено: каждая правка доски раскладывает файлы заново. Выключено: только сейчас, один раз</small></span></label>
-      <div class="act"><button class="no" data-x>Отмена</button><button class="go" data-go>Разложить</button></div>`;
+      <div class="warn">${window.hyIcon ? hyIcon("warn", 16, 2.2) : ""}
+        <div>${t("The image files will move on disk into folders by the board's pages, groups and notes{pages}. New folders will appear, and old ones left without a single file will be deleted. The board, frames and old links will keep opening the images. You can undo it in this same menu.", { pages: pages ? t(" (pages {list})", { list: pages }) : "" })}</div></div><!-- hy-allow: panel-prose the warning before files move on disk: every word of it is key -->
+      <div class="nums"><div class="hot"><b>${num(p.move)}</b><span>${esc(t("will move"))}</span></div><div><b>${num(p.make)}</b><span>${esc(t("new folders"))}</span></div>
+        <div class="${p.remove ? "hot" : ""}"><b>${num(p.remove)}</b><span>${esc(t("empty folders deleted"))}</span></div><div><b>${num(stay)}</b><span>${esc(t("stay in place"))}</span></div></div>
+      ${p.move ? `<h3>${esc(t("For example"))}</h3><ul class="ex">${ex}</ul>` : `<p class="note" style="margin:0 0 14px">${esc(t("Every image on the board is already in its folder."))}</p>`}
+      ${p.move ? `<p class="note">${[t("Their json files move with the images ({files}).", { files: files(p.sidecars) }),
+          p.renamed ? t("Matching names for {files}: the folder each came from is added to the name.", { files: files(p.renamed) }) : "",
+          p.multi ? t("{n} images are in several places on the board", { n: p.multi }) + ", " + (p.multi === 1 ? t("it will go") : t("they will go")) + " "
+            + (p.multi_dir ? t("into the folder “{name}” at the project root", { name: esc(p.multi_dir) }) : t("into the project root")) + "." : "",
+          p.off_board ? t("Files not on any board ({n}) are left alone.", { n: p.off_board }) : ""].filter(Boolean).join(" ")}</p>` : ""}
+      <label class="tg"><hy-switch id="fsAuto"${p.auto ? " checked" : ""}></hy-switch><span><b>${esc(t("Always keep folders like the board"))}</b><small>${esc(t("On: every board edit arranges the files again. Off: only now, once"))}</small></span></label>
+      <div class="act"><button class="no" data-x>${esc(t("Cancel"))}</button><button class="go" data-go>${esc(t("folders::Arrange"))}</button></div>`;
     body.querySelector("[data-x]").onclick = closeDialog;
     body.querySelector("[data-go]").onclick = () => run(body);
   }
   async function run(body) {
     const go = body.querySelector("[data-go]"), no = body.querySelector("[data-x]"), auto = body.querySelector("#fsAuto").checked;
-    busy = true; go.disabled = no.disabled = true; go.innerHTML = `<span class="spin"></span>Раскладываю…`;
+    busy = true; go.disabled = no.disabled = true; go.innerHTML = `<span class="spin"></span>${esc(t("Arranging…"))}`;
     try {
       const r = await fetch("/api/layout/apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ auto }) });
       const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status);
       busy = false; closeDialog();
-      if (d.status === "done") toast(`Разложено: ${files(d.moved)}` + (d.made ? `, новых папок ${d.made}` : "") + (d.removed ? `, удалено пустых ${d.removed}` : "") + (d.auto ? ". Папки будут повторять доску" : ""), "success");
-      else toast(d.auto ? "Все уже лежит как на доске. Папки будут повторять доску" : "Все уже лежит как на доске", "success");
+      if (d.status === "done") toast(t("Arranged: {files}", { files: files(d.moved) }) + (d.made ? t(", new folders: {n}", { n: d.made }) : "") + (d.removed ? t(", empty ones deleted: {n}", { n: d.removed }) : "") + (d.auto ? t(". Folders will follow the board") : ""), "success");
+      else toast(d.auto ? t("Everything is already like the board. Folders will follow the board") : t("Everything is already like the board"), "success");
       await state(); redraw();
     } catch (ex) {
-      busy = false; go.disabled = no.disabled = false; go.textContent = "Разложить";
-      toast("Не удалось разложить по папкам: " + ex.message, "error");
+      busy = false; go.disabled = no.disabled = false; go.textContent = t("folders::Arrange");
+      toast(t("run::Couldn't arrange the folders: ") + ex.message, "error");
     }
   }
   window.hyFsOpen = openDialog;   // for tests and agents' screenshots

@@ -101,8 +101,9 @@ def test_library_and_canvas_show_the_format_and_play_a_video(servers, tmp_path):
         assert page.evaluate("() => Math.round(document.querySelector('#vid').duration)") == 75
         page.keyboard.press("Escape")
         page.goto(f"http://127.0.0.1:{port}/canvas.html")
-        page.wait_for_function("() => document.querySelectorAll('.it .kd:not(:empty)').length === 2", timeout=10000)
-        assert sorted(page.locator(".it .kd").all_inner_texts()) == ["PSD", "▶ 1:15"]
+        page.wait_for_function("() => document.querySelectorAll('.it .kd:not(:empty)').length === 2 && document.querySelector('.it.vid.vok')", timeout=10000)
+        # a video card big enough to play has its round ▶ beside the length (owner 2026-10-05), a small one keeps «▶ 1:15»
+        assert sorted(page.locator(".it .kd").all_inner_texts()) == ["1:15", "PSD"] and page.locator(".it.vid.vok .vp").count() == 1
         page.wait_for_function("() => [...document.querySelectorAll('.it img')].every(i => i.complete && i.naturalWidth > 0)", timeout=10000)
         assert not errors, errors
         browser.close()
@@ -151,3 +152,32 @@ def test_folders_docked_on_the_left_with_a_filter(servers, tmp_path):
         page.click(".fbar [data-ftree]"); page.wait_for_selector("body.fdock")
         assert not errors, errors
         browser.close()
+
+
+def test_server_words_follow_the_app_language(servers, tmp_path):
+    """Two languages (owner 2026-10-06: «make 2 versions, Russian and English, switchable in settings»): what the server writes for
+    the interface (collection names, errors, default names, labels) follows the app's setting cv.lang, read on each request."""
+    lib = tmp_path / "lang"; lib.mkdir()
+    Image.new("RGB", (20, 20), "red").save(lib / "loose.png")
+    _, port, _, _ = servers("lang", root=lib)
+    settings = tmp_path / "lang-settings.json"
+    assert any(i["title"] == "В корне доски" for i in get(port, "/api/items"))
+    settings.write_text("{}")   # English, the default
+    assert any(i["path"] == "loose.png" and i["title"] == "Board root" for i in get(port, "/api/items"))
+    assert get(port, "/api/pages")["pages"][0]["title"] == "Page 1"
+    status, body = request(port, "/api/upload?name=x.png", b"not an image", "application/octet-stream")
+    assert status == 400 and body.decode().startswith("Couldn't add the image: not an image"), body
+    status, body = request(port, "/api/upload?name=ref.png", _png(), "application/octet-stream")
+    assert status == 200, body
+    meta = json.loads((lib / (json.loads(body)["path"].rsplit(".", 1)[0] + ".json")).read_text())
+    assert meta["model"] == "pasted by the owner" and meta["prompt"].startswith("pasted on the canvas by the owner") and "from the file ref.png" in meta["prompt"], meta
+    (lib / "_review/boards").mkdir(parents=True, exist_ok=True); (lib / "_review/boards/main.json").write_text('{"schema": 1, "items": {}, "groups": {}}')
+    status, body = request(port, "/api/history", {"action": "save", "name": "main"})
+    assert status == 200 and json.loads(body)["label"] == "version", body
+    settings.write_text(json.dumps({"cv.lang": "ru"}))
+    status, body = request(port, "/api/upload?name=x.png", b"not an image", "application/octet-stream")
+    assert status == 400 and body.decode().startswith("Не получилось добавить картинку: это не картинка"), body.decode()
+
+
+def _png():
+    out = io.BytesIO(); Image.new("RGB", (8, 8), "blue").save(out, "PNG"); return out.getvalue()

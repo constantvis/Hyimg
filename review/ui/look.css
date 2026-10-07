@@ -5,22 +5,40 @@
      cv.shape   "round" pills and circles (the default), "pro" squarer, a moderate radius
    Each page puts both on its root before its first paint (data-shadow, data-shape). Loaded by canvas.html, v2.html and home.html;
    the !important wins over each page's own radius and shadow, so a control keeps one look whichever page draws it. */
-/* on the dark paper (#17171a) a soft shadow hardly shows: it is deep and dark there, with a hairline of light along the plate's top */
-:root { --plate-sh: 0 14px 40px rgba(0, 0, 0, .72), 0 4px 12px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .05); }
-:root[data-theme=light] { --plate-sh: 0 10px 28px rgba(40, 30, 15, .13), 0 2px 6px rgba(40, 30, 15, .1); }
-:root[data-shadow="0"] { --plate-sh: none; }
+/* The tokens these rules read (--plate-sh, --hy-row-*, --hy-row-r, --pl-r, --hy-sel, --hy-trow-*, --paper, --hy-seg-pad, --hy-cap-pad,
+   --hy-hint) live in ui/tokens.css, which every page links before this file. */
 
 /* the plates: the board's crumb, its round buttons and dock and menus; the window buttons' capsule, the library button and the
    floating library; Home's sidebar, search, buttons and loading crumb */
-:is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #sets, #pages, #ctx, #wl, #tlibR, aside, .top #q, .btn.primary, #load .crumb, .menu),
+:is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #sets, #pages, #ctx, #wl, #tlibR, aside, .top #q, .btn.primary, #load .crumb, .menu, .tfpanel, #jump button),
 body.cv-on :is(header.hy-dock, main#list) { box-shadow: var(--plate-sh) !important; }
 
+/* The top row, one rule in every mode (owner 2026-10-07: «breadcrumb area тоже разношерстная»): the window buttons' capsule, the library
+   button, the crumb, a title plate after it (a long group's stuck title, the 3D scene's path), «To the original» and the round buttons on
+   the right stand --hy-row-top from the window's top, --hy-row-gut from its sides, --hy-plate-h tall, --hy-row-gap apart; a mode's hint
+   plate and the side panels start --hy-row-under from the top. design/audit.js «top-row» measures it in every mode (tests/test_design_toprow.py).
+   .hy-plate is the look of a plate that rides in the row without one of its own: the crumb's glass, edge, shadow, corners and words; its
+   long text ends in … inside the capsule's padding. A page places it and never restyles it (scripts/validate.py «row-plate») */
+/* the look of .hy-plate and <hy-plate> is ui/hy/plate.css */
+
+/* One radius for every control that is a row of a panel: a slider, a select, a field, a button in a row (owner 2026-10-06: «почему они
+   опять несинхронны, одни круглые другие квадратные», the 3D editor's dropdowns were rounded rectangles beside pill sliders). A pill in
+   the round look, 8 px in «pro»; the slider (ui/slider.css --hy-sl-r), the settings' choices, the 3D editor's DialKit rows and the frame
+   editor's --r-ctl all read it, so a panel never mixes two shapes. */
+/* A row of a tree list: the media library's folder row (review/v2.html .frow) is the look (owner 2026-10-06: «why so much inconsistencies in
+   ui, just make all ui consistant»), and the 3D editor's layer list reads it from here: 28 px tall, 8 px corners, a grey hover. The selected
+   row is the image editor's selected layer (hyimg-frames editor .lr.sel, owner 2026-10-07: «выбранный объект вообще незаметен, должно быть,
+   как вот здесь в эдиторе фото»): a fill and a line in the selection colour (--sel of the page, blue, the accent in the studio look); a
+   selected row under the pointer stays selected */
+
 /* «Pro»: no pills; a 38 px plate takes 11 px, a bar 14 px, a button inside a plate 8 px */
-:root[data-shape=pro] :is(#crumb, #bset, #bhist, #bkeys, #bntf, #wl, #tlibR, #load .crumb, .top #q, .top .search, .btn) { border-radius: 11px !important; }
+:root[data-shape=pro] :is(#crumb, #bset, #bhist, #bkeys, #bntf, #wl, #tlibR, #load .crumb, .top #q, .top .search, .btn, #jump button) { border-radius: 11px !important; }
 :root[data-shape=pro] :is(#dock, body.cv-on header.hy-dock) { border-radius: 14px !important; }
 :root[data-shape=pro] :is(#crumb button, #dock button, .fhbtn, .fcr, header.hy-dock :is(button, input, select, label, .seg, #vf)) { border-radius: 8px !important; }
 :root[data-shape=pro] header.hy-dock :is(.seg, #vf) button { border-radius: 6px !important; }
 :root[data-shape=pro] :is(#load .lb) { border-radius: 11px !important; }
+/* the library's filter window and what is in it (owner 2026-10-06): the window 14 px like a bar, a filter 8 px like a button in a plate; the dock's capsule (#vf) is covered by the rules above */
+:root[data-shape=pro] .tfpanel { border-radius: 14px !important; } :root[data-shape=pro] .fchip { border-radius: 8px !important; }
 #load .lb { box-shadow: var(--plate-sh) !important; }
 
 /* How the top line comes in (owner 2026-10-04: «the crumb and this button must grow out of scale 0, not just drop in; the crumb
@@ -28,7 +46,6 @@ body.cv-on :is(header.hy-dock, main#list) { box-shadow: var(--plate-sh) !importa
    crumb grows as a circle at its left end, opens to its width, then its parts come one by one. It runs for the canvas's #crumb on
    load (hy-open), Home's loading plate and button when a board opens (#load.on), and what has .hy-grow / .hy-pop (v2 #tlibR). The clip is
    only for the move (backwards fill), so the shadow is whole after it. */
-:root { --pl-r: 19px; } :root[data-shape=pro] { --pl-r: 11px; }
 @keyframes hyPop { from { transform: scale(0); } to { transform: none; } }
 /* the crumb grows in grey, as a control not ready yet (the library button's lib-wait), and turns active the moment it is a whole circle,
    before it opens to its width (owner 2026-10-04) */
@@ -59,22 +76,41 @@ body.cv-on :is(header.hy-dock, main#list) { box-shadow: var(--plate-sh) !importa
 :is(#ctx, #lctx, .menu) button { gap: 9px; }
 :is(#ctx, #lctx, .menu) button > svg { flex: none; opacity: .75; }
 :is(#ctx, #lctx, .menu) .ml { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+:is(#ctx, #lctx, .menu) button.danger { color: #ef4444; } :is(#ctx, #lctx, .menu) button.danger > svg { opacity: 1; }   /* what removes something: red */
+:is(#ctx, #lctx, .menu) button.danger:hover { background: color-mix(in srgb, #ef4444 14%, transparent); color: #ef4444; }
 .mi0 { width: 15px; flex: none; }
 .mk { display: inline-flex; gap: 3px; margin-left: 18px; flex: none; }
 .mk kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; margin: 0; box-sizing: border-box; font: 600 11px/1 var(--sans);
   color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; }
+/* A submenu (ui/menu.js hyMenuSub, owner 2026-10-06): the item ends in the app's chevron; its panel opens beside it, a child of the menu, and
+   takes the menu's own panel look (background, border, radius, padding, blur), so the board's, the library's and Home's submenus each look
+   like their menu. It grows out of the opener's side with the app's easing; the opener keeps its row lit while its panel is open. */
+.msub { display: inline-grid; place-items: center; margin: 0 -4px 0 12px; flex: none; }
+:is(#ctx, #lctx, .menu, [data-hymenu]) .hy-sub { position: absolute; z-index: 1; display: block; box-sizing: border-box; width: max-content; min-width: 180px; max-width: min(360px, calc(100vw - 16px));
+  padding: inherit; border: inherit; border-radius: inherit; background: inherit; -webkit-backdrop-filter: inherit; backdrop-filter: inherit; box-shadow: var(--plate-sh);
+  overscroll-behavior: contain; transform-origin: 0 0; animation: hySubIn .2s cubic-bezier(.32,.72,0,1); }
+:is(#ctx, #lctx, .menu, [data-hymenu]) .hy-sub[data-side=left] { transform-origin: 100% 0; }
+@keyframes hySubIn { from { opacity: 0; transform: scale(.96); } }
+:is(#ctx, #lctx) button[aria-expanded=true] { background: var(--raise); color: var(--ink); }
+.menu button[aria-expanded=true] { background: var(--raise2); }
+:is(#ctx, #lctx, .menu) button[aria-expanded=true] .hy-chev { color: var(--sub); }
+@media (prefers-reduced-motion: reduce) { :is(#ctx, #lctx, .menu, [data-hymenu]) .hy-sub { animation: none; } }
+/* a quiet line in a menu, not an item: what the clipboard holds under «Paste properties ›» (owner 2026-10-06) */
+:is(#ctx, #lctx, .menu, [data-hymenu]) .mhint { max-width: 320px; padding: 5px 10px 6px; color: var(--muted); font: 12px var(--sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The one disabled item of every menu (owner 2026-10-06: «if some options are not available they must simply be grey»): the muted colour,
+   no row light under the pointer, its icon and keys faded; its reason is its tooltip (ui/menu.js hyMenuOff) */
+:is(#ctx, #lctx, .menu, [data-hymenu]) :is(button:disabled, button[aria-disabled=true]), :is(#ctx, #lctx, .menu, [data-hymenu]) :is(button:disabled, button[aria-disabled=true]):hover {
+  color: var(--muted); background: none; cursor: default; }
+:is(#ctx, #lctx, .menu, [data-hymenu]) :is(button:disabled, button[aria-disabled=true]) > :is(svg, img, .mk, .msub) { opacity: .45; }
 
 /* The settings panel: the same on Home and on the board (owner 2026-10-04: «the settings differ, and so do they look») */
 #sets { width: 360px !important; padding: 12px !important; gap: 10px !important; box-sizing: border-box; }
 #sets .sh { font: 500 11px var(--sans) !important; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 #sets .sh span { float: right; letter-spacing: 0; color: var(--sub); font-variant-numeric: tabular-nums; }
 #sets .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-#sets .opts button { height: 32px !important; border: 1px solid var(--line) !important; border-radius: 999px !important; background: var(--raise); color: var(--sub);
+#sets .opts button { height: 32px !important; border: 1px solid var(--line) !important; border-radius: var(--hy-row-r) !important; background: var(--raise); color: var(--sub);
   font: 500 12px var(--sans) !important; cursor: pointer; }
-:root[data-shape=pro] #sets .opts button { border-radius: 8px !important; }
 #sets .opts button[aria-pressed=true] { background: var(--ink) !important; color: var(--panel) !important; border-color: var(--ink) !important; }
-#sets .range { width: 100%; margin: 2px 0 4px; accent-color: var(--ink); cursor: pointer; }
-#sets .setnote { color: var(--muted); font-size: 12px; }
 .ml .mh { color: var(--muted); margin-left: 4px; }   /* a quiet note after a label («доски останутся») */
 /* the library over the whole window: the picture's panel fills its frame (owner 2026-10-04: «the icon does not move when it widens») */
 body.lwide #tlibR[aria-pressed=true] > .lbi .pane { transform: scaleX(2.17); }
@@ -83,14 +119,11 @@ body.lwide #tlibR[aria-pressed=true] > .lbi .pane { transform: scaleX(2.17); }
    colour for the light and the dark theme changeable in the settings»): one colour for the board, Home, the loading screen, the
    library's panel and the window under them. --paper-d / --paper-l are the settings cv.paperDark / cv.paperLight, put on the root
    by each page; --paper is the one of the theme in use. */
-:root { --paper: var(--paper-d, #17171a); }
-:root[data-theme=light] { --paper: var(--paper-l, #ebe6dc); }
 #sets .paper { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
-#sets .paper label { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--raise); color: var(--sub); font: 500 12px var(--sans); cursor: pointer; }
-:root[data-shape=pro] #sets .paper label { border-radius: 8px; }
+#sets .paper label { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 10px; border: 1px solid var(--line); border-radius: var(--hy-row-r); background: var(--raise); color: var(--sub); font: 500 12px var(--sans); cursor: pointer; }   /* hy-allow: capsule-pad its right end is a round swatch, as far from the end as from the top */
 #sets .paper input[type=color] { margin-left: auto; width: 22px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: none; cursor: pointer; }
 #sets .paper input[type=color]::-webkit-color-swatch-wrapper { padding: 0; } #sets .paper input[type=color]::-webkit-color-swatch { border: 0; border-radius: 50%; }
-#sets .paper button { height: 32px !important; padding: 0 10px; }
+#sets .paper button { height: 32px !important; padding: 0 10px; border-radius: var(--hy-row-r) !important; }   /* «Reset» beside the colours: the row's radius, not the board's 9 px */
 
 /* No focus rings anywhere (owner 2026-10-05: «убери эти уебищные focus выделения»): a clicked or tabbed-to control shows no outline;
    menus keep their row highlight for the arrow keys, text fields their border colour while typing */
@@ -118,3 +151,57 @@ body.lwide #tlibR[aria-pressed=true] > .lbi .pane { transform: scaleX(2.17); }
 .pji { display: inline-grid; place-items: center; width: var(--pj); height: var(--pj); flex: none; line-height: 1; }
 .pji svg { width: 100%; height: 100%; }
 .pji.emo { font-size: calc(var(--pj) * .8); }   /* an emoji is wider than its letters: a little smaller, the same room beside it as an icon has */
+
+/* One choice component app-wide (owner 2026-10-06: «why isn't this a switch like ours», about Home's cards/list switch): a .seg is one
+   capsule of options, the chosen one sits on a thumb that slides under it, eased (ui/seg.js puts the thumb in and moves it), as the
+   frame editor's switch. Home's views, the settings of Home and the board, the library's rating filter. Round in the round look,
+   8 px with a 6 px thumb in «pro». */
+.seg { position: relative; display: inline-flex; align-items: center; gap: 2px; padding: var(--hy-seg-pad); border-radius: 999px; background: var(--raise); isolation: isolate; }
+.seg > .st { position: absolute; left: 0; top: 0; z-index: 0; width: 0; height: 0; border-radius: 999px; background: var(--panel); pointer-events: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .12), 0 0 0 1px var(--line);
+  transition: transform .3s cubic-bezier(.3, .8, .25, 1), width .3s cubic-bezier(.3, .8, .25, 1), height .3s cubic-bezier(.3, .8, .25, 1), opacity .2s cubic-bezier(.3, .8, .25, 1); }
+.seg > .st.now { transition: none; }
+.seg > button { position: relative; z-index: 1; border: 0; background: transparent; border-radius: 999px; color: var(--sub); cursor: pointer; transition: color .2s cubic-bezier(.3, .8, .25, 1); }
+.seg > button:hover { color: var(--ink); }
+/* the thumb is the one selected look: a chosen button draws no ground of its own */
+.seg.has-st > button[aria-pressed=true], .seg.has-st > button.on { background: transparent !important; box-shadow: none !important; color: var(--ink); }
+.seg > button:focus, .seg > button:focus-visible { outline: none; }
+/* DialKit's choice in a row (the 3D studio's «Off | On», the library's criteria) is this switch too (owner 2026-10-06: its chosen pill
+   touched the row's top and bottom, the row 28 px and the switch 34): the row is its track, the switch fills it to the row's right end
+   and its pill sits var(--hy-seg-pad) in on every side, its radius the row's less that inset, so the curves stay concentric */
+html .dialkit-root .dialkit-labeled-control:has(> .dialkit-segmented) { padding-block: 0; padding-right: 0; }
+html .dialkit-root .dialkit-labeled-control > .dialkit-segmented { align-self: stretch; margin: 0; padding: var(--hy-seg-pad); }
+html .dialkit-root .dialkit-labeled-control > .dialkit-segmented .dialkit-segmented-button { padding-block: 0; }
+html .dialkit-root .dialkit-segmented > .dialkit-segmented-pill { top: var(--hy-seg-pad); bottom: var(--hy-seg-pad); border-radius: max(0px, calc(var(--dial-radius, 8px) - var(--hy-seg-pad))); }
+:root[data-shape=pro] .seg { border-radius: 8px !important; } :root[data-shape=pro] .seg > :is(.st, button) { border-radius: calc(8px - var(--hy-seg-pad)) !important; }
+:root[data-ui="studio"] .seg > .st { background: var(--raise2); box-shadow: var(--st-shadow-s, 0 1px 2px rgba(0, 0, 0, .2)); }
+@media (prefers-reduced-motion: reduce) { .seg > .st { transition: opacity .1s; } }
+
+/* Hints: .hy-hint and .hy-info, <hy-hint> and <hy-info> (owner 2026-10-06) are ui/hy/hint.css */
+
+/* The W ↔ H link (owner 2026-10-07: «и какая-то анимация, чтобы понятно было, что включили»): ui/icons.js HY_TOOL_IC.linkWH in an svg
+   .hy-link. Off, its halves stand apart and the bar between them is gone; .on on its button (or on the svg) closes the halves on the bar,
+   along the app's curve in 240 ms. The button's colours are its page's (the on state in the text colour) */
+.hy-link :is(.la, .lb, .lm) { transform-box: view-box; transform-origin: 12px 12px; transition: transform .24s cubic-bezier(.32,.72,0,1), opacity .24s cubic-bezier(.32,.72,0,1); }
+:not(.on) > .hy-link:not(.on) .la { transform: translateX(-2.5px); }
+:not(.on) > .hy-link:not(.on) .lb { transform: translateX(2.5px); }
+:not(.on) > .hy-link:not(.on) .lm { transform: scaleX(0); opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .hy-link :is(.la, .lb, .lm) { transition: none; } }
+
+/* The padlock of every lock toggle (ui/icons.js hyLockIcon; owner 2026-10-07: «чтобы поворачивалась эта дуга, когда открывается»):
+   locked, the shackle closed and the icon at full contrast; open, the shackle lifted 1.5 and swung 30° about its right leg (the pivot at
+   16, 11 on the 24 grid), the icon dimmer. A change of «locked» on a drawn icon moves it along the app's curve in 260 ms; .go plays the
+   last move on a freshly drawn one. The arch leaves the 24 box when open: the svg does not clip it */
+.hy-lock { overflow: visible; transition: opacity .26s cubic-bezier(.32,.72,0,1); }
+.hy-lock:not(.locked) { opacity: .6; }
+.hy-lock .sh { transform-box: view-box; transform-origin: 16px 11px; transition: transform .26s cubic-bezier(.32,.72,0,1); }
+.hy-lock:not(.locked) .sh { transform: translateY(-1.5px) rotate(30deg); }
+.hy-lock.go.locked .sh { animation: hyLockShut .26s cubic-bezier(.32,.72,0,1); }
+.hy-lock.go:not(.locked) .sh { animation: hyLockLift .26s cubic-bezier(.32,.72,0,1); }
+.hy-lock.go.locked { animation: hyLockOn .26s cubic-bezier(.32,.72,0,1); }
+.hy-lock.go:not(.locked) { animation: hyLockOff .26s cubic-bezier(.32,.72,0,1); }
+@keyframes hyLockShut { from { transform: translateY(-1.5px) rotate(30deg); } to { transform: none; } }
+@keyframes hyLockLift { from { transform: none; } to { transform: translateY(-1.5px) rotate(30deg); } }
+@keyframes hyLockOn { from { opacity: .6; } }
+@keyframes hyLockOff { from { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .hy-lock, .hy-lock .sh { transition: none; animation: none !important; } }

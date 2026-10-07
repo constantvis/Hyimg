@@ -1,91 +1,101 @@
-<p align="center"><img src="docs/images/icon.png" width="128" height="128" alt="Иконка Hyimg"></p>
+<p align="center"><img src="docs/images/icon.png" width="128" height="128" alt="Hyimg icon"></p>
 
 <h1 align="center">Hyimg</h1>
 
-![Доска Hyimg: группы, заметки, фрейм картинок, 3D-карточка и библиотека слева](docs/images/board.webp)
+<p align="center"><b>A local Figma + Lightroom + Miro, built to work side by side with AI agents.</b><br>
+A Mac app for people who make images at volume and sort them by eye.</p>
 
-Демо-доска: группы с заметками, библиотека слева, на доске фрейм картинок и 3D-карточка из плагинов
+<p align="center"><a href="README.ru.md">Русская версия</a></p>
 
-![Большая доска при масштабе 1 %](docs/images/big-board.webp)
+![A Hyimg board: groups, sticky notes, an image frame, a 3D card and the library on the left](docs/images/board.webp)
 
-Большая доска: 7000 кадров в группах, масштаб 1 %
+When you generate a lot, you end up with thousands of files in dozens of folders, and the agent that made them can't see which ones you liked. Hyimg puts a library and an infinite board on top of the folders you already have. You sort on the board. Your agent reads the same board, knows what you've selected, and puts its next batch right where you want it.
 
-![Фрейм картинок открыт в редакторе прямо на доске](docs/images/frame-editor.webp)
+Nothing leaves your Mac. There is no account and no upload: each project is a folder on disk, and a small local server shows it in a native window.
 
-Редактор фрейма открывается на месте карточки, доска и библиотека остаются рядом
+## What's in it
 
-Приложение для Mac: проекты, библиотека изображений и холст для отбора кадров. Нативное окно на Swift и AppKit открывает существующий интерфейс библиотеки и холста через WKWebView. Сервер запускается автоматически.
+**A library over your own folders** (the Lightroom part). Subfolders become collections. Hearts, verdicts, tags and filters, the prompt and sources from the json next to each file, previews for video, PSD, PSB, AI, TIFF, HEIC and SVG. Files stay where they are.
 
-## Плагины: Фреймы и 3D-объекты
+**An infinite board** (the Miro and Figma part). Groups, sticky notes that attach to the frames under them, titles, timelines, pages with dividers, crop, copies that point back to the original, version history with undo. Videos play right on the board. Paste or drop any image to add it.
 
-Hyimg работает и без них, но с ними доска умеет больше. Каждый плагин живет в своем репозитории:
+**Made for agents.** Point an agent at `http://localhost:<port>/agent` and it gets the whole picture: what's open, the project's rules, the skills and the commands. `review/hy.py` edits the board by names instead of coordinates (`hy.py do 'block <folder> into=<group> note=…'`), `scripts/active.py` tells it what you have selected right now, and a right click gives you a link to any frame or group to paste into the chat. Skills for Claude Code, Codex, Gemini CLI and Antigravity live in `skills/`.
 
-- **Фреймы**, https://github.com/constantvis/hyimg-frames: фрейм картинок с редактором прямо на доске (слои, маски, кисть, Color Grading, заливка с учетом содержимого) и HTML-фрейм, живая страница карточкой. Маска объекта через macOS Vision, он встроен в систему. Для заливки нужна модель LaMa (около 208 МБ, `~/Library/Caches/Hyimg/models/lama`), ее скачивает только `--lama`.
-- **3D-объекты**, https://github.com/constantvis/hyimg-3d-studio: 3D-сцена карточкой на доске, свой редактор на three.js, снимок в картинку. Для переноса сцены в Blender и обратно нужен Blender.
+![A working board: about 7,000 frames in groups, at 1 % zoom](docs/images/big-board.webp)
+<p align="center"><sub>A real working board: about 7,000 frames in groups, seen at 1 % zoom</sub></p>
+
+## Plugins
+
+Hyimg works without them. With them the board does more, and each one lives in its own repository:
+
+- **[Frames](https://github.com/constantvis/hyimg-frames)**: an image editor that opens in place on the board, with layers, masks, a brush, Raw Editor (Camera Raw style grading, also on any picture of the board), subject selection through macOS Vision and content-aware fill with LaMa. The originals are never touched: a frame keeps its own layers and renders to its own file. The same plugin adds HTML frames, live web pages as cards.
+- **[3D objects](https://github.com/constantvis/hyimg-3d-studio)**: a 3D scene as a card on the board, a three.js editor, snapshots to images, and a bridge to Blender and back.
+
+![The frame editor open in place on the board](docs/images/frame-editor.webp)
 
 ```sh
-./scripts/install_plugins.sh            # спросит про каждый плагин
-./scripts/install_plugins.sh --frames --3d --yes   # без вопросов, для агента после ответа человека
+./scripts/install_plugins.sh                       # asks about each plugin
+./scripts/install_plugins.sh --frames --3d --yes   # no questions, for an agent after the person said yes
 ```
 
-Скрипт берет копии рядом с этим репозиторием или клонирует их туда и ставит ссылки в `~/Library/Application Support/Hyimg/plugins`. Потом Вид › Перезапустить сервер (⇧⌘R).
+The script uses checkouts next to this repository or clones them there and links them into `~/Library/Application Support/Hyimg/plugins`. Then View › Restart server (⇧⌘R). The LaMa model for content-aware fill (about 208 MB) is downloaded only with `--lama`.
 
-**Агенту:** перед установкой Hyimg или при первой работе с ним спроси человека про каждый плагин по имени, скажи, что он дает и что ему нужно, ставь только после «да». Подробно в `AGENTS.md`, раздел «Плагины: спросить человека».
+**For agents:** before you install Hyimg or start working with it, ask the person about each plugin by name, say in one line what it gives and what it needs, and install it only after a yes. Details in `AGENTS.md`.
 
-## Работа с проектами
+## Install
 
-Откройте Hyimg. На экране проектов можно подключить существующую папку или создать новую. Подключение сохраняет ссылку на папку. Изображения остаются на месте, подпапки показываются как коллекции.
-
-У каждого проекта свои доски, история, оценки и настройки. Название проекта можно поменять. Если папка переместилась, выберите ее новое расположение через перепривязку. Это действие меняет ссылку в каталоге приложения.
-
-В библиотеке и на холсте сохраняются привычные действия: выбор кадров, группы, страницы, комментарии, оценки, вставка изображений и перетаскивание файлов.
-
-## Для агентов: инструкция по ссылке
-
-Агенту достаточно ссылки на проект. По адресу `http://localhost:<порт>/agent` (то же `/llms.txt` и `python3 review/hy.py guide`) сервер отдает инструкцию: что открыто у пользователя, страницы холста, правила проекта из `<libraryRoot>/AGENTS.md` целиком, пути скиллов и команды. Страницы библиотеки и холста указывают туда же.
-
-Скиллы лежат в `skills/`: `hyimg` (с чего начать, данные, как улучшать правила), `hyimg-board` (холст через `hy.py`: `block ... near=`, `arrange`, `remove`, `check`), `hyimg-generate` (генерация в проект, 5 попыток на промпт, json рядом с картинкой). `scripts/install_skills.sh` ставит на них ссылки для Gemini CLI, Antigravity, Claude Code и Codex, `--remove` убирает. Поправки пользователя к работе агентов вносятся в эти скиллы или в `AGENTS.md` проекта, тесты команд в `tests/test_agent_tools.py`.
-
-## Для агентов: что открыто у пользователя
-
-Приложение пишет `~/Library/Application Support/Hyimg/active.json` при каждом переключении вкладки, страницы проекта пишут выделение в `<stateRoot>/live.json`. Команда `python3 scripts/active.py` показывает текущий проект, вкладки, выделенное на холсте или в библиотеке и что на экране; `--paths` дает только пути выделенных кадров. Так агент понимает «сделай с этими» в любом проекте без уточнений.
-
-Ссылка на объект: правый клик по кадру, группе, заметке или тексту › «Копировать ссылку» (на пустом месте «Копировать ссылку на этот вид»). Ссылка вида `http://localhost:4180/?view=canvas&page=main&obj=<id>` открывает холст, выделяет объект и ставит его в центр. Агент разбирает присланную ссылку командой `python3 scripts/active.py --link "<ссылка>"`: страница, кадры с путями к файлам, группы со всеми кадрами, текст заметок. Проект определяется по порту ссылки.
-
-## Сборка и установка
-
-Нужны macOS 14 или новее, Xcode Command Line Tools и Python 3.10 или новее с Pillow. Для тестов нужны pytest и Node.js.
+You need macOS 14 or later, the Xcode Command Line Tools and Python 3.10+ with Pillow. Tests also need pytest and Node.js.
 
 ```sh
 ./build.sh
 ./scripts/install.sh
 ```
 
-Приложение устанавливается в `~/Applications/Hyimg.app`. Код остается в рабочем репозитории. Сборка содержит резервную копию веб-интерфейса на случай недоступного рабочего репозитория.
+The app goes to `~/Applications/Hyimg.app`; the code stays in this repository, so ⌘R picks up HTML changes and ⇧⌘R restarts the server after Python changes. Swift changes need a rebuild. Open Hyimg, then connect an existing folder or create a new one: each project gets its own boards, history, ratings and settings.
 
-Cmd+R обновляет HTML после правок. Shift+Cmd+R перезапускает собственный сервер после изменения Python. Правки Swift требуют повторной сборки и установки. Shift+Cmd+O открывает проект в браузере. Меню «Правка» содержит копирование, вставку, вырезание и отмену.
+### Rendering engine
 
-## Проверки
+By default the boards are drawn by Chromium (CEF) inside the Hyimg window, on the GPU, which stays smooth with hundreds of pictures. View › Chromium engine (or ⚙ on the board) switches to WebKit. `./build.sh` takes the CEF SDK from `~/Library/Caches/Hyimg/cef_binary_*_macosarm64_minimal` (the minimal build from https://cef-builds.spotifycdn.com; build its wrapper with `cmake -G "Unix Makefiles" -DPROJECT_ARCH=arm64 -DCMAKE_BUILD_TYPE=Release .. && make libcef_dll_wrapper`). Without the SDK, or with `HYIMG_NO_CEF=1`, you get a WebKit-only app of about 1 MB instead of 330 MB. That CEF build has no H.264 decoder, so Hyimg plays such videos from a WebM copy it makes once with ffmpeg.
+
+## For agents: where to look
+
+- `http://localhost:<port>/agent` (also `/llms.txt` and `python3 review/hy.py guide`): what's open, the board's pages, the project's own `AGENTS.md`, skills and commands.
+- `python3 scripts/active.py`: the open project, its tabs and what's selected on the board or in the library. `--paths` prints just the selected files, `--link "<link>"` resolves a link the person pasted.
+- `skills/`: `hyimg` (start here), `hyimg-board` (the board through `hy.py`), `hyimg-generate` (batches: five tries per prompt, a json next to every image). `scripts/install_skills.sh` links them for Claude Code, Codex, Gemini CLI and Antigravity.
+- `python3 review/hy.py features [word]`: the feature catalog (`review/features.json`). For every feature: how the person uses it, the agent's exact command or route, the skill that covers it. `/agent` prints it as «Что умеет Hyimg». A test fails when a new `hy.py` command, server route, kind of copied property, dock mode or MCP tool has no entry.
+- The board's «Playground» page in the Hyimg App project shows every feature on test files, with a note on how to try each one.
+
+## MCP
+
+`mcp/server.py` exposes the same operations to any MCP client over stdio, using only the Python standard library. Tools: `hyimg_guide` (start here), `hyimg_features`, `hyimg_projects`, `hyimg_active`, `hyimg_map`, `hyimg_find`, `hyimg_check`, `hyimg_pages`, `hyimg_page_new`, `hyimg_do`, `hyimg_notify`, `hyimg_props`, `hyimg_presets`, `hyimg_topage`, `hyimg_hist`, `hyimg_restore`, `hyimg_save`. The skills, the catalog and `/agent` are available as resources (`hyimg://skills/<name>`, `hyimg://features`, `hyimg://agent`) and as prompts. Each tool takes a `project` (name, id or port). By default it uses the project in Hyimg's front tab, or the only running one. Ports come from `~/Library/Application Support/Hyimg/projects.json` and are checked against `/api/health`. Hyimg itself has to be running: the server talks to it over HTTP like `hy.py`.
+
+Nothing is registered automatically. To add it (replace the path with your clone):
 
 ```sh
-python3 -m pytest -q tests/test_server_integration.py
-node --test tests/test_canvas_save.mjs
-tests/test_native.sh
-./build.sh
-tests/test_native_cli.sh
-tests/test_webkit.sh
+# Claude Code, for every project of this user
+claude mcp add -s user hyimg -- python3 /path/to/hyimg/mcp/server.py
+# Codex
+codex mcp add hyimg -- python3 /path/to/hyimg/mcp/server.py
 ```
 
-Проверки создают временные папки и не записывают в пользовательские проекты. Тест WebKit запускает собственный тестовый процесс с окном и сохраняет его снимки во временную папку. Устройство данных описано в `docs/data.md`, правила разработки в `AGENTS.md`, решения по интерфейсу в `DESIGN.md`.
+Claude Desktop: add to `~/Library/Application Support/Claude/claude_desktop_config.json` and restart it:
 
-## Движок Chromium
+```json
+{ "mcpServers": { "hyimg": { "command": "/usr/bin/python3", "args": ["/path/to/hyimg/mcp/server.py"] } } }
+```
 
-Проекты рисует Chromium (CEF) внутри окна Hyimg, со своими вкладками и главной: доска рисуется видеокартой и не дергается на сотнях картинок, как в WebKit. Включен по умолчанию; Вид › «Движок Chromium» или ⚙ на холсте › «Движок» переключает на WebKit (открытые проекты сначала сохраняются). У каждого проекта своё хранилище Chromium в `Chromium/<id проекта>` рядом с каталогом проектов.
+`python3 mcp/server.py --list-tools` prints the tools with their descriptions. Tests: `tests/test_mcp_server.py`.
 
-Сборка: `./build.sh` берет SDK из `~/Library/Caches/Hyimg/cef_binary_*_macosarm64_minimal` (минимальная сборка с https://cef-builds.spotifycdn.com, распаковать и собрать обертку: `mkdir build && cd build && cmake -G "Unix Makefiles" -DPROJECT_ARCH=arm64 -DCMAKE_BUILD_TYPE=Release .. && make libcef_dll_wrapper`). Без SDK или с `HYIMG_NO_CEF=1` собирается приложение только с WebKit (около 1 МБ), с Chromium около 330 МБ. Папка `dist/` помечена для Dropbox как неотправляемая.
+## Tests
 
-Модуль: `native/cef/` (мост `HyimgCEF.mm`, заглушка `HyimgCEFStub.m`, помощник `helper.mm`), строки CEF в `build.sh` и строки с пометкой `CEF` в `native/main.swift`.
+```sh
+python3 -m pytest -q tests/
+node --test tests/test_canvas_save.mjs
+tests/test_native.sh && ./build.sh && tests/test_native_cli.sh && tests/test_webkit.sh
+```
 
-## Лицензия
+Tests work in temporary folders and never write to your projects. Data layout: `docs/data.md`. Development rules: `AGENTS.md`. Interface decisions: `DESIGN.md`.
 
-[PolyForm Noncommercial 1.0.0](LICENSE): пользоваться, изучать и менять бесплатно для себя и для некоммерческих целей. Коммерческое использование только с разрешения автора, напишите через GitHub. Сторонний код в `vendor/` остается под своими лицензиями.
+## License
+
+[PolyForm Noncommercial 1.0.0](LICENSE): free to use, study and change for yourself and for noncommercial purposes. Commercial use only with the author's permission; get in touch through GitHub. Third-party code keeps its own licenses.

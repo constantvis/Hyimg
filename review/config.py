@@ -19,6 +19,9 @@ W: Final = absolute_setting("HYIMG_LIBRARY_ROOT")
 HERE: Final = absolute_setting("HYIMG_STATE_ROOT", os.path.join(W, "_review"))
 BOARDS: Final = os.path.join(HERE, "boards")
 NOTES: Final = os.path.join(W, "notes")
+# the app's cache (~/Library/Caches/Hyimg), outside Dropbox; tests give each session its own (tests/procguard.py), so they never
+# write into the person's
+CACHE_ROOT: Final = os.path.realpath(os.environ.get("HYIMG_CACHE_ROOT") or os.path.expanduser("~/Library/Caches/Hyimg"))
 STYLE_REFS: Final = absolute_setting("HYIMG_STYLE_REFS") if os.environ.get("HYIMG_STYLE_REFS") else ""
 PROJECT_ID: Final = os.environ.get("HYIMG_PROJECT_ID", "")
 try:

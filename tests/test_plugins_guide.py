@@ -35,7 +35,8 @@ def agent_text(tmp_path, plugin_dirs):
     (lib / "a").mkdir(parents=True); home.mkdir()
     env = {k: v for k, v in os.environ.items() if not k.startswith(("HYIMG_", "REVIEW_"))}
     env.update(HOME=str(home), HYIMG_LIBRARY_ROOT=str(lib), HYIMG_PROJECT_ID=str(uuid.uuid4()), HYIMG_PLUGINS=os.pathsep.join(map(str, plugin_dirs)),
-               PYTHONDONTWRITEBYTECODE="1")
+               HYIMG_SETTINGS=str(tmp_path / "settings.json"), PYTHONDONTWRITEBYTECODE="1")
+    (tmp_path / "settings.json").write_text(json.dumps({"cv.lang": "ru"}))   # the interface in Russian (owner 2026-10-06: English by default)
     port = free_port(); log = open(tmp_path / "server.log", "w+")
     proc = subprocess.Popen([sys.executable, str(ROOT / "review/server.py"), str(port)], env=env, stdout=log, stderr=log)
     try:

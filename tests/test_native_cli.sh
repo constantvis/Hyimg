@@ -22,5 +22,5 @@ if "$BIN" --catalog relative.json --register-project "$TMP/library" > "$TMP/inva
   cat "$TMP/invalid.log"
   exit 1
 fi
-rg -q 'должен быть абсолютным' "$TMP/invalid.log"
+rg -q 'must be absolute' "$TMP/invalid.log"   # English: no settings file beside a relative catalog (owner 2026-10-06: two languages, English by default)
 printf 'PASS: compiled app CLI rejects relative catalog path\nNATIVE_CLI_TESTS_PASSED\n'

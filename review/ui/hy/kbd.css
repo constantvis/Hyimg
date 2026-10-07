@@ -1,0 +1,9 @@
+/* <hy-kbd>: a key cap (owner 2026-09-29: «keys look like keycaps»). A plain <kbd> takes the same look, so the shortcuts panel, the menus'
+   key column and a button's own key (ui/keyhints.js shows it under ⌘) stay one cap. Sizes: l 20 (the default, menus and panels), m 18 (the
+   dock and the bar over a selection), s 15 (the corner of a tool rail's button). quiet: the cap's words in the quiet colour. */
+kbd, hy-kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; margin: 0 1px; vertical-align: 1px;
+  font: 600 11px/1 var(--sans); color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--hy-kbd-r, 5px); }
+hy-kbd { box-sizing: border-box; white-space: nowrap; font-variant-numeric: tabular-nums; }
+hy-kbd[size=m] { min-width: 18px; height: 18px; font-size: 10px; }
+hy-kbd[size=s] { min-width: 15px; height: 15px; padding: 0 3px; font-size: 9.5px; border-bottom-width: 1px; border-radius: 4px; }
+hy-kbd[quiet] { color: var(--sub); }

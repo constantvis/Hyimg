@@ -50,7 +50,9 @@ def server(tmp_path):
     (state / "boards/pages.json").write_text(json.dumps({"pages": [{"id": "main", "title": "A"}, {"id": "p2", "title": "B"}]}))
     port = free_port()
     env = {k: v for k, v in os.environ.items() if not k.startswith(("HYIMG_", "REVIEW_"))}
-    env.update(HYIMG_LIBRARY_ROOT=str(lib), HYIMG_STATE_ROOT=str(state), HYIMG_PROJECT_ID=str(uuid.uuid4()), PYTHONDONTWRITEBYTECODE="1")
+    # the interface in Russian: these tests check its Russian words (owner 2026-10-06: English by default, Russian by the setting)
+    (tmp_path / "settings.json").write_text(json.dumps({"cv.lang": "ru"}))
+    env.update(HYIMG_LIBRARY_ROOT=str(lib), HYIMG_STATE_ROOT=str(state), HYIMG_PROJECT_ID=str(uuid.uuid4()), HYIMG_SETTINGS=str(tmp_path / "settings.json"), PYTHONDONTWRITEBYTECODE="1")
     log = open(tmp_path / "server.log", "w+")
     process = subprocess.Popen([sys.executable, str(ROOT / "review/server.py"), str(port)], env=env, stdout=log, stderr=log)
     try:
@@ -167,17 +169,54 @@ def test_big_group_selection_pauses(server):
         drag(page, [-150, 300], [100, 390])
         state = page.evaluate(STATE)
         assert state["sel"] == [[0, 0]] and state["x"] == -1300, state   # the picture top left, the frame touched it
-        # with edges on screen it picks up from its inside and moves, as before
+        # a group moves only by its title (owner 2026-10-06, as in Miro): with edges on screen too, its empty inside draws a selection frame
         page.evaluate(CAM, 0.3)
+        page.evaluate("() => { sel = new Set(['g1']); render(); }")
         drag(page, [-150, 300], [180, 300])
         state = page.evaluate(STATE)
+        assert state["x"] == -1300 and "g1" not in state["sel"], state
+        # its top is off screen: the title rides under the screen's top edge, over the pictures, and moves the group
+        st = page.locator("#gsticky .gst[data-gid=g1]")
+        st.wait_for(); assert st.inner_text() == "Пары"
+        assert page.evaluate("() => document.querySelector('.grp[data-id=g1] .gt').classList.contains('stuck')")
+        page.wait_for_timeout(350)   # it glides from the title's place onto the crumb's line
+        b = st.bounding_box(); c = page.locator("#crumb").bounding_box()
+        # on the crumb's middle line, right after it, like its continuation (owner 2026-10-06)
+        assert abs((b["y"] + b["height"] / 2) - (c["y"] + c["height"] / 2)) <= 1.5 and b["x"] >= c["x"] + c["width"], (b, c)
+        x0, y0 = b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+        page.mouse.move(x0, y0); page.mouse.down(); page.mouse.move(x0 + 50, y0, steps=5); page.mouse.move(x0 + 99, y0, steps=5); page.mouse.up()
+        state = page.evaluate(STATE)
         assert state["sel"] == ["g1"] and state["x"] == -970, state
+        # a double click on the plate renames the group right in it (owner 2026-10-06)
+        page.wait_for_timeout(350); b = st.bounding_box()   # the group moved, its plate with it
+        page.mouse.dblclick(b["x"] + 20, b["y"] + b["height"] / 2)
+        field = page.locator("#gsticky .gst input"); field.wait_for()
+        assert field.input_value() == "Пары"
+        field.fill("Пары 2"); page.keyboard.press("Enter")
+        page.wait_for_function("() => board.groups.g1.title === 'Пары 2' && document.querySelector('#gsticky .gst[data-gid=g1]').textContent === 'Пары 2'")
+        # the selected group's bar does not float beside the plate; its actions are in the plate's right click menu, the group's own
+        # (owner 2026-10-06: «it must open on the right click, not float»)
+        page.evaluate("() => { HY.bar(ids => ids.length === 1 && board.groups[ids[0]] ? [{ label: 'Make frame', fn() {} }] : []); HY.menu && 0; sel = new Set(['g1']); render(); }")
+        page.wait_for_timeout(350)
+        assert page.locator("#handles .tidy.gbar").count() == 1 and not page.locator("#handles .tidy.gbar").is_visible()
+        b = st.bounding_box(); page.mouse.click(b["x"] + 20, b["y"] + b["height"] / 2, button="right")
+        page.wait_for_selector("#ctx.open")
+        m = page.inner_text("#ctx.open"); assert "Расформировать группу" in m, m   # the core's own action; «В один фрейм» is the frames plugin's (its tests), the core runs without plugins
+        assert page.evaluate("() => [...sel]") == ["g1"]
+        page.keyboard.press("Escape")
+        # the group's left edge goes under the crumb: the plate stops right after the crumb
+        page.evaluate("() => { cam.x = board.groups.g1.x + 200 / cam.z; renderCam(); }"); page.wait_for_timeout(350)
+        b = st.bounding_box(); c = page.locator("#crumb").bounding_box()
+        assert c["x"] + c["width"] + 4 <= b["x"] <= c["x"] + c["width"] + 12, (b, c)
+        # scrolled up to its top, the title is back in its place
+        page.evaluate("() => { cam.y = -1500; renderCam(); }")
+        page.wait_for_function("() => !document.querySelector('#gsticky .gst') && !document.querySelector('.grp[data-id=g1] .gt').classList.contains('stuck')")
         assert not errors, errors
         browser.close()
 
 
-RATIO = """() => { const s = cropState, c = s.c; return { r: (c[2] - c[0]) * s.full.w / ((c[3] - c[1]) * s.full.h), on: [...document.querySelectorAll('#crop .cratio button.on')].map(b => b.textContent),
-  labels: [...document.querySelectorAll('#crop .cratio button[data-ratio]')].map(b => b.textContent).filter(Boolean), c }; }"""
+RATIO = """() => { const s = cropState, c = s.c; return { r: (c[2] - c[0]) * s.full.w / ((c[3] - c[1]) * s.full.h), on: [...document.querySelectorAll('#crop .cratio button.on')].map(b => (b.querySelector('.rk') || b).textContent),
+  labels: [...document.querySelectorAll('#crop .cratio button[data-ratio]')].map(b => (b.querySelector('.rk') || b).textContent).filter(Boolean), c }; }"""
 
 
 def test_crop_ratios_lock_the_frame(server):
@@ -220,6 +259,128 @@ def test_crop_ratios_lock_the_frame(server):
         st = page.evaluate(RATIO); assert abs(st["r"] - 4 / 3) > 0.05 and st["on"] == ["Свободно"], st
         page.keyboard.press("Enter")
         assert page.evaluate("() => cropState") is None
+        assert not errors, errors
+        browser.close()
+
+
+BAR = """() => { const b = document.querySelector('#crop .cratio').getBoundingClientRect(), f = document.querySelector('#crop').getBoundingClientRect();
+  return { cx: Math.round(b.left + b.width / 2), top: Math.round(b.top), bottom: Math.round(b.bottom), fx: Math.round(f.left + f.width / 2), ftop: Math.round(f.top), fbottom: Math.round(f.bottom) }; }"""
+
+
+def open_crop(p, server, w=1600, h=1000, lang=None):
+    try:
+        browser = p.chromium.launch()
+    except Exception as error:
+        pytest.skip(f"no Chromium for Playwright: {error}")
+    page = browser.new_page(viewport={"width": w, "height": h})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    url = f"http://127.0.0.1:{server}/canvas.html"
+    page.goto(url)
+    page.evaluate("() => { localStorage.clear(); localStorage.setItem('cv.lod', '0'); }")
+    page.goto(url)
+    page.wait_for_function("() => typeof BOARD !== 'undefined' && Object.keys(board.items).length === 12")
+    return browser, page, errors
+
+
+def test_crop_bar_stays_over_the_whole_picture_and_names_the_platforms(server):
+    """Owner 2026-10-06: the ratio bar jumped around because it sat over the crop window; it stands above the whole picture, centred on
+    it, and neither dragging or resizing the window nor picking a ratio moves it. A ratio says which format it is: on hover its button
+    widens and shows the platform names (brand names, the same in both languages), which are also its title and aria-label."""
+    with playwright.sync_playwright() as p:
+        browser, page, errors = open_crop(p, server)
+        page.evaluate("() => { const id = Object.keys(board.items).find(k => board.items[k].x === 340 && board.items[k].y === 520); cam.x = 100; cam.y = 100; cam.z = 1; renderCam(); startCrop(id); }")   # the whole picture on screen: nothing to scroll into view
+        a = page.evaluate(BAR)
+        assert abs(a["cx"] - a["fx"]) <= 1 and a["bottom"] <= a["ftop"], a   # centred on the whole picture, above it
+        def same(what):
+            b = page.evaluate(BAR); assert abs(b["cx"] - a["cx"]) <= 1 and abs(b["top"] - a["top"]) <= 1, (what, a, b)
+        def corner(c, dx, dy):
+            box = page.locator(f"#crop .h[data-c={c}]").bounding_box(); x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+            page.mouse.move(x, y); page.mouse.down(); page.mouse.move(x + dx / 2, y + dy / 2, steps=4); page.mouse.move(x + dx, y + dy, steps=4); page.mouse.up()
+        corner("nw", 60, 90); same("a corner dragged")
+        corner("se", -30, -40); same("a corner dragged back")
+        win = page.locator("#crop .win").bounding_box(); x, y = win["x"] + win["width"] / 2, win["y"] + win["height"] / 2
+        page.mouse.move(x, y); page.mouse.down(); page.mouse.move(x + 15, y + 20, steps=5); page.mouse.up(); same("the window moved")
+        for label in ("1:1", "4:5", "3:4", "2:3", "9:16", "Свободно"):
+            page.locator("#crop .cratio button", has_text=label).first.click(); same("ratio " + label)
+        # the platforms: hovering widens the button, eased, and shows the names; the title and aria-label say the same
+        names = {"1:1": "Instagram post", "4:5": "Instagram post", "2:3": "Pinterest", "9:16": "Reels · Stories · TikTok · Shorts", "3:4": None}
+        for k, name in names.items():
+            b = page.locator(f"#crop .cratio button[data-ratio='{k}']")
+            w0 = b.bounding_box()["width"]; b.hover()
+            if name:
+                page.wait_for_function("([k, w0]) => document.querySelector(`#crop .cratio button[data-ratio='${k}']`).getBoundingClientRect().width > w0 + 20", arg=[k, w0], timeout=10000)
+            page.wait_for_timeout(700)
+            if name:
+                assert b.get_attribute("title") == name and name in b.get_attribute("aria-label") and b.locator(".rn").inner_text() == name, k
+                assert b.bounding_box()["width"] > w0 + 20, (k, w0)
+            else:
+                assert b.get_attribute("title") is None and b.locator(".rn").count() == 0 and abs(b.bounding_box()["width"] - w0) < 1, k
+            same("hover " + k)
+        page.mouse.move(5, 5)
+        page.wait_for_function("() => document.querySelector(\"#crop .cratio button[data-ratio='9:16']\").getBoundingClientRect().width < 60", timeout=10000)   # compact again
+        page.keyboard.press("x")   # turned landscape: 16:9 is YouTube, 5:4 / 4:3 / 3:2 are no platform's
+        assert page.locator("#crop .cratio button[data-ratio='9:16']").get_attribute("title") == "YouTube"
+        for k in ("4:5", "3:4", "2:3"):
+            assert page.locator(f"#crop .cratio button[data-ratio='{k}']").get_attribute("title") is None, k
+        assert page.locator("#crop .cratio button[data-ratio='1:1']").get_attribute("title") == "Instagram post"
+        page.keyboard.press("Escape")
+        assert not errors, errors
+        browser.close()
+
+
+def test_crop_and_crop_trim_buttons_on_the_selection_bar(server):
+    """Owner 2026-10-06: over one selected picture the floating bar has «Crop» (key C), the key cap a direct child of the button as on
+    the bar's other buttons; the button enters the crop mode."""
+    with playwright.sync_playwright() as p:
+        browser, page, errors = open_crop(p, server)
+        page.evaluate("() => { const id = Object.keys(board.items)[0]; sel = new Set([id]); render(); }")
+        b = page.locator(".tidy > button[data-crop]")
+        assert b.count() == 1 and b.inner_text().strip().startswith("Кроп") and b.locator("> kbd").inner_text() == "C"
+        assert page.evaluate("() => !cropState")
+        b.click()
+        assert page.evaluate("() => !!cropState && cropState.id === [...sel][0]")
+        page.keyboard.press("Escape")
+        page.evaluate("() => { sel = new Set(Object.keys(board.items).slice(0, 2)); render(); }")
+        assert page.locator(".tidy [data-crop]").count() == 0   # two selected: arranging, no crop
+        assert not errors, errors
+        browser.close()
+
+
+def test_double_click_on_the_board_name_renames_it_in_place(server):
+    """Owner 2026-10-06: a double click on the board's name in the crumb turns it into a field; Enter or a click away saves (the app
+    gets renameTo), Esc cancels; a single click still opens the menu. Run with a fake app bridge."""
+    with playwright.sync_playwright() as p:
+        try:
+            browser = p.chromium.launch()
+        except Exception as error:
+            pytest.skip(f"no Chromium for Playwright: {error}")
+        page = browser.new_page(viewport={"width": 1400, "height": 900})
+        errors = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.add_init_script("window.webkit = { messageHandlers: { hyimg: { postMessage: m => { (window.__sent = window.__sent || []).push(m); } } } };")
+        url = f"http://127.0.0.1:{server}/canvas.html"
+        page.goto(url)
+        page.evaluate("() => { localStorage.clear(); localStorage.setItem('cv.lod', '0'); }")
+        page.goto(url)
+        page.wait_for_function("() => typeof BOARD !== 'undefined' && Object.keys(board.items).length === 12 && document.querySelector('#cProjName').textContent")
+        sent = lambda: [m for m in page.evaluate("window.__sent || []") if m.get("action") == "renameTo"]
+        was = page.inner_text("#cProjName")
+        page.locator("#cProj").click(); page.wait_for_function("() => document.querySelector('#ctx').classList.contains('open')")   # one click: the menu
+        page.keyboard.press("Escape")
+        page.locator("#cProj").dblclick()
+        field = page.locator("#crumb input.cpin")
+        field.wait_for(); assert field.input_value() == was and not page.locator("#cProj").is_visible()
+        assert not page.evaluate("() => document.querySelector('#ctx').classList.contains('open')")
+        field.fill("Новое имя"); page.keyboard.press("Escape")   # Esc cancels
+        assert page.locator("#crumb input.cpin").count() == 0 and page.inner_text("#cProjName") == was and not sent()
+        page.locator("#cProj").dblclick(); page.locator("#crumb input.cpin").fill("Новое имя"); page.keyboard.press("Enter")
+        assert page.locator("#crumb input.cpin").count() == 0 and page.inner_text("#cProjName") == "Новое имя"
+        assert [m["name"] for m in sent()] == ["Новое имя"]
+        page.locator("#cProj").dblclick(); page.locator("#crumb input.cpin").fill("Еще одно"); page.mouse.click(700, 500)   # a click away saves
+        assert [m["name"] for m in sent()] == ["Новое имя", "Еще одно"]
+        page.locator("#cProj").dblclick(); page.keyboard.press("Enter")   # unchanged: nothing sent
+        assert len(sent()) == 2
         assert not errors, errors
         browser.close()
 
@@ -344,6 +505,7 @@ def test_hovered_arrow_shows_a_minus_that_removes_it(server):
           board.items.na = { type: 'note', text: 'а', x: 600, y: 700, w: 300, fs: 30, size: 2, h: 0, color: 'yellow', reach: null, to: [pic] };
           cam.x = -100; cam.y = -100; cam.z = 0.5; renderCam(); sel = new Set(); render(); renderLinks();
         }""")
+        page.wait_for_timeout(300)   # the board's late loads (project, plugins) redraw the arrows once more
         box = page.locator("#links .del").bounding_box()
         assert page.evaluate("() => getComputedStyle(document.querySelector('#links .del')).opacity") == "0"
         page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2); page.wait_for_timeout(250)
@@ -442,7 +604,9 @@ def test_panels_over_the_board_keep_their_clicks(server):
         page.wait_for_function("() => typeof BOARD !== 'undefined' && BOARD === 'main'", timeout=15000)
         page.click("#bntf"); page.wait_for_selector("#ntf.open")
         before = page.evaluate("() => [Object.keys(board.items).length, JSON.stringify(cam)]")
-        for q in ["#ntf", "#bntf", "#bhist", "#dock"]:
+        # the dock is probed on its zoom label, a spot of the dock with no action of its own: its middle is a button since the mode switch
+        # came first in it (2026-10-06), and a button's click is the button's
+        for q in ["#ntf", "#bntf", "#bhist", "#dock #zl"]:
             b = page.locator(q).bounding_box(); x, y = b["x"] + b["width"] / 2, b["y"] + min(b["height"] / 2, 30)
             page.mouse.dblclick(x, y)
             page.mouse.move(x, y); page.mouse.wheel(0, 300)
@@ -482,7 +646,9 @@ def test_library_right_click_shows_the_frame_on_the_board(server, tmp_path):
                 except playwright.Error: page.wait_for_timeout(300)
             raise AssertionError(f"no card for {path}")
         right_click(other)
-        assert page.locator("#lctx.open button:disabled").inner_text() == "Этого кадра нет на досках"
+        # «Show on board» stays, grey, its reason in the tooltip (owner 2026-10-06: «I want users to know what functions exist»)
+        assert page.evaluate("() => { const b = document.querySelector('#lctx.open [data-a=show]'); return [b.textContent.trim(), b.getAttribute('aria-disabled'), b.title]; }") == [
+            "Показать на доске", "true", "Этого кадра нет на досках"]
         page.keyboard.press("Escape"); assert not page.locator("#lctx.open").count()
         right_click("b/odd.png")
         page.click("#lctx.open >> text=Показать на доске")
@@ -491,6 +657,10 @@ def test_library_right_click_shows_the_frame_on_the_board(server, tmp_path):
         frame.wait_for(state="attached")
         cv = next(f for f in page.frames if "/canvas" in f.url)
         cv.wait_for_function("() => BOARD === 'p2' && sel.size === 1 && sel.has('i200')", timeout=15000)
+        # the library at full width covers the board: «Показать на доске» brings it back to its normal width (owner 2026-10-06)
+        page.click("#lwide"); page.wait_for_function("() => document.body.classList.contains('lwide')"); page.wait_for_timeout(700)
+        right_click("b/odd.png"); page.click("#lctx.open >> text=Показать на доске")
+        page.wait_for_function("() => !document.body.classList.contains('lwide') && document.body.classList.contains('cv-on')", timeout=5000)
         assert not errors, errors
         browser.close()
 
@@ -544,7 +714,7 @@ def test_notes_stack_at_the_top_in_one_look(server):
         front = page.evaluate("() => { const L = [...document.querySelectorAll('#hyToasts .ht')]; return L.reduce((a, e) => +e.style.zIndex > +a.style.zIndex ? e : a).className }")
         assert "info" in front, front   # the newest stands in front
         tops = page.evaluate("() => [...document.querySelectorAll('#hyToasts .ht')].map(e => Math.round(e.getBoundingClientRect().top))")
-        assert max(tops) < 60, tops   # folded: all at the top, one behind the other
+        assert 58 <= min(tops) and max(tops) < 80, tops   # folded: one behind the other, under the top row (its 58 px line, owner 2026-10-07)
         box = page.evaluate("() => { const r = document.querySelector('#hyToasts').getBoundingClientRect(); return [r.left + r.width / 2, r.top + 10] }")
         page.mouse.move(*box); page.wait_for_timeout(600)
         fanned = page.evaluate("() => [...document.querySelectorAll('#hyToasts .ht')].map(e => Math.round(e.getBoundingClientRect().top))")
@@ -613,7 +783,7 @@ def test_settings_are_one_for_the_whole_app(tmp_path):
     """Owner 2026-10-04: «the theme must not change with the project; the settings are one for the whole app, take the current ones of
     Studio North and make it work in a standard way»; and «one look is enough». Two projects share one settings file: a change made in
     one is what the other opens with, and takes when it comes to the front; what belongs to a project (its page) stays its own."""
-    settings = tmp_path / "settings.json"; settings.write_text(json.dumps({"cv.theme": "light", "cv.grain": "0"}))
+    settings = tmp_path / "settings.json"; settings.write_text(json.dumps({"cv.theme": "light", "cv.grain": "0", "cv.lang": "ru"}))
     ports, procs = [], []
     for name in ("a", "b"):
         lib, state = tmp_path / name / "lib", tmp_path / name / "state"
@@ -722,4 +892,39 @@ def test_plate_home_project_page_and_the_pages_menu(server):
         ready = [m for m in page.evaluate("window.__sent") if m["action"] == "canvasReady"]
         assert len(ready) == 1 and "кадр" in ready[0]["text"], ready
         page.click("#cHome"); assert [m for m in page.evaluate("window.__sent") if m["action"] not in ("canvasReady", "crumb", "log", "dragband")] == [{"action": "home"}]   # dragband: the window's drag zones, sent whenever the plates settle
+        browser.close()
+
+
+def test_key_hints_wait_for_a_held_command_and_stay_off_during_a_zoom(server):
+    """(owner 2026-10-06) the key caps show once ⌘ is held a moment; a ⌘ + scroll zoom never shows them over the selection bar.
+    In Chromium the selection's corner squares keep their screen size through the zoom (--z live on the whole board layer)."""
+    with playwright.sync_playwright() as p:
+        try:
+            browser = p.chromium.launch()
+        except Exception as error:
+            pytest.skip(f"no Chromium for Playwright: {error}")
+        page = browser.new_page(viewport={"width": 1400, "height": 900})
+        errors = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        url = f"http://127.0.0.1:{server}/canvas.html"
+        page.goto(url)
+        page.evaluate("() => { localStorage.clear(); localStorage.setItem('cv.lod', '0'); }")
+        page.goto(url)
+        page.wait_for_function("() => typeof BOARD !== 'undefined' && Object.keys(board.items).length === 12")
+        keys = "() => document.documentElement.classList.contains('hy-keys')"
+        page.mouse.move(700, 450)
+        page.keyboard.down("Meta"); assert not page.evaluate(keys)
+        page.wait_for_function(keys); page.keyboard.up("Meta"); assert not page.evaluate(keys)
+        page.keyboard.down("Meta")
+        page.evaluate("() => stage.dispatchEvent(new WheelEvent('wheel', { deltaY: -40, metaKey: true, ctrlKey: false, clientX: 700, clientY: 450, bubbles: true, cancelable: true }))")
+        page.wait_for_timeout(400); assert not page.evaluate(keys)
+        page.keyboard.up("Meta")
+        # a picture selected, then zoomed by 2× in the middle of a gesture: its corner square is still the same size on screen
+        id0 = page.evaluate("() => { const id = Object.keys(board.items)[0]; sel = new Set([id]); render(); return id; }")
+        size = "() => { const h = document.querySelector('#handles [data-resize]'); return h ? h.getBoundingClientRect().width : 0; }"
+        w0 = page.evaluate(size); assert w0 > 0
+        w1 = page.evaluate("() => { gesture = true; cam.z *= 1.6; renderCam(); const h = document.querySelector('#handles [data-resize]'); return h.getBoundingClientRect().width; }")
+        assert abs(w1 - w0) < 1.5, (w0, w1)
+        page.evaluate("() => { gesture = false; renderCam(); }")
+        assert not errors, errors
         browser.close()

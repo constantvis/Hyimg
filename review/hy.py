@@ -19,6 +19,9 @@ sees (a heading, a group title, a note's first line, a timeline dot's label) or 
   hy.py notify "что сделано" [--text "подробнее"] [--ids a,b]   a notification for the owner (the bell on the canvas, red dot)
   hy.py layout plan             «Разложить по папкам как на доске»: what would move where, read only (counts and examples)
   hy.py layout apply|undo --owner-said-yes   moves the files / puts the last run back. NEVER on the owner's projects without his word
+  hy.py features [слово]        what Hyimg can do and how an agent does each thing (review/features.json); a word shows those in full
+  hy.py pages | page new "Имя"  the pages with their picture counts | a new page (its id printed, for --page)
+  hy.py presets | preset save "Имя" REF [only=grade,crop] | preset delete "Имя"   the project's presets of properties
 
 Commands inside do (separated by ;):
   move REF x=V y=V | dx=N dy=N       a group moves with its pictures, a note with the pictures in its zone
@@ -27,6 +30,15 @@ Commands inside do (separated by ;):
   point TL "Label" x=V                a timeline dot by its label: moved, or added if new (TL: the timeline, or any label on it)
   note "text" x=V y=V [w=N] [color=blue]
   text "Heading" x=V y=V [fs=N]
+  model FILE x=V y=V | near=REF [w=360]   a 3D card (plugin 3d) from a library glb or STEP/IGES (FreeCAD converts it): a new scene
+                                      3d/scenes/<stamp>-<name>/scene.json with the file on the floor, two lights and a camera
+  html FILE.html x=V y=V | near=REF [w=480] [vw=1280] [vh=800]   Dev studio's HTML card (plugin dev); refuses without the plugin
+  crop REF... box=x0,y0,x1,y1 | trim REF... in=S out=S | opacity REF... value=0.5 | pdfpage REF... n=2    a card's look, by the
+                                      canvas's rules (what does not apply is skipped and counted); clear=1 takes it off
+  grade REF... exposure=0.3 saturation=-20 temp=15 hue=30 sat=10 light=0 | json='{...}'   the colour grade (plugin frames) of pictures
+                                      and image frames; hue/sat/light: Hue/Saturation's Master; clear=1 takes it off
+  mask REF... alpha=1 | file=PATH.png | clear=1   the master mask (plugin frames): from the picture's own alpha, or a png
+  link NOTE REF...                    arrows from a note to pictures, cards or groups (clear=1 takes them off)
   block PATTERN... into=GROUP | near=REF [side=right|below|left|above] | x=V y=V   [cols=8] [w=N] [gap=24] [note="текст"] [group="Название"]
                                       into= the usual way: a sub-group (note + rows) under the last block of that theme group, the frame
                                       grows and what stands below moves down; group= only for a genuinely new theme
@@ -35,6 +47,13 @@ Commands inside do (separated by ;):
   arrange ID|"glob"|REF... near=REF | x=V y=V [cols] [note=] [group=]
                                       pictures already on the page, laid out again as a tidy block (one row per argument)
   group "Название" REF...             a group frame around notes (with their zone pictures), headings, groups
+  topage PAGE REF...                  onto another page (its name or id), as «Move to page ›» on the canvas: a group with everything in
+                                      it, a note with its zone; the layout kept, where they stood when that room is free there, else right
+                                      of its content; arrows to what stays are dropped; versions before and after on both pages
+  props from=REF to=REF,REF... [only=grade,crop]   the canvas's «Paste properties»: crop, trim, size, opacity, PDF page, colour grade
+  props preset=NAME to=REF...         (a plugin's kind, the mask, as the item's field of its name); preset= one saved on the canvas
+  front REF... | forward | backward | back   the draw order, as «Order ›» on the canvas (⌥⌘] ⌘] ⌘[ ⌥⌘[): among the siblings in the
+                                      same group (or the page's top level) and layer only; several keep their order among themselves
   remove REF... | remove "glob"       take things off this page: pictures by id or path glob, notes, headings; a group goes with
                                       everything in it, as Delete on the canvas (only=frame keeps the contents, like ⇧⌘G).
                                       A picture gone from every page is the archive = rejected
@@ -42,6 +61,8 @@ Commands inside do (separated by ;):
                                       as ⌥⌘G: they leave the page and lie inside it; frame each REF...: every picture its own frame (⌥⇧⌘G)
   frame unframe F | frame rename F "Имя" | frame layers F   take a frame apart (pictures back where they lie in it), a new name (a new
                                       version of its frame.json), its layers top first (read only, nothing is saved)
+  cards3d SCENE beside=REF into=GROUP [align=NOTE] [cameras=ID,…] [cols=4] [w=320] [note="текст"]   3D cards of a scene, a card per
+                                      camera, in rows with a note, right of REF (a note's zone) inside GROUP, whose frame grows; or at x= y=
 A value V is a number or @REF[.left|.right|.top|.bottom|.cx|.cy][+N|-N]; x defaults to .left, y to .top.
 Every do saves a version before and after (who: ai), retries if the owner saved in between and reports new problems (check).
 Every do that adds something writes a notification for the owner by itself (owner 2026-10-03): how many pictures, notes, groups, the
@@ -60,7 +81,7 @@ LABEL = ""   # what the current do is about: the page's event timeline shows it 
 
 def api(path, body=None):
     if body is not None and path.startswith("/api/board?"):   # saves made from here are the AI's in the page's event timeline
-        path += "&who=ai" + ("&label=" + urllib.parse.quote(LABEL) if LABEL else "")
+        path += "&who=ai" + ("&label=" + urllib.parse.quote(LABEL) if LABEL else "") + ("&agent=" + urllib.parse.quote(os.environ["HYIMG_AGENT"]) if os.environ.get("HYIMG_AGENT") else "")   # Home names the agent in a board's news
     req = urllib.request.Request(BASE + path, data=None if body is None else json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"}, method="GET" if body is None else "POST")
     try:
@@ -142,7 +163,7 @@ def value(b, v, key):
     if not m:
         try: return float(v)
         except ValueError: return v
-    r = resolve(b, m.group(1))[3]
+    r = rect(b, m.group(1)) if m.group(1) in b["items"] else resolve(b, m.group(1))[3]   # any item by its id: a 3D card, an HTML frame, a note
     return round(EDGE[m.group(2) or ("top" if key in ("y", "dy") else "left")](r) + float(m.group(3) or 0))
 
 
@@ -503,6 +524,7 @@ def op_group(b, args, kv):
     """a group frame (as ⌘G) around things named in REF...: a note with a zone brings its zone's pictures along"""
     title, refs, ids = args[0], args[1:], []
     for r in refs:
+        if r in b["items"]: ids.append(r); continue   # anything by its id: a picture, a 3D card, an image frame, an HTML card (2026-10-06)
         k, id, nm, _ = resolve(b, r, {"note", "heading", "group"})
         if k == "group": ids += b["groups"][id]["members"]; continue
         ids.append(id); z = zone_rect(b["items"][id]) if k == "note" else None
@@ -831,6 +853,9 @@ def frame_line(b, id, nm, size, pics, it):
             + f"  {fmt(rect(b, id))}  {it.get('doc', '')}  [{id}]")
 
 
+CARD_TYPES = {"htmlframe": "HTML-фрейм", "html": "HTML-карточка", "model3d": "3D-карточка"}
+
+
 def cmd_map(b, ref, tol, groups):
     L = names(b); area = None
     if ref:
@@ -851,6 +876,10 @@ def cmd_map(b, ref, tol, groups):
     for f in img_frames(b):   # an image frame and the pictures inside it (they count as lying on the page)
         if not area or inter(rect(b, f[0]), area): print(frame_line(b, *f))
     pics = [id for id, it in b["items"].items() if is_pic(it) and (not area or inter(rect(b, id), area))]
+    cards = {}   # the plugins' cards: how many of each, find shows them by their file
+    for id, it in b["items"].items():
+        if it.get("type") in CARD_TYPES and (not area or inter(rect(b, id), area)): cards[it["type"]] = cards.get(it["type"], 0) + 1
+    if cards: print("карточки плагинов: " + ", ".join(f"{CARD_TYPES[k]} {n}" for k, n in cards.items()) + " (hy.py find <файл> дает их id)")
     grouped = {m for g in b["groups"].values() for m in g["members"]}
     if not ref: print(f"заметок {sum(1 for n in L if n[0] == 'note')}: видны в map <название>")
     print(f"кадров: {len(pics)}, вне групп {sum(1 for p in pics if p not in grouped)} · ревизия {b.get('revision')}")
@@ -865,6 +894,9 @@ def cmd_find(b, q):
     for id, it in b["items"].items():   # pictures by a part of their path
         if is_pic(it) and (norm(q) in norm(it["path"]) or q == id):
             print(f"pic {it['path']} {fmt(rect(b, id))}" + (f" в «{grouped[id]}»" if id in grouped else " вне групп") + f" [{id}]")
+    for id, it in b["items"].items():   # plugins' cards by their file or name: an HTML frame or card, a 3D card's scene (2026-10-06)
+        if it.get("type") in CARD_TYPES and (q == id or any(norm(q) in norm(it.get(k) or "") for k in ("src", "scene", "name"))):
+            print(f"{it['type']} {it.get('src') or it.get('scene') or ''}" + (f" «{it['name']}»" if it.get("name") else "") + f" {fmt(rect(b, id))} [{id}]")
     for id, nm, size, pics, it in img_frames(b):   # an image frame by its name, or a picture inside it by a part of its path
         inside = [p for p in pics if norm(q) in norm(p)]
         if norm(q) in norm(nm) or q == id: print(frame_line(b, id, nm, size, pics, it))
@@ -872,6 +904,7 @@ def cmd_find(b, q):
 
 
 IMG_EXT = ((b"\x89PNG", ".png"), (b"\xff\xd8", ".jpg"), (b"RIFF", ".webp"))   # by the first bytes: downloads often come as bare UUIDs
+OTHER_MEDIA = (".mp4", ".mov", ".m4v", ".webm", ".pdf", ".psd", ".psb", ".ai", ".tif", ".tiff", ".heic", ".heif", ".svg", ".glb", ".gltf", ".obj", ".stl", ".fbx", ".step", ".stp", ".iges", ".igs")   # by the name
 
 
 def cmd_save(files, to, move=False):
@@ -886,6 +919,7 @@ def cmd_save(files, to, move=False):
     for f in files:
         head = open(f, "rb").read(12)
         ext = next((e for magic, e in IMG_EXT if head.startswith(magic) and (e != ".webp" or head[8:12] == b"WEBP")), None)
+        if not ext and f.lower().endswith(OTHER_MEDIA): ext = os.path.splitext(f)[1].lower()   # a video, PDF, design or 3D file by its name (2026-10-06)
         if not ext: print(f"не картинка, пропустил: {f}"); continue
         pics[f] = (sha(f), ext)
     known = api("/api/known", {"sha": sorted({s for s, _ in pics.values()})})[1].get("known", {})
@@ -893,20 +927,21 @@ def cmd_save(files, to, move=False):
     here = {}   # pictures already in the folder, in case the library has not hashed them yet (it looks every 3 s)
     for n in os.listdir(dest):
         q = os.path.join(dest, n)
-        if os.path.isfile(q) and n.lower().endswith((".png", ".jpg", ".jpeg", ".webp")): here[sha(q)] = os.path.relpath(q, root)
+        if os.path.isfile(q) and n.lower().endswith((".png", ".jpg", ".jpeg", ".webp") + OTHER_MEDIA): here[sha(q)] = os.path.relpath(q, root)
     saved, dup = [], 0
     for f, (s, ext) in pics.items():
         was = known.get(s) or here.get(s)
         if was: print(f"уже есть: {os.path.basename(f)} = {was}"); dup += 1; continue
         stem, own = os.path.splitext(os.path.basename(f))
-        if own.lower() not in (".png", ".jpg", ".jpeg", ".webp"): stem, own = os.path.basename(f), ext
+        if own.lower() not in (".png", ".jpg", ".jpeg", ".webp") + OTHER_MEDIA: stem, own = os.path.basename(f), ext
         name, k = stem + own, 2
         while os.path.exists(os.path.join(dest, name)): name = f"{stem}~{k}{own}"; k += 1
         (shutil.move if move else shutil.copy2)(f, os.path.join(dest, name))
-        side = os.path.splitext(f)[0] + ".json"
-        if os.path.exists(side): (shutil.move if move else shutil.copy2)(side, os.path.join(dest, os.path.splitext(name)[0] + ".json"))
+        pic = own.lower() in (".png", ".jpg", ".jpeg", ".webp")   # a picture's json is <name>.json, another kind's <name.ext>.json (server.py scan)
+        side = next((x for x in (f + ".json", os.path.splitext(f)[0] + ".json") if os.path.exists(x)), None)
+        if side: (shutil.move if move else shutil.copy2)(side, os.path.join(dest, (os.path.splitext(name)[0] if pic else name) + ".json"))
         here[s] = os.path.relpath(os.path.join(dest, name), root); saved.append(here[s])
-    print(f"сохранил {len(saved)} в {os.path.relpath(dest, root)}, пропустил {dup}: уже в библиотеке" + (f", {len(files) - len(pics)} не картинки" if len(files) > len(pics) else ""))
+    print(f"сохранил {len(saved)} в {os.path.relpath(dest, root)}, пропустил {dup}: уже в библиотеке" + (f", {len(files) - len(pics)} не медиафайлы" if len(files) > len(pics) else ""))
 
 
 def cmd_undocumented(pat):
@@ -925,6 +960,302 @@ def cmd_dupes():
     mains = [i for i in items if i.get("copies")]
     print(f"{len(mains)} картинок лежат в библиотеке больше одного раза, лишних файлов {sum(len(i['copies']) for i in mains)}")
     for i in mains: print(f"{i['path']}  ←  " + ", ".join(i["copies"]))
+
+
+# ---- every card and look of the board through hy.py (2026-10-06, the «Playground» page of «Hyimg App»: an agent never writes board
+# JSON by hand). Cards the plugins make in the browser (a 3D card from a 3D file, Dev studio's HTML card) and the looks a card keeps
+# (crop, time, opacity, PDF page, colour grade, mask) by the canvas's own rules: prop_applies / prop_set, the «Paste properties» kinds.
+# Also the pages, the presets of properties and the feature catalog (review/features.json: what Hyimg can do and how an agent does it).
+FEATURES_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "features.json")
+PLUGIN_NAMES = {"3d": ("3d", "hyimg-3d-studio", "hyimg-3d"), "frames": ("frames", "hyimg-frames"), "dev": ("dev", "hyimg-dev-studio", "dev-studio")}
+
+
+def plugin_name(kind):
+    """the name the running server knows a plugin by (its folder under plugins/), or None when it is not installed"""
+    _, L = api("/api/plugins")
+    have = {p.get("name") for p in L} if isinstance(L, list) else set()
+    return next((n for n in PLUGIN_NAMES[kind] if n in have), None)
+
+
+def place_at(b, kv, size, what):
+    """the top left of a new card: x= y=, or near=REF [side=right|below|left|above] in free room"""
+    if "x" in kv and "y" in kv: return round(kv["x"]), round(kv["y"])
+    if "near" not in kv: raise SystemExit(f"{what}: укажи x= и y= или near=<что рядом> [side=right]")
+    ref = str(kv["near"]); r = rect(b, ref) if ref in b["items"] or ref in b["groups"] else resolve(b, ref)[3]
+    s = free_spot(b, r, {"x": 0, "y": 0, "w": size[0], "h": size[1]}, kv.get("side", "right"), 160)
+    return s["x"], s["y"]
+
+
+def _quat_look(eye, target):
+    """[w, x, y, z] of a Blender camera or light at eye looking at target (its -z there, +y up), as scene.js look()"""
+    import math
+    z = [eye[i] - target[i] for i in range(3)]; n = math.sqrt(sum(v * v for v in z)) or 1; z = [v / n for v in z]
+    up = [0, 0, 1]; x = [up[1] * z[2] - up[2] * z[1], up[2] * z[0] - up[0] * z[2], up[0] * z[1] - up[1] * z[0]]
+    n = math.sqrt(sum(v * v for v in x)) or 1; x = [v / n for v in x]
+    y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]]
+    m = [[x[0], y[0], z[0]], [x[1], y[1], z[1]], [x[2], y[2], z[2]]]; tr = m[0][0] + m[1][1] + m[2][2]
+    if tr > 0:
+        s = math.sqrt(tr + 1) * 2; q = [s / 4, (m[2][1] - m[1][2]) / s, (m[0][2] - m[2][0]) / s, (m[1][0] - m[0][1]) / s]
+    elif m[0][0] > m[1][1] and m[0][0] > m[2][2]:
+        s = math.sqrt(1 + m[0][0] - m[1][1] - m[2][2]) * 2; q = [(m[2][1] - m[1][2]) / s, s / 4, (m[0][1] + m[1][0]) / s, (m[0][2] + m[2][0]) / s]
+    elif m[1][1] > m[2][2]:
+        s = math.sqrt(1 + m[1][1] - m[0][0] - m[2][2]) * 2; q = [(m[0][2] - m[2][0]) / s, (m[0][1] + m[1][0]) / s, s / 4, (m[1][2] + m[2][1]) / s]
+    else:
+        s = math.sqrt(1 + m[2][2] - m[0][0] - m[1][1]) * 2; q = [(m[1][0] - m[0][1]) / s, (m[0][2] + m[2][0]) / s, (m[1][2] + m[2][1]) / s, s / 4]
+    sg = -1 if q[0] < 0 else 1
+    return [round(v * sg, 5) for v in q]
+
+
+def _glb_box(data):
+    """the box of a glb's meshes from its POSITION accessors (glTF keeps their min and max): (min, max) in glTF's y-up metres"""
+    import struct
+    if data[:4] != b"glTF": raise SystemExit("это не glb")
+    n = struct.unpack("<I", data[12:16])[0]; doc = json.loads(data[20:20 + n])
+    lo, hi = [float("inf")] * 3, [float("-inf")] * 3
+    for m in doc.get("meshes", []):
+        for p in m.get("primitives", []):
+            a = doc["accessors"][p["attributes"]["POSITION"]]
+            if a.get("min") and a.get("max"):
+                lo = [min(lo[i], a["min"][i]) for i in range(3)]; hi = [max(hi[i], a["max"][i]) for i in range(3)]
+    if lo[0] == float("inf"): raise SystemExit("в glb нет геометрии")
+    return lo, hi
+
+
+def _cad_glb(plugin, path):
+    """a STEP or IGES file of the library as a glb, converted by FreeCAD through the 3D plugin's routes (cad.py), as the card does it"""
+    for _ in range(400):
+        code, st = api(f"/api/plugin/{plugin}/cad", {"path": path})
+        if code != 200 or not isinstance(st, dict): raise SystemExit(f"FreeCAD не ответил: {code} {st}")
+        if st.get("state") != "working": break
+        time.sleep(0.9)
+    if st.get("state") != "ready": raise SystemExit(f"FreeCAD не прочитал {path}: {st.get('reason') or st.get('state')} {st.get('error') or ''}")
+    req = urllib.request.Request(BASE + f"/api/plugin/{plugin}/cadglb", data=json.dumps({"key": st["key"]}).encode(), method="POST",
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=120) as r: return r.read()
+
+
+def op_model(b, args, kv):
+    """a 3D card from a 3D file of the library (glb, or STEP / IGES through FreeCAD): a new scene 3d/scenes/<stamp>-<name>/scene.json
+    as the card's «Open file…» makes it (the file on the floor, a key and a fill light, one camera), and the card on the board"""
+    if not args: raise SystemExit("model ФАЙЛ x= y= | near=ЧТО [w=360] [name=Имя]: glb, gltf-бинарник, step, stp, iges, igs из библиотеки")
+    plugin = plugin_name("3d")
+    if not plugin: raise SystemExit("плагин «3D-объекты» не установлен: scripts/install_plugins.sh --3d --yes, потом ⇧⌘R")
+    path = args[0]; ext = os.path.splitext(path)[1].lower(); stem = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.splitext(os.path.basename(path))[0]).strip("._") or "model"
+    if ext in (".step", ".stp", ".iges", ".igs"):
+        h = 0x811c9dc5
+        for ch in f"{path}@0": h = ((h ^ ord(ch)) * 0x01000193) & 0xffffffff
+        glb = f"3d/converted/{h:08x}/{stem}.glb"
+        if api_head(glb) != 200: post_bytes(f"/api/file?p={urllib.parse.quote(glb)}", _cad_glb(plugin, path))
+    elif ext == ".glb": glb = path
+    else: raise SystemExit(f"{ext}: hy.py кладет glb и STEP/IGES; obj, stl, fbx открой через карточку в приложении (она переводит их в glb)")
+    with urllib.request.urlopen(BASE + "/file?p=" + urllib.parse.quote(glb), timeout=120) as r: data = r.read()
+    lo, hi = _glb_box(data); size = [hi[i] - lo[i] for i in range(3)]; big = max(size)
+    if not big > 0: raise SystemExit("в файле нет геометрии")
+    k = 1 if 0.05 <= big <= 0.3 else 0.2 / big   # as engine.js putFile: its real size when it is a few cm to 30 cm, else 20 cm
+    c = [(lo[i] + hi[i]) / 2 for i in range(3)]; H = k * size[1]
+    r5 = lambda v: round(v, 5) or 0
+    nid = lambda: "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(8))
+    f = max(0.45, min(4, 1.25 * k * big / 0.12))   # the new scene's camera is set for a 12 cm shape: as far again for this one's size
+    key, fill, cam = [-0.45, -0.55, 0.55], [0.7, -0.2, 0.25], [round(0.32 * f, 4), round(-0.62 * f, 4), round(0.2 * f, 4)]
+    doc = {"format": "hyimg-scene/1", "rev": 0, "by": "hy.py", "render": {"x": 1280, "y": 1600},
+           "world": {"color": [0.18, 0.18, 0.18], "strength": 1, "exposure": 0, "look": "AgX"},
+           "objects": [{"id": nid(), "name": kv.get("name") or stem, "src": {"type": "file", "path": glb}, "loc": [r5(-k * c[0]), r5(k * c[2]), r5(-k * lo[1] + 0.0005)],
+                        "rot": [1, 0, 0, 0], "scale": [r5(k)] * 3, "ai": ""},
+                       {"id": nid(), "name": "Floor", "src": {"type": "prim", "shape": "plane", "size": [3, 3, 0]}, "loc": [0, 0, 0], "rot": [1, 0, 0, 0], "scale": [1, 1, 1],
+                        "color": "#c9c8c3", "ai": "studio floor"}],
+           "lights": [{"id": nid(), "name": "Key", "type": "area", "loc": key, "rot": _quat_look(key, [0, 0, 0.08]), "color": [1, 1, 1], "power": 25, "size": 0.6, "size_y": 0.6, "shape": "SQUARE"},
+                      {"id": nid(), "name": "Fill", "type": "area", "loc": fill, "rot": _quat_look(fill, [0, 0, 0.08]), "color": [1, 1, 1], "power": 8, "size": 1, "size_y": 1, "shape": "SQUARE"}],
+           "cameras": [{"id": nid(), "name": "Camera 1", "loc": cam, "rot": _quat_look(cam, [0, 0, round(H / 2 + 0.003, 3)]), "lens": 70, "sensor": 36, "sensor_h": 24,
+                        "fit": "AUTO", "shift": [0, 0], "clip": [0.01, 100]}],
+           "removed": []}
+    doc["active_camera"] = doc["cameras"][0]["id"]
+    scene = f"3d/scenes/{time.strftime('%y%m%d-%H%M%S')}-{stem[:40]}/scene.json"
+    post_bytes(f"/api/file?p={urllib.parse.quote(scene)}", json.dumps(doc, ensure_ascii=False, indent=1).encode())
+    w = round(kv.get("w", 360)); h = round(w * 1600 / 1280); x, y = place_at(b, kv, (w, h), "model"); id = uid("m")
+    b["items"][id] = {"type": "model3d", "scene": scene, "camera": doc["active_camera"], "x": x, "y": y, "w": w, "h": h}
+    return f"model {id} «{path}» сцена {scene} x {x} y {y} (картинку карточки дорисует холст, когда страница откроется)"
+
+
+def api_head(path):
+    req = urllib.request.Request(BASE + "/file?p=" + urllib.parse.quote(path), method="HEAD")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r: return r.status
+    except urllib.error.HTTPError as e: return e.code
+
+
+def op_html(b, args, kv):
+    """Dev studio's HTML card: an .html file of the library as a card (its first screen drawn by Chromium, the live page when big on
+    screen, Dev mode on a double click), as the plugin's placeAs makes it"""
+    if not args: raise SystemExit("html ФАЙЛ.html x= y= | near=ЧТО [w=480] [vw=1280] [vh=800]")
+    if not plugin_name("dev") and not kv.get("force"):
+        raise SystemExit("плагин «Dev studio» не установлен: карточка не нарисуется. Поставить: scripts/install_plugins.sh --dev --yes, потом ⇧⌘R"
+                         " (force=1 положит ее все равно)")
+    if api_head(args[0]) != 200: raise SystemExit(f"нет файла {args[0]}")
+    vw, vh = int(kv.get("vw", 1280)), int(kv.get("vh", 800)); w = round(kv.get("w", 480)); h = round(w * vh / vw)
+    x, y = place_at(b, kv, (w, h), "html"); id = uid("d")
+    b["items"][id] = {"type": "html", "src": args[0], "vw": vw, "ar": round(vw / vh, 4), "pics": [args[0]], "x": x, "y": y, "w": w, "h": h}
+    return f"html {id} «{args[0]}» {vw}×{vh} x {x} y {y}"
+
+
+GRADE_KEYS = ("temp", "tint", "exposure", "contrast", "highlights", "shadows", "whites", "blacks", "texture", "clarity", "dehaze", "vibrance", "saturation", "sharpening")
+
+
+def _look_value(kind, b, it, kv):
+    """the value of one look from the do command's keys; None takes it off"""
+    if kv.get("clear"): return None
+    if kind == "crop":
+        try: v = [float(x) for x in str(kv["box"]).split(",")]
+        except (KeyError, ValueError): raise SystemExit("crop ЧТО... box=x0,y0,x1,y1 (доли кадра от 0 до 1) или clear=1")
+        if len(v) != 4 or not (0 <= v[0] < v[2] <= 1 and 0 <= v[1] < v[3] <= 1): raise SystemExit("box: x0,y0,x1,y1, доли от 0 до 1, x0 < x1, y0 < y1")
+        return v
+    if kind == "trim":
+        if "in" not in kv or "out" not in kv or not 0 <= float(kv["in"]) < float(kv["out"]): raise SystemExit("trim ЧТО... in=СЕКУНДЫ out=СЕКУНДЫ или clear=1")
+        return [round(float(kv["in"]), 2), round(float(kv["out"]), 2)]
+    if kind == "opacity":
+        if not isinstance(kv.get("value"), float) or not 0 <= kv["value"] <= 1: raise SystemExit("opacity ЧТО... value=0.5 (от 0 до 1)")
+        return kv["value"]
+    if kind == "page":
+        if not isinstance(kv.get("n"), float) or kv["n"] < 1: raise SystemExit("pdfpage ЧТО... n=2")
+        return int(kv["n"])
+    if kind == "grade":
+        g = {}
+        if kv.get("json"):
+            try: g = json.loads(str(kv["json"]))
+            except ValueError as e: raise SystemExit(f"json= не JSON: {e}")
+            if not isinstance(g, dict): raise SystemExit("json= объект, например {\"exposure\": 0.3}")
+        for k in GRADE_KEYS:
+            if k in kv: g[k] = kv[k]
+        hs = {k2: kv[k1] for k1, k2 in (("hue", "hue"), ("sat", "sat"), ("light", "light")) if k1 in kv}
+        if hs: g.setdefault("hs", {})["master"] = dict(g.get("hs", {}).get("master", {}), **hs)
+        if not g: raise SystemExit("grade ЧТО... exposure=0.3 saturation=-20 temp=15 hue=30 sat=10 light=0 или json='{...}' или clear=1")
+        return g
+    if kind == "mask":
+        if kv.get("file"):
+            if api_head(str(kv["file"])) != 200: raise SystemExit(f"нет файла маски {kv['file']}")
+            return {"file": str(kv["file"])}
+        if kv.get("alpha"): return _alpha_mask(it)
+        raise SystemExit("mask ЧТО... alpha=1 (из прозрачности картинки) | file=ПУТЬ.png | clear=1")
+
+
+def _alpha_mask(it):
+    """the picture's own alpha as its master mask, as «Mask from alpha» on the canvas (mask.js alphaOf): white where it shows"""
+    import io
+    try: from PIL import Image
+    except ImportError: raise SystemExit("для alpha=1 нужен Pillow (pip install pillow)")
+    src = it.get("render") if it.get("type") == "imgframe" else it.get("path")
+    with urllib.request.urlopen(BASE + "/file?p=" + urllib.parse.quote(src), timeout=120) as r: im = Image.open(io.BytesIO(r.read()))
+    a = im.convert("RGBA").getchannel("A")
+    if a.getextrema()[0] >= 250: return False   # nothing transparent
+    k = min(1, (4e6 / (im.width * im.height)) ** .5)
+    if k < 1: a = a.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
+    out = Image.new("RGBA", a.size, (255, 255, 255, 0)); out.putalpha(a)
+    buf = io.BytesIO(); out.save(buf, "PNG")
+    path = "frames/board-masks/masks/m" + "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(12)) + ".png"
+    post_bytes(f"/api/file?p={urllib.parse.quote(path)}", buf.getvalue())
+    return {"file": path}
+
+
+def look_op(kind):
+    def op(b, args, kv):
+        if not args: raise SystemExit(f"{kind}: что менять? id, имя, группа или маска путей")
+        ids = list(dict.fromkeys(i for a in args for i in _prop_items(b, a)))
+        done, skip, none = [], [], []
+        for i in ids:
+            it = b["items"][i]
+            if not prop_applies(kind, it): skip.append(i); continue
+            v = _look_value(kind, b, it, kv)
+            if v is False: none.append(i); continue
+            if v is None and kind == "crop": it.pop("crop", None)
+            else: prop_set(kind, it, v)
+            done.append(i)
+        name = {"page": "pdfpage"}.get(kind, kind)
+        msg = f"{name} {'снят' if kv.get('clear') else PROP_RU.get(kind, kind)}: {len(done)} из {len(ids)}" + (f" [{', '.join(done[:6])}]" if done else "")
+        if skip: msg += f" · не подходит {len(skip)}: {', '.join(skip[:4])}"
+        if none: msg += f" · без прозрачных пикселей {len(none)}"
+        return msg
+    op.__name__ = f"op_{kind}"
+    return op
+
+
+def op_link(b, args, kv):
+    """arrows from a note to things (as dragging from a note's edge on the canvas): the note is about them wherever they lie"""
+    if len(args) < 2: raise SystemExit("link ЗАМЕТКА ЧТО...: стрелки от заметки к кадрам, карточкам, группам (clear=1 снимает все)")
+    k, nid, nm, _ = resolve(b, args[0], {"note"})
+    n = b["items"][nid]
+    if kv.get("clear"): n["to"] = []; return f"link «{nm[:30]}»: стрелки сняты"
+    tg = []
+    for r in args[1:]:
+        if r in b["items"] or r in b["groups"]: tg.append(r)
+        else: tg.append(resolve(b, r)[1])
+    n["to"] = list(dict.fromkeys((n.get("to") or []) + [t for t in tg if t != nid]))
+    return f"link «{nm[:30]}» → {len(n['to'])}: {', '.join(n['to'][:8])}"
+
+
+MORE_OPS = {"model": op_model, "link": op_link, "html": op_html, "crop": look_op("crop"), "trim": look_op("trim"), "opacity": look_op("opacity"),
+            "pdfpage": look_op("page"), "grade": look_op("grade"), "mask": look_op("mask")}
+OPS.update(MORE_OPS)
+
+
+def cmd_features(word):
+    """the feature catalog (review/features.json), all of it short or the entries with the word, in full"""
+    cat = json.load(open(FEATURES_JSON, encoding="utf-8"))
+    F = cat["features"]
+    if not word:
+        print(f"Что умеет Hyimg: {len(F)} функций. hy.py features <слово> покажет подробно")
+        for f in F: print(f"  {f['id']:<16} {f['title']}" + (f"  [плагин {f['plugin']}]" if f.get("plugin") else "") + f"  · {f.get('skill', '')}")
+        return
+    q = norm(word)
+    hit = [f for f in F if q in norm(" ".join([f["id"], f["title"], f.get("what", ""), f.get("owner", ""), " ".join(f.get("agent", [])),
+                                                " ".join(f.get("commands", []) + f.get("ops", []) + f.get("routes", []) + f.get("props", []) + f.get("modes", []))]))]
+    if not hit: print(f"по «{word}» ничего; hy.py features покажет все"); return
+    for f in hit:
+        print(f"## {f['title']} ({f['id']})" + (f" · плагин {f['plugin']}" if f.get("plugin") else "") + (f" · скилл {f['skill']}" if f.get("skill") else ""))
+        print(f["what"])
+        if f.get("owner"): print("Владелец: " + f["owner"])
+        for a in f.get("agent", []): print("  агент: " + a)
+        print()
+
+
+def cmd_pages():
+    _, st = api("/api/pages")
+    for p in st.get("pages", []): print(f"«{p.get('title')}» ({p['id']}): кадров {len(p.get('on', []))}")
+
+
+def cmd_page(args):
+    """page new "Название": a new page at the end of the list (as «+» on the canvas's pages), its id printed"""
+    if len(args) < 2 or args[0] != "new": raise SystemExit('hy.py page new "Название"')
+    title = " ".join(args[1:]).strip()
+    _, st = api("/api/pages"); pages = [{"id": p["id"], "title": p.get("title", "")} for p in st.get("pages", [])]
+    if any(norm(p["title"]) == norm(title) for p in pages): raise SystemExit(f"страница «{title}» уже есть: hy.py pages")
+    pid = "p" + "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(8))
+    code, res = api("/api/pages", {"pages": pages + [{"id": pid, "title": title}]})
+    if code != 200: raise SystemExit(f"страница не добавлена: {code} {res}")
+    print(f"страница «{title}» ({pid}): hy.py --page {pid} ...")
+
+
+def cmd_presets():
+    _, st = api("/api/presets")
+    L = st.get("presets", []) if isinstance(st, dict) else []
+    if not L: print("пресетов нет: на холсте «Copy properties ›» › «Save as preset…» или hy.py preset save ИМЯ ЧТО")
+    for p in L: print(f"«{p['name']}»: {', '.join(PROP_RU.get(k, k) for k in p.get('kinds', {}))}" + (f" (из {p['from']})" if p.get("from") else ""))
+
+
+def cmd_preset(args, page):
+    """preset save "Имя" REF [only=grade,crop] | preset delete "Имя": the project's presets of properties (as «Save as preset…»)"""
+    if len(args) >= 2 and args[0] == "delete":
+        code, res = api("/api/presets", {"name": args[1], "delete": True, "kinds": {}}); print(code, "удален" if code == 200 else res); return
+    if len(args) < 3 or args[0] != "save": raise SystemExit('hy.py preset save "Имя" ЧТО [only=grade,crop] | hy.py preset delete "Имя"')
+    only = [x for a in args[3:] if a.startswith("only=") for x in a[5:].split(",") if x]
+    _, b = api(f"/api/board?name={page}")
+    sid = _prop_items(b, args[2])
+    if len(sid) != 1: raise SystemExit("ЧТО: одна вещь (картинка, фрейм, карточка)")
+    it = b["items"][sid[0]]
+    kinds = {k: prop_get(k, it, b, sid[0]) for k in PROP_ORDER if prop_has(k, it) and (not only or k in only)}
+    if not kinds: raise SystemExit("у этой вещи нет таких свойств")
+    src = it.get("path", "").rsplit("/", 1)[-1] or it.get("name") or sid[0]
+    code, res = api("/api/presets", {"name": args[1], "from": src, "kinds": kinds, "at": int(time.time() * 1000)})
+    if code != 200: raise SystemExit(f"не сохранен: {code} {res}")
+    print(f"пресет «{args[1]}»: {', '.join(PROP_RU.get(k, k) for k in kinds)} (из {src}); применить: hy.py do 'props preset=\"{args[1]}\" to=ЧТО'")
 
 
 # ---- notifications (owner 2026-10-03): the owner sees what an agent put on a board with a red dot on the bell, a few words, previews
@@ -1013,6 +1344,345 @@ def cmd_layout(args):
     print(code, json.dumps(res, ensure_ascii=False))
 
 
+# ---- topage (owner 2026-10-06, «Move to page ›» on the canvas): things off this page onto another one, as the board's right-click menu
+# does it (canvas.html moveToPage): a group with its members and the groups wholly inside its frame, a note with the pictures in its zone;
+# the layout among them kept; on the other page where they stood when that room is free, else right of its content at its top with a
+# group's air; arrows between moved things stay, the others are dropped. The other page gets its own versions before and after; this
+# page's come from do. Written once per do: a retry after the owner saved in between takes them off the fresh board again
+_TOPAGE = {}
+
+
+def _src_page():
+    a = sys.argv
+    if "--page" in a: return a[a.index("--page") + 1]
+    try: return (api("/api/live")[1].get("canvas") or {}).get("page") or "main"
+    except Exception: return "main"
+
+
+def op_topage(b, args, kv):
+    import fnmatch
+    if len(args) < 2: raise SystemExit("topage СТРАНИЦА ЧТО...: страница по имени или id, потом что переносить")
+    _, st = api("/api/pages"); pages = st.get("pages", []) if isinstance(st, dict) else []
+    pg = next((p for p in pages if p["id"] == args[0]), None) or next((p for p in pages if norm(p.get("title")) == norm(args[0])), None)
+    if not pg: raise SystemExit(f"нет страницы «{args[0]}»: " + ", ".join(f"«{p.get('title')}» ({p['id']})" for p in pages))
+    src = _src_page()
+    if pg["id"] == src: raise SystemExit("это та же страница")
+    items, groups = [], []
+    def add_group(gid):
+        g = b["groups"].get(gid)
+        if not g or gid in groups: return
+        groups.append(gid); items.extend(m for m in g["members"] if m in b["items"] and m not in items)
+        for o, h in b["groups"].items():
+            if o != gid and None not in (h.get("x"), g.get("x")) and h["x"] >= g["x"] and h["y"] >= g["y"] and h["x"] + h["w"] <= g["x"] + g["w"] and h["y"] + h["h"] <= g["y"] + g["h"]: add_group(o)
+    for a in args[1:]:
+        if a in b["items"]:
+            if a not in items: items.append(a)
+        elif a in b["groups"]: add_group(a)
+        elif any(ch in a for ch in "*?/"):
+            got = [i for i, it in b["items"].items() if is_pic(it) and fnmatch.fnmatch(it["path"], a)]
+            if not got: raise SystemExit(f"на странице нет кадров по «{a}»")
+            items.extend(i for i in got if i not in items)
+        else:
+            k, id, nm, _ = resolve(b, a)
+            if k == "dot": raise SystemExit("точка таймлайна переносится вместе с таймлайном")
+            if k == "group": add_group(id)
+            elif id not in items: items.append(id)
+    for s in list(items):   # a note's zone takes the pictures whose centre is in it
+        z = b["items"][s].get("type") == "note" and zone_rect(b["items"][s])
+        if not z: continue
+        for i, it in b["items"].items():
+            if i not in items and is_pic(it) and it.get("x") is not None and z["x"] <= it["x"] + it["w"] / 2 <= z["x"] + z["w"] and z["y"] <= it["y"] + item_h(it) / 2 <= z["y"] + z["h"]: items.append(i)
+    moved = set(items) | set(groups)
+    key = (pg["id"], tuple(args[1:]))
+    load = {"items": {i: json.loads(json.dumps(b["items"][i])) for i in items}, "groups": {g: json.loads(json.dumps(b["groups"][g])) for g in groups}}
+    dropped = 0
+    for n in load["items"].values():
+        if n.get("type") == "note" and n.get("to"):
+            keep = [t for t in n["to"] if t in moved]; dropped += len(n["to"]) - len(keep); n["to"] = keep
+    for g in load["groups"].values(): g["members"] = [m for m in g["members"] if m in moved]
+    for i, n in b["items"].items():
+        if i not in moved and n.get("type") == "note" and n.get("to"):
+            keep = [t for t in n["to"] if t not in moved]; dropped += len(n["to"]) - len(keep); n["to"] = keep
+    done = _TOPAGE.get(key)
+    if not done and "--dry" not in sys.argv:
+        def room(bb, ids, gids):
+            out = []
+            for i in ids:
+                it = bb["items"].get(i)
+                if not it or it.get("x") is None or it.get("y") is None: continue
+                out.append(rect(bb, i)); z = it.get("type") == "note" and zone_rect(it)
+                if z: out.append(z)
+            out += [{k: bb["groups"][g][k] for k in "xywh"} for g in gids if g in bb["groups"] and bb["groups"][g].get("x") is not None]
+            return [r for r in out if None not in r.values()]
+        def boxof(rs):
+            x, y = min(r["x"] for r in rs), min(r["y"] for r in rs)
+            return {"x": x, "y": y, "w": max(r["x"] + r["w"] for r in rs) - x, "h": max(r["y"] + r["h"] for r in rs) - y}
+        box = boxof(room(b, items, groups) or [{"x": 0, "y": 0, "w": 0, "h": 0}])
+        ws = sorted(b["items"][i]["w"] for i in items if is_pic(b["items"][i])); air = round((ws[len(ws) // 2] if ws else 320) * 1.5)
+        _, e = api("/api/history", {"action": "save", "name": pg["id"], "who": "ai", "label": f"до: {LABEL or 'перенос'}"})
+        for attempt in range(4):
+            _, t = api(f"/api/board?name={pg['id']}")
+            for k in ("items", "groups", "removed"): t.setdefault(k, {})
+            obs = room(t, list(t["items"]), list(t["groups"]))
+            pad = {"x": box["x"] - air / 2, "y": box["y"] - air / 2, "w": box["w"] + air, "h": box["h"] + air}
+            if any(inter(pad, o) for o in obs): a = boxof(obs); dx, dy = round(a["x"] + a["w"] + air - box["x"]), round(a["y"] - box["y"])
+            else: dx = dy = 0
+            idmap = {i: (uid(i[:1] or "i") if i in t["items"] or i in t["groups"] else i) for i in items}
+            idmap.update({g: (uid("g") if g in t["items"] or g in t["groups"] else g) for g in groups})
+            for i, it in load["items"].items():
+                o = json.loads(json.dumps(it)); o["x"] = round(o["x"] + dx); o["y"] = round(o["y"] + dy)
+                if o.get("to"): o["to"] = [idmap.get(x, x) for x in o["to"]]
+                t["items"][idmap[i]] = o
+                for p in ([o["path"]] if is_pic(o) else o.get("pics") or []): t["removed"].pop(p, None)
+            for g, gr in load["groups"].items():
+                t["groups"][idmap[g]] = dict(gr, x=round(gr["x"] + dx), y=round(gr["y"] + dy), members=[idmap.get(m, m) for m in gr["members"]])
+            code, res = api(f"/api/board?name={pg['id']}", t)
+            if code == 200: break
+            if code != 409: raise SystemExit(f"страница «{pg.get('title')}» не сохранилась: {code} {res}")
+        else: raise SystemExit(f"страницу «{pg.get('title')}» все время сохраняют, не смог записать")
+        _, e2 = api("/api/history", {"action": "save", "name": pg["id"], "who": "ai", "label": f"после: {LABEL or 'перенос'}"})
+        vid = lambda x: x.get("id") if isinstance(x, dict) else "нет"
+        done = _TOPAGE[key] = {"at": (dx, dy), "ver": f"{vid(e)} → {vid(e2)}"}
+    for i in items: b["items"].pop(i, None)
+    for g in groups: b["groups"].pop(g, None)
+    for g in b["groups"].values(): g["members"] = [m for m in g["members"] if m in b["items"]]
+    on = {p for it in b["items"].values() for p in ([it.get("path")] if is_pic(it) else it.get("pics") or [])}
+    for it in load["items"].values():   # on the other page now: not gone to the archive
+        for p in ([it["path"]] if is_pic(it) else it.get("pics") or []):
+            if p not in on: b.get("removed", {}).pop(p, None)
+    where = "" if not done else (" на свое место" if done["at"] == (0, 0) else f" правее содержимого (сдвиг {done['at'][0]}, {done['at'][1]})")
+    return (f"topage «{pg.get('title')}»{where}: {len(items)} шт. и групп {len(groups)}" + (f", стрелок убрано: {dropped}" if dropped else "")
+            + (f" · версии той страницы {done['ver']}" if done else " (проба: та страница не тронута)"))
+
+
+OPS["topage"] = op_topage
+
+
+# ---- props (owner 2026-10-06, «Copy properties ›» / «Paste properties ›» on the canvas): a look and a geometry from one object onto others,
+# by the canvas's rules: crop is a share of the frame (any size takes it), trim the seconds (as they are: hy.py does not know a video's
+# length, the canvas cuts it at a shorter video's end), size the width (a plugin card's height keeps its own proportions), opacity, a PDF's
+# page, the colour grade; any other kind a plugin registers (the mask) is the item's field of that name. Never rating, ♥ or tags
+VIDEO_RE = re.compile(r"\.(mp4|m4v|mov|webm)$", re.I)
+PROP_ORDER = ["grade", "mask", "crop", "trim", "size", "opacity", "page"]
+PROP_RU = {"grade": "цветокор", "mask": "маска", "crop": "обрезка", "trim": "время", "size": "размер", "opacity": "прозрачность", "page": "страница PDF"}
+
+
+def _vid(it): return is_pic(it) and bool(VIDEO_RE.search(it.get("path", "")))
+def _pdf(it): return is_pic(it) and it.get("path", "").lower().endswith(".pdf")
+
+
+def prop_has(k, it):
+    return {"crop": lambda: is_pic(it) and bool(it.get("crop")), "trim": lambda: _vid(it) and bool(it.get("trim")), "size": lambda: it.get("type") != "timeline" and bool(it.get("w")),
+            "opacity": lambda: it.get("opacity") is not None and it["opacity"] < 1, "page": lambda: _pdf(it),
+            "grade": lambda: bool(it.get("grade"))}.get(k, lambda: it.get(k) is not None)()
+
+
+# plugin cards that are pictures for the looks (2026-10-06: a 3D card's still, live view or Blender render takes the opacity and the colour
+# grade as a picture does), and the cards that take only the opacity (an HTML page: its live page cannot be graded)
+PICTURE_CARDS = ("imgframe", "model3d")
+OPACITY_CARDS = PICTURE_CARDS + ("htmlframe", "html")
+
+
+def prop_applies(k, it):
+    return {"crop": lambda: is_pic(it), "trim": lambda: _vid(it), "size": lambda: it.get("type") != "timeline", "opacity": lambda: is_pic(it) or it.get("type") in OPACITY_CARDS,
+            "page": lambda: _pdf(it) and not it.get("pageFixed"), "grade": lambda: (is_pic(it) and not _vid(it)) or it.get("type") in PICTURE_CARDS}.get(k, lambda: True)()
+
+
+def prop_get(k, it, b, id):
+    if k == "size": return {"w": round(it["w"]), "h": round(rect(b, id)["h"])}
+    if k == "opacity": return 1 if it.get("opacity") is None else it["opacity"]
+    if k == "page": return it.get("page") or 1
+    return json.loads(json.dumps(it.get(k)))
+
+
+def prop_set(k, it, v):
+    if k == "size":
+        if not v or not v.get("w"): return
+        if it.get("type") and it.get("h") and it.get("type") not in ("note", "text"): it["h"] = round(it["h"] * v["w"] / it["w"])
+        it["w"] = round(v["w"]); return
+    if k == "opacity":
+        if v is None or v >= 1: it.pop("opacity", None)
+        else: it["opacity"] = round(max(0, v), 2)
+        return
+    if k == "page":
+        if v and v > 1: it["page"] = int(v)
+        else: it.pop("page", None)
+        return
+    if k == "crop": it["crop"] = list(v) if v else None; return
+    if v is None: it.pop(k, None)
+    else: it[k] = json.loads(json.dumps(v))
+
+
+def _prop_items(b, ref):
+    import fnmatch
+    if ref in b["items"]: return [ref]
+    if ref in b["groups"]: return [m for m in b["groups"][ref]["members"] if m in b["items"]]
+    if any(ch in ref for ch in "*?/"): return [i for i, it in b["items"].items() if is_pic(it) and fnmatch.fnmatch(it["path"], ref)]
+    k, id, nm, _ = resolve(b, ref)
+    if k == "group": return [m for m in b["groups"][id]["members"] if m in b["items"]]
+    if k == "dot": raise SystemExit("у точки таймлайна нет свойств")
+    return [id]
+
+
+def op_props(b, args, kv):
+    only = [x.strip() for x in str(kv.get("only", "")).split(",") if x.strip()]
+    if "preset" in kv:
+        _, st = api("/api/presets"); L = st.get("presets", []) if isinstance(st, dict) else []
+        p = next((x for x in L if x["name"] == str(kv["preset"])), None) or next((x for x in L if norm(x["name"]) == norm(str(kv["preset"]))), None)
+        if not p: raise SystemExit(f"нет пресета «{kv['preset']}»: " + ", ".join(f"«{x['name']}»" for x in L))
+        kinds, src = dict(p["kinds"]), f"пресет «{p['name']}»"
+    elif "from" in kv:
+        sid = _prop_items(b, str(kv["from"]))
+        if len(sid) != 1: raise SystemExit("from= одна вещь: картинка, заметка, карточка")
+        it = b["items"][sid[0]]
+        kinds = {k: prop_get(k, it, b, sid[0]) for k in (PROP_ORDER + [k for k in only if k not in PROP_ORDER]) if prop_has(k, it)}
+        src = f"«{it.get('path', '').rsplit('/', 1)[-1] or first_line(it.get('text')) or it.get('name') or sid[0]}»"
+    else: raise SystemExit("props from=ЧТО to=КУДА... [only=grade,crop] или props preset=ИМЯ to=КУДА...")
+    if only: kinds = {k: v for k, v in kinds.items() if k in only}
+    if not kinds: raise SystemExit(f"у {src} нет таких свойств" + (f": {', '.join(only)}" if only else ""))
+    refs = [x for x in str(kv.get("to", "")).split(",") if x.strip()] + list(args)
+    if not refs: raise SystemExit("to=КУДА: id, имя, группа или маска путей")
+    tg = list(dict.fromkeys(i for r in refs for i in _prop_items(b, r.strip())))
+    done, skipped = 0, {}
+    for i in tg:
+        it, hit = b["items"][i], False
+        for k, v in kinds.items():
+            if prop_applies(k, it): prop_set(k, it, v); hit = True
+            else: skipped[k] = skipped.get(k, 0) + 1
+        done += hit
+    names = ", ".join(PROP_RU.get(k, k) for k in kinds)
+    return f"props из {src} на {done} из {len(tg)}: {names}" + ("" if not skipped else " · не подошло: " + ", ".join(f"{PROP_RU.get(k, k)} ({n})" for k, n in skipped.items()))
+
+
+OPS["props"] = op_props
+
+
+def op_cards3d(b, args, kv):
+    """3D cards of one scene as a block, a card per camera (owner 2026-10-06: «put my 3D previews to the right of this group», 18 angles of
+    one Blender studio scene beside the pictures they came from): cameras=ID,ID… picks and orders them (default: all, in the scene's
+    order); each card has its camera's frame (the camera's "render": [x, y], else the scene's); rows of cols= (4), w= (320), gap= (24),
+    or align=NOTE: each card at the height of the picture of the same place in that note's zone (rows like the pictures beside);
+    note= puts a blue note with its zone on the left, as block does. Placed at x= y= (the block's top left), or beside=REF: right of REF
+    (a note: of its zone with the pictures in it) with a card's width of air, its top at REF's top. into=GROUP: the cards and the note
+    join that group and its frame grows to hold them; nothing else moves (a frame that grows only covers more of the page)"""
+    st, doc = api("/file?p=" + urllib.parse.quote(args[0]))
+    if st != 200 or not isinstance(doc, dict): raise SystemExit(f"нет сцены {args[0]}")
+    cams = {c["id"]: c for c in doc.get("cameras", [])}
+    pick = kv.get("cameras")
+    order = [str(int(pick)) if isinstance(pick, float) and pick.is_integer() else c for c in str(pick).split(",")] if pick is not None else list(cams)
+    miss = [c for c in order if c not in cams]
+    if miss: raise SystemExit(f"в сцене нет камер {', '.join(miss)}: есть {', '.join(cams)}")
+    w, gap, cols = round(kv.get("w", 320)), round(kv.get("gap", 24)), int(kv.get("cols", 4))
+    base = doc.get("render") or {"x": 1600, "y": 2000}
+    cards = []
+    for cid in order:
+        rx, ry = cams[cid].get("render") or [base["x"], base["y"]]
+        cards.append({"type": "model3d", "scene": args[0], "camera": cid, "x": 0, "y": 0, "w": w, "h": round(w * ry / rx)})
+    y = 0
+    for k in range(0, len(cards), cols):
+        row = cards[k:k + cols]
+        for c, it in enumerate(row): it["x"], it["y"] = c * (w + gap), y
+        y += max(it["h"] for it in row) + gap
+    if kv.get("align"):   # the rows of the pictures in a note's zone: card i stands at the height of picture i (reading order)
+        aid = resolve(b, str(kv["align"]), {"note"})[1]; z = zone_rect(b["items"][aid])
+        pics = sorted((it for it in b["items"].values() if is_pic(it) and it.get("x") is not None and z["x"] <= it["x"] + it["w"] / 2 <= z["x"] + z["w"]
+                       and z["y"] <= it["y"] + item_h(it) / 2 <= z["y"] + z["h"]), key=lambda it: (round(it["y"]), it["x"]))
+        if len(pics) != len(cards): raise SystemExit(f"align: в зоне {len(pics)} кадров, карточек {len(cards)}")
+        for it, pic in zip(cards, pics): it["y"] = round(pic["y"] - pics[0]["y"])
+        y = max(it["y"] + it["h"] for it in cards) + gap
+    bx = {"x": 0, "y": 0, "w": min(cols, len(cards)) * (w + gap) - gap, "h": y - gap}
+    note = None
+    if kv.get("note"):   # as lay_out's note: left of the cards, its zone around them
+        G, P, size = round(w * .15), round(w / 2), 2
+        note = {"type": "note", "text": str(kv["note"]).replace("\\n", "\n"), "x": -G - w, "y": 0, "w": w, "fs": w * NSIZE[size], "size": size, "h": 0, "color": "blue", "to": []}
+        note["reach"] = {"l": P, "t": P, "r": round(bx["w"] + G + P), "b": round(max(0, bx["h"] - w) + P)}
+        bx = {"x": note["x"], "y": 0, "w": bx["w"] + G + w, "h": max(bx["h"], w)}
+    if "beside" in kv:
+        k, rid, nm, r = resolve(b, str(kv["beside"]))
+        z = zone_rect(b["items"][rid]) if rid in b["items"] and b["items"][rid].get("reach") else r
+        dx, dy = z["x"] + z["w"] + w - bx["x"], r["y"] - bx["y"]
+    elif "x" in kv and "y" in kv:
+        dx, dy = kv["x"] - bx["x"], kv["y"] - bx["y"]
+    else:
+        raise SystemExit("cards3d: укажи beside=<что слева> или x= и y=")
+    ids = []
+    for it in ([note] if note else []) + cards:
+        it["x"], it["y"] = round(it["x"] + dx), round(it["y"] + dy)
+        i = uid("n" if it["type"] == "note" else "m"); b["items"][i] = it; ids.append(i)
+    msg = f"cards3d {len(cards)} карточек «{args[0]}» x {round(bx['x'] + dx)} y {round(bx['y'] + dy)}, {round(bx['w'])}×{round(bx['h'])}"
+    if kv.get("into"):
+        gid = resolve(b, str(kv["into"]), {"group"})[1]; g = b["groups"][gid]; pad = round(w * 1.5)
+        for o in b["groups"].values(): o["members"] = [m for m in o["members"] if m not in ids]
+        g["members"] += ids
+        old = dict(g)
+        right, bottom = max(g["x"] + g["w"], bx["x"] + dx + bx["w"] + pad), max(g["y"] + g["h"], bx["y"] + dy + bx["h"] + pad)
+        g["w"], g["h"] = right - g["x"], bottom - g["y"]
+        msg += f" · в группе «{first_line(g.get('title')) or 'группа'}»" + (f", рамка шире на {g['w'] - old['w']}" if g["w"] > old["w"] else "") + (f" и ниже на {g['h'] - old['h']}" if g["h"] > old["h"] else "")
+    return msg
+
+
+OPS["cards3d"] = op_cards3d; import hy3d; hy3d.register(OPS, api, resolve)   # camera3d and the 3D cards' own view (hy3d.py)
+
+
+# ---- order (owner 2026-10-06, the canvas's «Order ›», ⌥⌘] ⌘] ⌘[ ⌥⌘[): front, forward, backward, back among a thing's siblings only, as
+# canvas.html orderMove: the members of its group (or the page's top level) in its layer (notes, headings, timelines lie over the pictures),
+# a group among the groups in the same smallest group frame; the draw order is the order of items and groups in the board file
+def _gparent(b, gid):
+    g, best = b["groups"][gid], None
+    for o, h in b["groups"].items():
+        if o != gid and None not in (h.get("x"), g.get("x")) and h["x"] <= g["x"] and h["y"] <= g["y"] and h["x"] + h["w"] >= g["x"] + g["w"] and h["y"] + h["h"] >= g["y"] + g["h"] \
+                and (best is None or h["w"] * h["h"] < b["groups"][best]["w"] * b["groups"][best]["h"]): best = o
+    return best
+
+
+def _scope(b, k):
+    if k in b["groups"]: return "G:" + (_gparent(b, k) or "")
+    it = b["items"][k]; g = next((gid for gid, gr in b["groups"].items() if k in gr["members"]), None)
+    return (f"g:{g}" if g else "top") + ("|w" if it.get("type") in ("note", "text", "timeline") else "|p")
+
+
+def _reorder(b, keys, picked, how):
+    scopes = {}
+    for k in keys: scopes.setdefault(_scope(b, k), []).append(k)
+    out, moved = list(keys), False
+    for lst in scopes.values():
+        if not any(k in picked for k in lst): continue
+        nxt = list(lst)
+        if how == "front": nxt = [k for k in lst if k not in picked] + [k for k in lst if k in picked]
+        elif how == "back": nxt = [k for k in lst if k in picked] + [k for k in lst if k not in picked]
+        elif how == "forward":
+            for i in range(len(nxt) - 2, -1, -1):
+                if nxt[i] in picked and nxt[i + 1] not in picked: nxt[i], nxt[i + 1] = nxt[i + 1], nxt[i]
+        else:
+            for i in range(1, len(nxt)):
+                if nxt[i] in picked and nxt[i - 1] not in picked: nxt[i], nxt[i - 1] = nxt[i - 1], nxt[i]
+        if nxt != lst:
+            moved = True
+            for at, k in zip([keys.index(k) for k in lst], nxt): out[at] = k
+    return out if moved else None
+
+
+def _order_op(how):
+    def op(b, args, kv):
+        if not args: raise SystemExit(f"{how} ЧТО...: id, имя заметки, заголовка или группы")
+        picked = set()
+        for a in args:
+            a = a[1:] if a.startswith("@") else a
+            if a in b["items"] or a in b["groups"]: picked.add(a); continue
+            k, id, nm, _ = resolve(b, a)
+            if k == "dot": raise SystemExit("точка таймлайна двигается с таймлайном")
+            picked.add(id.split("/")[0])
+        ni, ng = _reorder(b, list(b["items"]), picked, how), _reorder(b, list(b["groups"]), picked, how)
+        if ni: b["items"] = {k: b["items"][k] for k in ni}
+        if ng: b["groups"] = {k: b["groups"][k] for k in ng}
+        word = {"front": "на передний план", "forward": "выше", "backward": "ниже", "back": "на задний план"}[how]
+        return f"{how}: {len(picked)} шт. {word}" if ni or ng else f"{how}: ничего не сдвинулось (уже {'сверху' if how in ('front', 'forward') else 'снизу'} или нет соседей)"
+    return op
+
+
+for _how in ("front", "forward", "backward", "back"): OPS[_how] = _order_op(_how)
+
+
 def main(argv):
     page, label, dry, tol, groups, to, move = None, "правка ИИ", False, 1000, False, None, False
     say, quiet, text, ids = None, False, "", []
@@ -1032,7 +1702,7 @@ def main(argv):
         elif x == "--text": text = next(it)
         elif x == "--ids": ids = [v for v in next(it).split(",") if v]
         else: a.append(x)
-    if not a: print(__doc__); return
+    if not a: print(__doc__ + hy3d.HELP); return
     c = a[0]
     if c == "guide":
         code, txt = api_text("/agent"); print(txt); return
@@ -1042,6 +1712,10 @@ def main(argv):
     if c == "dupes": return cmd_dupes()
     if c == "layout": return cmd_layout(a[1:])
     if c == "undocumented": return cmd_undocumented(a[1] if len(a) > 1 else "")
+    if c == "features": return cmd_features(" ".join(a[1:]))
+    if c == "pages": return cmd_pages()
+    if c == "page": return cmd_page(a[1:])
+    if c == "presets": return cmd_presets()
     if page is None:   # the page the owner is looking at
         try: page = (api("/api/live")[1].get("canvas") or {}).get("page") or "main"
         except Exception: page = "main"
@@ -1077,7 +1751,8 @@ def main(argv):
     if c == "map": return cmd_map(b, " ".join(a[1:]) or None, tol, groups)
     if c == "find": return cmd_find(b, " ".join(a[1:]))
     if c == "check": return cmd_check(b, " ".join(a[1:]) or None)
-    raise SystemExit(f"не знаю {c}: map, find, check, do, notify, hist, restore, guide, save, dupes, undocumented")
+    if c == "preset": return cmd_preset(a[1:], page)
+    raise SystemExit(f"не знаю {c}: map, find, check, do, notify, hist, restore, guide, features, pages, page, presets, preset, save, dupes, layout, undocumented")
 
 
 if __name__ == "__main__":

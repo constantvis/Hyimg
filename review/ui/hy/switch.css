@@ -1,0 +1,14 @@
+/* <hy-switch>: on or off, one size 30 × 18 (docs/ui-inventory.md §2.8: four tracks in three on-colours before it). The track is the
+   element, the knob its ::after, both drawn from the checked attribute, so the markup looks right before the script; the script puts a
+   real checkbox (role=switch) over it, 24 px tall, for the pointer, the keyboard and VoiceOver. On: the selection's colour. */
+hy-switch { position: relative; display: inline-block; flex: none; box-sizing: border-box; width: 30px; height: 18px; vertical-align: middle;
+  border-radius: var(--hy-switch-r); background: color-mix(in srgb, var(--ink) 24%, transparent); cursor: pointer;
+  transition: background .22s cubic-bezier(.32,.72,0,1), opacity .2s ease; }
+hy-switch::after { content: ""; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: max(0px, calc(var(--hy-switch-r) - 2px));
+  background: var(--hy-on-accent); box-shadow: var(--hy-knob-sh); pointer-events: none; transition: transform .22s cubic-bezier(.32,.72,0,1); }
+hy-switch[checked] { background: var(--hy-sel); }
+hy-switch[checked]::after { transform: translateX(12px); }
+hy-switch[disabled] { opacity: .45; cursor: default; }
+hy-switch[static] { cursor: inherit; }
+hy-switch > .hy-in { position: absolute; left: -3px; top: -3px; width: calc(100% + 6px); height: calc(100% + 6px); margin: 0; padding: 0; opacity: 0; cursor: inherit; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { hy-switch, hy-switch::after { transition: none; } }

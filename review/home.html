@@ -1,14 +1,17 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hyimg · Главная</title>
+<title>Hyimg · Home</title>
 <!-- Home of the Mac app (owner 2026-09-30: "like Figma"): project cards with a preview of recent frames, search, new / add folder.
      Loaded from a file by native/main.swift, which fills it through window.hyimgHome(data) and takes actions through
      webkit.messageHandlers.hyimg. Edits here show with ⌘R, no rebuild. Colours and type are the canvas tokens (canvas.html). -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap">
+<!-- English or Russian (owner 2026-10-06: «make 2 versions, Russian and English, switchable in settings»): the app's setting cv.lang,
+     which the app puts into window.HY_LANG before the page runs; without the app (tests, a browser) localStorage cv.lang. Words in lang-*.js -->
+<script src="ui/i18n.js"></script>
+<script src="ui/lang-common.js"></script>
+<script src="ui/lang-home.js"></script>
 <script src="ui/paper.js"></script>
 <script src="ui/stars.js"></script>
 <script>// the window is dragged by the empty part of its top band (ui/dragband.js): Home's columns are background, the loading screen too
@@ -23,21 +26,19 @@ if ((() => { try { return !!window.webkit.messageHandlers.hyimg; } catch { retur
 addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) e.preventDefault(); }, { passive: false, capture: true });   // capture: a panel that stops the wheel still cannot let it zoom
 ["gesturestart", "gesturechange", "gestureend"].forEach(t => addEventListener(t, e => e.preventDefault(), { passive: false, capture: true }));</script>
 <script src="ui/dragband.js"></script>
+<script src="ui/icons.js"></script>   <!-- the app's icons, one per meaning (owner 2026-10-07); before the menus, which draw theirs from it -->
 <script src="ui/menu.js"></script>
-<script src="ui/projicon.js"></script>
-<link rel="stylesheet" href="ui/ui.css"><link rel="stylesheet" href="ui/look.css">
+<script src="ui/projicon.js"></script><script src="ui/toasts.js"></script><script src="ui/storage.js"></script>   <!-- Settings › Storage, sizes (2026-10-07) -->
+<script src="ui/seg.js"></script>   <!-- the app's one choice switch, a thumb sliding under the chosen option (owner 2026-10-06) -->
+<script src="ui/slider.js"></script>   <!-- the app's one slider, the 3D editor's look (owner 2026-10-06: «why are the sliders everywhere not the same as in 3D») -->
+<link rel="stylesheet" href="ui/tokens.css">   <!-- the app's tokens, one source (ui/tokens.css); the light ones until applySettings sets the theme -->
+<link rel="stylesheet" href="ui/ui.css"><link rel="stylesheet" href="ui/hy/hy.css"><link rel="stylesheet" href="ui/look.css"><link rel="stylesheet" href="ui/slider.css">
 <style>
 /* Home in the canvas's look (owner 2026-10-04: «the same background as the canvas but without dots, settings at the top right, the
    panel on the left like in the 3D studio, so it feels like one style, freer, less boxed in»). The theme and the paper's grain are the
    app's settings (settings.json, the app sends them with the projects); the paper is ui/paper.js, as on the canvas. */
-:root {
-  --bg: #f4f4f5; --panel: #ffffff; --raise: #f4f4f5; --raise2: #e9e9ec; --ink: #09090b; --sub: #52525b; --muted: #a1a1aa; --line: #e4e4e7;
-  --board: var(--paper); --warn: #b45309; --sel: #2563eb; --sans: "Geist", -apple-system, "Helvetica Neue", Arial, sans-serif;
-}
-:root[data-theme="dark"] {
-  --bg: #09090b; --panel: #0c0c0e; --raise: #18181b; --raise2: #202024; --ink: #fafafa; --sub: #a1a1aa; --muted: #71717a; --line: #27272a;
-  --board: var(--paper); --warn: #f5a524; --sel: #3b82f6;
-}
+:root { --raise2: #e9e9ec; --board: var(--paper); --warn: #b45309; }   /* the palette is ui/tokens.css; Home's own colours here */
+:root[data-theme="dark"] { --raise2: #202024; --warn: #f5a524; }
 * { box-sizing: border-box; }
 *, *::before, *::after { -webkit-user-select: none; user-select: none; }
 input { -webkit-user-select: text; user-select: text; }
@@ -59,10 +60,11 @@ aside .dot { width: 6px; height: 6px; border-radius: 99px; background: #22c55e; 
 aside h4 { margin: 18px 10px 6px; font: 500 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 /* «Проекты» with a plus on hover: a new project (owner 2026-10-04) */
 aside h4.ph { display: flex; align-items: center; height: 22px; margin-bottom: 4px; }
-aside h4.ph button { margin-left: auto; width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer;
+aside h4.ph button { margin-left: auto; margin-right: -6px; width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--muted); cursor: pointer;
   opacity: 0; transform: scale(.7); transition: opacity .15s ease, transform .22s cubic-bezier(.2, .9, .3, 1.15), background .12s ease, color .12s ease; }
 aside #plist:hover h4.ph button, aside h4.ph button:focus-visible { opacity: 1; transform: none; }
 aside h4.ph button:hover { background: var(--raise); color: var(--ink); }
+/* the + is drawn 6 px inside its 22 px button: pulled out by that much, its right edge lines up with the counts' (owner 2026-10-06) */
 aside .grow { flex: 1; }
 aside .plist { overflow: auto; min-height: 0; display: flex; flex-direction: column; gap: 2px; }
 aside .nav.noproj { color: var(--muted); } aside .nav.noproj:hover, aside .nav.noproj[aria-current=true] { color: var(--ink); }
@@ -76,7 +78,7 @@ aside .nav input { flex: 1; min-width: 0; height: 24px; border: 1px solid var(--
 @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 
 main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.top { display: flex; align-items: center; gap: 10px; padding: 12px 64px 12px 32px; }
+.top { display: flex; align-items: center; gap: 10px; padding: 12px 58px 12px 32px; }   /* «New board» the row's gap (8) before the gear */
 .search { position: relative; flex: 0 1 360px; }
 .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; z-index: 1; }
 .search input { width: 100%; height: 38px; padding: 0 14px 0 36px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--ink); font: 13px var(--sans); outline: none;
@@ -97,10 +99,9 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
   background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: var(--hy-sh-pop); }
 #sets.open { display: flex; }
 #sets .sh { font: 500 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-#sets .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-#sets .opts button { height: 30px; border: 1px solid var(--line); border-radius: 999px; background: var(--raise); color: var(--sub); cursor: pointer; font: 500 12px var(--sans); }
-#sets .opts button[aria-pressed=true] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-#sets .setnote { color: var(--muted); font-size: 12px; }
+/* the settings' choices are the app's one switch (ui/look.css .seg, owner 2026-10-06), as wide as the panel */
+#sets .seg { display: flex; width: 100%; box-sizing: border-box; }
+#sets .seg > button { flex: 1 1 auto; min-width: 0; height: 26px; padding: 0 6px; font: 500 12px var(--sans); white-space: nowrap; }
 /* opening and saving a project, on its own cover (owner 2026-10-04: «the steps one after another», then «just an indicator right on
    the file's thumb when something is saving»): the last steps the app reports, small, at the bottom of the cover */
 .prog { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 7px 10px; border-radius: 10px; background: rgba(9,9,11,.74); color: #e4e4e7;
@@ -143,17 +144,17 @@ body.nt .app { transition: none !important; }
 #wl { transition: background-color .25s ease .2s, border-color .2s ease, box-shadow .2s ease; }
 body:not(.leave) #wl { background-color: transparent; border-color: transparent; box-shadow: none !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
 body.leave #wl { transition: background-color .3s ease, border-color .35s ease .24s, box-shadow .35s ease .24s; }
-:root.in-app:not(.hy-fs) #load .crumb { left: 142px; }   /* where the board's crumb will be: after the capsule and the library button */
+:root.in-app:not(.hy-fs) #load .crumb { left: 146px; }   /* where the board's crumb will be: after the capsule and the library button */
 /* the board's library button where the board will have it (v2.html #tlibR), so the top line is whole while the board loads */
 #load .lb { position: absolute; top: 12px; left: 12px; width: 38px; height: 38px; box-sizing: border-box; border-radius: 999px; display: grid; place-items: center;
   border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--sub); }
-:root.in-app:not(.hy-fs) #load .lb { left: 98px; }
+:root.in-app:not(.hy-fs) #load .lb { left: 100px; }
 #load .lb { opacity: .4; }   /* as the board has it while it loads: the library opens once the board's content is there */
 #load { position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .5s cubic-bezier(.16, 1, .3, 1), visibility 0s .5s; }
 #load.on { opacity: 1; visibility: visible; transition: opacity .6s cubic-bezier(.16, 1, .3, 1) .3s, visibility 0s; }
 #load.cut { transition: none; }
 #load canvas { position: absolute; inset: 0; width: 100%; height: 100%; }   /* the stars while the board loads (ui/stars.js) */
-#load .crumb { position: absolute; top: 12px; left: 56px; height: 38px; display: flex; align-items: center; gap: 0; padding: 0 4px; border-radius: 999px;
+#load .crumb { position: absolute; top: 12px; left: 58px; height: 38px; display: flex; align-items: center; gap: 0; padding: 0 4px; border-radius: 999px;
   border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 82%, transparent); box-shadow: var(--hy-sh-ctl); color: var(--sub); font: 500 13px var(--sans); }
 #load .crumb > span { height: 30px; display: inline-flex; align-items: center; padding: 0 8px; white-space: nowrap; }
 #load .crumb .cs { padding: 0 1px; }
@@ -168,7 +169,7 @@ body.leave #wl { transition: background-color .3s ease, border-color .35s ease .
 #load .crumb .pg { color: var(--ink); gap: 6px; }
 #load .crumb .pg svg { flex: none; }
 #load .crumb .pn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
-#load .crumb .pn:empty::before { content: "Загрузка"; color: var(--muted); animation: breathe 1.1s ease-in-out infinite alternate; }
+#load .crumb .pn:empty::before { content: attr(data-e); color: var(--muted); animation: breathe 1.1s ease-in-out infinite alternate; }
 #load .crumb.fit { transition: width .4s cubic-bezier(.3, .8, .25, 1); overflow: hidden; }
 /* the steps (owner 2026-10-04: «the loading jumps», then «what loaded first must not vanish, each new line pushes the ones before it
    up; a fifth narrower; one after another»): a box of fixed size, the lines stand at its bottom, the oldest go up into a soft fade */
@@ -195,13 +196,12 @@ body.leave #wl { transition: background-color .3s ease, border-color .35s ease .
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 22px 20px; }
 /* cards or a list, as in Figma's files (owner 2026-10-04): the switch at the far right of the title, kept in home.json (view) */
-.head .vt { align-self: center; margin-left: auto; display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: var(--raise); }
-.head .vt button { width: 30px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px; background: none; color: var(--muted); cursor: pointer; transition: background .15s ease, color .15s ease; }
-.head .vt button:hover { color: var(--ink); }
-.head .vt button[aria-pressed=true] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .15); }
-:root[data-shape=pro] .head .vt { border-radius: 8px; } :root[data-shape=pro] .head .vt button { border-radius: 6px; }
+/* the app's one switch (ui/look.css .seg, owner 2026-10-06: «why isn't this a switch like ours»): a thumb slides under the view */
+.head .vt { align-self: center; margin-left: auto; padding: 2px; }
+.head .vt > button { width: 32px; height: 26px; display: grid; place-items: center; padding: 0; color: var(--muted); }
+.head .vt > button:hover, .head .vt > button[aria-pressed=true] { color: var(--ink); }
 .list { display: flex; flex-direction: column; }
-.list .lh, .list .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 170px) minmax(0, 1.5fr) 140px 76px; align-items: center; gap: 16px; padding: 0 10px; }
+.list .lh, .list .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 170px) minmax(0, 1.5fr) 172px 64px 76px; align-items: center; gap: 16px; padding: 0 10px; }
 .list .lh { height: 30px; border-bottom: 1px solid var(--line); color: var(--muted); font: 500 12px var(--sans); }
 .list .card { height: 56px; flex-direction: row; border-radius: 10px; transition: background .12s ease; }
 .list .card + .card { margin-top: 2px; }
@@ -214,6 +214,7 @@ body.leave #wl { transition: background-color .3s ease, border-color .35s ease .
 .list .card .op { display: inline-block; width: 6px; height: 6px; margin-left: 8px; border-radius: 99px; background: #22c55e; vertical-align: 2px; }
 .list .card .c2, .list .card .c3 { color: var(--sub); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 7px; }
 .list .card .c3 { color: var(--muted); font-variant-numeric: tabular-nums; }
+.list .card .c3 > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* the path is the button that opens the board's folder in Finder (owner 2026-10-04: «the path, and open this folder, neatly») */
 .list .card .pth { justify-self: start; max-width: 100%; display: inline-flex; align-items: center; gap: 7px; height: 28px; margin-left: -8px; padding: 0 8px; border: 0; border-radius: 7px;
   background: none; color: var(--muted); font: 13px var(--sans); cursor: pointer; min-width: 0; transition: background .12s ease, color .12s ease; }
@@ -241,6 +242,22 @@ body.leave #wl { transition: background-color .3s ease, border-color .35s ease .
 .meta .t { flex: 1; min-width: 0; }
 .meta .n { font: 500 14px/1.3 var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meta .s { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta .s:has(.nb) { display: flex; align-items: center; gap: 6px; } .meta .s > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* news on a board without the owner (owner 2026-10-06): the number in the iPhone's red badge, white digits, a capsule as the app's
+   marks; it comes in once when it appears or changes, its words are the plain tooltip (title) */
+.nb { display: inline-grid; place-items: center; flex: none; min-width: 18px; height: 18px; margin: -2px 0; padding: 0 5px; box-sizing: border-box; border-radius: 999px;
+  background: #ff3b30; color: #fff; font: 600 11px/1 var(--sans); font-variant-numeric: tabular-nums; cursor: default; }
+:root[data-theme=dark] .nb { background: #ff453a; }
+.nb.in { animation: nbIn .5s cubic-bezier(.32,.72,0,1) both; }
+@keyframes nbIn { from { opacity: 0; transform: scale(.4); } }
+@media (prefers-reduced-motion: reduce) { .nb.in { animation: none; } }
+/* «Only new» beside the view switch: the app's one choice switch with one option, its thumb under it while on; a red dot while some
+   board has news */
+.head .nf { align-self: center; margin-left: auto; padding: 2px; }
+.head .nf + .vt { margin-left: 8px; }
+.head .nf > button { height: 26px; padding: 0 12px; display: inline-flex; align-items: center; gap: 7px; font: 500 12px var(--sans); white-space: nowrap; }
+.head .nf > button[data-has]::before { content: ""; width: 6px; height: 6px; border-radius: 99px; background: #ff3b30; }
+:root[data-theme=dark] .head .nf > button[data-has]::before { background: #ff453a; }
 .more { width: 28px; height: 28px; margin-top: -3px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; opacity: 0; }
 .card:hover .more, .more[aria-expanded=true] { opacity: 1; }
 .more:hover { background: var(--raise); color: var(--ink); }
@@ -263,9 +280,9 @@ aside .nav .hrt { width: 16px; height: 16px; flex: none; color: #ff4d6d; }
 
 .empty { display: grid; place-items: center; min-height: 60vh; text-align: center; }
 .empty h2 { margin: 0 0 6px; font: 600 18px var(--sans); }
-.empty p { margin: 0 0 18px; color: var(--sub); max-width: 46ch; }
+.empty p { margin: 0 0 18px; max-width: 46ch; }   /* a footnote: ui/look.css .hy-hint */
 .empty .row { display: flex; gap: 10px; justify-content: center; }
-.none { color: var(--muted); padding: 30px 0; }
+.none { color: var(--muted); padding: 30px 0; } .none .hy-hint { margin-top: 4px; }
 
 .menu { position: fixed; z-index: 50; min-width: 210px; padding: 5px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: var(--hy-sh-pop); display: none; }
 .menu.open { display: block; }
@@ -278,7 +295,7 @@ aside .nav [data-ficon] { display: grid; border-radius: 5px; transition: backgro
 aside .nav [data-ficon]:hover { background: var(--raise2); }
 .head .hic { align-self: center; display: grid; padding: 3px; margin: -3px -4px -3px -3px; border: 0; border-radius: 8px; background: none; color: var(--ink); cursor: pointer; transition: background .15s ease; }
 .head .hic:hover { background: var(--raise); }
-/* the picker, as the project's icon in ChatGPT: Иконка (a colour and a line icon) or Эмодзи (a grid and a field for any) */
+/* the picker, as the project's icon in ChatGPT: Icon (a colour and a line icon) or Emoji (a grid and a field for any) */
 #pjpick { position: fixed; z-index: 55; width: 288px; padding: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); box-shadow: var(--hy-sh-pop);
   opacity: 0; transform: scale(.96) translateY(-4px); transform-origin: 20px 0; pointer-events: none; transition: opacity .16s ease, transform .22s cubic-bezier(.3, .8, .25, 1); }
 #pjpick.open { opacity: 1; transform: none; pointer-events: auto; }
@@ -302,81 +319,116 @@ aside .nav [data-ficon]:hover { background: var(--raise2); }
 </head>
 <body>
 <div class="app">
-  <aside aria-label="Разделы">
-    <button class="nav" data-tab="recent" aria-current="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span class="nm">Недавние</span></button>
-    <button class="nav" data-tab="all"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span class="nm">Все доски</span></button>
+  <aside aria-label="Sections">
+    <button class="nav" data-tab="recent" aria-current="true"><svg data-ic="recent" width="16" height="16" stroke-width="1.8"></svg><span class="nm">Recent</span></button>
+    <button class="nav" data-tab="all"><svg data-ic="grid" width="16" height="16" stroke-width="1.8"></svg><span class="nm">All boards</span></button>
     <div class="plist" id="plist"></div>
     <div class="grow"></div>
   </aside>
   <main>
     <div class="top">
-      <label class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><input id="q" placeholder="Найти доску" aria-label="Найти доску"></label>
+      <label class="search"><svg data-ic="search" width="15" height="15" stroke-width="2"></svg><input id="q" placeholder="Find a board" aria-label="Find a board"></label>
       <div class="sp"></div>
-      <button class="btn primary" data-act="create"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Новая доска</button>
+      <button class="btn primary" data-act="create"><svg data-ic="plus" width="14" height="14" stroke-width="2.4"></svg>New board</button>
     </div>
     <div class="body" id="body"></div>
   </main>
 </div>
 <div class="menu" id="menu" role="menu"></div>
-<div id="pjpick" role="dialog" aria-label="Иконка проекта"></div>
+<div id="pjpick" role="dialog" aria-label="Project icon"></div>
 <div id="wl" aria-hidden="true"></div>
-<div id="load" aria-live="polite"><span class="lb" aria-hidden="true"><svg class="lbi" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><rect class="pane" x="5.5" y="6.5" width="6" height="11" rx="1" fill="currentColor" stroke="none"/></svg></span><canvas id="stars" aria-hidden="true"></canvas><div class="crumb"><span class="hm" title="Главная: доска догрузится сама"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg></span><span class="cs"><svg class="hy-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span><span class="fd" hidden title="Проект на главной: доска догрузится сама"><i class="fdi"></i><span class="fdn"></span></span><span class="cs fds" hidden><svg class="hy-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span><span class="nm"></span><span class="cs"><svg class="hy-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span><span class="pg"><span class="pn"></span><svg class="hy-chev dn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></div><div class="steps"><ol></ol></div></div>
-<button id="bset" title="Настройки приложения" aria-label="Настройки приложения" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-<div id="sets" role="dialog" aria-label="Настройки приложения">
-  <div class="sh">Тема</div><div class="opts" data-set="cv.theme"><button data-v="auto" title="Как в macOS: днем светлая, вечером темная, если так настроено в системе">Авто</button><button data-v="dark" title="Темная тема, графитовая бумага">Темная</button><button data-v="light" title="Светлая тема, светлая бумага">Светлая</button></div>
-  <div class="sh">Зерно бумаги</div><div class="opts" data-set="cv.grain"><button data-v="0">Очень тонкое</button><button data-v="1">Тонкое</button><button data-v="2">Заметное</button><button data-v="3">Сильное</button></div>
-  <div id="engineSet" hidden><div class="sh">Движок</div><div class="opts" id="engineOpts"><button data-engine="webkit" title="Движок macOS, как Safari: рисует процессором">WebKit</button><button data-engine="chromium" title="Движок Chrome внутри Hyimg: доска рисуется видеокартой и не тормозит">Chromium</button></div></div>
-  <div class="sh">Отрисовка</div><div class="opts" data-set="cv.lod"><button data-v="0" title="Каждая картинка отдельным элементом">Обычная</button><button data-v="1" title="Издалека картинки рисуются одним холстом (canvas 2D)">Холст</button><button data-v="2" title="Издалека картинки рисует видеокарта (WebGL), как в Figma">WebGL</button></div>
-  <div class="sh">Заметки</div><div class="opts" data-set="cv.glass"><button data-v="1" title="Полупрозрачные, под ними сильное размытие">Стекло</button><button data-v="0" title="Плотные, без размытия">Плотные</button></div>
-  <div class="sh">Точки</div><div class="opts" data-set="cv.dotsgl"><button data-v="0" title="Сетка из слоев CSS, как всегда">Обычные</button><button data-v="1" title="Одним слоем WebGL: живые, по ним идут волны, когда кладешь картинки">WebGL</button></div>
-  <div class="sh">Тени</div><div class="opts" data-set="cv.shadow"><button data-v="1" title="Плашки и кнопки парят над доской">С тенями</button><button data-v="0" title="Плашки лежат плоско">Без теней</button></div>
-  <div class="sh">Углы</div><div class="opts" data-set="cv.shape"><button data-v="round" title="Кнопки и плашки круглые">Круглые</button><button data-v="pro" title="Строже: почти квадратные, с умеренным радиусом">Pro</button></div>
-  <div class="sh">Цвет бумаги</div>
-  <div class="paper"><label>Темная<input type="color" data-paper="paperDark" aria-label="Цвет бумаги в темной теме"></label><label>Светлая<input type="color" data-paper="paperLight" aria-label="Цвет бумаги в светлой теме"></label><button data-paper-reset title="Вернуть цвета по умолчанию">Сбросить</button></div>
-  <div class="sh">Видимость точек <span id="dotsVal"></span></div>
-  <input id="dotsVis" class="range" type="range" min="0" max="300" step="5" aria-label="Видимость точек, процентов">
-  <div class="setnote">Одни для всего приложения: главная и все доски.</div></div>
+<div id="load" aria-live="polite"><span class="lb" aria-hidden="true"><svg data-ic="library" class="lbi" width="18" height="18" stroke-width="1.8"></svg></span><canvas id="stars" aria-hidden="true"></canvas><div class="crumb"><span class="hm" title="Home: the board will finish loading on its own"><svg data-ic="home" width="16" height="16" stroke-width="1.9"></svg></span><span class="cs"><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><span class="fd" hidden title="The project on Home: the board will finish loading on its own"><i class="fdi"></i><span class="fdn"></span></span><span class="cs fds" hidden><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><span class="nm"></span><span class="cs"><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><span class="pg"><span class="pn" data-e="Loading"></span><svg data-ic="chevron" class="hy-chev dn" stroke-width="2.4"></svg></span></div><div class="steps"><ol></ol></div></div>
+<button id="bset" title="App settings" aria-label="App settings" aria-expanded="false"><svg data-ic="settings" width="18" height="18" stroke-width="1.8"></svg></button>
+<div id="sets" role="dialog" aria-label="App settings">
+  <!-- the language first, each named in itself so it is found in either (owner 2026-10-06); the app writes it and reloads Home and the boards -->
+  <div class="sh">Language</div><div class="seg" data-set="cv.lang" data-not><button data-v="en" lang="en">English</button><button data-v="ru" lang="ru">Русский</button></div>
+  <div class="sh">Theme</div><div class="seg" data-set="cv.theme"><button data-v="auto" title="Like macOS: light by day, dark in the evening, if the system is set that way">Auto</button><button data-v="dark" title="Dark theme, graphite paper">Dark</button><button data-v="light" title="Light theme, light paper">Light</button></div>
+  <div class="sh">Paper grain</div><div class="seg" data-set="cv.grain"><button data-v="0">Very fine</button><button data-v="1">Fine</button><button data-v="2">Visible</button><button data-v="3">Strong</button></div>
+  <div id="engineSet" hidden><div class="sh">Engine</div><div class="seg" id="engineOpts"><button data-engine="webkit" title="The macOS engine, like Safari: draws on the CPU">WebKit</button><button data-engine="chromium" title="Chrome's engine inside Hyimg: the GPU draws the board and it stays smooth">Chromium</button></div></div>
+  <div class="sh">Rendering</div><div class="seg" data-set="cv.lod"><button data-v="0" title="Each image as its own element">Standard</button><button data-v="1" title="From afar the images are drawn as one canvas (canvas 2D)">Canvas</button><button data-v="2" title="From afar the GPU draws the images (WebGL), like Figma">WebGL</button></div>
+  <div class="sh">Notes</div><div class="seg" data-set="cv.glass"><button data-v="1" title="Translucent, with a strong blur under them">Glass</button><button data-v="0" title="Solid, no blur">Solid</button></div>
+  <div class="sh">Dots</div><div class="seg" data-set="cv.dotsgl"><button data-v="0" title="A grid of CSS layers, as always">Classic</button><button data-v="1" title="One WebGL layer: alive, waves run through them when you drop images">WebGL</button></div>
+  <div class="sh">Shadows</div><div class="seg" data-set="cv.shadow"><button data-v="1" title="Panels and buttons float above the board">With shadows</button><button data-v="0" title="Panels lie flat">No shadows</button></div>
+  <div class="sh">Hide interface · ⌘.</div><div class="seg" data-set="cv.hideui"><button data-v="zoom" title="Everything around the board grows a little and fades out">Zoom</button><button data-v="slide" title="Everything slides off to its edge and fades">Slide</button></div>
+  <div class="sh">Corners</div><div class="seg" data-set="cv.shape"><button data-v="round" title="Round buttons and panels">Round</button><button data-v="pro" title="Stricter: almost square, with a moderate radius">Pro</button></div>
+  <div class="sh">Paper color</div>
+  <div class="paper"><label>Dark<input type="color" data-paper="paperDark" aria-label="Paper color in the dark theme"></label><label>Light<input type="color" data-paper="paperLight" aria-label="Paper color in the light theme"></label><button data-paper-reset title="Restore the default colors">Reset</button></div>
+  <div class="hy-slider" data-unit="%"><input id="dotsVis" type="range" min="0" max="300" step="5" aria-label="Dots visibility, percent"><span class="hy-slider-l">Dots visibility</span><output class="hy-slider-v"></output></div>
+  <div class="hy-hint" data-th="For <b>the whole app</b>: Home and every board">For <b>the whole app</b>: Home and every board</div></div>
+<script>T.dom(); document.querySelector("#load .pn").dataset.e = T("Loading");   // the markup above in the app's language, before the owner's data comes</script>
 
 <script>
 const $ = s => document.querySelector(s);
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const send = (action, id) => { try { webkit.messageHandlers.hyimg.postMessage({ action, id }); } catch (e) { console.log("no native bridge", action, id); } };
+const send = (action, id, more) => { try { webkit.messageHandlers.hyimg.postMessage({ action, id, ...more }); } catch (e) { console.log("no native bridge", action, id); } };
 let DATA = null, TAB = "recent";   // null until the app sends the projects: Home shows it is loading, not «no projects»
 let HOME = { folders: [] }, EDIT = null;   // folders of projects (home.json through the app); the folder being named
 const saveHome = () => { try { webkit.messageHandlers.hyimg.postMessage({ action: "homeSave", home: HOME }); } catch (e) { console.log("no native bridge", HOME); } };
 const folderOf = id => HOME.folders.find(f => f.projects.includes(id));
-const ICO_PROJ = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 15.5 9 11l4 3.5 2.5-2 4.5 3.5"/></svg>`;
+const ICO_PROJ = `${hyIcon("board", 16, 1.8)}`;
 try { TAB = localStorage.getItem("home.tab") || "recent"; } catch {}
 
+// when a board changed, in the app's language (ui/i18n.js T, its Russian in ui/lang-home.js)
 function ago(ts) {
-  if (!ts) return "еще не открывалась";
+  if (!ts) return T("Never opened");
   const s = (Date.now() - ts * 1000) / 1000;
-  if (s < 60) return "изменена только что";
-  if (s < 3600) return `изменена ${Math.round(s / 60)} мин назад`;
-  if (s < 86400) return `изменена ${Math.round(s / 3600)} ч назад`;
+  if (s < 60) return T("Edited just now");
+  if (s < 3600) return T("Edited {n} min ago", { n: Math.round(s / 60) });
+  if (s < 86400) return T("Edited {n} h ago", { n: Math.round(s / 3600) });
   const d = new Date(ts * 1000), y = new Date(Date.now() - 864e5);
-  if (d.toDateString() === y.toDateString()) return "изменена вчера";
-  return "изменена " + d.toLocaleDateString("ru", { day: "numeric", month: "long" });
+  if (d.toDateString() === y.toDateString()) return T("Edited yesterday");
+  return T("Edited {date}", { date: T.date(d, { day: "numeric", month: "long" }) });
 }
-const plural = (n, a, b, c) => `${n.toLocaleString("ru-RU")} ${n % 10 === 1 && n % 100 !== 11 ? a : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? b : c}`;
 
+// News on a board without the owner (owner 2026-10-06: «on Home show how many new events happened on each board without him»): the
+// app counts what agents, the AI and other sessions did on it since he last had it in front (native BoardNews reads the board's own
+// event logs, no server is started) and sends it with the board: news {n, rows: [{p: page, k: kind, w: author, n: events, c: pictures}]}.
+// The number is a red capsule after «Edited …»; the usual tooltip says what and who in one line; it goes as soon as the board opens.
+const newsN = p => (p && p.news && p.news.n) || 0;
+const BADGE_N = new Map();   // the number each board's capsule showed last: a new or changed one comes in, an unchanged one stays still
+// «12 new: +24 images, 2 notes on Renderings · Codex»: by page (the first three) and kind, then who
+function newsText(nw) {
+  const pages = new Map(), who = [];
+  (nw.rows || []).forEach(r => {
+    const name = r.p || T("Page 1");
+    if (!pages.has(name)) pages.set(name, { add: 0, rm: 0, groups: 0, notes: 0, heads: 0, moves: 0, other: 0 });
+    const c = pages.get(name), k = r.k;
+    if (k === "add") c.add += r.c; else if (k === "group") { c.groups += r.n; c.add += r.c; } else if (k === "remove") c.rm += r.c;
+    else if (k === "note" || k === "note-edit") c.notes += r.n; else if (k === "text" || k === "text-edit") c.heads += r.n;
+    else if (k === "move") c.moves += r.n; else c.other += r.n;
+    const w = r.w === "ai" ? T("AI") : r.w; if (w && !who.includes(w)) who.push(w);
+  });
+  const parts = [...pages].slice(0, 3).map(([name, c]) => {
+    const what = [c.add && T("+{n} images", { n: c.add }), c.rm && T("−{n} images", { n: c.rm }), c.groups && T("{n} groups", { n: c.groups }),
+      c.notes && T("{n} notes", { n: c.notes }), c.heads && T("{n} headings", { n: c.heads }), c.moves && T("{n} moves", { n: c.moves }),
+      c.other && T("{n} other changes", { n: c.other })].filter(Boolean).join(", ");
+    return what && T("{what} on {page}", { what, page: name });
+  }).filter(Boolean);
+  if (pages.size > 3) parts.push(T("{n} more pages", { n: pages.size - 3 }));
+  return T("{n} new", { n: nw.n }) + (parts.length ? ": " + parts.join("; ") : "") + (who.length ? " · " + who.join(", ") : "");
+}
+function badge(p) {
+  const n = newsN(p); if (!n) { BADGE_N.delete(p.id); return ""; }
+  const pop = BADGE_N.get(p.id) !== n, t = newsText(p.news); BADGE_N.set(p.id, n);
+  return `<span class="nb${pop ? " in" : ""}" title="${esc(t)}" aria-label="${esc(t)}">${n > 99 ? "99+" : n}</span>`;
+}
 function cover(p) {
   const im = (p.covers || []).slice(0, 3);
-  if (!im.length) return `<div class="dots"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5"/></svg></div>`;
+  if (!im.length) return `<div class="dots">${hyIcon("image", 26, 1.8)}</div>`;
   return `<div class="mos ${im.length < 3 ? "one" : ""}">${(im.length < 3 ? im.slice(0, 1) : im).map(u => `<img src="${esc(u)}" alt="" loading="lazy" decoding="async">`).join("")}</div>`;
 }
 function cardHtml(p) {
-  const meta = [ago(p.updated), p.onCanvas ? plural(p.onCanvas, "кадр на холсте", "кадра на холсте", "кадров на холсте") : ""].filter(Boolean).join(" · ");
-  return `<div class="card ${p.available ? "" : "missing"}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="Открыть ${esc(p.name)}">
-    <div class="cover">${cover(p)}<button class="fav" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" aria-label="${isFav(p.id) ? "Убрать из избранного" : "В избранное"}" title="${isFav(p.id) ? "Убрать из избранного" : "В избранное"}">${HEART}</button>${p.open ? `<span class="chip"><i></i>открыта</span>` : ""}<div class="prog" data-prog="${p.id}" aria-live="polite"><ol></ol></div>
-      ${p.available ? "" : `<div class="warn">Папка недоступна<button class="btn" data-act="relink" data-id="${p.id}">Указать папку…</button></div>`}</div>
-    <div class="meta"><div class="t"><div class="n">${esc(p.name)}</div><div class="s" title="${esc(p.path)}">${esc(meta)}</div></div>
-      <button class="more" data-more="${p.id}" aria-label="Действия с доской" aria-haspopup="menu" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg></button></div>
+  const meta = [ago(p.updated), p.onCanvas ? T("{n} frames on the canvas", { n: p.onCanvas }) : "", hyStore.size(p)].filter(Boolean).join(" · ");
+  return `<div class="card ${p.available ? "" : "missing"}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="${esc(T("Open {name}", { name: p.name }))}">
+    <div class="cover">${cover(p)}<button class="fav" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" aria-label="${isFav(p.id) ? T("Remove from favorites") : T("Add to favorites")}" title="${isFav(p.id) ? T("Remove from favorites") : T("Add to favorites")}">${HEART}</button>${p.open ? `<span class="chip"><i></i>${T("state::Open")}</span>` : ""}<div class="prog" data-prog="${p.id}" aria-live="polite"><ol></ol></div>
+      ${p.available ? "" : `<div class="warn">${T("Folder unavailable")}<button class="btn" data-act="relink" data-id="${p.id}">${T("Locate folder…")}</button></div>`}</div>
+    <div class="meta"><div class="t"><div class="n">${esc(p.name)}</div><div class="s" title="${esc(p.path)}"><span>${esc(meta)}</span>${badge(p)}</div></div>
+      <button class="more" data-more="${p.id}" aria-label="${T("Board actions")}" aria-haspopup="menu" aria-expanded="false">${hyIcon("more", 16, 0, "", { fill: true })}</button></div>
   </div>`;
 }
 // favourites (owner 2026-10-04: «instead of "no folder", favourites, moved to the top, gone while there are none; a heart, and a button
 // for it in the thumbnail's top right corner»): home.json favs[], board ids in the order they were added
-const HEART = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 19.5s-7.5-4.4-7.5-9.7A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6c0 5.3-7.5 9.7-7.5 9.7z"/></svg>`;
+const HEART = `${hyIcon("heart", 0, 1.9)}`;
 const isFav = id => (HOME.favs || []).includes(id);
 function toggleFav(id) {
   const on = !isFav(id); HOME.favs = on ? [...(HOME.favs || []), id] : HOME.favs.filter(x => x !== id);
@@ -389,19 +441,20 @@ const shortPath = path => (path || "").replace(/^\/Users\/[^/]+/, "~");
 const pathHtml = path => { const s = shortPath(path), i = s.lastIndexOf("/"); return i < 0 ? `<b>${esc(s)}</b>` : esc(s.slice(0, i + 1)) + `<b>${esc(s.slice(i + 1))}</b>`; };
 // a board as a row of the list: a small cover, its name, its project, when it changed, the heart and «⋯»
 function rowHtml(p) {
-  const f = folderOf(p.id), fav = isFav(p.id), fl = fav ? "Убрать из избранного" : "В избранное";
-  return `<div class="card ${p.available ? "" : "missing"}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="Открыть ${esc(p.name)}" title="${esc(p.path)}">
-    <div class="nmc"><div class="cover">${cover(p)}</div><div class="n">${esc(p.name)}${p.open ? `<i class="op" title="открыта"></i>` : ""}${p.available ? "" : " · папка недоступна"}</div></div>
+  const f = folderOf(p.id), fav = isFav(p.id), fl = fav ? T("Remove from favorites") : T("Add to favorites");
+  return `<div class="card ${p.available ? "" : "missing"}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="${esc(T("Open {name}", { name: p.name }))}" title="${esc(p.path)}">
+    <div class="nmc"><div class="cover">${cover(p)}</div><div class="n">${esc(p.name)}${p.open ? `<i class="op" title="${T("state::Open")}"></i>` : ""}${p.available ? "" : " · " + T("folder unavailable")}</div></div>
     <div class="c2">${f ? HY_PROJ.html(f, 15) + esc(f.name) : ""}</div>
-    <div><button class="pth" data-act="openFolder" data-id="${p.id}" title="Открыть папку в Finder · ${esc(p.path)}">${HY_IC.folder}<span><bdi>${pathHtml(p.path)}</bdi></span></button></div><div class="c3">${esc(ago(p.updated))}</div>
+    <div><button class="pth" data-act="openFolder" data-id="${p.id}" title="${esc(T("Open the folder in Finder · {path}", { path: p.path }))}">${HY_IC.folder}<span><bdi>${pathHtml(p.path)}</bdi></span></button></div><div class="c3"><span>${esc(ago(p.updated))}</span>${badge(p)}</div>${hyStore.sizeCell(p)}
     <div class="acts"><button class="fav" data-fav="${p.id}" aria-pressed="${fav}" aria-label="${fl}" title="${fl}">${HEART}</button>
-      <button class="more" data-more="${p.id}" aria-label="Действия с доской" aria-haspopup="menu" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg></button></div>
+      <button class="more" data-more="${p.id}" aria-label="${T("Board actions")}" aria-haspopup="menu" aria-expanded="false">${hyIcon("more", 16, 0, "", { fill: true })}</button></div>
   </div>`;
 }
-const ICO_NONE = `<span class="pji" style="--pj:16px" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3.2 2.6"><rect x="4" y="4" width="16" height="16" rx="3.5"/></svg></span>`;
-const VT = `<div class="vt" role="group" aria-label="Вид"><button data-view="grid" title="Карточки" aria-label="Карточки"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button><button data-view="list" title="Список" aria-label="Список"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8.5 6.5h12M8.5 12h12M8.5 17.5h12"/><circle cx="4.5" cy="6.5" r=".9" fill="currentColor"/><circle cx="4.5" cy="12" r=".9" fill="currentColor"/><circle cx="4.5" cy="17.5" r=".9" fill="currentColor"/></svg></button></div>`;
+const ICO_NONE = `<span class="pji" style="--pj:16px" aria-hidden="true">${hyIcon("noProject", 0, 1.8)}</span>`;
+const VT = `<div class="seg vt" role="group" aria-label="${T("View")}"><button data-view="grid" title="${T("Cards")}" aria-label="${T("Cards")}">${hyIcon("grid", 15, 1.9)}</button><button data-view="list" title="${T("List")}" aria-label="${T("List")}">${hyIcon("list", 15, 1.9)}</button></div>`;
+const NF = `<div class="seg nf" role="group" aria-label="${T("Filter")}"><button data-onlynew aria-pressed="false" title="${T("Only the boards where something changed without you")}">${T("Only new")}</button></div>`;
 function projRow(p, sub) {
-  return `<button class="nav ${sub ? "sub" : ""}" data-open="${p.id}" title="${esc(p.path)}" draggable="true">${ICO_PROJ}<span class="nm">${esc(p.name)}</span>${p.open ? `<span class="dot" title="открыта"></span>` : ""}</button>`;
+  return `<button class="nav ${sub ? "sub" : ""}" data-open="${p.id}" title="${esc(p.path)}" draggable="true">${ICO_PROJ}<span class="nm">${esc(p.name)}</span>${p.open ? `<span class="dot" title="${T("state::Open")}"></span>` : ""}</button>`;
 }
 function render() {
   const q = $("#q").value.trim().toLowerCase();
@@ -416,33 +469,44 @@ function render() {
   // the left: folders of projects (open ones show their projects), then the projects in no folder
   // a project is one row, its boards show on the right when it is picked (owner 2026-10-04: it does not open into a list here)
   const folders = HOME.folders.map(f => `<button class="nav folder" data-folder="${f.id}" aria-current="${TAB === "f:" + f.id}">
-      <span data-ficon="${f.id}" title="Иконка проекта">${HY_PROJ.html(f)}</span>
-      ${EDIT === f.id ? `<input data-fname="${f.id}" value="${esc(f.name)}" aria-label="Имя проекта">` : `<span class="nm">${esc(f.name)}</span><span class="ct">${f.projects.length}</span>`}</button>`
+      <span data-ficon="${f.id}" title="${T("Project icon")}">${HY_PROJ.html(f)}</span>
+      ${EDIT === f.id ? `<input data-fname="${f.id}" value="${esc(f.name)}" aria-label="${T("Project name")}">` : `<span class="nm">${esc(f.name)}</span><span class="ct">${f.projects.length}</span>`}</button>`
     ).join("")
     // «Без проекта» (owner 2026-10-04): the boards in no project, always last in the list; not a project of home.json, so it is not
     // renamed, deleted or given an icon; a board dragged onto it leaves its project
-    + `<button class="nav folder noproj" data-tab="none" aria-current="${TAB === "none"}">${ICO_NONE}<span class="nm">Без проекта</span><span class="ct">${all.filter(p => !folderOf(p.id)).length}</span></button>`;
+    + `<button class="nav folder noproj" data-tab="none" aria-current="${TAB === "none"}">${ICO_NONE}<span class="nm">${T("No project")}</span><span class="ct">${all.filter(p => !folderOf(p.id)).length}</span></button>`;
   HOME.favs = (HOME.favs || []).filter(id => byId.has(id));
   const favs = HOME.favs.map(id => byId.get(id));
-  $("#plist").innerHTML = (favs.length ? `<h4>Избранное</h4>${favs.map(p => projRow(p)).join("")}` : "") + `<h4 class="ph">Проекты<button data-local="newfolder" title="Новый проект" aria-label="Новый проект"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></h4>${folders}`;
+  $("#plist").innerHTML = (favs.length ? `<h4>${T("Favorites")}</h4>${favs.map(p => projRow(p)).join("")}` : "") + `<h4 class="ph">${T("Projects")}<button data-local="newfolder" title="${T("New project")}" aria-label="${T("New project")}">${hyIcon("plus", 14, 2.2)}</button></h4>${folders}`;
   const inp = $("#plist input[data-fname]"); if (inp) { inp.focus(); inp.select(); }
   if (!all.length) {
-    $("#body").innerHTML = `<div class="empty"><div><h2>Досок пока нет</h2><p>Доска живет в папке Finder с картинками. Подпапки станут коллекциями библиотеки, файлы останутся на месте. Правая кнопка: сделать доской папку, которая уже есть.</p>
-      <div class="row"><button class="btn primary" data-act="create">Новая доска</button></div></div></div>`;
+    $("#body").innerHTML = `<div class="empty"><div><h2>${T("No boards yet")}</h2><p class="hy-hint">${T("A board is a <b>Finder folder</b> with images")}</p>
+      <div class="row"><button class="btn primary" data-act="create">${T("New board")}</button></div></div></div>`;
     return;
   }
   const folder = TAB.startsWith("f:") && HOME.folders.find(f => "f:" + f.id === TAB);
   if (TAB.startsWith("f:") && !folder) TAB = "recent";
   let list = (folder ? folder.projects.map(id => byId.get(id)) : TAB === "none" ? all.filter(p => !folderOf(p.id)) : all).filter(p => !q || p.name.toLowerCase().includes(q) || (p.path || "").toLowerCase().includes(q));
   if (TAB === "recent") list = [...list].sort((a, b) => (b.opened || b.updated || 0) - (a.opened || a.updated || 0));
-  else if (!folder) list = [...list].sort((a, b) => a.name.localeCompare(b.name, "ru"));
-  $("#body").innerHTML = `<div class="head">${folder ? `<button class="hic" data-ficon="${folder.id}" title="Иконка проекта">${HY_PROJ.html(folder, 22)}</button>` : ""}${TAB === "none" ? `<span class="hic">${ICO_NONE.replace("--pj:16px", "--pj:22px")}</span>` : ""}<h1>${folder ? esc(folder.name) : TAB === "recent" ? "Недавние" : TAB === "none" ? "Без проекта" : "Все доски"}</h1><span>${list.length}</span>${VT.replace(`data-view="${HOME.view === "list" ? "list" : "grid"}"`, `$& aria-pressed="true"`)}</div>`
-    + (!list.length ? "" : HOME.view === "list" ? `<div class="list"><div class="lh"><span>Название</span><span>Проект</span><span>Путь</span><span>Изменена</span><span></span></div>${list.map(rowHtml).join("")}</div>` : `<div class="grid">${list.map(cardHtml).join("")}</div>`)
-    + (list.length ? "" : `<p class="none">${q ? `Ничего не нашлось по «${esc(q)}».` : TAB === "none" ? "Все доски лежат в проектах." : "В проекте пока нет досок: перетащи их сюда или выбери «В проект» правой кнопкой."}</p>`);
+  else if (!folder) list = [...list].sort((a, b) => a.name.localeCompare(b.name, T.locale));
+  // boards with news first in Recent, the rest in their order; «Only new» (home.json onlyNew) keeps only them, in every list
+  if (TAB === "recent") list = [...list.filter(newsN), ...list.filter(p => !newsN(p))];
+  if (HOME.onlyNew) list = list.filter(newsN); list = hyStore.sort(list, HOME.sort);   // «Size» in the list: the biggest first (ui/storage.js)
+  // the title row stays the same element while only the view or the boards change, so the view switch's thumb slides (owner 2026-10-06)
+  const headIn = `${folder ? `<button class="hic" data-ficon="${folder.id}" title="${T("Project icon")}">${HY_PROJ.html(folder, 22)}</button>` : ""}${TAB === "none" ? `<span class="hic">${ICO_NONE.replace("--pj:16px", "--pj:22px")}</span>` : ""}<h1>${folder ? esc(folder.name) : TAB === "recent" ? T("Recent") : TAB === "none" ? T("No project") : T("All boards")}</h1><span class="hn"></span>`;
+  const rest = (!list.length ? "" : HOME.view === "list" ? `<div class="list"><div class="lh"><span>${T("Name")}</span><span>${T("Project")}</span><span>${T("Path")}</span><span>${T("Edited")}</span>${hyStore.th(HOME.sort)}<span></span></div>${list.map(rowHtml).join("")}</div>` : `<div class="grid">${list.map(cardHtml).join("")}</div>`)
+    + (list.length ? "" : `<div class="none">${q ? T("Nothing found for “{q}”.", { q: esc(q) }) : HOME.onlyNew ? T("Nothing new on the boards") : TAB === "none" ? T("Every board is in a project.") : T("No boards in this project yet") + `<p class="hy-hint">${T("<b>Drag boards here</b> or pick a project in a board's menu")}</p>`}</div>`);
+  const oh = $("#body > .head");
+  if (oh && oh._k === headIn) { while (oh.nextSibling) oh.nextSibling.remove(); oh.insertAdjacentHTML("afterend", rest); }
+  else { $("#body").innerHTML = `<div class="head">${headIn}${NF}${VT}</div>` + rest; $("#body > .head")._k = headIn; if (window.hySeg) hySeg($("#body")); }
+  $("#body .vt").querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === (HOME.view === "list" ? "list" : "grid"))));
+  // the count and the filter change in place, so the title row stays and the filter's thumb fades in and out
+  $("#body .head .hn").textContent = list.length;
+  const nf = $("#body .nf [data-onlynew]"); nf.setAttribute("aria-pressed", String(!!HOME.onlyNew)); nf.toggleAttribute("data-has", all.some(newsN));
   PROG.forEach((_, id) => paintProg(id));
 }
 function newFolder(withProject) {
-  const f = { id: "f" + Date.now().toString(36), name: "Новый проект", projects: [] };
+  const f = { id: "f" + Date.now().toString(36), name: T("New project"), projects: [] };
   if (withProject) { HOME.folders.forEach(x => x.projects = x.projects.filter(id => id !== withProject)); f.projects.push(withProject); }
   HOME.folders.push(f); EDIT = f.id; saveHome(); render();
 }
@@ -454,7 +518,7 @@ function moveTo(pid, fid) {
 function nameFolder(fid, name) { const f = HOME.folders.find(x => x.id === fid); EDIT = null; if (f && name.trim()) f.name = name.trim(); saveHome(); render(); }
 // the app's settings (theme, grain): sent with the projects, changed here and written back by the app
 let SET = {};
-const SET_DEF = { "cv.dotsgl": "0", "cv.grain": "2", "cv.lod": "1", "cv.glass": "1", "cv.shadow": "1", "cv.shape": "round" };   // the board's defaults (canvas.html SETS)
+const SET_DEF = { "cv.dotsgl": "0", "cv.grain": "2", "cv.lod": "1", "cv.glass": "1", "cv.shadow": "1", "cv.shape": "round", "cv.hideui": "zoom" };   // the board's defaults (canvas.html SETS)
 let DATA_ENGINE = { cef: false, engine: "webkit" };   // which engine draws the boards, from the app
 const sendSettings = change => { try { webkit.messageHandlers.hyimg.postMessage({ action: "settings", change }); } catch (e) { console.log("no native bridge", change); } };
 const SYS = matchMedia("(prefers-color-scheme: dark)");
@@ -466,8 +530,8 @@ function applySettings() {
     document.body.style.background = hyPaper.css(kind, +(SET["cv.grain"] ?? 2), SET[kind === "light" ? "cv.paperLight" : "cv.paperDark"]); }
   SET_DEF["cv.lod"] = DATA_ENGINE.engine === "chromium" ? "2" : "1";   // the boards' default drawing: WebGL in Chromium (canvas.html SETS)
   document.querySelectorAll("#sets [data-paper]").forEach(i => { i.value = SET["cv." + i.dataset.paper] || hyPaper.BOARD[i.dataset.paper === "paperDark" ? "graphite" : "light"]; });
-  document.querySelectorAll("#sets [data-set]").forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === String(g.dataset.set === "cv.theme" ? t : (SET[g.dataset.set] ?? SET_DEF[g.dataset.set])))));
-  const dv = SET["cv.dotsv"] ?? "100"; $("#dotsVis").value = dv; $("#dotsVal").textContent = dv + "%";
+  document.querySelectorAll("#sets [data-set]").forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === String(g.dataset.set === "cv.theme" ? t : g.dataset.set === "cv.lang" ? T.lang : (SET[g.dataset.set] ?? SET_DEF[g.dataset.set])))));
+  const dv = SET["cv.dotsv"] ?? "100"; hySlider.mount($("#dotsVis").closest(".hy-slider")).set(dv);
   $("#engineSet").hidden = !DATA_ENGINE.cef; $("#engineOpts").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.engine === DATA_ENGINE.engine));
 }
 SYS.addEventListener("change", applySettings);
@@ -478,13 +542,15 @@ $("#sets").addEventListener("click", e => {
   if (en) { DATA_ENGINE.engine = en.dataset.engine; applySettings(); try { webkit.messageHandlers.hyimg.postMessage({ action: "engine", engine: en.dataset.engine }); } catch {} return; }
   const b = e.target.closest("button[data-v]"), g = b && b.closest("[data-set]"); if (!b) return;
   SET[g.dataset.set] = b.dataset.v; applySettings(); sendSettings({ [g.dataset.set]: b.dataset.v });
+  // the language: the app writes it and reloads Home and the boards in it; without the app (no HY_LANG: tests, a browser) Home does
+  if (g.dataset.set === "cv.lang" && !window.HY_LANG) T.set(b.dataset.v);
 });
 // «Цвет бумаги», as on the board: Home, the boards and the window's ground take it
 $("#sets").addEventListener("input", e => { const i = e.target.closest("[data-paper]"); if (!i) return; SET["cv." + i.dataset.paper] = i.value; applySettings();
   clearTimeout(i.t); i.t = setTimeout(() => sendSettings({ ["cv." + i.dataset.paper]: i.value }), 250); });
 $("#sets").addEventListener("click", e => { if (!e.target.closest("[data-paper-reset]")) return; delete SET["cv.paperDark"]; delete SET["cv.paperLight"]; applySettings(); sendSettings({ "cv.paperDark": null, "cv.paperLight": null }); }, true);
 // the dots' visibility, as on the board: the number follows the slider, the file gets it once the slider rests
-$("#dotsVis").addEventListener("input", e => { SET["cv.dotsv"] = e.target.value; $("#dotsVal").textContent = e.target.value + "%"; clearTimeout(e.target.t); e.target.t = setTimeout(() => sendSettings({ "cv.dotsv": e.target.value }), 200); });
+$("#dotsVis").addEventListener("input", e => { SET["cv.dotsv"] = e.target.value; clearTimeout(e.target.t); e.target.t = setTimeout(() => sendSettings({ "cv.dotsv": e.target.value }), 200); });
 document.addEventListener("pointerdown", e => { if (!e.target.closest("#sets, #bset")) { $("#sets").classList.remove("open"); $("#bset").setAttribute("aria-expanded", "false"); } });
 // opening or saving a project: the steps come one after another, at least a beat apart, on the project's cover; the last three show
 const PROG = new Map();   // id -> {lines: [{text, cls}], queue, t, out}
@@ -593,6 +659,7 @@ window.hyimgBack = () => {
 // Home comes back over the loading screen
 function homeIn() {
   if (STARS) { STARS.stop(); STARS = null; }
+  OPEN_ASK = null; if (NEWS_DIRTY) { NEWS_DIRTY = false; render(); }   // what was seen meanwhile is off the cards before Home comes in
   if (SHOWN && !document.body.classList.contains("leave")) return true;
   SHOWN = true;
   $("#load").classList.add("cut"); $("#load").classList.remove("on"); $("#load ol").innerHTML = "";
@@ -614,7 +681,11 @@ window.hyimgShowFolder = id => { if (HOME.folders.some(f => f.id === id)) { TAB 
 // the app calls this with the project list (and again when something changes, and when Home comes back to the front)
 window.hyimgHome = data => {
   DATA = data || { projects: [] }; if (DATA.engine) DATA_ENGINE = { cef: !!DATA.cef, engine: DATA.engine };
-  if (DATA.settings) { SET = DATA.settings; applySettings(); try { localStorage.setItem("home.set", JSON.stringify(SET)); } catch {} }
+  if (DATA.settings) { SET = DATA.settings; applySettings(); try { localStorage.setItem("home.set", JSON.stringify(SET)); } catch {}
+    // the language the app's settings have (none: English) and this page's differ: without the app's HY_LANG (a page opened by hand,
+    // tests) Home keeps it and reloads in it; in the app the app reloads Home itself
+    const lg = SET["cv.lang"] === "ru" ? "ru" : "en";
+    if (lg !== T.lang && !window.HY_LANG) try { localStorage.setItem("cv.lang", lg); if (localStorage.getItem("cv.lang") === lg) { location.reload(); return; } } catch {} }
   if (DATA.home && Array.isArray(DATA.home.folders)) HOME = { ...DATA.home, folders: DATA.home.folders.map(f => ({ ...f, projects: [...(f.projects || [])] })) };
   render();
 };
@@ -623,14 +694,17 @@ function openMenu(id, x, y, btn) {
   const p = (DATA.projects || []).find(p => p.id === id); if (!p) return;
   const m = $("#menu");
   const inF = folderOf(id);
-  m.innerHTML = hyMenuItem(`data-act="open" data-id="${id}"`, "open", "Открыть", ["↩"]) + hyMenuItem(`data-act="rename" data-id="${id}"`, "rename", "Переименовать…")
-    + hyMenuItem(`data-fav="${id}"`, "heart", isFav(id) ? "Убрать из избранного" : "В избранное")
-    + "<hr>" + HOME.folders.filter(f => f !== inF).map(f => hyMenuItem(`data-local="move" data-id="${id}" data-f="${f.id}"`, HY_PROJ.html(f, 15), `В проект «${esc(f.name)}»`)).join("")
-    + hyMenuItem(`data-local="newfolder" data-id="${id}"`, "plus", "В новый проект")
-    + (inF ? hyMenuItem(`data-local="unfile" data-id="${id}"`, "unfile", `Убрать из проекта «${esc(inF.name)}»`) : "")
-    + "<hr>" + hyMenuItem(`data-act="relink" data-id="${id}"`, "relink", "Указать папку в Finder…") + hyMenuItem(`data-act="openFolder" data-id="${id}"`, "folder", "Открыть папку") + hyMenuItem(`data-act="reveal" data-id="${id}"`, "finder", "Показать в Finder")
+  m.innerHTML = hyMenuItem(`data-act="open" data-id="${id}"`, "open", T("Open"), ["↩"]) + hyMenuItem(`data-act="rename" data-id="${id}"`, "rename", T("Rename…"))
+    + hyMenuItem(`data-fav="${id}"`, "heart", isFav(id) ? T("Remove from favorites") : T("Add to favorites"))
+    + "<hr>" + HOME.folders.filter(f => f !== inF).map(f => hyMenuItem(`data-local="move" data-id="${id}" data-f="${f.id}"`, HY_PROJ.html(f, 15), T("Move to “{name}”", { name: esc(f.name) }))).join("")
+    + hyMenuItem(`data-local="newfolder" data-id="${id}"`, "plus", T("Move to a new project"))
+    + (inF ? hyMenuItem(`data-local="unfile" data-id="${id}"`, "unfile", T("Remove from “{name}”", { name: esc(inF.name) })) : "")
+    + "<hr>" + hyMenuItem(`data-act="relink" data-id="${id}"`, "relink", T("Locate the folder in Finder…")) + hyMenuItem(`data-act="reveal" data-id="${id}"`, "finder", T("Show in Finder"))
     // its server without opening it (owner 2026-10-04): started, it loads behind with its steps on the card; stopped, its green mark goes
-    + "<hr>" + (p.open ? hyMenuItem(`data-act="stopServer" data-id="${id}"`, "stop", "Остановить сервер") : hyMenuItem(`data-act="startServer" data-id="${id}"`, "play", "Запустить сервер"));
+    + "<hr>" + (p.open ? hyMenuItem(`data-act="stopServer" data-id="${id}"`, "stop", T("Stop server")) : hyMenuItem(`data-act="startServer" data-id="${id}"`, "play", T("Start server")))
+    // off the list altogether, in red (owner 2026-10-06: «why can't I remove it completely? write it in red»); the app asks first, the
+    // folder and its pictures stay on disk
+    + "<hr>" + hyMenuItem(`data-act="removeBoard" data-id="${id}"`, "del", T("Remove board…"), null, ' class="danger"');
   m.classList.add("open");
   const r = m.getBoundingClientRect();
   m.style.left = Math.min(x, innerWidth - r.width - 8) + "px"; m.style.top = Math.min(y, innerHeight - r.height - 8) + "px";
@@ -638,7 +712,16 @@ function openMenu(id, x, y, btn) {
   if (btn) btn.setAttribute("aria-expanded", "true");
   m.querySelector("button").focus();
 }
-function openProject(id) { send("open", id); }   // the app reports the steps if it has to load it
+function openProject(id) { OPEN_ASK = id; send("open", id); }   // the app reports the steps if it has to load it
+// the app says a board was seen (it came to the front or left it): its number goes now, not with the next list. Home on screen draws
+// at once; Home leaving for that board (or already gone) draws when it comes back, so the card does not jump under the press
+let OPEN_ASK = null, NEWS_DIRTY = false;
+window.hyimgSeen = id => {
+  const p = DATA && (DATA.projects || []).find(x => x.id === id); if (!p || !p.news) return true;
+  delete p.news;
+  if (id === OPEN_ASK || LOADING || document.body.classList.contains("leave")) NEWS_DIRTY = true; else render();
+  return true;
+};
 // a menu of its own: the empty space (a new project, a Finder folder as a project, a new folder) and a folder (rename, delete)
 function openMenuHtml(html, x, y) {
   const m = $("#menu"); m.innerHTML = html; m.classList.add("open");
@@ -658,6 +741,7 @@ document.addEventListener("click", e => {
     return; }
   const fi = e.target.closest("[data-ficon]"); if (fi && EDIT !== fi.dataset.ficon) { closeMenu(); PJ && PJ.id === fi.dataset.ficon ? closePick() : openPick(fi.dataset.ficon, fi); return; }
   if (PJ && !e.target.closest("#pjpick")) closePick();
+  const nw = e.target.closest("[data-onlynew]"); if (nw) { HOME.onlyNew = !HOME.onlyNew; if (!HOME.onlyNew) delete HOME.onlyNew; saveHome(); render(); return; }
   const vw = e.target.closest("[data-view]"); if (vw) { if ((HOME.view || "grid") !== vw.dataset.view) { HOME.view = vw.dataset.view; saveHome(); render(); } return; }
   const fv = e.target.closest("[data-fav]"); if (fv) { closeMenu(); toggleFav(fv.dataset.fav); return; }
   // a double click renames the folder in place, as a page's name in the board's pages menu (owner 2026-10-04); the first click has
@@ -666,7 +750,10 @@ document.addEventListener("click", e => {
   if (e.target.closest("[data-folder]") && EDIT === e.target.closest("[data-folder]").dataset.folder) return;
   const fo = e.target.closest("[data-folder]"); if (fo && !e.target.closest("input")) { if (e.detail >= 2) EDIT = fo.dataset.folder; TAB = "f:" + fo.dataset.folder; render(); return; }
   const act = e.target.closest("[data-act]");
-  if (act) { closeMenu(); send(act.dataset.act === "open" ? "open" : act.dataset.act, act.dataset.id || null); return; }
+  // a new board made while a project is picked goes into that project (owner 2026-10-06: «in Studio North, add board: it appears there,
+  // not somewhere outside of it»)
+  const into = ["create", "add"].includes(act && act.dataset.act) && TAB.startsWith("f:") ? { folder: TAB.slice(2) } : undefined;
+  if (act) { closeMenu(); if (act.dataset.act === "open") openProject(act.dataset.id); else send(act.dataset.act, act.dataset.id || null, into); return; }
   if (!e.target.closest("#menu")) closeMenu();
   const tab = e.target.closest("[data-tab]"); if (tab) { TAB = tab.dataset.tab; try { localStorage.setItem("home.tab", TAB); } catch {} render(); return; }
   const op = e.target.closest("[data-open]"); if (op) { openProject(op.dataset.open); return; }
@@ -677,10 +764,10 @@ document.addEventListener("contextmenu", e => {
   e.preventDefault();
   const card = e.target.closest(".card, [data-open]"); if (card) return openMenu(card.dataset.id || card.dataset.open, e.clientX, e.clientY);
   const fo = e.target.closest("[data-folder]");
-  if (fo) return openMenuHtml(hyMenuItem(`data-local="renamefolder" data-f="${fo.dataset.folder}"`, "rename", "Переименовать проект")
-    + hyMenuItem(`data-local="iconfolder" data-f="${fo.dataset.folder}"`, HY_PROJ.html(HOME.folders.find(f => f.id === fo.dataset.folder), 15), "Иконка проекта…") + "<hr>"
-    + hyMenuItem(`data-local="delfolder" data-f="${fo.dataset.folder}"`, "del", `Удалить проект <span class="mh">доски останутся</span>`), e.clientX, e.clientY);
-  openMenuHtml(hyMenuItem('data-act="create"', "plus", "Новая доска") + hyMenuItem('data-act="add"', "folder", "Доска из папки Finder…") + "<hr>" + hyMenuItem('data-local="newfolder"', "folder", "Новый проект"), e.clientX, e.clientY);
+  if (fo) return openMenuHtml(hyMenuItem(`data-local="renamefolder" data-f="${fo.dataset.folder}"`, "rename", T("Rename project"))
+    + hyMenuItem(`data-local="iconfolder" data-f="${fo.dataset.folder}"`, HY_PROJ.html(HOME.folders.find(f => f.id === fo.dataset.folder), 15), T("Project icon…")) + "<hr>"
+    + hyMenuItem(`data-local="delfolder" data-f="${fo.dataset.folder}"`, "del", `${T("Delete project")} <span class="mh">${T("boards stay")}</span>`), e.clientX, e.clientY);
+  openMenuHtml(hyMenuItem('data-act="create"', "plus", T("New board")) + hyMenuItem('data-act="add"', "folder", T("Board from a Finder folder…")) + "<hr>" + hyMenuItem('data-local="newfolder"', "folder", T("New project")), e.clientX, e.clientY);
 });
 // naming a folder: Enter or leaving the field keeps the name, Esc keeps the old one
 document.addEventListener("keydown", e => { const i = e.target.closest && e.target.closest("input[data-fname]"); if (!i) return; e.stopPropagation();

@@ -5,6 +5,8 @@
 //   HY_PROJ.html(f, 16)  the icon as markup, for the sidebar, the head, the menus
 //   HY_PROJ.picker(f)    the picker's markup: two tabs (Иконка, Эмодзи), colours, a grid, a field for any emoji
 (() => {
+  // the words in the app's language (ui/i18n.js; its Russian in ui/lang-common.js, owner 2026-10-06); a page without i18n.js: English
+  const t = (k, v) => window.T ? window.T(k, v) : String(k).replace(/^\w+::/, "").replace(/\{(\w+)\}/g, (m, x) => (v && x in v ? String(v[x]) : m));
   const s = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const icons = {
     layers: s('<path d="m12 3.5 8.5 4.5-8.5 4.5L3.5 8z"/><path d="m3.5 12 8.5 4.5 8.5-4.5"/><path d="m3.5 16 8.5 4.5 8.5-4.5"/>'),
@@ -45,13 +47,13 @@
   const picker = (f, tab) => {
     tab = tab || (isIcon(f.icon) ? "icon" : "emoji");
     const cur = f.icon || "layers";
-    const head = `<div class="pjt" role="tablist"><button role="tab" data-pjtab="icon" aria-selected="${tab === "icon"}">Иконка</button><button role="tab" data-pjtab="emoji" aria-selected="${tab === "emoji"}">Эмодзи</button></div>`;
+    const head = `<div class="pjt" role="tablist"><button role="tab" data-pjtab="icon" aria-selected="${tab === "icon"}">${esc(t("Icon"))}</button><button role="tab" data-pjtab="emoji" aria-selected="${tab === "emoji"}">${esc(t("Emoji"))}</button></div>`;
     if (tab === "icon") return head
-      + `<div class="pjc"><button data-pjcolor="" aria-pressed="${!f.color}" title="Цвет текста" style="--c:var(--ink)"></button>${colors.map(c => `<button data-pjcolor="${c}" aria-pressed="${f.color === c}" style="--c:${c}"></button>`).join("")}</div>`
+      + `<div class="pjc"><button data-pjcolor="" aria-pressed="${!f.color}" title="${esc(t("Text color"))}" style="--c:var(--ink)"></button>${colors.map(c => `<button data-pjcolor="${c}" aria-pressed="${f.color === c}" style="--c:${c}"></button>`).join("")}</div>`
       + `<div class="pjg">${Object.keys(icons).map(k => `<button data-pjicon="${k}" aria-pressed="${isIcon(f.icon) && cur === k}" title="${k}" style="${f.color ? `color:${esc(f.color)}` : ""}">${icons[k]}</button>`).join("")}</div>`;
     return head
       + `<div class="pjg emo">${emoji.map(e => `<button data-pjemoji="${e}" aria-pressed="${f.icon === e}">${e}</button>`).join("")}</div>`
-      + `<label class="pjin">Свой<input data-pjown maxlength="16" placeholder="вставь или ⌃⌘Пробел" value="${isIcon(f.icon) ? "" : esc(f.icon)}"></label>`;
+      + `<label class="pjin">${esc(t("Custom"))}<input data-pjown maxlength="16" placeholder="${esc(t("paste or ⌃⌘Space"))}" value="${isIcon(f.icon) ? "" : esc(f.icon)}"></label>`;
   };
   window.HY_PROJ = { icons, colors, emoji, html, picker, isIcon };
 })();

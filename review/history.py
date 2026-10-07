@@ -9,6 +9,10 @@ import gzip, json, os, sys, time
 
 from config import HERE, W, BOARDS
 
+# The labels this file writes for the interface in the app's language (owner 2026-10-06: «make 2 versions, Russian and English,
+# switchable in settings»): server.py sets tr to its own (the app's setting cv.lang); alone, English.
+tr = lambda en, ru: en
+
 AUTO_EVERY = 10 * 60   # an automatic snapshot at the first save after 10 minutes without one
 
 
@@ -54,7 +58,7 @@ def auto(page, board):
     last = [e for e in entries(page)]
     if last and time.time() - time.mktime(time.strptime(last[-1]["t"], "%Y-%m-%d %H:%M:%S")) < AUTO_EVERY:
         return None
-    return snapshot(page, "auto", "автоснимок", board)
+    return snapshot(page, "auto", tr("auto snapshot", "автоснимок"), board)
 
 
 _MISS = {}
@@ -73,7 +77,7 @@ def restore(page, sid, write):
     cur = json.load(open(os.path.join(BOARDS, page + ".json"), encoding="utf-8"))
     old = load(page, sid)
     when = next((e["t"] for e in entries(page) if e["id"] == sid), sid)
-    snapshot(page, "auto", f"до возврата к версии {when[8:10]}.{when[5:7]} {when[11:16]}", cur)
+    snapshot(page, "auto", tr("before restoring the version {}", "до возврата к версии {}").format(f"{when[8:10]}.{when[5:7]} {when[11:16]}"), cur)
     old["revision"] = cur.get("revision", 0)   # the save below bumps it, so open pages see the change
     return write(old)
 

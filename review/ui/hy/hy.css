@@ -1,0 +1,14 @@
+/* The app's primitives, their look (docs/ui-inventory.md §4; DESIGN.md «Примитивы»). One file per element, written against the tag and
+   its attributes, reading only tokens (ui/tokens.css, linked before this file), so a page that links this file draws <hy-*> markup right
+   even before ui/hy/index.js has upgraded it. A page never selects inside a hy-* element to restyle it: a missing variant goes into the
+   primitive. */
+@import url("kbd.css");
+@import url("switch.css");
+@import url("check.css");
+@import url("badge.css");
+@import url("chip.css");
+@import url("hint.css");
+@import url("swatch.css");
+@import url("button.css");
+@import url("plate.css");
+@import url("segmented.css");

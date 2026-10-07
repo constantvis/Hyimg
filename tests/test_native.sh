@@ -9,3 +9,7 @@ xcrun swiftc -module-cache-path "$TMP/modules" -swift-version 5 "$ROOT/native/Pr
 "$TMP/server-test" "$ROOT"
 xcrun swiftc -module-cache-path "$TMP/modules" -swift-version 5 "$ROOT/native/ProjectRegistry.swift" "$ROOT/native/SaveBarrier.swift" "$ROOT/tests/test_native_flush.swift" -o "$TMP/flush-test"
 "$TMP/flush-test"
+xcrun swiftc -module-cache-path "$TMP/modules" -swift-version 5 "$ROOT/native/ProjectRegistry.swift" "$ROOT/tests/test_native_news.swift" -o "$TMP/news-test"
+"$TMP/news-test"
+xcrun swiftc -module-cache-path "$TMP/modules" -swift-version 5 "$ROOT/native/Storage.swift" "$ROOT/tests/test_native_storage.swift" -o "$TMP/storage-test"
+"$TMP/storage-test"

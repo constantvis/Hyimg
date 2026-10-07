@@ -1,0 +1,29 @@
+/* The primitives' showcase (ui/hy/showcase.js): four looks side by side, each a column on its paper, every specimen captioned with its
+   tag and attributes. Layout only; the specimens are the primitives as ui/hy draws them. */
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
+body { padding: 20px 20px 28px; box-sizing: border-box; min-height: 100vh; }
+.sc-head { display: flex; align-items: baseline; gap: 14px; margin: 0 0 14px; }
+.sc-head h1 { margin: 0; font: 600 18px/1.2 var(--sans); letter-spacing: -.01em; }
+.sc-head p { margin: 0; color: var(--sub); font: 400 12px var(--sans); }
+.sc-fam > h2 { margin: 22px 0 10px; font: 600 15px var(--sans); }
+.sc-looks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.sc-look { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 14px 14px 12px; border: 1px solid var(--line); border-radius: var(--pl-r);
+  background: var(--paper); color: var(--ink); }
+.sc-look > h3 { margin: 0; font: 600 12px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sc-sec > h4 { margin: 0 0 8px; font: 500 11px var(--sans); color: var(--sub); }
+.sc-sec > h4 code { font: 500 11px "Geist Mono", ui-monospace, monospace; color: var(--ink); }
+.sc-row { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--panel); }   /* a panel of the app: where its controls live */
+.sc-sec.paper > .sc-row { padding: 0; border: 0; background: none; }   /* a plate of the top row lies on the paper */
+.sc-it { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin: 0; min-width: 0; max-width: 100%; }
+.sc-it.wide { flex: 1 1 100%; }
+.sc-it.wide > .sc-el { width: 100%; }
+.sc-el { display: flex; align-items: center; min-height: 38px; max-width: 100%; }
+.sc-it figcaption { max-width: 100%; font: 400 10px/1.3 "Geist Mono", ui-monospace, monospace; color: var(--muted); overflow-wrap: anywhere; }
+.sc-it figcaption i { font-style: normal; color: var(--sub); }
+.sc-it figcaption b { font-weight: 400; color: var(--hy-sel); }
+.sc-lbl { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font: 500 13px var(--sans); cursor: pointer; }
+.sc-ev { display: flex; flex-direction: column; gap: 3px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
+.sc-ev span { font: 500 10px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sc-ev output { font: 400 11px/1.35 "Geist Mono", ui-monospace, monospace; color: var(--sub); overflow-wrap: anywhere; min-height: 15px; }
+.sc-fail { padding: 14px 16px; border-radius: 12px; background: color-mix(in srgb, var(--hy-red) 14%, transparent); color: var(--hy-red); font: 500 13px var(--sans); }

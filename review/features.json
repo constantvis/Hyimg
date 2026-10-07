@@ -1,0 +1,796 @@
+{
+ "about": "Что умеет Hyimg и как агент делает каждую вещь. Один источник: /agent и hy.py guide печатают его раздел «Что умеет Hyimg», hy.py features <слово> ищет по нему, MCP-сервер (mcp/server.py) отдает его ресурсом hyimg://features. Тест tests/unit/test_features_catalog.py падает, если команда hy.py, адрес сервера, вид свойств HY.props или режим дока появился без записи здесь. Поля: commands (команды hy.py), ops (команды внутри hy.py do), routes (адреса сервера), props (виды свойств HY.props), modes (режимы дока HY.mode), mcp (инструменты MCP), plugin (нужен плагин), skill (какой скилл объясняет), optional (имена могут отсутствовать в коде: плагин или чужая работа в процессе).",
+ "features": [
+  {
+   "id": "orient",
+   "title": "Сориентироваться в проекте",
+   "skill": "hyimg",
+   "what": "Что открыто у владельца, страницы, правила проекта (AGENTS.md папки доски) целиком, плагины, скиллы и этот каталог одним текстом.",
+   "agent": [
+    "hy.py guide",
+    "GET /agent (то же: /llms.txt, /AGENTS.md)",
+    "GET /agent/<скилл>, например /agent/hyimg-board",
+    "GET /api/health: какой проект на этом порту"
+   ],
+   "commands": [
+    "guide"
+   ],
+   "routes": [
+    "/agent",
+    "/llms.txt",
+    "/AGENTS.md",
+    "/agent/",
+    "/api/health",
+    "/api/project"
+   ],
+   "mcp": [
+    "hyimg_guide",
+    "hyimg_projects"
+   ]
+  },
+  {
+   "id": "catalog",
+   "title": "Каталог функций",
+   "skill": "hyimg",
+   "what": "Этот список: функция, как ей пользуется владелец, как агент (точная команда или адрес) и какой скилл ее объясняет.",
+   "agent": [
+    "hy.py features",
+    "hy.py features Raw Editor",
+    "GET /api/features"
+   ],
+   "commands": [
+    "features"
+   ],
+   "routes": [
+    "/api/features"
+   ],
+   "mcp": [
+    "hyimg_features"
+   ]
+  },
+  {
+   "id": "selection",
+   "title": "Что выделил и видит владелец",
+   "skill": "hyimg",
+   "what": "Выделение на холсте и в библиотеке, открытая страница, зум. «Эти кадры» и «выделенные» значат это.",
+   "owner": "Выделяет кадры на холсте или в библиотеке.",
+   "agent": [
+    "python3 scripts/active.py",
+    "python3 scripts/active.py --paths",
+    "python3 scripts/active.py --link '<ссылка с obj= или at=>'",
+    "GET /api/live"
+   ],
+   "routes": [
+    "/api/live"
+   ],
+   "mcp": [
+    "hyimg_active"
+   ]
+  },
+  {
+   "id": "read",
+   "title": "Читать доску без скриншотов",
+   "skill": "hyimg-board",
+   "what": "Оглавление страницы (разделы, группы, таймлайны, фреймы), поиск по имени и пути, заметки с привязанными кадрами.",
+   "agent": [
+    "hy.py map",
+    "hy.py map \"Группа\"",
+    "hy.py find слово",
+    "GET /api/board?name=<страница>",
+    "GET /api/notes?name=<страница>"
+   ],
+   "commands": [
+    "map",
+    "find"
+   ],
+   "routes": [
+    "/api/board",
+    "/api/notes"
+   ],
+   "mcp": [
+    "hyimg_map",
+    "hyimg_find"
+   ]
+  },
+  {
+   "id": "check",
+   "title": "Проверить раскладку",
+   "skill": "hyimg-board",
+   "what": "Кадры друг на друге, кривые ряды и колонки, кадры, торчащие из рамок, заметки лесенкой. do печатает новые проблемы сам.",
+   "agent": [
+    "hy.py check",
+    "hy.py check \"Группа\""
+   ],
+   "commands": [
+    "check"
+   ],
+   "mcp": [
+    "hyimg_check"
+   ]
+  },
+  {
+   "id": "pages",
+   "title": "Страницы доски",
+   "skill": "hyimg-board",
+   "what": "Страницы как в Figma, у каждой своя доска. Без --page команды работают со страницей, открытой у владельца.",
+   "owner": "Список страниц слева сверху, «+» добавляет.",
+   "agent": [
+    "hy.py pages",
+    "hy.py page new \"Название\"",
+    "hy.py --page <id> map"
+   ],
+   "commands": [
+    "pages",
+    "page"
+   ],
+   "routes": [
+    "/api/pages"
+   ],
+   "mcp": [
+    "hyimg_pages",
+    "hyimg_page_new"
+   ]
+  },
+  {
+   "id": "block",
+   "title": "Положить партию картинок",
+   "skill": "hyimg-board",
+   "what": "Картинки библиотеки блоком: ряд на маску, синяя заметка с зоной, подгруппой в тему (into=) или рядом в свободное место (near=). Версии до и после, уведомление владельцу.",
+   "agent": [
+    "hy.py do 'block \"папка/*\" into=\"Группа\" note=\"# Название\"' --say \"что сделал\"",
+    "hy.py do 'block \"папка/*\" near=\"Группа\" side=right note=\"# Название\" group=\"Новая тема\"' --dry"
+   ],
+   "commands": [
+    "do"
+   ],
+   "ops": [
+    "block"
+   ],
+   "mcp": [
+    "hyimg_do"
+   ]
+  },
+  {
+   "id": "arrange",
+   "title": "Двигать, выравнивать, подписывать",
+   "skill": "hyimg-board",
+   "what": "Сложить кадры ровным блоком, двинуть группу или заметку с ее зоной, подогнать рамку, поменять поле, точка таймлайна, заметка, заголовок.",
+   "agent": [
+    "hy.py do 'arrange id1 id2 near=\"Группа\" side=below'",
+    "hy.py do 'move \"Группа\" x=@\"Другая\".right+480 y=@\"Другая\".top'",
+    "hy.py do 'fit \"Группа\"'",
+    "hy.py do 'set \"Заметка\" text=\"...\"'",
+    "hy.py do 'point Canon x=@Стили'",
+    "hy.py do 'note \"текст\" x=0 y=0'",
+    "hy.py do 'text \"Раздел\" x=0 y=-900 fs=874'"
+   ],
+   "ops": [
+    "arrange",
+    "move",
+    "fit",
+    "set",
+    "point",
+    "note",
+    "text"
+   ]
+  },
+  {
+   "id": "groups",
+   "title": "Группы и рамки",
+   "skill": "hyimg-board",
+   "what": "Группа это рамка с широкой темой, блоки внутри подгруппы (заметка и ряды). Рамка растет, когда в нее кладут.",
+   "owner": "⌘G группа, ⇧⌘G убрать рамку, двигать за название, двойной клик по названию переименовывает.",
+   "agent": [
+    "hy.py do 'group \"Тема\" \"Заметка A\" \"Заметка B\"'",
+    "hy.py do 'group \"Тема\" <id карточки> <id фрейма> \"Заметка\"' (карточки и фреймы по id)",
+    "hy.py do 'remove \"Тема\" only=frame'"
+   ],
+   "ops": [
+    "group"
+   ]
+  },
+  {
+   "id": "notes",
+   "title": "Заметки, зоны и стрелки",
+   "skill": "hyimg-board",
+   "what": "Заметка относится к кадрам своей пунктирной зоны и к кадрам по стрелкам (поле to). Кадр с заметкой носит точку ее цвета. Заметки агента синие.",
+   "owner": "N на выделении делает заметку с зоной, стрелка тянется от края заметки.",
+   "agent": [
+    "hy.py do 'block ... note=\"# Название\\nчто это\"'",
+    "hy.py do 'note \"текст\" x=@id.right+40 y=@id.top'",
+    "hy.py do 'link \"Заметка\" <id> <id>'",
+    "GET /api/notes?name=<страница>"
+   ],
+   "ops": [
+    "note",
+    "link"
+   ]
+  },
+  {
+   "id": "remove",
+   "title": "Убрать с доски и архив",
+   "skill": "hyimg-board",
+   "what": "Кадр, снятый со всех страниц, уходит в архив, это отказ владельца (archived: true в /api/items). Группа удаляется с содержимым.",
+   "owner": "Delete, ⌘X (до ⌘V тоже архив).",
+   "agent": [
+    "hy.py do 'remove \"Группа\"'",
+    "hy.py do 'remove \"папка/*-a5*\"'"
+   ],
+   "ops": [
+    "remove"
+   ]
+  },
+  {
+   "id": "history",
+   "title": "Версии и отмена",
+   "skill": "hyimg-board",
+   "what": "Каждый do сохраняет версию до и после. Возврат к версии, лента событий страницы.",
+   "owner": "⌘Z, ⇧⌘Z, история версий на холсте.",
+   "agent": [
+    "hy.py hist",
+    "hy.py restore <id версии до>",
+    "GET /api/events?name=<страница>"
+   ],
+   "commands": [
+    "hist",
+    "restore"
+   ],
+   "routes": [
+    "/api/history",
+    "/api/history/board",
+    "/api/history/missing",
+    "/api/events"
+   ],
+   "mcp": [
+    "hyimg_hist",
+    "hyimg_restore"
+   ]
+  },
+  {
+   "id": "notify",
+   "title": "Уведомить владельца",
+   "skill": "hyimg-board",
+   "what": "Колокольчик на холсте: что сделано, превью, переход к месту. do пишет его сам, --say дает слова.",
+   "agent": [
+    "hy.py do '...' --say \"Положил 12 кадров партии P7\"",
+    "hy.py notify \"Проверил партию\" --text \"брак: 2 кадра\" --ids a1,a2"
+   ],
+   "commands": [
+    "notify"
+   ],
+   "routes": [
+    "/api/notifications"
+   ],
+   "mcp": [
+    "hyimg_notify"
+   ]
+  },
+  {
+   "id": "save",
+   "title": "Картинки в библиотеку без дублей",
+   "skill": "hyimg",
+   "what": "Файлы в папку партии, кроме тех, что библиотека уже знает по байтам: картинки, видео, PDF, PSD, AI, TIFF, SVG, 3D-файлы. У каждого json рядом (prompt, model, inputs): у картинки <имя>.json, у остальных <имя.расширение>.json.",
+   "agent": [
+    "hy.py save файлы... --to <папка партии> [--move]",
+    "hy.py dupes",
+    "hy.py undocumented [папка]",
+    "GET /api/items (archived, copies)",
+    "GET /api/meta?p=<путь>"
+   ],
+   "commands": [
+    "save",
+    "dupes",
+    "undocumented"
+   ],
+   "routes": [
+    "/api/items",
+    "/api/known",
+    "/api/aliases",
+    "/api/upload",
+    "/api/sizes",
+    "/api/meta",
+    "/api/snapshot"
+   ],
+   "mcp": [
+    "hyimg_save"
+   ]
+  },
+  {
+   "id": "marks",
+   "title": "Метки на карточке",
+   "skill": "hyimg",
+   "what": "♥ и обрезка справа сверху, после ♥ Raw Editor, копия (кадр уже лежит на странице) и вид файла (PSD, ▶ 0:06, PDF 2 / 5, 3D) снизу, точка заметки слева сверху. Одна плашка 24 px, один закон размера, на мелкой карточке уходят по одной.",
+   "owner": "F ставит ♥, клик по метке копии ведет к первому экземпляру.",
+   "agent": [
+    "читать ♥: feedback.fav в json кадра или в GET /api/items",
+    "♥ и оценки ставит владелец, агент только читает"
+   ],
+   "routes": [
+    "/api/fav",
+    "/api/feedback",
+    "/api/answer"
+   ]
+  },
+  {
+   "id": "crop",
+   "title": "Обрезка кадра",
+   "skill": "hyimg-board",
+   "what": "Обрезка хранится долями кадра (crop: [x0, y0, x1, y1]), файл не меняется.",
+   "owner": "C или «Кроп» на панели над выделенной картинкой, соотношения названы платформами. Двойной клик по картинке открывает режим Image, без плагина фреймов кроп; у PDF, PSD, TIFF двойной клик по-прежнему кроп.",
+   "agent": [
+    "hy.py do 'crop <id> box=0.1,0.1,0.9,0.9'",
+    "hy.py do 'crop <id> clear=1'"
+   ],
+   "ops": [
+    "crop"
+   ],
+   "props": [
+    "crop"
+   ]
+  },
+  {
+   "id": "video",
+   "title": "Видео: пилюля и обрезка по времени",
+   "skill": "hyimg-board",
+   "what": "Карточка видео с пилюлей ▶ и временем, играет без звука под курсором. Crop & Trim хранит trim: [in, out] в секундах, файл не меняется.",
+   "owner": "C или двойной клик: полоса кадров с ручками, ⤢ во весь экран.",
+   "agent": [
+    "hy.py do 'trim <id> in=1.5 out=4'",
+    "GET /api/vstrip?p=<видео>&n=10&i=0"
+   ],
+   "ops": [
+    "trim"
+   ],
+   "props": [
+    "trim"
+   ],
+   "routes": [
+    "/video",
+    "/api/vstrip"
+   ]
+  },
+  {
+   "id": "pdf",
+   "title": "PDF: страницы и разбивка",
+   "skill": "hyimg-board",
+   "what": "Многостраничный PDF листается в пилюле карточки (page: n). «Split into pages» кладет по карточке на страницу (pageFixed).",
+   "owner": "Стрелки в пилюле, правый клик «Split into pages».",
+   "agent": [
+    "hy.py do 'pdfpage <id> n=2'",
+    "GET /api/pdf?p=<файл.pdf>: pages, ars"
+   ],
+   "ops": [
+    "pdfpage"
+   ],
+   "props": [
+    "page"
+   ],
+   "routes": [
+    "/api/pdf"
+   ]
+  },
+  {
+   "id": "kinds",
+   "title": "PSD, AI, TIFF, SVG, HEIC и открытие в приложении",
+   "skill": "hyimg",
+   "what": "Файлы дизайна показаны картинкой Quick Look с меткой вида. «Open in <App>» открывает в программе по умолчанию, «Show in Finder» показывает файл.",
+   "owner": "Правый клик на карточке: Open in <App>, Show in Finder.",
+   "agent": [
+    "кладутся как картинки: hy.py do 'block \"папка/*.psd\" ...'",
+    "GET /img?p=, /thumb?p=&s=640, /file?p="
+   ],
+   "routes": [
+    "/img",
+    "/thumb",
+    "/file",
+    "/lib/",
+    "/api/defaultapp",
+    "/api/appicon",
+    "/api/openfile",
+    "/api/reveal",
+    "/ref"
+   ]
+  },
+  {
+   "id": "opacity",
+   "title": "Прозрачность и размер",
+   "skill": "hyimg-board",
+   "what": "Прозрачность картинки, видео, PDF, фрейма, 3D-карточки и HTML-карточки и ширина карточки, тоже виды свойств. У 3D-карточки прозрачной становится вся карточка: снимок, живой вид three.js, рендер Blender.",
+   "owner": "Ползунок на панели над выделением, клавиши 1…9 и 0.",
+   "agent": [
+    "hy.py do 'opacity <id> value=0.5'",
+    "hy.py do 'set <id> w=480'"
+   ],
+   "ops": [
+    "opacity"
+   ],
+   "props": [
+    "opacity",
+    "size"
+   ]
+  },
+  {
+   "id": "props",
+   "title": "Копировать и вставить свойства, пресеты",
+   "skill": "hyimg-board",
+   "what": "Как Copy Settings в Lightroom: обрезка, время, размер, прозрачность, страница PDF, Raw Editor, маска с одной вещи на другие, между досками и проектами. Пресеты хранит проект.",
+   "owner": "⌥⌘C и ⌥⌘V (подменю по видам), Custom… ⇧⌥⌘C, «Save as preset…», «Presets ›», наведение показывает результат.",
+   "agent": [
+    "hy.py do 'props from=<id> to=<id>,<id> only=grade,crop'",
+    "hy.py do 'props preset=\"Имя\" to=\"Группа\"'",
+    "hy.py presets",
+    "hy.py preset save \"Имя\" <id> only=grade",
+    "hy.py preset delete \"Имя\""
+   ],
+   "commands": [
+    "presets",
+    "preset"
+   ],
+   "ops": [
+    "props"
+   ],
+   "routes": [
+    "/api/propsclip",
+    "/api/propsclip/take",
+    "/api/presets"
+   ],
+   "mcp": [
+    "hyimg_props",
+    "hyimg_presets"
+   ]
+  },
+  {
+   "id": "topage",
+   "title": "Перенести на другую страницу",
+   "skill": "hyimg-board",
+   "what": "Группа со всем внутри, заметка с зоной: раскладка сохраняется, встает на то же место или правее содержимого той страницы. Версии на обеих страницах.",
+   "owner": "Правый клик «Move to page ›», там же «New page…».",
+   "agent": [
+    "hy.py do 'topage \"Страница B\" \"Группа\"'"
+   ],
+   "ops": [
+    "topage"
+   ],
+   "mcp": [
+    "hyimg_topage"
+   ]
+  },
+  {
+   "id": "order",
+   "title": "Порядок слоев: выше, ниже, на передний и задний план",
+   "skill": "hyimg-board",
+   "what": "Как в Figma: вещь встает выше или ниже соседей только внутри своей группы (или верхнего уровня страницы) и своего слоя: заметки, заголовки и таймлайны лежат над картинками. Несколько выделенных сохраняют свой порядок. Порядок рисования это порядок вещей и групп в файле доски.",
+   "owner": "Правый клик «Order ›» (Порядок): Bring to front ⌥⌘], Bring forward ⌘], Send backward ⌘[, Send to back ⌥⌘[; серое с причиной, когда не сдвигается.",
+   "agent": [
+    "hy.py do 'front <id>'",
+    "hy.py do 'forward \"Заметка\"; back <id> <id>'"
+   ],
+   "ops": [
+    "front",
+    "forward",
+    "backward",
+    "back"
+   ]
+  },
+  {
+   "id": "nudge",
+   "title": "Сдвиг выделенного стрелками",
+   "skill": "hyimg-board",
+   "what": "Как в Figma: стрелки сдвигают выделенное на один экранный пиксель при текущем масштабе (max(1, round(1/zoom)) единиц доски), с Shift в 10 раз больше. Группа едет со своими кадрами, заметка с кадрами своей зоны; серия нажатий это один шаг отмены.",
+   "owner": "← ↑ → ↓, ⇧ + стрелка сильнее; не работает, пока фокус в поле или открыт редактор плагина.",
+   "agent": [
+    "hy.py do 'move <id> dx=10 dy=0'"
+   ]
+  },
+  {
+   "id": "grade",
+   "title": "Raw Editor любой картинки, тон и насыщенность",
+   "skill": "hyimg-board",
+   "plugin": "frames",
+   "optional": true,
+   "what": "Raw Editor хранится в карточке (grade, только отличия от нуля), файл не меняется. Hue/Saturation как в Photoshop: Master и шесть диапазонов (grade.hs). Выборочная коррекция цвета как в Photoshop: девять диапазонов, голубой, пурпурный, желтый и черный, относительно или абсолютно (grade.sc). У 3D-карточки Raw Editor ложится на то, что она показывает сейчас: снимок, живой вид three.js при повороте камеры, кадр EEVEE или Cycles, и на каждый новый рендер сам. «Рендер» и «Снимок» кладут на доску картинку с тем же Raw Editor как свойством.",
+   "owner": "Кнопка с цветовым кругом на панели над выделением, метка Raw Editor справа сверху после ♥ (клик открывает панель).",
+   "agent": [
+    "hy.py do 'grade <id> exposure=0.3 saturation=-20 temp=15'",
+    "hy.py do 'grade <id> hue=30 sat=20 light=0'",
+    "hy.py do 'grade <id> json=<весь Raw Editor JSON, ключи как defaults() в editor/colorgrade.js плагина frames>'",
+    "hy.py do 'grade <id> clear=1'"
+   ],
+   "ops": [
+    "grade"
+   ],
+   "props": [
+    "grade"
+   ]
+  },
+  {
+   "id": "mask",
+   "title": "Мастер-маска",
+   "skill": "hyimg-board",
+   "plugin": "frames",
+   "optional": true,
+   "what": "Маска картинки или фрейма отдельным png (белое видно), карточка показывает картинку по маске, файл не меняется.",
+   "owner": "Правый клик «Mask from alpha», «Clear mask», вставка свойств.",
+   "agent": [
+    "hy.py do 'mask <id> alpha=1'",
+    "hy.py do 'mask <id> file=frames/board-masks/masks/<имя>.png'",
+    "hy.py do 'mask <id> clear=1'"
+   ],
+   "ops": [
+    "mask"
+   ],
+   "props": [
+    "mask"
+   ]
+  },
+  {
+   "id": "imgframe",
+   "title": "Фрейм картинок и студия",
+   "skill": "hyimg-board",
+   "plugin": "frames",
+   "optional": true,
+   "what": "Картинки уходят внутрь фрейма (слои, маски, кисть, заливка, Raw Editor). Raw Editor фрейма это его главный слой Raw Editor, маска фрейма главная маска.",
+   "owner": "⌥⌘G фрейм из выделения, ⌥⇧⌘G по фрейму на картинку, двойной клик по фрейму или картинке или режим Image в доке открывает студию. Картинка становится фреймом под своим id и остается им только после Save, Cancel возвращает картинку без шага в истории; до первого Save фрейм только в памяти, на диск ничего не пишется. Esc, Cancel и Save возвращают выделение и вид доски.",
+   "agent": [
+    "hy.py do 'frame id1 id2 name=\"Имя\"'",
+    "hy.py do 'frame each \"Группа\"'",
+    "hy.py do 'frame layers <F>'",
+    "hy.py do 'frame unframe <F>'"
+   ],
+   "ops": [
+    "frame"
+   ],
+   "modes": [
+    "image"
+   ]
+  },
+  {
+   "id": "htmlframe",
+   "title": "HTML-фрейм",
+   "skill": "hyimg-board",
+   "plugin": "frames",
+   "optional": true,
+   "what": "Страница из html/ карточкой с заданным окном vw × vh, живая по двойному клику, в покое снимок.",
+   "agent": [
+    "hy.py do 'htmlframe html/<имя>/index.html x=0 y=0 w=720 vw=1440 vh=900'",
+    "POST /api/htmlstill?p=&w=&h="
+   ],
+   "ops": [
+    "htmlframe"
+   ],
+   "routes": [
+    "/api/htmlstill"
+   ]
+  },
+  {
+   "id": "model3d",
+   "title": "3D-карточка",
+   "skill": "hyimg-board",
+   "plugin": "3d",
+   "optional": true,
+   "what": "3D-сцена (3d/scenes/<имя>/scene.json) карточкой three.js на одну камеру, владелец крутит ее сам. Из файла glb или STEP/IGES (FreeCAD переводит в glb).",
+   "owner": "Кнопка куба в доке, 3D-фильтр библиотеки или 3D-файл (glb, STEP, STP, IGES…) из папки библиотеки, перетащенный на доску: он лежит в своей папке карточкой с поворотом под курсором, щелчок открывает его в просмотрщике 3D-моделью (тянуть, чтобы повернуть, «На доску»). Студию открывает «3D-студия» первой кнопкой на панели над карточкой, Enter, двойной клик или режим 3D в доке. В студии ⌘Z ⇧⌘Z, вкладка «История», «Сохранить» по ⌘↵ (одним шагом доски; простой Enter не сохраняет, в поле числа он применяет значение) и «Отмена» (сцена и карточка как были). Карточка хранит свой вид (view), он главнее камеры сцены. У сцены из Blender-студии «Свет и материалы»: раздел «Материалы» слева (вариант карточки и материалы студии с правками Principled BSDF), свет «студии», «ракурса» (как на картинке M07) или «свой» (лампы сцены), варианты по именам и A/B над карточкой, «Рендер» пишет вариант в json.",
+   "agent": [
+    "hy.py do 'model 3d-файл.glb near=\"Группа\" side=right w=360'",
+    "hy.py do 'model деталь.step x=0 y=0'",
+    "hy.py do 'card3d 3d/scenes/<имя>/scene.json camera=<id> x=0 y=0'",
+    "hy.py do 'cards3d 3d/scenes/<имя>/scene.json beside=<что> into=<группа>'",
+    "hy.py do 'camera3d <карточка> restore' (вид карточки в камеру scene.json, камера создается заново, если ее нет), 'camera3d <карточка> original' (камера как на картинке, studio.angles[id].camera0), 'camera3d 3d/scenes/<имя>/scene.json sync' (виды всех карточек сцены в ее камеры). Вид карточки (поле view) главнее камеры сцены",
+    "Свет и материалы сцены Blender-студии: hy.py do 'variant3d 3d/scenes/<имя>/scene.json list' (варианты и чьи карточки), 'variant3d <сцена> materials' (материалы студии с параметрами, спрашивает Blender), 'variant3d <сцена> new \"M26 · свет ракурса\" light=angle', 'variant3d <сцена> set \"M26 · металл темнее\" mat=\"Phone | anodized aluminum\" metallic=1 roughness=x0.8 tint=8c8090' (x0.8 множитель, «-» снимает), 'variant3d <карточка> apply <вариант>|base', 'variant3d <карточка> compare <вариант>|base|off' (A/B в карточке)",
+    "README и FEATURES.md плагина hyimg-3d-studio: формат сцены, Blender"
+   ],
+   "ops": [
+    "model",
+    "card3d",
+    "cards3d",
+    "camera3d",
+    "variant3d"
+   ],
+   "modes": [
+    "3d"
+   ],
+   "routes": [
+    "/api/models3d",
+    "/api/sprite",
+    "/api/stat",
+    "/api/plugin/",
+    "/api/file"
+   ]
+  },
+  {
+   "id": "dev",
+   "title": "Dev studio: HTML-карточки и Dev-режим",
+   "skill": "hyimg-board",
+   "plugin": "dev",
+   "optional": true,
+   "what": "Файл .html библиотеки карточкой (первый экран снимком, живая страница в песочнице, когда крупно). Dev-режим: DOM-дерево слева, страница, инспектор справа. Только чтение.",
+   "owner": "Двойной клик по HTML-карточке или режим Dev в доке, I выбирает элемент.",
+   "agent": [
+    "hy.py do 'html <файл>.html near=\"Группа\" w=480'",
+    "scripts/install_plugins.sh --dev --yes (ставит плагин, только после «да» человека, потом ⇧⌘R)"
+   ],
+   "ops": [
+    "html"
+   ],
+   "modes": [
+    "dev"
+   ],
+   "routes": [
+    "/sandbox/",
+    "/api/sandbox"
+   ]
+  },
+  {
+   "id": "modes",
+   "title": "Переключатель режимов в доке",
+   "skill": "hyimg",
+   "what": "Справа в доке: Board всегда, дальше режимы плагинов (Image, Dev, 3D). Режим включается, когда выделена подходящая карточка, иначе серый с подсказкой.",
+   "owner": "Клик по иконке режима в доке, Board выходит из редактора. Двойной клик по картинке включает Image.",
+   "agent": [
+    "режимы для мыши, агенту не нужны: правит карточки через hy.py do"
+   ],
+   "modes": [
+    "board"
+   ]
+  },
+  {
+   "id": "folders",
+   "title": "Цвета папок в библиотеке",
+   "skill": "hyimg",
+   "what": "Цвет папки в дереве библиотеки переходит на все вложенные. Цвета: yellow, orange, red, pink, purple, blue, green, grey.",
+   "owner": "Правый клик по папке в дереве библиотеки, ряд цветов.",
+   "agent": [
+    "GET /api/foldercolors",
+    "POST /api/foldercolors {\"path\": \"playground/folders/a\", \"color\": \"blue\"} (color null снимает)"
+   ],
+   "routes": [
+    "/api/foldercolors"
+   ]
+  },
+  {
+   "id": "filters",
+   "title": "Фильтры библиотеки",
+   "skill": "hyimg",
+   "what": "Капсула фильтров в доке библиотеки: виды файлов, теги, отклоненные, закрепленные фильтры проекта, свои теги проекта.",
+   "agent": [
+    "GET /api/filters",
+    "GET /api/taggroups",
+    "POST /api/tagrule {\"group\", \"tag\", \"words\"}"
+   ],
+   "routes": [
+    "/api/filters",
+    "/api/tagrule",
+    "/api/taggroups"
+   ]
+  },
+  {
+   "id": "layout",
+   "title": "Разложить файлы по папкам как на доске",
+   "skill": "hyimg",
+   "what": "Переносит файлы проекта на диске. План только читает, apply и undo только по прямому слову владельца.",
+   "agent": [
+    "hy.py layout plan",
+    "hy.py layout apply --owner-said-yes"
+   ],
+   "commands": [
+    "layout"
+   ],
+   "routes": [
+    "/api/layout/plan",
+    "/api/layout/state",
+    "/api/layout/apply",
+    "/api/layout/undo",
+    "/api/layout/auto"
+   ]
+  },
+  {
+   "id": "questions",
+   "title": "Вопрос владельцу на кадре",
+   "skill": "hyimg",
+   "what": "Оранжевый «?» на кадре, ответ владельца в json кадра (questions).",
+   "agent": [
+    "HYIMG_LIBRARY_ROOT=<папка> python3 review/ask.py add <путь> \"вопрос\"",
+    "... ask.py answers"
+   ]
+  },
+  {
+   "id": "plugins",
+   "title": "Плагины",
+   "skill": "hyimg",
+   "what": "Фреймы (frames), 3D-объекты (3d), Dev studio (dev): свои репозитории, ставятся ссылками. Что подключено, пишет /agent.",
+   "agent": [
+    "GET /api/plugins",
+    "scripts/install_plugins.sh --frames --3d --dev --yes (только нужные флаги и только с согласия человека)",
+    "POST /api/plugin/<плагин>/<маршрут>"
+   ],
+   "routes": [
+    "/api/plugins",
+    "/plugins/",
+    "/api/plugin/"
+   ]
+  },
+  {
+   "id": "generate",
+   "title": "Генерация картинок в проект",
+   "skill": "hyimg-generate",
+   "what": "Маршруты и бюджет из правил проекта, 5 попыток на промпт в каждом движке, json рядом с каждой картинкой, на доску сразу по мере готовности.",
+   "agent": [
+    "скилл hyimg-generate"
+   ]
+  },
+  {
+   "id": "design",
+   "title": "Проверки дизайна и тесты",
+   "skill": "hyimg",
+   "what": "Дизайн-контракт (design/contract.json, CONTRACT.md), статический валидатор и юнит-тесты четырех репозиториев. Лаборатория меток на странице «UI» проекта Hyimg App (html/badge-lab).",
+   "agent": [
+    "scripts/check.sh --fast (перед коммитом правок интерфейса)",
+    "scripts/check.sh --full",
+    "python3 scripts/validate.py --rules"
+   ]
+  },
+  {
+   "id": "primitives",
+   "title": "Примитивы интерфейса",
+   "skill": "hyimg",
+   "what": "Общие элементы интерфейса в review/ui/hy: hy-button, hy-icon-button, hy-switch, hy-check, hy-kbd, hy-badge, hy-chip, hy-swatch, hy-segmented, hy-plate, hy-hint, hy-info. Токены в review/ui/tokens.css. Витрина: страница «UI» и «Playground» проекта Hyimg App (html/hy-primitives).",
+   "owner": "Двойной клик по карточке витрины открывает ее живой: клик, переключение, стрелки, ⌘ показывает клавиши.",
+   "agent": [
+    "новый элемент интерфейса собирать из <hy-*> (DESIGN.md «Примитивы»), своих копий не писать: правило hy-primitive в scripts/validate.py",
+    "витрина на доске: hy.py do 'htmlframe html/hy-primitives/buttons.html x= y= w=720 vw=1440 vh=2692' (buttons, choices, marks, index)",
+    "python3 scripts/validate.py --list hy-primitive (копии, которые еще ждут переноса)"
+   ]
+  },
+  {
+   "id": "mcp",
+   "title": "MCP-сервер Hyimg",
+   "skill": "hyimg",
+   "what": "Те же операции инструментами MCP (stdio): guide, features, map, find, check, do, notify, props, topage, hist, restore, save, active. Скиллы и /agent как ресурсы и промпты.",
+   "agent": [
+    "python3 mcp/server.py (как подключить: README репозитория, раздел MCP)"
+   ]
+  },
+  {
+   "id": "storage",
+   "title": "Хранилище: место на диске, кэш, память",
+   "skill": "hyimg",
+   "what": "Настройки › Хранилище на Главной и на доске: сколько занимают доски, что в них создал Hyimg, кэш с кнопкой «Очистить», старые копии приложения, повторы, память процессов. Считает review/storage.py в своем процессе, только читая; удаляет только регенерируемый кэш в ~/Library/Caches/Hyimg и, по просьбе, старые копии приложения в Корзину. План: docs/storage-plan.md.",
+   "agent": [
+    "GET /api/storage: последняя сводка {summary, age, scanning, server}, новый подсчет идет в фоне, если сводке больше 5 минут",
+    "python3 review/storage.py summary | scan | clear-cache --dry-run | backups --keep 2 --dry-run",
+    "POST /api/storage/clear и /api/storage/backups {keep} только по просьбе человека",
+    "потерянные процессы (серверы и Blender без родителя): поле lost в GET /api/storage, POST /api/storage/stop {pid} только по просьбе человека",
+    "миниатюры и превью доски лежат в ~/Library/Caches/Hyimg/<id доски>/thumbs, не в Dropbox (review/thumbcache.py); потолок POST /api/storage/caps {board, total} в ГБ",
+    "сервер, запущенный не приложением, сам заканчивается вместе с родителем и через HYIMG_IDLE_EXIT секунд без запросов (1200 по умолчанию, 0: никогда)"
+   ],
+   "routes": [
+    "/api/storage",
+    "/api/storage/"
+   ]
+  },
+  {
+   "id": "app",
+   "title": "Служебные адреса приложения",
+   "skill": "hyimg",
+   "what": "Страницы библиотеки и холста, общие скрипты интерфейса, настройки, опрос изменений. Агенту читать их не нужно.",
+   "agent": [
+    "холст: /?view=canvas&page=<id>&obj=<id>, библиотека: /"
+   ],
+   "routes": [
+    "/",
+    "/index.html",
+    "/v2",
+    "/v2.html",
+    "/v1",
+    "/v1.html",
+    "/canvas",
+    "/canvas.html",
+    "/ui/",
+    "/ui/settings.js",
+    "/api/settings",
+    "/api/changes",
+    "/api/bench"
+   ]
+  }
+ ]
+}

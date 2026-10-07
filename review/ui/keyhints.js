@@ -23,13 +23,19 @@ button:has(> kbd)::after { content: ""; position: absolute; inset: 0; z-index: 1
     for (const f of document.querySelectorAll("iframe")) { try { if (f.contentDocument) out.push(f.contentDocument); } catch {} }
     return out;
   };
-  let on = false;
-  const set = v => { if (v === on) return; on = v; docs().forEach(d => d.documentElement.classList.toggle("hy-keys", v)); };
+  let on = false, t = 0, quiet = false;
+  const set = v => { clearTimeout(t); if (v === on) return; on = v; docs().forEach(d => d.documentElement.classList.toggle("hy-keys", v)); };
   window.hyKeyHints = set;
-  addEventListener("keydown", e => { if (e.key === "Meta") set(true); else if (on && !e.metaKey) set(false); }, true);
-  addEventListener("keyup", e => { if (e.key === "Meta" || !e.metaKey) set(false); }, true);
+  // the hints come after ⌘ is held a moment, and not at all while ⌘ zooms with the wheel (owner 2026-10-06: the key caps covered the
+  // selection bar's words during a ⌘ + scroll zoom); a ⌘ shortcut pressed before that never flashes them
+  addEventListener("keydown", e => {
+    if (e.key === "Meta") { if (!quiet && !on) { clearTimeout(t); t = setTimeout(() => set(true), 220); } }
+    else if (!on) clearTimeout(t); else if (!e.metaKey) set(false);
+  }, true);
+  addEventListener("keyup", e => { if (e.key === "Meta" || !e.metaKey) { quiet = false; set(false); } }, true);
+  addEventListener("wheel", e => { if (e.metaKey) { quiet = true; set(false); } }, { capture: true, passive: true });
   // a ⌘ shortcut that moves the focus elsewhere (⌘Tab, a menu) never sends the key up here
   addEventListener("blur", () => set(false));
   document.addEventListener("visibilitychange", () => { if (document.hidden) set(false); });
-  addEventListener("pointermove", e => { if (on && !e.metaKey) set(false); }, { passive: true });
+  addEventListener("pointermove", e => { if ((on || t) && !e.metaKey) { quiet = false; set(false); } }, { passive: true });
 })();

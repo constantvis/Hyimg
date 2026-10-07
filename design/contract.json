@@ -1,0 +1,470 @@
+{
+ "about": "Hyimg's design contract, derived from the code on 2026-10-06 (ui/look.css, ui/slider.css, ui/menu.js, ui/icons.js, the pages' :root, DESIGN.md and the owner's dated quotes in the comments). The values the code already uses as its system; where the code disagrees with itself the majority or the owner-stated value is the contract and the disagreement is listed under 'disagreements'. Read by scripts/validate.py (static) and design/audit.js through tests/test_design_audit.py (runtime). Words: design/CONTRACT.md.",
+ "version": "2026-10-06",
+ "skip_files": {
+  "hyimg/review/index.html": "/v1, the first review page, kept as it was (its own Onest font and palette), not part of the current app"
+ },
+ "easing": {
+  "curves": [
+   "cubic-bezier(.32,.72,0,1)",
+   "cubic-bezier(.3,.8,.25,1)",
+   "cubic-bezier(.2,.9,.3,1.15)",
+   "cubic-bezier(.33,0,.2,1)",
+   "cubic-bezier(.45,0,.2,1)",
+   "cubic-bezier(.16,1,.3,1)",
+   "cubic-bezier(.45,0,.15,1)"
+  ],
+  "keywords": [
+   "ease",
+   "linear"
+  ],
+  "why": {
+   "cubic-bezier(.32,.72,0,1)": "THE curve of the app: 114 uses, ui/slider.js «easing cubic-bezier(.32,.72,0,1)», the marks' --mke, menus, key hints, editors",
+   "cubic-bezier(.3,.8,.25,1)": "DESIGN.md «Движение»: the main curve for moves and sizes, 0.4-0.8 s (the library panel, the .seg thumb, the library button's picture); 19 uses",
+   "cubic-bezier(.2,.9,.3,1.15)": "hyPop: a round button grows out of scale(0) with a small overshoot (DESIGN.md, look.css)",
+   "cubic-bezier(.33,0,.2,1)": "hyGrow's first segment (the crumb grows as a circle), a keyframe's own timing in look.css",
+   "cubic-bezier(.45,0,.2,1)": "hyGrow's second segment (the crumb opens to its width)",
+   "cubic-bezier(.16,1,.3,1)": "the loading lines of Home and the board (#csteps, .prog, #load): one choreography, 11 uses, kept as its own curve",
+   "cubic-bezier(.45,0,.15,1)": "hyLay, the entrance of the library's layer from 1.5 (owner 2026-10-04, a drawing), a slow symmetric 1.8 s zoom",
+   "ease": "opacity and colour, DESIGN.md: «Прозрачность меняется быстрее, около 0.3 с, ease»",
+   "linear": "a keyframe animation whose keyframes carry their own timing (hyGrow), spinners, progress",
+   "ease-in-out (loops)": "only in an endless breathing or pulsing loop (animation ... infinite alternate: the loading skeletons, a name loading): a symmetric curve is right there"
+  },
+  "not_allowed": {
+   "ease-in-out": "outside an infinite loop (the board's twinkle of the dots, 2 s once)",
+   "ease-in": "",
+   "ease-out": "",
+   "cubic-bezier(.2,.8,.2,1)": "the library's filter drawer: a near copy of .3,.8,.25,1",
+   "cubic-bezier(.4,0,.2,1)": "#csteps.out (Material's standard curve)",
+   "cubic-bezier(.2,.9,.3,1.3)": "Home: a stronger overshoot than hyPop's 1.15"
+  },
+  "loops": [
+   "ease-in-out"
+  ]
+ },
+ "radius": {
+  "row": {
+   "token": "--hy-row-r",
+   "round": "999px",
+   "pro": "8px",
+   "who": "every control that is a row of a panel: slider (--hy-sl-r), select, field, option button, filter chip, search field, the 3D editor's DialKit rows, the frame editor's --r-ctl (look.css, owner 2026-10-06: «одни круглые другие квадратные»)"
+  },
+  "tree_row": {
+   "token": "--hy-trow-r",
+   "value": "8px",
+   "height": "28px",
+   "who": "a row of a tree list: the library's folders, the 3D editor's layers"
+  },
+  "plate": {
+   "round": "pill (38 px plate: 19 px)",
+   "pro": "11px",
+   "who": "#crumb, #bset, #bhist, #bkeys, #bntf, #wl, #tlibR, the search plate (DESIGN.md «Вид элементов»)"
+  },
+  "bar": {
+   "round": "pill",
+   "pro": "14px",
+   "who": "#dock, the library's dock header.hy-dock, the filter window .tfpanel"
+  },
+  "button_in_plate": {
+   "round": "pill",
+   "pro": "8px",
+   "who": "a button inside a plate or a dock; .seg buttons 6 px in pro"
+  },
+  "mark": {
+   "round": "999px (--mkr)",
+   "pro": "5px",
+   "who": "a board card's mark"
+  },
+  "kbd": {
+   "value": "5px",
+   "who": "a key cap"
+  }
+ },
+ "heights": {
+  "plate": 38,
+  "button_in_plate": 30,
+  "dock_button": 34,
+  "panel_row": 32,
+  "menu_row": 32,
+  "seg_button": 28,
+  "slider": 34,
+  "tree_row": 28,
+  "kbd": 20,
+  "bar_kbd": 18,
+  "why": "plate 38 and its buttons 30 (#crumb, #bset...); the board's dock .bar button 34; a panel's row 32 (#sets buttons, .hy-search, #sets .opts, #ctx and #lctx rows); a .seg option 28 (canvas #sets .seg); the slider 34 (--hy-sl-h, from the 3D editor)"
+ },
+ "icons": {
+  "stroke_widths": [
+   "1.8",
+   "1.85",
+   "1.9",
+   "2",
+   "2.2",
+   "2.4"
+  ],
+  "family": {
+   "line": 1.85,
+   "grid": 24,
+   "source": "ui/icons.js HY_IC_LINE: Lucide geometry on a 24 grid, round caps and joins (owner 2026-10-06: the frame editor's set is the family)"
+  },
+  "menu": {
+   "line": 1.9,
+   "size": 15,
+   "source": "ui/menu.js HY_IC"
+  },
+  "chevron": {
+   "line": 2.4,
+   "size": 12,
+   "source": "ui/menu.js HY_CHEV (owner 2026-10-04: «the arrow must be the same everywhere»)"
+  },
+  "why": "1.8 to 1.9 is the family's line as written in different files (26 + 15 + the 1.85 family: indistinguishable on screen, one value would be better); 2, 2.2 and 2.4 are the heavier line of 12-14 px glyphs. Other lines (1.5, 1.6, 1.7, 2.6, 2.8, 3, 4) are flagged.",
+  "registry": "hyimg/review/ui/icons.js",
+  "rule": "one meaning, one icon, only from ui/icons.js (owner 2026-10-07: «Иконка Adjustments неверная. Нужно, чтобы это было систематизировано ... консистентные иконки, консистентные стили, консистентные цвета»). The registry HY_TOOL_IC names each glyph by its meaning (the comment after it); a page or a plugin draws an icon with hyIcon(name, size, line, cls), <svg data-ic=name> in static markup, hyIconPath(name) on a canvas or the --hy-ic-* CSS images, and writes no <path>, <circle> or <rect> of its own (validate.py icon-inline). A name is one glyph, a glyph is one name, every name asked for exists (icon-registry); a glyph is drawn in currentColor (icon-color), the one exception Raw Editor's «on» disc (hyGradeIcon). A table of older names (ui/menu.js NAME, the image studio's ICON_NAME, the 3D studio's FAMILY) is marked hy-icon-names and points only at registry names.",
+  "name_tables": "a comment with hy-icon-names on the line of a table's opening brace (or the line above): its string values are registry names",
+  "allow_files": {
+   "hyimg/review/ui/projicon.js": "the pictograms a person picks for a project on Home (stored by name in home.json, beside the emoji): a catalog of pictures, not the app's meanings"
+  }
+ },
+ "marks": {
+  "height": 24,
+  "inset": 6,
+  "inset_selected": 20,
+  "icon": 12,
+  "font_px": 11,
+  "gap": 4,
+  "padding": 6,
+  "radius_round": "999px",
+  "radius_pro": 5,
+  "full_from": 96,
+  "fold_below": 104,
+  "source": "canvas.html .mk and MK (owner 2026-10-06: «inconsistencies in item badges across the board, padding rules, sizing, disappearing rules»)",
+  "note_dot": 12,
+  "note_why": "the note mark is a plain 12 px dot with a thin dark ring, not a plate (owner 2026-10-06: «before, like the blue dot, it worked perfectly»)",
+  "live": "the runtime audit takes the plate and the inset from canvas.html MK when the page has it (the marks were being redesigned on 2026-10-06: 26 px, 8.5 px inset); the numbers here are the fallback"
+ },
+ "fonts": {
+  "sans": "\"Geist\", -apple-system, \"Helvetica Neue\", Arial, sans-serif",
+  "mono": "\"Geist Mono\", ui-monospace, Menlo, monospace",
+  "families": [
+   "Geist",
+   "Geist Mono",
+   "Inter",
+   "-apple-system",
+   "system-ui",
+   "Helvetica Neue",
+   "Arial",
+   "sans-serif",
+   "ui-monospace",
+   "SFMono-Regular",
+   "SF Mono",
+   "Menlo",
+   "monospace",
+   "SF Pro Text",
+   "inherit",
+   "ui-sans-serif",
+   "BlinkMacSystemFont"
+  ],
+  "sizes_px": [
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   18
+  ],
+  "why": "the pages' --sans; the slider's number and code in Geist Mono; «SF Pro Text» is the studio look's --sans (ui/studio.css). Sizes: 12 (72 uses), 13 (47), 11 (39), 10, 14, 15, 18; 12.5 (24) and 11.5 (13) are in-between sizes worth folding into 12 and 11"
+ },
+ "colors": {
+  "dark": {
+   "--bg": "#09090b",
+   "--panel": "#0c0c0e",
+   "--raise": "#18181b",
+   "--ink": "#fafafa",
+   "--sub": "#a1a1aa",
+   "--muted": "#71717a",
+   "--line": "#27272a",
+   "--sel": "#3b82f6",
+   "--paper": "#17171a"
+  },
+  "light": {
+   "--bg": "#f4f4f5",
+   "--panel": "#ffffff",
+   "--raise": "#f4f4f5",
+   "--ink": "#09090b",
+   "--sub": "#52525b",
+   "--muted": "#a1a1aa",
+   "--line": "#e4e4e7",
+   "--sel": "#2563eb",
+   "--paper": "#ebe6dc"
+  },
+  "marking": {
+   "yellow": "#f4c430",
+   "orange": "#f59a3d",
+   "red": "#ef6a6a",
+   "pink": "#f08cc4",
+   "purple": "#b79cf2",
+   "blue": "#7dbbf5",
+   "green": "#7fd49b",
+   "grey": "#d9d9de"
+  },
+  "danger": {
+   "menu": "#ef4444",
+   "reset_dark": "#ff453a",
+   "reset_light": "#d70015"
+  },
+  "shadows": {
+   "--plate-sh": "ui/look.css (with or without, cv.shadow)",
+   "--hy-sh-ctl": "ui/ui.css, a control on the surface",
+   "--hy-sh-pop": "ui/ui.css, a panel or menu over it"
+  },
+  "rule": "colours only by tokens (owner 2026-10-07: «консистентные цвета»): a CSS declaration takes var(--ink), var(--sel) and the rest; a hex, rgb() or hsl() is written only as a token's value (--name: #...), in a var() fallback, or where it is not a colour of the interface: a mask's alpha (mask, -webkit-mask), a drawn swatch of a colour itself (a hue track). validate.py css-color; what is known is in design/baseline.json",
+  "not_colour_props": ["mask", "mask-image", "-webkit-mask", "-webkit-mask-image", "mask-border", "-webkit-mask-box-image"]
+ },
+ "z_layers": [
+  {
+   "name": "local",
+   "min": -1,
+   "max": 9,
+   "who": "stacking inside a component: a card's marks (3), key caps over a button (2), dots"
+  },
+  {
+   "name": "content",
+   "min": 10,
+   "max": 29,
+   "who": "the library's own layers: its list, grips, drawers, the viewer (20)"
+  },
+  {
+   "name": "chrome",
+   "min": 30,
+   "max": 39,
+   "who": "bars, plates and panels over the board: #dock, #crumb (31), #bset, #sets, #pages (35)"
+  },
+  {
+   "name": "overlay",
+   "min": 40,
+   "max": 59,
+   "who": "Home's loading, the board's jump and big video, Home's menus (50)"
+  },
+  {
+   "name": "menu",
+   "min": 60,
+   "max": 79,
+   "who": "right-click menus and editor popovers: #ctx (60), #lctx (70), the 3D menus (70)"
+  },
+  {
+   "name": "dialog",
+   "min": 80,
+   "max": 99,
+   "who": "dialogs over everything of a page: layout-sync's menu and dialog"
+  },
+  {
+   "name": "toast",
+   "min": 1000,
+   "max": 1000,
+   "who": "#hyToasts"
+  },
+  {
+   "name": "takeover",
+   "min": 1100,
+   "max": 1299,
+   "who": "the frame editor over the board, and the board's crumb and dock lifted over it"
+  },
+  {
+   "name": "inspector",
+   "min": 2147483647,
+   "max": 2147483647,
+   "who": "Dev studio's marks inside a page it inspects (a foreign page: it must win)"
+  }
+ ],
+ "focus": {
+  "ring": "none",
+  "why": "owner 2026-10-05: «убери эти уебищные focus выделения»; look.css `:focus, :focus-visible { outline: none !important }`; menus keep their row highlight, text fields their border colour"
+ },
+ "runtime": {
+  "prose": {
+   "about": "panel prose (owner 2026-10-06, the 3D studio's Scene panel in white body text: «Вот эти комментарии никто не читает ... микро шрифтом, как Apple обычно делает ... Если текст не ключевой, то зачем он вообще нужен»): an explanation in a panel, popover, empty state or setting is not written when it is not key, one footnote line (ui/hy/hint.css .hy-hint or <hy-hint>, key words in <b>) when it is, a ⓘ (.hy-info, the text in its tooltip) when something is really unclear. Static: scripts/validate.py panel-prose; runtime: design/audit.js prose",
+   "max_words": 14,
+   "hint_max_words": 20,
+   "hint_classes": ["hy-hint"],
+   "hint_classes_by_file": {"hyimg-frames/editor/index.html": ["note"]},
+   "hint_px": 11.5,
+   "skip_classes": ["agentnote"],
+   "skip": ["#keys", ".helpbox", "#ntf .nt", "#iNotes .txt", "#iNotes .qa", "#iP:not(.hy-hint)", "#hist .hv", "#evList .ev", "textarea", "[contenteditable]", "#vPrompt", ".bn", ".note-body", ".dvt", ".dsec"],
+   "why_skip": "agentnote: the hidden note for an AI agent, not shown; the person's or an agent's own words (a prompt, a notification's text, a version's name, a frame's answers) and the shortcuts reference (#keys, the viewer's ?) are content, not explanation"
+  },
+  "row_controls": [
+   ".hy-slider:not(.sm)",
+   "select",
+   "input[type=text]",
+   "input[type=search]",
+   "input[type=number]",
+   "#sets .opts button",
+   ".fchip",
+   ".tfchip",
+   ".hy-search > input",
+   ".dialkit-select-trigger",
+   ".dialkit-text-control",
+   ".dialkit-button",
+   ".dialkit-action-button",
+   ".dialkit-color-control"
+  ],
+  "bars": [
+   "#dock",
+   "#crumb",
+   "header.hy-dock",
+   ".pickbar",
+   "#handles .tidy",
+   ".m3t",
+   ".dvbar",
+   "#rail",
+   "#obar",
+   "#topr"
+  ],
+  "chrome": [
+   "#dock",
+   "#crumb",
+   "#bset",
+   "#bhist",
+   "#bkeys",
+   "#bntf",
+   "#sets",
+   "#hist",
+   "#ntf",
+   "#keys",
+   "#pages",
+   "#ctx",
+   "#info",
+   "#handles .tidy",
+   "#jump",
+   "header.hy-dock",
+   ".tfpanel",
+   ".pickbar",
+   "#wl",
+   "#tlibR",
+   "#lctx",
+   ".fbar",
+   "#lview",
+   "aside",
+   ".top",
+   ".head",
+   ".menu",
+   "#pjpick",
+   ".m3p",
+   ".m3l",
+   ".m3r",
+   ".m3t",
+   ".m3menu",
+   ".m3title",
+   ".dvl",
+   ".dvr",
+   ".dvbar",
+   ".dvp",
+   "#rail",
+   "#side",
+   "#obar",
+   "#acts",
+   "#topr",
+   "#libp",
+   "#dlg"
+  ],
+  "target_min": 24,
+  "target_exempt": [
+   ".msw",
+   ".hy-slider-v",
+   "#keys",
+   ".frow .fck",
+   ".mk",
+   ".hy-search"
+  ],
+  "library_pills": [
+   ".card .kd",
+   ".card .pill"
+  ],
+  "font_families": [
+   "Geist",
+   "Geist Mono",
+   "Inter",
+   "-apple-system",
+   "system-ui",
+   "Helvetica Neue",
+   "SF Pro Text",
+   "ui-monospace",
+   "Menlo",
+   "SFMono-Regular",
+   "SF Mono",
+   "monospace",
+   "sans-serif",
+   "BlinkMacSystemFont"
+  ],
+  "marks": {
+   "height": 24,
+   "inset": 6,
+   "font_px": 11,
+   "radius_pro": 5,
+   "full_from": 96,
+   "dots": [
+    "mk-note"
+   ],
+   "dot": 12
+  },
+  "overlays": [
+   "#sets",
+   "#hist",
+   "#ntf",
+   "#keys",
+   "#pages",
+   "#ctx",
+   "#lctx",
+   ".menu",
+   ".tfpanel",
+   "#pjpick",
+   ".m3menu",
+   ".dvp",
+   "[role=dialog]",
+   "[role=menu]",
+   "#dlg",
+   "#info"
+  ],
+  "inset": {
+   "about": "the inset check (design/audit.js inset, owner 2026-10-06): px from a control's content to its rounded edge",
+   "capsule": 8,
+   "chip": 6,
+   "share": 0.5,
+   "small_h": 22,
+   "rect": 6,
+   "chip_rect": 4,
+   "nested": 2,
+   "option": 5
+  },
+  "top_row": {
+   "about": "the top row in every mode (design/audit.js top-row, owner 2026-10-07: «breadcrumb area тоже разношерстная»): the plates whose top is within band px of the window's top and that are no taller than max_h (the window buttons' capsule, the library button, the crumb, a title plate after it, «To the original», the round buttons, Home's search and «New board», the image studio's Save) stand top px down, height px tall, gutter px from the window's sides, gap px from a neighbour (a plate nearer than near px), with one glass, one shadow, one corner and text px words; a mode's hint plate (hint) is one of them under the row, under px from the top and gutter in; the side panels (panels) start under px from the top; nothing lies on a band a page draws as the window's edge (window.hyEdges(), the image studio's rulers); no note (toasts) covers a plate of the row. The tokens: ui/look.css --hy-row-top, --hy-row-gut, --hy-row-gap, --hy-plate-h, --hy-row-under, the look .hy-plate",
+   "top": 12,
+   "gutter": 12,
+   "height": 38,
+   "gap": 8,
+   "under": 58,
+   "text": 13,
+   "tol": 1,
+   "band": 30,
+   "max_h": 60,
+   "near": 32,
+   "skip": ["#world", "#handles", "#hyToasts", ".menu", "[role=menu]", "[role=dialog]", "#ctx", "#lctx", "#sets", "#hist", "#ntf", "#keys", "#pages", "#tip", "#modetip", "#load"],
+   "hint": ["#obar"],
+   "toasts": ["#hyToasts .ht"],
+   "panels": [".m3l", ".m3r", ".dvl", ".dvr", "#side", "body.cv-on:not(.cv-only) main#list"],
+   "title_plates": ["gst", "m3title"],
+   "plates": ["#wl", "#tlibR", "#crumb", "#gsticky .gst", ".m3title", "#jump button", "#bntf", "#bkeys", "#bhist", "#bset", "#topr .tp", ".top #q", ".top .btn", "#obar", ".hy-plate"]
+  }
+ },
+ "disagreements": [
+  "easing: DESIGN.md names cubic-bezier(.3,.8,.25,1) the main curve, the code uses cubic-bezier(.32,.72,0,1) 114 times against 19; both are in the contract, (.32,.72,0,1) is THE curve for new work",
+  "row heights: panel rows are 32 px (#sets, .hy-search, #ctx), the slider beside them 34 px (--hy-sl-h), the library's header select and search 34 px, the board's library head .lhead 32 px",
+  "seg buttons: 28 px in the board's settings (#sets .seg > button), 26 px in Home's settings (the same panel by DESIGN.md «Меню и настройки»)",
+  "menu rows: the board's #ctx and the library's #lctx 32 px, Home's .menu 30 px",
+  "selection bars: the board's dock buttons 34 px, the library's .pickbar 30 px",
+  "menus' z-index: Home's .menu 50, the board's #ctx 60, the library's #lctx 70",
+  "icon lines: 1.8 (26 uses), 1.85 (the family), 1.9 (menus) for one family",
+  "font sizes: 12.5 px (24 uses) and 11.5 px (13) between the scale's 12 and 11"
+ ]
+}

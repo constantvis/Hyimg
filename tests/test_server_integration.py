@@ -51,6 +51,9 @@ def servers(tmp_path):
         project = str(uuid.uuid4())
         env = {k: v for k, v in os.environ.items() if not k.startswith(('HYIMG_', 'REVIEW_'))}
         env.update(HYIMG_LIBRARY_ROOT=str(library), HYIMG_PROJECT_ID=project, PYTHONDONTWRITEBYTECODE='1')
+        # the interface in Russian: these tests check its Russian words (owner 2026-10-06: English by default, Russian by the setting)
+        (tmp_path / f'{name}-settings.json').write_text(json.dumps({'cv.lang': 'ru'}))
+        env['HYIMG_SETTINGS'] = str(tmp_path / f'{name}-settings.json')
         # the board's library rules: this test's own file, never the person's library-rules.json
         rules_file = tmp_path / f'{name}-rules.json'
         rules_file.write_text(json.dumps({project: rules} if rules else {}))

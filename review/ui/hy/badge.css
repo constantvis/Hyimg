@@ -1,0 +1,9 @@
+/* <hy-badge>: a count on a button's corner, or a dot (docs/ui-inventory.md §2.2: two badges of two sizes and colours, two dots). 16 px,
+   the selection's colour; tone=red for what needs the owner, tone=neutral a quiet count. dot: an 8 px dot. A zero count hides it. */
+hy-badge { display: inline-grid; place-items: center; box-sizing: border-box; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; vertical-align: middle;
+  background: var(--hy-sel); color: var(--hy-on-accent); font: 600 10px/16px var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; }
+hy-badge[tone=red] { background: var(--hy-red); }
+hy-badge[tone=neutral] { background: var(--raise); color: var(--sub); box-shadow: inset 0 0 0 1px var(--line); }
+hy-badge[count]:empty::before { content: attr(count); }   /* the count before the script writes it */
+hy-badge[dot] { min-width: 0; width: 8px; height: 8px; padding: 0; font-size: 0; }
+hy-badge[hidden], hy-badge[count="0"]:not([zero]) { display: none; }

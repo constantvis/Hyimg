@@ -1,6 +1,6 @@
 ---
 name: hyimg-board
-description: Read and change the canvas (board) of a Hyimg project with review/hy.py: put a batch of pictures on the board, group it, add notes and headings, move, align, take things off, check for overlaps and crooked rows, and see what is on the board without screenshots. Use whenever pictures must be placed, arranged, grouped, aligned or removed on the Hyimg board («положи на доску», «разложи», «сгруппируй», «выровняй», «убери с холста», «добавь на холст»), or when you need to know what lies on a page. Read the hyimg skill first if you have not.
+description: Read and change the canvas (board) of a Hyimg project with review/hy.py: put a batch of pictures on the board, group it, add notes and headings, move, align, take things off, check for overlaps and crooked rows, and see what is on the board without screenshots. Use whenever pictures must be placed, arranged, grouped, aligned or removed on the Hyimg board («положи на доску», «разложи», «сгруппируй», «выровняй», «убери с холста», «добавь на холст»), or when you need to know what lies on a page. Also for a card's look and the board's other objects: crop, video trim, opacity, PDF page, colour grade and Hue/Saturation, master mask, copy/paste properties and presets («скопируй свойства», «цветокор», «маска»), moving things to another page («перенеси на страницу»), new pages, image frames, 3D cards from glb/STEP, HTML frames and cards, notes with arrows. Read the hyimg skill first if you have not.
 ---
 
 # Доска Hyimg
@@ -28,7 +28,11 @@ python3 review/hy.py map "Архитектура"   # что вокруг одн
 python3 review/hy.py find бабушка        # id и границы всего, в чьем имени есть слово, и кадров, в чьем пути оно есть
 python3 review/hy.py check               # кадры друг на друге, кривые ряды, кадры, торчащие из рамок
 curl -s "http://localhost:4180/api/notes?name=main"   # заметки страницы с привязанными кадрами
+python3 review/hy.py pages               # страницы с id и числом кадров
+python3 review/hy.py features маска      # умеет ли Hyimg что-то и какой командой (каталог функций)
 ```
+
+`map` считает карточки плагинов (3D, HTML), `find <файл>` дает их id: `find suzanne.glb`, `find badge-lab`. Новая страница: `hy.py page new "Название"`, дальше `--page <id>`. Работай с `--page`, пока владелец смотрит другую.
 
 Скриншоты и дамп всей доски не нужны: `map` и `find` дают то же самое в десятки раз короче.
 
@@ -76,6 +80,10 @@ python3 review/hy.py do 'block "arc/2610020900-p7/*" near="Отражения я
 
 В какую группу класть именно в этом проекте, сказано в правилах проекта. Не сказано: в ту, из которой взяты исходники или эталоны.
 
+## PDF на доске
+
+PDF в библиотеке показан первой страницей и кладется на доску как обычный кадр (`block`, `card`). В карточке хранится `page: n` (с 1, нет поля значит первая страница; файл не меняется) и, у карточек, полученных командой «Split into pages», `pageFixed: true`: такая карточка показывает одну страницу без стрелок. Страницу карточки можно задать правкой доски: `page` в элементе. Число страниц и пропорции каждой дает `GET /api/pdf?p=<путь>` (`pages`, `ars`). Пустые файлы (0 байт) в библиотеке есть, но на доску не кладутся.
+
 ## Двигать и выравнивать
 
 ```bash
@@ -97,6 +105,51 @@ python3 review/hy.py do 'arrange i3k2 i9f0 i0aa near="P7 · 2610020900" side=bel
 Подгруппа двигается целиком: `move "<заметка>"` уносит и кадры ее зоны. После переноса или удаления блоков подгони рамку: `fit "<группа>"`. Заметки подгрупп держи на одной вертикали, `check` ловит лесенку.
 
 Значение `@Имя[.left|.right|.top|.bottom|.cx|.cy][+N|-N]` берет край вещи. Группа двигается вместе со своими кадрами. Чужие группы и заметки двигай только по просьбе владельца.
+
+## Вид карточки
+
+Обрезка, время видео, прозрачность, страница PDF, цветокор и маска хранятся в карточке, файл не меняется. Команды берут id, имя группы или маску путей и пропускают то, к чему вид не подходит (время только у видео, цветокор не у видео), об этом пишут.
+
+```bash
+python3 review/hy.py do 'crop <id> box=0.1,0.1,0.9,0.8'           # доли кадра x0,y0,x1,y1
+python3 review/hy.py do 'trim <id видео> in=2 out=5'               # секунды
+python3 review/hy.py do 'opacity "Группа" value=0.6; pdfpage <id pdf> n=2'
+python3 review/hy.py do 'grade <id> exposure=0.3 temp=15 saturation=-20 hue=30 sat=10'   # цветокор (плагин frames), hue/sat/light: Hue/Saturation
+python3 review/hy.py do 'mask <id png> alpha=1'                    # мастер-маска из прозрачности; file=<png> чужая маска
+python3 review/hy.py do 'grade <id> clear=1; mask <id> clear=1'
+```
+
+Цветокор фрейма картинок это его главный цветокор (слой Color Grading в студии), маска фрейма главная маска: те же команды с id фрейма (`F` в `map`).
+
+## Свойства и пресеты
+
+Как «Copy properties ›» / «Paste properties ›» на холсте: виды `grade`, `mask`, `crop`, `trim`, `size`, `opacity`, `page`.
+
+```bash
+python3 review/hy.py do 'props from=<id> to=<id>,<id> only=grade,crop'   # без only: все виды, что есть у источника
+python3 review/hy.py preset save "Теплый" <id> only=grade                  # пресет проекта, владелец видит его в «Presets ›»
+python3 review/hy.py presets
+python3 review/hy.py do 'props preset="Теплый" to="Группа"'
+```
+
+## Перенести на другую страницу
+
+```bash
+python3 review/hy.py do 'topage "Страница B" "Группа"'   # группа со всем внутри, заметка с зоной; версии на обеих страницах
+```
+
+## Карточки плагинов, заметки со стрелками
+
+```bash
+python3 review/hy.py do 'model playground/3d/suzanne.glb near="Группа" side=right w=360'   # 3D-карточка из glb или STEP/IGES (FreeCAD)
+python3 review/hy.py do 'frame <id> <id> name="Фрейм"'                                     # фрейм картинок (⌥⌘G)
+python3 review/hy.py do 'htmlframe html/<имя>/index.html x=0 y=0 w=480 vw=960 vh=640'      # HTML-фрейм (плагин frames)
+python3 review/hy.py do 'html <файл>.html near="Группа"'                                   # HTML-карточка Dev studio, без плагина откажет
+python3 review/hy.py do 'note "текст" x=@<id>.right+40 y=@<id>.top; link "текст" <id> <id>'   # заметка и стрелки от нее
+python3 review/hy.py do 'group "Тема" <id заметки> <id карточки> <id карточки>'            # карточки и фреймы входят в группу по id
+```
+
+`@<id>` и `near=<id>` берут край любой вещи по id, в том числе карточки. Картинку 3D-карточки дорисует холст, когда страница откроется.
 
 ## Убрать
 

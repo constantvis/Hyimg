@@ -147,7 +147,8 @@
       mode = "worker";
     } catch (e) {   // no worker for it here: the same field on this page's own frames
       why = String(e && e.message || e);
-      const api = FIELD({ raf: requestAnimationFrame.bind(window), caf: cancelAnimationFrame.bind(window) })(cv, opts, got);
+      // a copy of the grids: the field keeps its own list, and with this one shared every setSpec pushed twice (unit test, 2026-10-06)
+      const api = FIELD({ raf: requestAnimationFrame.bind(window), caf: cancelAnimationFrame.bind(window) })(cv, Object.assign({}, opts, { specs: specs.slice() }), got);
       send = (cmd, ...args) => api[cmd](...args); kill = () => api.stop();
     }
     const fit = () => { if (!dead) send("size", cv.clientWidth || innerWidth, cv.clientHeight || innerHeight, devicePixelRatio || 1); };
@@ -160,7 +161,7 @@
       age() { return (Date.now() - params.t0) / 1000; },
       take(p) {
         if (p.seed >>> 0 === params.seed && p.t0 === params.t0) return;
-        params = { seed: p.seed >>> 0, t0: p.t0 }; if (p.specs) specs = p.specs.slice(); send("take", { seed: params.seed, t0: params.t0, specs });
+        params = { seed: p.seed >>> 0, t0: p.t0 }; if (p.specs) specs = p.specs.slice(); send("take", { seed: params.seed, t0: params.t0, specs: specs.slice() });
       },
       setSpec(s, org) { const at = Date.now(); specs.push({ s, at }); if (specs.length > 4) specs.splice(1, 1); send("setSpec", s, org, at); },
       land() { if (landAt) return; landAt = Date.now(); send("land", landAt); },
