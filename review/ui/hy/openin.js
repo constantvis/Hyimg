@@ -5,7 +5,9 @@
 // In the Mac app: the main part reads «Open in Safari» with Safari's own icon and opens the page there; the chevron opens a menu of the
 // browsers on this Mac, each with its icon and name, the system's default marked; choosing one opens the page in it, and it stays the main
 // part's browser from then on (the app remembers it for this Mac's user). Elsewhere (a plain browser, or an app built before the browsers
-// existed, which never answers): «Open in browser», no icon, no chevron, the page in a new tab.
+// existed, which never answers): «Open in browser», no icon, the page in a new tab; the button keeps its shape, the chevron and its
+// hairline, and the menu has the one row it can offer, «Default browser» (owner 2026-10-09 on the plain form: «Ты не добавил стрелочки
+// у этой кнопки, которая имеет разделитель вертикальный, чтобы можно было выбрать браузер»).
 // The app's side (native/Browsers.swift): the page sends {action: "browsers", op: "list"} and gets window.hyimgBrowsers({op: "list",
 // browsers: [{id, name, icon}], default, last}); {op: "open", url, app} opens the url in that browser and answers {op: "open", app} or
 // {op: "open", error}. window.hyBrowsers is this way for the classic scripts; hyBrowsers.via(fn) puts another one in (the tests).
@@ -110,7 +112,7 @@ export class HyOpenIn extends HyElement {
   get tip() { return this.#tip; }
   set tip(v) { this.#tip = String(v || ""); if (this.#go) this.sync(); }
 
-  /** The words, icon and tooltip of the main part, the chevron when there is a choice. */
+  /** The words, icon and tooltip of the main part; the chevron always (without the app its menu offers the default browser alone). */
   sync() {
     const go = this.#go, more = this.#more; if (!go || !more) return;
     const b = hyBrowsers.chosen(), data = this.getAttribute("tips") === "data";
@@ -118,7 +120,7 @@ export class HyOpenIn extends HyElement {
     const tip = b ? t("Open the page in {app}", { app: b.name }) : this.tip || t("Open the page in a new tab");
     if (data) { go.dataset.tip = tip; go.dataset.side = "bottom"; more.dataset.tip = t("Choose a browser"); more.dataset.side = "bottom"; }
     else { go.title = tip; more.title = t("Choose a browser"); }
-    more.hidden = !b; this.toggleAttribute("split", !!b);
+    this.toggleAttribute("split", true);
     if (this.#menu) this.drawMenu();
   }
 
@@ -133,18 +135,18 @@ export class HyOpenIn extends HyElement {
     this.emit("hy-open", { url, app: b ? b.id : "" });
   }
 
-  /** @param {string} id */
+  /** @param {string} id a browser of the app's list; "" the default browser (a new tab) */
   openWith(id) {
     const url = this.url(); this.close(); if (!url) return;
-    if (!hyBrowsers.open(url, id)) window.open(url, "_blank", "noopener");
+    if (!(id && hyBrowsers.open(url, id))) window.open(url, "_blank", "noopener");
     this.emit("hy-open", { url, app: id });
   }
 
   openMenu() {
-    if (this.#menu || !hyBrowsers.list) return;
+    if (this.#menu) return;
     const m = this.#menu = document.createElement("div");
     m.className = "hy-oi-menu"; m.setAttribute("role", "menu"); m.setAttribute("aria-label", t("Choose a browser"));
-    m.addEventListener("click", e => { const r = /** @type {HTMLElement} */ (e.target).closest("[data-b]"); if (r instanceof HTMLElement && r.dataset.b) this.openWith(r.dataset.b); });
+    m.addEventListener("click", e => { const r = /** @type {HTMLElement} */ (e.target).closest("[data-b]"); if (r instanceof HTMLElement) this.openWith(r.dataset.b || ""); });
     m.addEventListener("pointerdown", e => e.stopPropagation());
     document.body.appendChild(m); this.drawMenu();
     const r = this.getBoundingClientRect();
@@ -163,7 +165,10 @@ export class HyOpenIn extends HyElement {
 
   /** @private */
   drawMenu() {
-    const m = this.#menu, g = hyBrowsers.list, c = hyBrowsers.chosen(); if (!m || !g) return;
+    const m = this.#menu, g = hyBrowsers.list, c = hyBrowsers.chosen(); if (!m) return;
+    // no list from the app: the one browser there is, the system's, which a new tab opens in; checked, as the main part's
+    if (!g) { m.innerHTML = `<button type="button" role="menuitemradio" aria-checked="true" data-b="">` + check() + `<span class="oi-ic"></span>`
+      + `<span class="oi-n">${esc(t("Default browser"))}</span></button>`; return; }
     m.innerHTML = g.browsers.map(b => `<button type="button" role="menuitemradio" aria-checked="${c && c.id === b.id}" data-b="${esc(b.id)}">`
       + check() + (b.icon ? `<img class="oi-ic" alt="" src="${b.icon}">` : `<span class="oi-ic"></span>`) + `<span class="oi-n">${esc(b.name)}</span>`
       + (b.id === g.default ? `<span class="oi-def">${esc(t("browser::Default").replace(/^\w+::/, ""))}</span>` : "") + `</button>`).join("");

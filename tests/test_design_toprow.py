@@ -106,10 +106,10 @@ def test_library(world, theme, shape, lang):
 
 @pytest.mark.parametrize("theme,shape,lang", LOOKS)
 def test_image_studio(world, theme, shape, lang):
-    if not (REPOS / "hyimg-frames/manifest.json").is_file(): pytest.skip("no hyimg-frames beside hyimg")
+    if not (REPOS / "hyimg-image-studio/manifest.json").is_file(): pytest.skip("no hyimg-image-studio beside hyimg")
     page, frame = studio(world, theme, shape, lang, "p2", "image", "() => window.__frames && __frames.ED && __frames.ED.win")
     stuck_title(frame)
-    # the tool's hint in the hint plate speaks the board's language (hyimg-frames lang.js, owner 2026-10-07)
+    # the tool's hint in the hint plate speaks the board's language (hyimg-image-studio lang.js, owner 2026-10-07)
     ed = next(f for f in page.frames if "/editor/" in f.url)
     hint = ed.evaluate("() => document.querySelector('#obar .hint2').textContent")
     assert hint.startswith("Клик выбирает слой" if lang == "ru" else "A click picks the layer"), hint
@@ -147,7 +147,7 @@ def test_home(world, theme, lang):
 def test_in_the_app_window(world, mode):
     """the Mac app's window: the window buttons' capsule, then the library button and the crumb, the row's gap apart"""
     if mode == "image":
-        if not (REPOS / "hyimg-frames/manifest.json").is_file(): pytest.skip("no hyimg-frames beside hyimg")
+        if not (REPOS / "hyimg-image-studio/manifest.json").is_file(): pytest.skip("no hyimg-image-studio beside hyimg")
         page, frame = studio(world, "dark", "round", "en", "p2", "image", "() => window.__frames && __frames.ED && __frames.ED.win", app=True)
     else:
         look(world, "dark", "round", "en"); reset_board(world)
@@ -159,10 +159,10 @@ def test_in_the_app_window(world, mode):
 
 def test_the_image_studio_rulers_leave_the_row_alone(world):
     """the rulers are off until turned on, and the vertical one runs from the window's very top (owner 2026-10-09: «опять проблема с тем,
-    что до самого верху должна идти линейка, и по дефолту выключена быть»; hyimg-frames had started it under the row): the row's plates
-    float over its top. The tool's options ride over the dock on the board since round 11 D3 (hyimg-frames editor/dockwork.js) and lie on
+    что до самого верху должна идти линейка, и по дефолту выключена быть»; hyimg-image-studio had started it under the row): the row's plates
+    float over its top. The tool's options ride over the dock on the board since round 11 D3 (hyimg-image-studio editor/dockwork.js) and lie on
     no ruler; the audit's edge band starts under the row's 58 px line, and it finds a hint plate laid on it"""
-    if not (REPOS / "hyimg-frames/manifest.json").is_file(): pytest.skip("no hyimg-frames beside hyimg")
+    if not (REPOS / "hyimg-image-studio/manifest.json").is_file(): pytest.skip("no hyimg-image-studio beside hyimg")
     page, frame = studio(world, "dark", "round", "en", "p2", "image", "() => window.__frames && __frames.ED && __frames.ED.win")
     ed = next(f for f in page.frames if "/editor/" in f.url)
     ed.wait_for_function("() => document.body.classList.contains('in')", timeout=10000); ed.wait_for_timeout(800)
@@ -186,13 +186,16 @@ def test_the_image_studio_rulers_leave_the_row_alone(world):
 
 
 def test_a_note_over_the_row_is_found(world):
-    """the notes (ui/toasts.js) stand under the row on its 58 px line; one moved up over the crumb is a finding (it used to stand 14 px
-    from the top, and the 3D studio's «scene saved» covered the scene's title)"""
+    """the notes (ui/toasts.js) stand in the row at its centre, as tall as its plates (owner 2026-10-09: «на уровне breadcrumbs, поверх
+    них, по центру экрана»); one moved over the crumb is a finding"""
     look(world, "dark", "round", "en"); reset_board(world)
     page, frame = open_app(world, "canvas"); library_closed(page)
     page.evaluate(NOTE)
-    top = page.evaluate("() => { const r = document.querySelector('#hyToasts .ht').getBoundingClientRect(); return r.top; }")
-    assert top >= 58 - 0.5, top
+    # the stack's line (the front card settles on it, translateY 0) and the card's height: the row's
+    top = page.evaluate("() => document.querySelector('#hyToasts').getBoundingClientRect().top")
+    assert abs(top - 12) <= 0.5, top
+    h = page.evaluate("() => parseFloat(getComputedStyle(document.querySelector('#hyToasts .ht')).minHeight)")
+    assert abs(h - 38) <= 0.5, h
     assert not [v for v in top_row(page) if v["key"].startswith("toast")]
     page.evaluate("() => { const s = document.documentElement.style; s.setProperty('--toast-top', '14px'); s.setProperty('--toast-x', '300px'); }")
     found = top_row(page)

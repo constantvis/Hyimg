@@ -25,7 +25,7 @@ def pdir(lib, tmp_path, monkeypatch):
     d = tmp_path / "plugins"; d.mkdir()
     monkeypatch.setenv("HYIMG_PLUGIN_DIR", str(d))
     pa._HOLDS.clear()
-    for name, repo, title in (("3d", "hyimg-3d-studio", "3D objects"), ("frames", "hyimg-frames", "Frames"), ("dev", "hyimg-dev-studio", "Dev studio")):
+    for name, repo, title in (("3d", "hyimg-3d-studio", "3D objects"), ("frames", "hyimg-image-studio", "Frames"), ("dev", "hyimg-dev-studio", "Dev studio")):
         r = plugin(tmp_path / "repos" / repo, {"title": title, "title_ru": title + " ru", "version": "0.1.0", "canvas": "canvas.js",
                                                "description": f"{title} does things", "description_ru": f"{title} делает"})
         os.symlink(r, d / name)

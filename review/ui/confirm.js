@@ -1,4 +1,4 @@
-// One question before something is lost, the image studio's (hyimg-frames editor/index.html openDialog, «Close without saving?»): a small
+// One question before something is lost, the image studio's (hyimg-image-studio editor/index.html openDialog, «Close without saving?»): a small
 // glass dialog in the middle of the window, in the dialog layer (the notes stay at the top), that only its answer closes (owner
 // 2026-10-07: the 3D studio's question hid behind a newer notification). The 3D studio asks with it; its look is the image studio's dialog: title, a footnote, Cancel and the
 // action, Enter the action, Esc or a press beside it Cancel. The keys go to it alone while it is open. Its classes are hc-* (the board's

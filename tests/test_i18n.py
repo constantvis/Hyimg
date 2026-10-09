@@ -140,7 +140,7 @@ def board_states(page, frame):
     ev("() => { sel = new Set(); render(); const s = document.querySelector('#stage'); s.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 600, clientY: 700 })); }")
     frame.wait_for_timeout(200); yield "empty canvas: context menu"
     frame.click('#ctx [data-act="view"]'); frame.wait_for_timeout(300); yield "link copied toast"
-    ev("() => { sel = new Set(['i4']); render(); }"); page.keyboard.press("c"); frame.wait_for_timeout(300); yield "crop"
+    ev("() => { sel = new Set(['i4']); render(); }"); page.keyboard.press("Shift+C"); frame.wait_for_timeout(300); yield "crop"
     page.keyboard.press("Escape"); frame.wait_for_timeout(150)
     ev("() => newTimeline(false)"); frame.wait_for_timeout(300); yield "a new timeline"
     page.keyboard.press("Escape")

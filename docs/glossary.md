@@ -1,6 +1,6 @@
 # Glossary
 
-Version 3, 2026-10-09 (Hint bar and Tip settled; version 2, 2026-10-08: Board and Studio). The names Hyimg uses in its interface, its docs and its agents. English is the base language; the Russian name is the one the Russian interface shows. A name marked **(not settled)** is still waiting for the owner's decision. The cards with a picture of each term are on the «Hyimg App» board, page «UI», group «Glossary» (`Concepts/html/editors-concepts/glossary/`).
+Version 4, 2026-10-09 (Comment renamed Annotation, drawing put off; version 3: Hint bar and Tip settled; version 2, 2026-10-08: Board and Studio). The names Hyimg uses in its interface, its docs and its agents. English is the base language; the Russian name is the one the Russian interface shows. A name marked **(not settled)** is still waiting for the owner's decision. The cards with a picture of each term are on the «Hyimg App» board, page «UI», group «Glossary» (`Concepts/html/editors-concepts/glossary/`).
 
 The word «Frame» is no longer used for a composed image or a reused thing: those are an **Image** and a **Component**.
 
@@ -21,8 +21,8 @@ Working on the canvas is the **Board**; working inside one object is a **Studio*
 | Reply | Ответ | A note with an arrow to another note: it answers that note, a thread as in comments | Board, Info |
 | Arrow | Стрелка | A curve from any thing to any other (a picture, a card, a heading, a group, a note), with words on it; solid «is», dashed «like», dotted «maybe», blue «picked». A note's own arrow is its link, not this | Board: the round handle of one selected thing |
 | Layout pattern | Шаблон раскладки | One of the ways an agent lays its work out (variants grid, A/B, a batch under its phase, before/after, review …); a choice gets numbers on its cells | hy.py patterns, the cells' numbers |
-| Annotation | Аннотация | Drawing on top of the canvas over any object: pen, arrow, shapes, short text; it moves with the object and never touches its pixels | Board › Annotate |
-| Comment | Комментарий | A pin with a thread on an object or the canvas, as in Figma: replies, @mentions of people and their agents, Resolve | Board › Comment, the comments list |
+| Annotation | Аннотация | A pin with a thread on an object, an area of it or the canvas, as Figma's comments: replies, @mentions of people and their agents, Resolve. Until 2026-10-09 the interface called it Comment; the code, the server and hy.py still do (`comments`, `/api/comments`, `hy.py comments`) | Board, C or the dock's Annotation button; right click on the empty board › Annotations on this page |
+| Drawing **(put off)** | Рисунок | Pen, arrow, shapes and short text on top of the canvas over any object, moving with it. Hidden since 2026-10-09 («доработать потом», docs/LATER.md); drawings already on a board still show. In the code and hy.py it is the «annotation» (`/api/annotations`, `hy.py annotations`) | Not in the interface |
 
 ## What lies on a canvas
 

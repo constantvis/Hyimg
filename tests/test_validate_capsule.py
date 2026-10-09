@@ -38,6 +38,6 @@ def test_a_reset_that_outweighs_a_buttons_padding_fails_and_where_passes(tmp_pat
 
 
 def test_the_repositories_have_no_new_capsule_pad():
-    items, files = V.run([str(ROOT.parent / r) for r in ("hyimg", "hyimg-frames", "hyimg-3d-studio") if (ROOT.parent / r).is_dir()], C)
+    items, files = V.run([str(ROOT.parent / r) for r in ("hyimg", "hyimg-image-studio", "hyimg-3d-studio") if (ROOT.parent / r).is_dir()], C)
     bad = [f"{i['file']}:{i['line']} {i['msg']}" for i in items if i["rule"] == "capsule-pad"]
     assert not bad, "\n".join(bad)

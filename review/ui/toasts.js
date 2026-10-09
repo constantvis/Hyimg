@@ -6,15 +6,15 @@
 // hyToast(text, kind?, {sticky}?) — kind "error" | "info" | "success" | "warn" (amber: a clash of two edits, ui/merge.js); without it the words decide. A sticky one (something to act on,
 // owner 2026-10-04: «key notes that matter in the moment can stay, with a × on the right to close») stays until its × is pressed. The canvas inside the library page sends its
 // notes up here, so one stack shows everything. They stand in the window's middle, an open library or not (owner 2026-10-04); --toast-x on <html> can move them, 50% by default.
-// They stand under the top row in every mode, on its --hy-row-under line (ui/look.css, 58 px): a note never covers the crumb, a title plate or
-// «To the original» (owner 2026-10-07, the 3D studio's «scene saved» over the scene's title); --toast-top on <html> can move them.
+// They stand IN the top row, at its centre, over whatever is there for their few seconds (owner 2026-10-09, again: «должно быть на уровне
+// наших breadcrumbs и верхнего UI, не под ними, поверх них, по центру экрана»), as tall as the row's plates; --toast-top on <html> can move them.
 (() => {
   if (window.hyToast) return;
   const css = `
-#hyToasts { position: fixed; top: var(--toast-top, var(--hy-row-under, 58px)); left: var(--toast-x, 50%); transform: translateX(-50%); z-index: 1000; pointer-events: none;
+#hyToasts { position: fixed; top: calc(var(--toast-top, var(--hy-row-top, 12px)) - var(--ht-base, 0px)); left: var(--toast-x, 50%); transform: translateX(-50%); z-index: 1000; pointer-events: none;
   width: var(--ht-w, 320px); max-width: calc(100vw - 32px); height: var(--ht-h, 0px); transition: top .3s cubic-bezier(.32,.72,0,1); }
 #hyToasts:not(:empty) { pointer-events: auto; }
-#hyToasts .ht { --k: var(--ht-info); position: absolute; transform-origin: 50% 0; left: 0; right: 0; top: 0; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 9px 16px 9px 14px; border-radius: var(--ht-r, 999px);
+#hyToasts .ht { --k: var(--ht-info); position: absolute; transform-origin: 50% 0; left: 0; right: 0; top: 0; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: var(--hy-plate-h, 38px); padding: 9px 16px 9px 14px; border-radius: var(--ht-r, 999px);
   font: 500 13px/1.4 var(--sans, -apple-system, system-ui, sans-serif); color: var(--k); cursor: default;   /* the words in the kind's colour, as its dot (owner 2026-10-06) */
   /* light (owner 2026-10-06: «the outline is too bright, it takes the attention; the colour more muted and see-through»): the kind is
      the dot, the plate barely tinted, the edge the panels' hairline */
@@ -66,7 +66,7 @@
     const w = Math.min(560, innerWidth - 32, Math.max(280, ...L.map(el => el.offsetWidth + 1)));
     box.style.left = box.style.maxWidth = ""; L.forEach(el => { el.style.width = ""; el.style.position = ""; });
     box.style.setProperty("--ht-w", w + "px");
-    let y = 0; const PEEK = 8, base = Math.min(2, L.length - 1) * PEEK;   // the room the older edges take above the front card
+    let y = 0; const PEEK = 6, base = Math.min(2, L.length - 1) * PEEK;   // the room the older edges take above the front card: 12 px at most, the row's top
     L.forEach((el, i) => {
       const h = el.offsetHeight; el.classList.toggle("behind", i > 0); el.classList.toggle("fan", fan); el.style.zIndex = 100 - i;   /* hy-allow: z-layer the order of the toasts inside #hyToasts (its own stacking context), newest on top */
       if (fan) { el.style.transform = `translateY(${y}px)`; el.style.opacity = 1; y += h + 8; }
@@ -74,7 +74,7 @@
       el.style.pointerEvents = fan || i === 0 ? "" : "none";
     });
     const front = L[0] ? L[0].offsetHeight : 0;
-    box.style.setProperty("--ht-h", (fan ? Math.max(0, y - 8) : front + base) + "px");
+    box.style.setProperty("--ht-h", (fan ? Math.max(0, y - 8) : front + base) + "px"); box.style.setProperty("--ht-base", (fan ? 0 : base) + "px");   // the front card on the row's line
   };
   const leave = el => {
     if (el._gone) return; el._gone = true; clearTimeout(el._t);

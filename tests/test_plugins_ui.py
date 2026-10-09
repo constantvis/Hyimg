@@ -4,7 +4,7 @@ opening Dev mode while Dev studio is on (owner: «зашел в режим Dev �
 
 A board with the three plugins linked from their working copies beside this repository into a temporary plugins folder (HYIMG_PLUGIN_DIR):
 the section lists them with versions; Dev studio off takes its dock mode and its routes away («plugin off»), its card shows its still with
-the «Plugin off» mark, the HTML frame's double-click opens the frame's live view; turned off from inside Dev mode it waits until the person
+the «Plugin off» mark, the HTML frame's double-click opens the frame's live view; turned off elsewhere while in Dev mode it waits until the person
 leaves; on again brings it all back; Remove takes only the link away. Home's section talks to the app (a stand-in for its bridge), in
 English and Russian. Chromium, dark theme, temporary folders. HY_SHOTS=<folder> keeps screenshots."""
 import json
@@ -25,7 +25,7 @@ playwright = pytest.importorskip("playwright.sync_api")
 ROOT = Path(__file__).resolve().parents[1]
 REPOS = ROOT.parent
 HOME = (ROOT / "review/home.html").as_uri()
-PLUGS = (("3d", "hyimg-3d-studio"), ("frames", "hyimg-frames"), ("dev", "hyimg-dev-studio"))
+PLUGS = (("3d", "hyimg-3d-studio"), ("frames", "hyimg-image-studio"), ("dev", "hyimg-dev-studio"))
 PAGE = "<!doctype html><html><head><meta charset=utf-8><title>Demo</title></head><body style='margin:0;background:rgb(20,120,200)'><h1 id=t>Hello</h1></body></html>"
 
 
@@ -170,16 +170,17 @@ def test_off_while_in_dev_mode_applies_when_leaving(hy):
         br, page, errors = board(p, port)
         page.dblclick(".plg[data-id=h1]")
         page.wait_for_function("() => window.__dev && __dev.D && __dev.D.id === 'h1'", timeout=10000)
-        page.click("#bset"); page.evaluate("s => hySetPanel.go(s)", "plugins"); page.wait_for_selector("#hyPlugSet [data-pl=\"dev\"] hy-switch")
-        switch(page, "dev", expect_reload=False)
-        page.wait_for_selector("#hyPlugSet [data-pl=\"dev\"] .hpl-pend")
-        assert page.locator("#hyPlugSet [data-pl=\"dev\"] .hpl-pend").inner_text() == "Turns off when you leave Dev Studio"
+        # a Studio has no gear (79e8b07): the switch comes from elsewhere, Home or another board, as the app passes it on (cv.plugoff)
+        assert not page.locator("#bset").is_visible()
+        assert call(port, "/api/settings", {"cv.plugoff": "dev"})[0] == 200
+        page.evaluate("() => window.hyimgSettingsChanged()")
+        page.wait_for_function("() => hyPlugBoard.pending('dev') !== ''", timeout=10000)
+        assert page.evaluate("hyPlugBoard.pending('dev')") == "Turns off when you leave Dev Studio"
         all_ = json.loads(call(port, "/api/plugins/all")[1])
         assert all_["off"] == ["dev"] and all_["held"] == ["dev"]
         assert call(port, "/api/plugin/dev/nothing", {})[0] == 404   # still served while the person is inside: a route it has not, not «off»
         assert page.evaluate("!!(__dev.D && __dev.D.id === 'h1')")
         shot(page, "4-off-waits-in-dev-mode")
-        page.click("#bset")   # the settings panel closes; Esc would leave Dev mode, as Done does
         with page.expect_navigation(timeout=20000):
             page.click("hy-studio-actions [data-a=done]")
         ready(page, 2)

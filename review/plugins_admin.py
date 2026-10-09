@@ -145,7 +145,7 @@ def check(folder, lang="en"):
 
 
 def name_for(folder, man):
-    """the manifest's name, else the folder's: hyimg-dev-studio → dev, hyimg-frames → frames"""
+    """the manifest's name, else the folder's: hyimg-dev-studio → dev, hyimg-image-studio → frames"""
     n = man.get("name")
     if isinstance(n, str) and NAME.fullmatch(n): return n
     b = re.sub(r"[^a-z0-9_-]+", "-", os.path.basename(folder).lower())

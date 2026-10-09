@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 REPOS = ROOT.parent
 CAT = json.loads((ROOT / "review" / "features.json").read_text(encoding="utf-8"))
 F = CAT["features"]
-PLUGIN_REPOS = ["hyimg-frames", "hyimg-3d-studio", "hyimg-dev-studio"]
+PLUGIN_REPOS = ["hyimg-image-studio", "hyimg-3d-studio", "hyimg-dev-studio"]
 
 
 def named(field):

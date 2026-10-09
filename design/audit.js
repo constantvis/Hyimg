@@ -8,6 +8,7 @@
 // What it checks (each a function below):
 //   row-radius   the row controls of one panel (sliders, selects, fields, options) have one radius (min(r, h/2), a pill is a pill)
 //   bar-height   the controls standing in one bar (dock, selection bar, crumb, editor rails) have one height
+//                (Image Studio's foreground and background chips, Photoshop's two squares, stand in one 34 px cell, .ifcol: the cell counts)
 //   font         every text is in the contract's families
 //   viewport     bars, panels and menus lie inside the window
 //   covered      the centre of every control of the chrome is that control (elementFromPoint), also through the board's frame into the
@@ -80,7 +81,7 @@
     for (const bar of qa(C.bars.join(","))) {
       if (!vis(bar)) continue;
       const ctl = qa("button, select, input:not([type=range]):not([type=checkbox]):not([type=color]), .seg, .hy-slider", bar)
-        .filter(e => vis(e) && !e.parentElement.closest(".seg, .hy-slider, .mk, [role=menu], .menu") && e.closest(C.bars.join(",")) === bar && !e.matches(".sep, .mk, kbd, .hy-slider.sm"));
+        .filter(e => vis(e) && !e.parentElement.closest(".seg, .hy-slider, .mk, [role=menu], .menu, .ifcol") && e.closest(C.bars.join(",")) === bar && !e.matches(".sep, .mk, kbd, .hy-slider.sm"));
       const by = new Map(); ctl.forEach(e => { const h = Math.round(R(e).height * 2) / 2; if (!by.has(h)) by.set(h, []); by.get(h).push(e); });
       if (by.size > 1) add("bar-height", path(bar), `${by.size} heights in one bar: ` + [...by].sort((a, b) => b[1].length - a[1].length).map(([h, v]) => `${h}px (${[...new Set(v.map(name))].slice(0, 3).join(", ")})`).join("; "));
     }
@@ -445,13 +446,15 @@
     const glass = row.filter(p => glassOf(p.s) && alphaOf(p.s.backgroundColor) < 0.99 && !p.el.matches("[aria-pressed=true], [aria-expanded=true]"));
     odd(glass, p => p.s.backgroundColor, "ground"); odd(glass, p => p.s.backdropFilter || p.s.webkitBackdropFilter, "blur");
     odd(row, p => p.s.boxShadow, "shadow"); odd(row, rk, "corner");
-    // a note (ui/toasts.js) never covers a plate of the row (owner 2026-10-07: the 3D studio's «scene saved» over the scene's title)
-    const meet = (p, q) => Math.min(p.r, q.r) - Math.max(p.x, q.x) > 0.5 && Math.min(p.b, q.b) - Math.max(p.y, q.y) > 0.5;
+    // a note (ui/toasts.js) stands in the row at its centre, over a centred title for its few seconds (owner 2026-10-09: «на уровне
+    // breadcrumbs, поверх них, по центру экрана»), never over the crumb or the plates at the sides
+    const mid = q => Math.abs((q.x + q.r) / 2 - innerWidth / 2) < innerWidth / 4;   // a title in the middle half (the 3D scene's), not the sides' plates
+    const meet = (p, q) => !mid(q) && Math.min(p.r, q.r) - Math.max(p.x, q.x) > 0.5 && Math.min(p.b, q.b) - Math.max(p.y, q.y) > 0.5;
     for (const D of docs) {
       for (const el of D.d.querySelectorAll(T.toasts.join(","))) {
         if (!shown(el, D.win)) continue;
         const t = box(el, D, el.getBoundingClientRect()), p = row.find(q => meet(t, q));
-        if (p) fail(`toast over ${nm(p)}`, `a note at ${band(t)} covers ${nm(p)}: notes stand under the row`);
+        if (p) fail(`toast over ${nm(p)}`, `a note at ${band(t)} covers ${nm(p)}: notes stand at the row's centre`);
       }
     }
     // the mode's hint plate under the row, and the side panels

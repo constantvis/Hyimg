@@ -302,7 +302,7 @@ def comment(root, page, op, by, d):
             kind = "comment" if not t else "resolve" if now_r and not was else "reopen" if was and not now_r else "comment-edit"
             _stamp_event(page, kind, by, new.get("objects") or [], text=new["messages"][0]["text"][:140], thread=tid)
             return {"thread": new}
-        if not t: raise ValueError(tr("no such comment", "нет такого комментария"))
+        if not t: raise ValueError(tr("no such annotation", "нет такой аннотации"))
         now, kind, text = _now(), "", ""
         if op == "reply":
             text = clean_text(d.get("text"))
@@ -501,7 +501,7 @@ def feed(root, state, limit=100):
                 ag = "" if any(not x.get("agent") for x in hit) else hit[0]["agent"]
                 title = tr("Mentioned {}", "Упоминание: {}").format(agents.label(ag)) if ag else tr("Mentioned you", "Вас упомянули")
             else:
-                title = tr("New comment", "Новый комментарий") if msg["id"] == first else tr("Reply in a thread", "Ответ в обсуждении")
+                title = tr("New annotation", "Новая аннотация") if msg["id"] == first else tr("Reply in a thread", "Ответ в обсуждении")
             nid = f"c:{t['id']}:{msg['id']}"
             ts = _when(msg.get("created"))
             n = {"id": nid, "t": (msg.get("created") or "").replace("T", " ")[:19], "read": ts <= seen_ts or nid in seen_ids, "title": title,

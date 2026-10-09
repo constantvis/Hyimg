@@ -28,7 +28,7 @@ Nothing leaves your Mac. There is no account and no upload: each project is a fo
 
 Hyimg works without them. With them the board does more, and each one lives in its own repository:
 
-- **[Frames](https://github.com/constantvis/hyimg-frames)**: Image Studio, which opens in place on the board, with layers, masks, a brush, Raw Editor (Camera Raw style grading, also on any picture of the board), subject selection through macOS Vision and content-aware fill with LaMa. The originals are never touched: a frame keeps its own layers and renders to its own file. The same plugin adds HTML frames, live web pages as cards.
+- **[Frames](https://github.com/constantvis/hyimg-image-studio)**: Image Studio, which opens in place on the board, with layers, masks, a brush, Raw Editor (Camera Raw style grading, also on any picture of the board), subject selection through macOS Vision and content-aware fill with LaMa. The originals are never touched: a frame keeps its own layers and renders to its own file. The same plugin adds HTML frames, live web pages as cards.
 - **[3D objects](https://github.com/constantvis/hyimg-3d-studio)**: a 3D scene as a card on the board, 3D Studio on three.js, snapshots to images, and a bridge to Blender and back.
 - **[Dev Studio](https://github.com/constantvis/hyimg-dev-studio)**: HTML files of the library as cards on the board, and Dev Studio, where you work on a page the way you work on a frame in Figma: its element tree, the live page, an inspector whose changes go into the `.html` file itself.
 

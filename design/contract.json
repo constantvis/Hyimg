@@ -289,7 +289,7 @@
    "max_words": 14,
    "hint_max_words": 20,
    "hint_classes": ["hy-hint"],
-   "hint_classes_by_file": {"hyimg-frames/editor/index.html": ["note"]},
+   "hint_classes_by_file": {"hyimg-image-studio/editor/index.html": ["note"]},
    "hint_px": 11.5,
    "skip_classes": ["agentnote"],
    "skip": ["#keys", ".helpbox", "#ntf .nt", "#iNotes .txt", "#iNotes .qa", "#iP:not(.hy-hint)", "#hist .hv", "#evList .ev", "textarea", "[contenteditable]", "#vPrompt", ".bn", ".note-body", ".dvt", ".dsec"],
@@ -377,7 +377,8 @@
    "#keys",
    ".frow .fck",
    ".mk",
-   ".hy-search"
+   ".hy-search",
+   ".ifcol"
   ],
   "library_pills": [
    ".card .kd",

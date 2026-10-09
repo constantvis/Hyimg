@@ -280,9 +280,9 @@ def test_a_notes_size_is_its_own_or_the_nearest_by_its_text_to_width_ratio(cv):
     assert cv.evaluate("() => [noteSize({ size: 4, fs: 1, w: 999 }), noteSize({ fs: 10, w: 320 }), noteSize({ fs: 10, w: 90 }), noteSize({ size: 9, fs: 10, w: 240 })]") == [4, 0, 4, 1]
 
 
-def test_a_page_named_only_with_dashes_or_underscores_is_a_divider(cv):
-    got = cv.evaluate("() => ['---', '___', '- -', '— —', '-', 'a--', '', null, '  --  '].map(isDivider)")
-    assert got == [True, True, True, True, False, False, False, False, True]
+def test_a_page_named_only_with_dashes_or_underscores_is_a_divider(cv):   # 3 of them at least, mixed, spaces aside (owner 2026-10-09)
+    got = cv.evaluate("() => ['---', '___', '--------', '-_-_-', '- - -', '— — —', '--', '- -', '-', 'a---', '', null, '  ---  '].map(isDivider)")
+    assert got == [True, True, True, True, True, True, False, False, False, False, False, False, True]
 
 
 def test_file_sizes_read_in_kb_under_a_megabyte_and_mb_from_it(cv):

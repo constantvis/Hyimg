@@ -496,12 +496,9 @@
    "00a5dbeb2640": 1,
    "03499e8b3f4c": 4,
    "043b7c895395": 1,
-   "0611bd172eda": 1,
    "07908b8c75ad": 1,
-   "07b45d89b9e4": 1,
    "07c6f3ebbd1a": 1,
    "07cfe2054488": 1,
-   "08018ee9564e": 2,
    "080772648828": 1,
    "085f570627c6": 2,
    "09040f0ca58b": 1,
@@ -516,10 +513,6 @@
    "0fc76d13af3a": 3,
    "100a1863e21f": 1,
    "10fbd6674187": 1,
-   "1106b112513d": 1,
-   "11ea9288cfdf": 6,
-   "122113d5790e": 1,
-   "12559393b64d": 1,
    "159bbd602d78": 1,
    "16229de4d9ca": 2,
    "1713991be6c5": 2,
@@ -528,12 +521,12 @@
    "1c4c17ff5acb": 1,
    "1c8ceed12fb8": 1,
    "1eb21fdca02f": 2,
+   "1f3f89c393a7": 1,
    "1f9f4e9b7670": 1,
    "21b181037a63": 1,
    "21e437a95e36": 1,
    "22392579bc0f": 1,
    "2356027222bf": 2,
-   "2384b0b43b01": 1,
    "24f280f0d26f": 1,
    "250a7593421a": 2,
    "2709db62ee49": 2,
@@ -541,6 +534,7 @@
    "27f7011c4638": 1,
    "28292f53dd9d": 1,
    "2911eb2eaaea": 1,
+   "2954b7c86ff0": 1,
    "29e52181db7d": 1,
    "29f4951dbfd8": 1,
    "2bff86b2a49b": 5,
@@ -548,60 +542,61 @@
    "2e537a1b774e": 1,
    "2ee4e03e2cee": 1,
    "2ff62ae928ea": 1,
+   "300285935946": 1,
    "33a51a6f62c1": 1,
    "350fa9f77cae": 2,
+   "359fe7d933bc": 1,
    "362e10860e64": 2,
    "37fa3332d2e1": 4,
    "3a3850106e78": 1,
+   "3d942778e7f9": 7,
    "3dc2f728d18d": 1,
    "3e74082cf62d": 2,
+   "3f0931efb397": 6,
+   "407b45a57a53": 3,
    "41240f405193": 1,
    "418e0aba60e7": 5,
    "41a275185eb9": 2,
-   "4265c6c5bf29": 3,
-   "440116fb1cca": 1,
-   "4455ae24bd56": 1,
+   "4311aba8b77b": 1,
+   "43c18db2e75f": 1,
    "449edcabb26e": 2,
    "4777939599fc": 1,
    "47c4e5ec6830": 2,
    "4aa06912b012": 1,
    "4ab70d833c78": 1,
-   "4b0bea9dafc1": 1,
    "4c21bb6faff5": 1,
    "4c293cb7c35f": 1,
    "4c6f9773a281": 2,
    "4da4b60b8a9c": 1,
    "4db95a69183e": 2,
-   "4e12425c0e72": 1,
+   "4f8bbe744273": 7,
    "50527184771a": 1,
    "50e334f78d39": 1,
    "5108e6be0ccc": 1,
    "52951335d72a": 1,
    "52b701f71137": 1,
    "5305ff610350": 1,
-   "53129ddb6a0b": 7,
    "531a95b01910": 2,
    "54d2937c80b6": 1,
    "5737367bf832": 1,
    "57cff0205035": 1,
    "57d86c4cf08d": 1,
-   "57ff6123a621": 1,
    "59acea6499df": 1,
-   "5a2ec7fc408d": 1,
-   "5a4deb5e89b7": 5,
    "5ac97cd8e4c7": 1,
    "5b89f6af1a36": 3,
    "5ba98483a24d": 2,
    "5cb08d9306fe": 1,
    "5cb958b694ab": 2,
+   "5d31d372f139": 1,
    "5f80b67cad4e": 1,
    "5fa03f6de57d": 1,
    "5fd60be42981": 3,
    "60d0d634755f": 2,
    "6172263f60e1": 2,
+   "61af21970266": 1,
    "61b3eff3c5db": 1,
-   "61c572476cac": 1,
    "61eb284951da": 2,
+   "62595d0196c7": 1,
    "6290f149d06d": 2,
    "62c4c2414553": 2,
    "637a79e37c3b": 2,
@@ -613,6 +608,7 @@
    "658a2641592a": 2,
    "65ff5505b7cb": 1,
    "694d36bfd264": 2,
+   "6988c1f29cb1": 1,
    "69c668034d49": 1,
    "6a81567b5999": 1,
    "6aae9c0c25e3": 1,
@@ -620,7 +616,9 @@
    "6c262aff24b8": 1,
    "6ccdb68112f9": 1,
    "6d441c2e69bb": 1,
+   "6d60c95aa02f": 1,
    "6d7bf592d130": 2,
+   "6daa59a71da6": 3,
    "6e37af8bc752": 2,
    "6e9e5cc04cab": 1,
    "6eada64a1faa": 1,
@@ -628,43 +626,37 @@
    "6f616b9dcfa3": 2,
    "724bfeecf0ed": 1,
    "73ed00ba2631": 1,
+   "7531c6410e46": 1,
    "7582371508dd": 1,
-   "76f0e7dde5bf": 5,
    "785b96e8f773": 1,
    "792dcf4c996b": 2,
-   "79d5fba02233": 3,
    "7a6ba576278d": 1,
    "7c1eb939a600": 1,
    "7c46962f7207": 1,
    "7ce6b0c10cb2": 2,
+   "7cfcb643d2a8": 2,
    "7d2ff90762fa": 1,
    "7d4ab2049170": 2,
-   "7d91cd9e8b5a": 6,
    "80b1da1541ac": 1,
    "8205860a508a": 1,
    "836aa5c7ace7": 2,
    "836ef3300214": 2,
-   "8402e7170423": 1,
    "855612be0053": 1,
    "87f2742284c6": 1,
-   "883827168e07": 1,
    "885b9f39b223": 1,
    "88b369b9db24": 2,
-   "89957b33fd71": 1,
-   "89acee44aae4": 5,
    "89f2bf71a930": 1,
    "8acf92df9e86": 1,
-   "8b75360d6edf": 1,
-   "8b8e005a10da": 6,
    "8c3e9fed66ec": 1,
-   "8c62bfa2a428": 6,
    "8c8caf2f1e36": 8,
    "8da13f7c123f": 1,
    "8da8eaa4eb22": 4,
    "8e1dc34d5214": 2,
    "8ec206bb6b4e": 1,
    "8edff5b3c5ff": 1,
+   "8f2bfd8a3cf0": 5,
    "8f5dd4f5aca5": 1,
+   "8f63b236a935": 6,
    "8f71ba474eff": 2,
    "8f87332c1fb9": 2,
    "8fba075225ad": 2,
@@ -673,8 +665,9 @@
    "9184bb8db63f": 1,
    "9265d90ee9d3": 1,
    "93fcdf7257cf": 1,
+   "94feaba9dd91": 1,
+   "96445850ec7c": 1,
    "96f18652664b": 1,
-   "9726a4cd34d7": 1,
    "9831fc874eee": 1,
    "9906c9ab43c3": 1,
    "9940a47196c5": 1,
@@ -686,16 +679,16 @@
    "9b200b2b18c2": 1,
    "9b654b43fcd0": 1,
    "9b8d9b279e6a": 3,
-   "9c13fd50c7c3": 3,
+   "9d163e4fc416": 1,
    "9d8395df0675": 1,
    "9f5c78420faf": 1,
-   "9ff66b280bb0": 1,
+   "9fe366e360e4": 1,
    "a078190083ef": 1,
    "a085ba4abce5": 1,
+   "a09aec98e05c": 5,
    "a0ce3112a3b2": 2,
    "a0d3bdf608d9": 1,
    "a0edadff9630": 1,
-   "a1258bfdbf81": 1,
    "a24bee98c00b": 1,
    "a38ff1fd2923": 2,
    "a40069732b6d": 1,
@@ -709,6 +702,7 @@
    "a70157d5d80e": 2,
    "a741733a58cc": 1,
    "a7ea949d2752": 1,
+   "a7fc3f5e6803": 1,
    "a8073c118ae9": 1,
    "a85ea6c9cecd": 1,
    "a8727aa185f9": 1,
@@ -717,14 +711,16 @@
    "a9d1eb197cad": 3,
    "aac0275bd80e": 2,
    "ad18e40e1441": 2,
+   "ad2618ce44cc": 1,
    "ada554b2a84a": 1,
    "adbe152468c5": 1,
-   "add6bb18670f": 1,
    "ae3170259994": 1,
    "aed14f139823": 1,
+   "af4727c98822": 7,
    "af60639456ea": 1,
    "b0e465d3f22a": 2,
    "b237f1448cbe": 1,
+   "b2fe1605d3e7": 5,
    "b667a5286605": 2,
    "b6af43f5e872": 2,
    "b6c2515006a4": 2,
@@ -732,88 +728,91 @@
    "b7c2d19dd1c6": 6,
    "b8c56aeb57dc": 1,
    "ba07a1b3e3fa": 1,
+   "ba081bd88eaf": 1,
    "ba43d6acc21b": 1,
    "ba78cae70e3e": 2,
    "bb642cea964d": 2,
    "bbecc4d35fc8": 2,
-   "bc3788e4d020": 2,
    "bcaef24016f0": 2,
    "be0ba79835c3": 1,
    "be7c92949ccb": 1,
    "bfd2911ce382": 1,
    "c00880505062": 1,
    "c14cbda9aaef": 2,
+   "c2147d8171a1": 1,
    "c253efade88a": 2,
    "c2d335b56dd5": 1,
-   "c47f0189b999": 6,
    "c5fd6d462c30": 2,
+   "c65121b04676": 2,
    "c7f283022bd1": 1,
    "c81d87b57a4d": 22,
    "c9c95bab9372": 1,
    "c9dc77c31278": 1,
    "cd5d600cf0f5": 1,
-   "cd757bb649cf": 1,
    "cdc6366d108b": 1,
    "ce9e981a6a29": 1,
    "cecbd663f4f3": 2,
    "cef08d0bfcf1": 1,
+   "cf0549784711": 1,
    "cfc81cd04fde": 1,
    "cfe75671ff97": 1,
    "d0400d67dafc": 1,
    "d0c40c117251": 2,
    "d175e63ab7a9": 2,
    "d201c2fd2fda": 1,
+   "d26340b8b2cd": 1,
    "d2792a7cc912": 2,
+   "d29d51ab9f9a": 6,
+   "d2a2224b70a5": 1,
    "d3193dc5e207": 2,
-   "d34882f40fcd": 1,
    "d35ed6de49bd": 1,
    "d461d3148e22": 1,
    "d56133b4eb54": 1,
-   "d629240fd8a6": 1,
    "d76a8a10a756": 1,
    "d7c817d49f99": 1,
-   "d7cf803fee9e": 1,
    "d967d79c8774": 1,
    "d9720bf3830d": 1,
    "d9d45a222575": 5,
    "dc2e2cd82fa2": 1,
-   "dc525a314e99": 1,
+   "dc9d929e523a": 1,
    "dcc893d20f77": 2,
    "dcc8e43eb2ad": 15,
    "dd47752d0164": 6,
+   "de67b6061c02": 5,
+   "dec1f08db811": 2,
    "dee20cfe878d": 1,
    "df036159f6c8": 1,
-   "df2b3a36f66c": 2,
    "df33dd4f5cad": 1,
    "e0691f7a7bae": 1,
    "e11ba1b04e09": 4,
    "e1cf534628a3": 2,
    "e223e811a391": 1,
-   "e227e939527d": 7,
    "e25932ad37f7": 1,
+   "e2c64e59f7cb": 3,
    "e2d39713927e": 1,
-   "e3ca8ce725d7": 5,
-   "e3cf95a55ecf": 6,
+   "e34555f6d8e9": 1,
    "e40143fcc505": 2,
    "e49b73fe5fdd": 2,
-   "e58b68a319d4": 1,
    "e6f91e2ab21f": 2,
    "e71d59d06aea": 6,
    "e7a3e8af17c4": 2,
    "e9868e3d4ae9": 1,
    "ea32def4b8b5": 1,
+   "ea8b11a1f139": 1,
+   "eab577a58847": 6,
    "eb9434626c8f": 1,
+   "ebccd37d1559": 1,
    "ed18b6bf11fa": 1,
    "ed86c680b7a8": 2,
    "ed9ee5d4d03e": 3,
    "eebb227682d8": 1,
+   "ef4681433578": 6,
    "ef6ed01d353f": 1,
-   "f0532a15e586": 7,
    "f1feb85c33b7": 1,
    "f24ca4826265": 1,
    "f308ccee1663": 1,
    "f42770c35a6d": 1,
-   "f49a002127ef": 1,
+   "f48ec0de54da": 1,
    "f4b4307e536e": 1,
    "f4e8d54bd6da": 1,
    "f539c74c6be0": 1,
@@ -828,12 +827,13 @@
    "fc211f057ce0": 5,
    "fc291b202d4f": 2,
    "fcab7342be89": 2,
-   "fcbfa9fb481e": 1,
    "fce8562169e3": 1,
    "fd445fdd7f71": 1,
    "fdb049a8ebc8": 2,
+   "fe2bebf91ffc": 6,
+   "fe62c3f13aa8": 1,
    "fe8e676af763": 1,
-   "fe9dbe2dca22": 1,
+   "ff1bee6d6fb7": 1,
    "ff34325a3e1f": 1,
    "ff826cffc606": 1
   },
@@ -853,20 +853,10 @@
     "file": "hyimg/review/canvas.html",
     "text": "color: #fff; font: 600 calc(11px / var(--z)) var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }"
    },
-   "0611bd172eda": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "#cols .rst i:last-child{left:3px;top:3px;background:#fff}"
-   },
    "07908b8c75ad": {
     "rule": "css-color",
     "file": "hyimg/review/home.html",
     "text": ".head .nf > button[data-has]::before { content: \"\"; width: 6px; height: 6px; border-radius: 99px; background: #ff3b30; }"
-   },
-   "07b45d89b9e4": {
-    "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": ".hcg-seg{display:flex;gap:0;padding:var(--hy-seg-pad,3px);margin:6px 0 8px;border-radius:var(--r-ctl,8px);background:var(--raise)}"
    },
    "07c6f3ebbd1a": {
     "rule": "css-color",
@@ -877,11 +867,6 @@
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
     "text": ".bnote .dot { width: 10px; height: 10px; border-radius: 999px; background: #f4c430; margin-top: 6px; }"
-   },
-   "08018ee9564e": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": ".tg i:after{content:\"\";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transitio"
    },
    "080772648828": {
     "rule": "css-color",
@@ -953,26 +938,6 @@
     "file": "hyimg/review/ui/menu.js",
     "text": "border: 2px solid transparent !important; box-shadow: inset 0 0 0 1px rgba(0,0,0,.35); cursor: pointer; transition: border-color .15s cubic-bezier(.32,.72,0,1),"
    },
-   "1106b112513d": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": ".seg .st{position:absolute;top:2px;height:24px;border-radius:var(--r-in);background:var(--panel);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 1px var(--line);tran"
-   },
-   "11ea9288cfdf": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.selAll]: 'выделить все', [T.deselect]: 'снять выделение', [T.inverse]: 'инвертировать выделение invert', [T.subject]: 'выделить объект', [T.modify]: 'модифик"
-   },
-   "122113d5790e": {
-    "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "#tlibR{position:fixed;top:12px;left:100px;z-index:30;width:38px;height:38px;border-radius:var(--r-plate);display:grid;place-items:center;border:1px solid var(--"
-   },
-   "12559393b64d": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "#obar .mdot{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 0 3px rgba(255,69,58,.2)}"
-   },
    "159bbd602d78": {
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
@@ -1013,6 +978,11 @@
     "file": "hyimg/review/home.html",
     "text": ".fav[aria-pressed=true] svg { fill: #ff4d6d; color: #ff4d6d; }"
    },
+   "1f3f89c393a7": {
+    "rule": "hy-primitive",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "#crumb{position:fixed;top:12px;left:146px;z-index:31;height:38px;display:flex;align-items:center;padding:0 4px;border-radius:var(--r-plate);border:1px solid var"
+   },
    "1f9f4e9b7670": {
     "rule": "css-color",
     "file": "hyimg/review/ui/layout-sync.js",
@@ -1037,11 +1007,6 @@
     "rule": "lang-period",
     "file": "hyimg/review/ui/lang-home.js",
     "text": "\"Nothing found for “{q}”.\": \"Ничего не нашлось по «{q}».\","
-   },
-   "2384b0b43b01": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": ".gnote{margin-top:6px;color:#d97706}"
    },
    "24f280f0d26f": {
     "rule": "css-color",
@@ -1078,6 +1043,11 @@
     "file": "hyimg/review/v2.html",
     "text": "textarea { width: 100%; min-height: 88px; resize: vertical; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-"
    },
+   "2954b7c86ff0": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": ":root[data-theme=dark] .gnote{color:#f5c542}"
+   },
    "29e52181db7d": {
     "rule": "hy-primitive",
     "file": "hyimg/review/canvas.html",
@@ -1113,6 +1083,11 @@
     "file": "hyimg/review/ui/layout-sync.js",
     "text": "#fsDlg .warn svg { flex: none; margin-top: 2px; color: #ff9f0a; }"
    },
+   "300285935946": {
+    "rule": "hy-primitive",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": ".note{font:400 11px/1.35 var(--sans);letter-spacing:.01em;color:var(--hy-hint,var(--muted))}   /* a note is a footnote: the app's hint (ui/look.css .hy-hint, ow"
+   },
    "33a51a6f62c1": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
@@ -1122,6 +1097,11 @@
     "rule": "cyrillic-code",
     "file": "hyimg/review/v2.html",
     "text": "[\"real\", \"Material\", \"Пластик / CGI\", \"Натурально\", [\"Plastic, CGI\", \"Almost\", \"Real metal\"]],   // realism of the CASE (owner 2026-09-28)"
+   },
+   "359fe7d933bc": {
+    "rule": "hy-primitive",
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": ".hcg-seg{display:flex;gap:0;padding:var(--hy-seg-pad,3px);margin:6px 0 8px;border-radius:var(--r-ctl,8px);background:var(--raise)}"
    },
    "362e10860e64": {
     "rule": "css-color",
@@ -1138,6 +1118,11 @@
     "file": "hyimg/review/v2.html",
     "text": ".verdicts .fav[aria-pressed=true] { background: transparent !important; box-shadow: none; color: #ff2d6f !important; }"
    },
+   "3d942778e7f9": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.zoomIn]: 'увеличить', [T.zoomOut]: 'уменьшить', [T.fitScreen]: 'вписать fit', [T.extras]: 'вспомогательные элементы hairlines', [T.rulers]: 'линейки', [T.gri"
+   },
    "3dc2f728d18d": {
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
@@ -1147,6 +1132,16 @@
     "rule": "cyrillic-code",
     "file": "hyimg/review/v2.html",
     "text": "[\"light\", \"Light\", \"Теплый / old money\", \"Свет\", [\"Wrong, warm, old money\", \"Fine\", \"Excellent\"]],"
+   },
+   "3f0931efb397": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.selAll]: 'выделить все', [T.deselect]: 'снять выделение', [T.inverse]: 'инвертировать выделение invert', [T.subject]: 'выделить объект', [T.modify]: 'модифик"
+   },
+   "407b45a57a53": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.caFill]: 'заливка с учетом содержимого заполнить убрать lama inpaint remove', [T.canvasSize + '…']: 'размер холста холст', [T.imageSize + '…']: 'размер изобр"
    },
    "41240f405193": {
     "rule": "row-radius",
@@ -1163,20 +1158,15 @@
     "file": "hyimg-3d-studio/engine.js",
     "text": "const shownPath = path => path.split(\"/\").map(seg => { const m = seg.endsWith(\"~зеркало\"), b = m ? seg.slice(0, -\"~зеркало\".length) : seg;"
    },
-   "4265c6c5bf29": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.caFill]: 'заливка с учетом содержимого заполнить убрать lama inpaint remove', [T.canvasSize + '…']: 'размер холста холст', [T.imageSize + '…']: 'размер изобр"
-   },
-   "440116fb1cca": {
+   "4311aba8b77b": {
     "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "#bset{position:fixed;top:12px;right:12px;z-index:30;width:38px;height:38px;border-radius:var(--r-plate);display:grid;place-items:center;border:1px solid var(--l"
-   },
-   "4455ae24bd56": {
-    "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/index.html",
+    "file": "hyimg-image-studio/editor/index.html",
     "text": "#wl{position:fixed;top:12px;left:12px;width:80px;height:38px;z-index:30;border-radius:var(--r-plate);border:1px solid var(--line);background:var(--plate);-webki"
+   },
+   "43c18db2e75f": {
+    "rule": "hy-primitive",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "#bset{position:fixed;top:12px;right:12px;z-index:30;width:38px;height:38px;border-radius:var(--r-plate);display:grid;place-items:center;border:1px solid var(--l"
    },
    "449edcabb26e": {
     "rule": "css-color",
@@ -1203,11 +1193,6 @@
     "file": "hyimg/review/home.html",
     "text": ".nb { display: inline-grid; place-items: center; flex: none; min-width: 18px; height: 18px; margin: -2px 0; padding: 0 5px; box-sizing: border-box; border-radiu"
    },
-   "4b0bea9dafc1": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": ".hcg-ck i svg{width:11px;height:11px;color:#fff;opacity:0;transform:scale(.6);transition:opacity .18s var(--ease),transform .25s var(--ease)}"
-   },
    "4c21bb6faff5": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
@@ -1233,10 +1218,10 @@
     "file": "hyimg/review/canvas.html",
     "text": "#crop .h { background: #fff; border-color: #111; margin: 0; scale: none; }"
    },
-   "4e12425c0e72": {
-    "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/index.html",
-    "text": ".note{font:400 11px/1.35 var(--sans);letter-spacing:.01em;color:var(--hy-hint,var(--muted))}   /* a note is a footnote: the app's hint (ui/look.css .hy-hint, ow"
+   "4f8bbe744273": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.deleteLayer]: 'удалить слой remove', [T.layerMask]: 'маска слоя', [T.revealAll]: 'добавить маску add mask', [T.revealSel]: 'маска из выделения mask from sele"
    },
    "50527184771a": {
     "rule": "hy-primitive",
@@ -1268,11 +1253,6 @@
     "file": "hyimg/review/canvas.html",
     "text": "#bntf.dot::after { content: \"\"; position: absolute; top: 7px; right: 8px; width: 9px; height: 9px; border-radius: 999px; background: #ff3b30; box-shadow: 0 0 0 "
    },
-   "53129ddb6a0b": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.deleteLayer]: 'удалить слой remove', [T.layerMask]: 'маска слоя', [T.revealAll]: 'добавить маску add mask', [T.revealSel]: 'маска из выделения mask from sele"
-   },
    "531a95b01910": {
     "rule": "css-color",
     "file": "hyimg-dev-studio/agent.js",
@@ -1298,25 +1278,10 @@
     "file": "hyimg/review/canvas.html",
     "text": "#pages input { flex: 1; min-width: 0; height: 24px; border: 1px solid var(--sel); border-radius: 7px; padding: 0 6px; background: var(--panel); outline: none; f"
    },
-   "57ff6123a621": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": ":root[data-theme=dark] .gnote{color:#f5c542}"
-   },
    "59acea6499df": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": "#vbig.pdf .vbi { display: block; max-width: 100%; border-radius: 12px; background: #fff; object-fit: contain; }   /* sized by pdfFitBig */"
-   },
-   "5a2ec7fc408d": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "#cols .rst i:first-child{left:0;top:0;background:#000}"
-   },
-   "5a4deb5e89b7": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.openBatch(3)]: 'пакет несколько кадров сразу batch frames', [T.openSingle]: 'один кадр single leave batch выйти из пакета', [T.undo]: 'отменить назад step ba"
    },
    "5ac97cd8e4c7": {
     "rule": "css-color",
@@ -1343,6 +1308,11 @@
     "file": "hyimg/review/v2.html",
     "text": ".ntog.has .lamp { background: #ff2d9b; box-shadow: 0 0 0 3px rgba(255,45,155,.22), 0 0 10px rgba(255,45,155,.8); }"
    },
+   "5d31d372f139": {
+    "rule": "hy-primitive",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "#rail .ib>kbd{min-width:15px;height:15px;padding:0 3px;font-size:9.5px;border-bottom-width:1px;border-radius:4px;right:-4px;top:auto;bottom:-4px;translate:none}"
+   },
    "5f80b67cad4e": {
     "rule": "lang-period",
     "file": "hyimg/review/ui/lang-library.js",
@@ -1368,20 +1338,25 @@
     "file": "hyimg/review/v2.html",
     "text": "{ const RENAMED = { \"Удален с холста\": \"В архиве\" }; let ch = false;"
    },
+   "61af21970266": {
+    "rule": "row-radius",
+    "file": "hyimg-image-studio/canvas.js",
+    "text": ".hfsz input { width: 52px; height: 28px; border: 1px solid var(--line); border-radius: 8px; background: var(--raise); color: var(--ink); font: 500 12px var(--sa"
+   },
    "61b3eff3c5db": {
     "rule": "hy-primitive",
     "file": "hyimg/review/canvas.html",
     "text": "#bntf { position: absolute; top: 12px; right: 150px; z-index: 31; width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; cursor: p"
    },
-   "61c572476cac": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": "box-shadow:0 0 0 1px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.5);transition:transform .15s var(--ease)}"
-   },
    "61eb284951da": {
     "rule": "css-color",
     "file": "hyimg/review/ui/studio-lib.css",
     "text": ":root[data-ui=\"studio\"] :is(.seg, .fcap) .askf.has .qi { background: #ff9f0a; color: #111; }"
+   },
+   "62595d0196c7": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "#cols .rst i:last-child{left:3px;top:3px;background:#fff}"
    },
    "6290f149d06d": {
     "rule": "cyrillic-code",
@@ -1438,6 +1413,11 @@
     "file": "hyimg/review/v2.html",
     "text": "[\"casting\", \"Casting\", \"Не те лица / анатомия\", \"Кастинг\", [\"Wrong faces, anatomy\", \"Fine\", \"Strong casting\"]],"
    },
+   "6988c1f29cb1": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": ".hcg-split .hcg-rail{top:9px;background:linear-gradient(90deg,#111,#3f3f46 50%,#d4d4d8)}"
+   },
    "69c668034d49": {
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
@@ -1473,10 +1453,20 @@
     "file": "hyimg/review/canvas.html",
     "text": "#info #iFav.on { color: #fb7185; } #info #iFav.on svg path { fill: currentColor; }"
    },
+   "6d60c95aa02f": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "#cols .rst i:first-child{left:0;top:0;background:#000}"
+   },
    "6d7bf592d130": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": "#pv button { height: 30px; padding: 0 14px; border: 0; border-radius: 999px; background: #fff; color: #0a84ff; font: 600 12px var(--sans); cursor: pointer; }"
+   },
+   "6daa59a71da6": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": ":root:not(.in-app) #wl i:nth-child(1){background:#ff5f57}:root:not(.in-app) #wl i:nth-child(2){background:#febc2e}:root:not(.in-app) #wl i:nth-child(3){backgrou"
    },
    "6e37af8bc752": {
     "rule": "css-color",
@@ -1513,15 +1503,15 @@
     "file": "hyimg/review/v2.html",
     "text": ".ntog .sw { width: 34px; height: 22px; border-radius: 999px; background: var(--line); position: relative; transition: background .2s; }"
    },
+   "7531c6410e46": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": ".hcg-sw.master{background:conic-gradient(from 90deg,hsl(0 85% 55%),hsl(60 85% 55%),hsl(120 75% 48%),hsl(180 75% 48%),hsl(240 80% 60%),hsl(300 80% 58%),hsl(360 8"
+   },
    "7582371508dd": {
     "rule": "hy-primitive",
     "file": "hyimg/review/canvas.html",
     "text": "#bset { position: absolute; top: 12px; right: 12px; z-index: 31; width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; cursor: po"
-   },
-   "76f0e7dde5bf": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.crop]: 'обрезать по выделению кадрировать', [T.trim]: 'обрезать прозрачное', [T.newLayer]: 'новый слой', [T.newGroup]: 'новая папка группа folder', [T.duplic"
    },
    "785b96e8f773": {
     "rule": "hy-primitive",
@@ -1532,11 +1522,6 @@
     "rule": "cyrillic-code",
     "file": "hyimg/review/v2.html",
     "text": "[\"case\", \"Case\", \"Кривой\", \"Точный\", [\"Crooked\", \"Almost\", \"Exact\"]],"
-   },
-   "79d5fba02233": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": ":root:not(.in-app) #wl i:nth-child(1){background:#ff5f57}:root:not(.in-app) #wl i:nth-child(2){background:#febc2e}:root:not(.in-app) #wl i:nth-child(3){backgrou"
    },
    "7a6ba576278d": {
     "rule": "cyrillic-code",
@@ -1558,6 +1543,11 @@
     "file": "hyimg/review/v2.html",
     "text": "[\"Review\", \"Есть вопрос\", i => (i.questions || []).length > 0, \"Has a question\"], [\"Review\", \"Есть оценки по критериям\", i => Object.keys(fb(i).scores || {}).le"
    },
+   "7cfcb643d2a8": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/canvas.js",
+    "text": "display: grid; place-items: center; background: rgba(20,20,22,.72); color: #fff; font: 700 calc(11px / var(--z)) var(--sans); letter-spacing: .03em; pointer-eve"
+   },
    "7d2ff90762fa": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
@@ -1567,11 +1557,6 @@
     "rule": "cyrillic-code",
     "file": "hyimg/review/v2.html",
     "text": "[\"comp\", \"Composition\", \"Лишнее в кадре\", \"Композиция\", [\"Clutter in the frame\", \"Fine\", \"Strong\"]],"
-   },
-   "7d91cd9e8b5a": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.imageRotation]: 'повернуть холст поворот rotate canvas', [T.rot180]: 'повернуть 180', [T.rotCW]: 'повернуть по часовой', [T.rotCCW]: 'повернуть против часово"
    },
    "80b1da1541ac": {
     "rule": "css-color",
@@ -1593,11 +1578,6 @@
     "file": "hyimg-3d-studio/canvas.js",
     "text": ".plg[data-type=${TYPE}] .h3 button { height: calc(30px / var(--z)); padding: 0 calc(14px / var(--z)); border: 0; border-radius: calc(8px / var(--z)); background"
    },
-   "8402e7170423": {
-    "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "#crumb{position:fixed;top:12px;left:146px;z-index:31;height:38px;display:flex;align-items:center;padding:0 4px;border-radius:var(--r-plate);border:1px solid var"
-   },
    "855612be0053": {
     "rule": "lang-period",
     "file": "hyimg/review/ui/lang-common.js",
@@ -1607,11 +1587,6 @@
     "rule": "css-color",
     "file": "hyimg/review/ui/layout-sync.js",
     "text": "box-shadow: 0 12px 40px rgba(0,0,0,.35); opacity: 0; transform: translateY(-4px) scale(.98); transform-origin: top right; visibility: hidden;"
-   },
-   "883827168e07": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "#cliph span{position:absolute;left:-22px;top:-9px;width:18px;height:18px;border-radius:5px;background:var(--sel);color:#fff;display:grid;place-items:center}"
    },
    "885b9f39b223": {
     "rule": "css-color",
@@ -1623,16 +1598,6 @@
     "file": "hyimg/review/v2.html",
     "text": "[\"world\", \"Our world\", \"Не наш мир\", \"Наш мир\", [\"Not our world\", \"world::Close\", \"Our world\"]],"
    },
-   "89957b33fd71": {
-    "rule": "css-color",
-    "file": "hyimg-frames/grade.js",
-    "text": "backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 12px 40px rgba(0,0,0,.25);"
-   },
-   "89acee44aae4": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.createClip]: 'обтравочная маска обтравка clip', [T.releaseClip]: 'снять обтравку', [T.groupLayers]: 'сгруппировать папка', [T.ungroupLayers]: 'разгруппироват"
-   },
    "89f2bf71a930": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
@@ -1643,25 +1608,10 @@
     "file": "hyimg-3d-studio/engine.js",
     "text": "background: it.bg || { world: true }, masks: legend, reproduce: `в Blender: blender -b --python <Hyimg-3d>/blender/hyimg_scene.py -- apply <библиотека>/${L.path"
    },
-   "8b75360d6edf": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "#rcard .pv canvas{max-width:100%;max-height:220px;display:block;box-shadow:0 4px 16px rgba(0,0,0,.3)}"
-   },
-   "8b8e005a10da": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.panel.adj]: 'коррекция', [T.panel.hist]: 'история', [T.panel.chan]: 'каналы rgb', [T.panel.gen]: 'генерация generative ai', [T.save]: 'сохранить готово отрис"
-   },
    "8c3e9fed66ec": {
     "rule": "css-color",
     "file": "hyimg-3d-studio/canvas.js",
     "text": ".m3menu { position: absolute; top: 40px; left: -5px; z-index: 70; min-width: 180px; padding: 5px; background: var(--card); border: 1px solid var(--line); border"
-   },
-   "8c62bfa2a428": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.lockGuides]: 'закрепить направляющие', [T.snap]: 'привязка', [T.newGuide + '…']: 'новая направляющая', [T.clearGuides]: 'удалить направляющие', [T.maskOverla"
    },
    "8c8caf2f1e36": {
     "rule": "cyrillic-code",
@@ -1693,10 +1643,20 @@
     "file": "hyimg/review/ui/lang-home.js",
     "text": "\"The same for the whole app: Home and every board.\": \"Одни для всего приложения: главная и все доски.\","
    },
+   "8f2bfd8a3cf0": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.crop]: 'обрезать по выделению кадрировать', [T.trim]: 'обрезать прозрачное', [T.newLayer]: 'новый слой', [T.newGroup]: 'новая папка группа folder', [T.duplic"
+   },
    "8f5dd4f5aca5": {
     "rule": "css-color",
     "file": "hyimg/review/ui/ui.css",
     "text": ".bar button.hy-reset:not(:disabled):hover, .reset.hy-reset:not(:disabled):hover { background: color-mix(in srgb, var(--hy-red) 86%, #000) !important; }"
+   },
+   "8f63b236a935": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.panel.adj]: 'коррекция', [T.panel.hist]: 'история', [T.panel.chan]: 'каналы rgb', [T.panel.gen]: 'генерация generative ai', [T.save]: 'сохранить готово отрис"
    },
    "8f71ba474eff": {
     "rule": "css-color",
@@ -1738,15 +1698,20 @@
     "file": "hyimg/review/canvas.html",
     "text": "#stage.previewing::after { content: \"\"; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 3px #0a84ff; z-index: 29; }"
    },
+   "94feaba9dd91": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "#obar .mdot{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 0 3px rgba(255,69,58,.2)}"
+   },
+   "96445850ec7c": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": ".chr canvas{width:30px;height:30px;border-radius:5px;background:#000;box-shadow:inset 0 0 0 1px var(--line)}"
+   },
    "96f18652664b": {
     "rule": "row-radius",
     "file": "hyimg/review/v2.html",
     "text": "select, input[type=search] { height: 34px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 0 14px; font-size: 13px; min-"
-   },
-   "9726a4cd34d7": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/index.html",
-    "text": ".chr canvas{width:30px;height:30px;border-radius:5px;background:#000;box-shadow:inset 0 0 0 1px var(--line)}"
    },
    "9831fc874eee": {
     "rule": "css-color",
@@ -1803,10 +1768,10 @@
     "file": "hyimg/review/canvas.html",
     "text": ".tg.heart[aria-pressed=true] { background: #ff2d6f; border-color: #ff2d6f; color: #fff; }"
    },
-   "9c13fd50c7c3": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.newAdjustment]: 'корректирующий слой коррекция', [T.colorGrading + '…']: 'raw editor цветокоррекция цветокор кривые уровни цвет тон насыщенность curves level"
+   "9d163e4fc416": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": ".seg .st{position:absolute;top:2px;height:24px;border-radius:var(--r-in);background:var(--panel);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 1px var(--line);tran"
    },
    "9d8395df0675": {
     "rule": "css-color",
@@ -1818,10 +1783,10 @@
     "file": "hyimg/review/canvas.html",
     "text": "#links .del:hover circle { fill: #e5484d; }"
    },
-   "9ff66b280bb0": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": ".hcg-split .hcg-rail{top:9px;background:linear-gradient(90deg,#111,#3f3f46 50%,#d4d4d8)}"
+   "9fe366e360e4": {
+    "rule": "hy-primitive",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "#tlibR{position:fixed;top:12px;left:100px;z-index:30;width:38px;height:38px;border-radius:var(--r-plate);display:grid;place-items:center;border:1px solid var(--"
    },
    "a078190083ef": {
     "rule": "css-color",
@@ -1832,6 +1797,11 @@
     "rule": "css-color",
     "file": "hyimg/review/ui/layout-sync.js",
     "text": "#fsDlg label.tg input:checked + .sw { background: #30d158; } #fsDlg label.tg input:checked + .sw::after { transform: translateX(15px); }"
+   },
+   "a09aec98e05c": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.openBatch(3)]: 'пакет несколько кадров сразу batch frames', [T.openSingle]: 'один кадр single leave batch выйти из пакета', [T.undo]: 'отменить назад step ba"
    },
    "a0ce3112a3b2": {
     "rule": "css-color",
@@ -1847,11 +1817,6 @@
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": "#evList .ev.who-ai .dot { background: #a78bfa; }"
-   },
-   "a1258bfdbf81": {
-    "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "#rail .ib>kbd{min-width:15px;height:15px;padding:0 3px;font-size:9.5px;border-bottom-width:1px;border-radius:4px;right:-4px;top:auto;bottom:-4px;translate:none}"
    },
    "a24bee98c00b": {
     "rule": "css-color",
@@ -1918,6 +1883,11 @@
     "file": "hyimg/review/v2.html",
     "text": "body[data-lay=c] .stars button.on[data-s=\"3\"] { background: var(--good); color: #fff; }"
    },
+   "a7fc3f5e6803": {
+    "rule": "hy-primitive",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": ".mbt.go .kc{background:color-mix(in srgb,var(--panel) 12%,transparent);border-color:color-mix(in srgb,var(--panel) 28%,transparent);color:var(--panel)}"
+   },
    "a8073c118ae9": {
     "rule": "hy-primitive",
     "file": "hyimg/review/canvas.html",
@@ -1958,6 +1928,11 @@
     "file": "hyimg-dev-studio/canvas.js",
     "text": ":root[data-theme=light] .dvt .dia { color: #b06a10; } :root[data-theme=light] .dvt .dic { color: #1f6fc0; }"
    },
+   "ad2618ce44cc": {
+    "rule": "hy-primitive",
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": ".hcg-seg .sw{width:7px;height:7px;border-radius:50%;flex:none}   /* a dot stays a dot when the words are long (Russian) */"
+   },
    "ada554b2a84a": {
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
@@ -1968,11 +1943,6 @@
     "file": "hyimg/review/canvas.html",
     "text": ".it .vbar i { background: #fff; transform-origin: 0 0; transform: scaleX(0); }"
    },
-   "add6bb18670f": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": ".hcg-hsr .hcg-ib.on{background:var(--sel);color:#fff}"
-   },
    "ae3170259994": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
@@ -1982,6 +1952,11 @@
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
     "text": ".fc.exc { background: var(--bad); color: #fff; box-shadow: none; }"
+   },
+   "af4727c98822": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.tool.wand]: 'волшебная палочка', [T.tool.select]: 'выбор выделить слой стрелка указатель select pointer arrow', [T.tool.move]: 'перемещение двигать', [T.tool"
    },
    "af60639456ea": {
     "rule": "css-color",
@@ -1997,6 +1972,11 @@
     "rule": "css-color",
     "file": "hyimg-3d-studio/canvas.js",
     "text": ".m3p { position: fixed; z-index: 60; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 16px 50px rgba(0,0,0,.35); }"
+   },
+   "b2fe1605d3e7": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.mergeDown]: 'объединить с нижним слить', [T.mergeLayers]: 'объединить выделенные', [T.mergeVisible]: 'объединить видимые свести flatten', [T.mergeToNew]: 'ра"
    },
    "b667a5286605": {
     "rule": "cyrillic-code",
@@ -2033,6 +2013,11 @@
     "file": "hyimg-dev-studio/canvas.js",
     "text": ".plg.dvlive iframe.dvf { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: #fff; visibility: visible; }"
    },
+   "ba081bd88eaf": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": ".gnote{margin-top:6px;color:#d97706}"
+   },
    "ba43d6acc21b": {
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
@@ -2052,11 +2037,6 @@
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": "#histList .hv.viewing { background: color-mix(in srgb, #0a84ff 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, #0a84ff 55%, transparent); }"
-   },
-   "bc3788e4d020": {
-    "rule": "css-color",
-    "file": "hyimg-frames/canvas.js",
-    "text": "display: grid; place-items: center; background: rgba(20,20,22,.72); color: #fff; font: 700 calc(11px / var(--z)) var(--sans); letter-spacing: .03em; pointer-eve"
    },
    "bcaef24016f0": {
     "rule": "css-color",
@@ -2088,6 +2068,11 @@
     "file": "hyimg/review/canvas.html",
     "text": ".th .nm { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; padding: 8px 5px 3px; color: #fff; background: linear-gradient(transparent, rgba(0,"
    },
+   "c2147d8171a1": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": ".hcg-seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 1px var(--line)}"
+   },
    "c253efade88a": {
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
@@ -2098,15 +2083,15 @@
     "file": "hyimg-3d-studio/lang.js",
     "text": "\"The scene renders too slowly: {ms} ms a frame.\": \"Сцена считается слишком медленно: {ms} мс на кадр.\","
    },
-   "c47f0189b999": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.contract + '…']: 'сжать выделение shrink', [T.feather + '…']: 'растушевка', [T.blur]: 'размытие', [T.gaussian + '…']: 'размытие по гауссу размыть', [T.sharpe"
-   },
    "c5fd6d462c30": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": "border-radius: calc(8px / var(--z)); background: rgba(0,0,0,.55); box-shadow: 0 calc(6px / var(--z)) calc(20px / var(--z)) rgba(0,0,0,.45); --a: 0%; --b: 100%; "
+   },
+   "c65121b04676": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": ".tg i:after{content:\"\";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transitio"
    },
    "c7f283022bd1": {
     "rule": "css-color",
@@ -2133,11 +2118,6 @@
     "file": "hyimg/review/canvas.html",
     "text": ".it.missing { background: repeating-linear-gradient(135deg, #3a1f1f 0 calc(12px / var(--z)), #2a1717 0 calc(24px / var(--z))); }"
    },
-   "cd757bb649cf": {
-    "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/index.html",
-    "text": ".kc,kbd{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;margin:0;"
-   },
    "cdc6366d108b": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
@@ -2157,6 +2137,11 @@
     "rule": "cyrillic-code",
     "file": "hyimg-3d-studio/engine.js",
     "text": "const m = await HY.snapshot(blobs.mask, \"3d-mask\", SHOTS, Object.assign({ prompt: t(\"object masks for {path}: {what}\", { path: b.path, what }), pass: \"маски\", o"
+   },
+   "cf0549784711": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": "box-shadow:0 0 0 1px rgba(0,0,0,.5),0 1px 3px rgba(0,0,0,.5);transition:transform .15s var(--ease)}"
    },
    "cfc81cd04fde": {
     "rule": "hy-primitive",
@@ -2188,20 +2173,30 @@
     "file": "hyimg/review/home.html",
     "text": ".prog li::before { content: \"›\"; color: #a1a1aa; width: 8px; flex: none; }"
    },
+   "d26340b8b2cd": {
+    "rule": "hy-primitive",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": ".kc,kbd{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;margin:0;"
+   },
    "d2792a7cc912": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": "#vbV:fullscreen { border-radius: 0; background: #000; } #vbV:-webkit-full-screen { border-radius: 0; background: #000; }"
    },
+   "d29d51ab9f9a": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.imageRotation]: 'повернуть холст поворот rotate canvas', [T.rot180]: 'повернуть 180', [T.rotCW]: 'повернуть по часовой', [T.rotCCW]: 'повернуть против часово"
+   },
+   "d2a2224b70a5": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "#cliph span{position:absolute;left:-22px;top:-9px;width:18px;height:18px;border-radius:5px;background:var(--sel);color:#fff;display:grid;place-items:center}"
+   },
    "d3193dc5e207": {
     "rule": "css-color",
     "file": "hyimg/review/ui/layout-sync.js",
     "text": "background: color-mix(in srgb, #ff9f0a 13%, transparent); border: 1px solid color-mix(in srgb, #ff9f0a 34%, transparent); }"
-   },
-   "d34882f40fcd": {
-    "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/index.html",
-    "text": ".mbt.go .kc{background:color-mix(in srgb,var(--panel) 12%,transparent);border-color:color-mix(in srgb,var(--panel) 28%,transparent);color:var(--panel)}"
    },
    "d35ed6de49bd": {
     "rule": "hy-primitive",
@@ -2218,11 +2213,6 @@
     "file": "hyimg/review/canvas.html",
     "text": "#pages .row.drag { position: relative; z-index: 2; background: var(--raise); color: var(--ink); box-shadow: 0 8px 24px rgba(0,0,0,.28); cursor: grabbing; }"
    },
-   "d629240fd8a6": {
-    "rule": "row-radius",
-    "file": "hyimg-frames/canvas.js",
-    "text": ".hfsz input { width: 52px; height: 28px; border: 1px solid var(--line); border-radius: 8px; background: var(--raise); color: var(--ink); font: 500 12px var(--sa"
-   },
    "d76a8a10a756": {
     "rule": "row-radius",
     "file": "hyimg/review/ui/look.css",
@@ -2232,11 +2222,6 @@
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": "#hist input:focus { border-color: color-mix(in srgb, #0a84ff 70%, var(--line)); }"
-   },
-   "d7cf803fee9e": {
-    "rule": "css-color",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": ".hcg-sw{position:relative;width:20px;height:20px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);transition:box-shadow .2s var(--ease),tr"
    },
    "d967d79c8774": {
     "rule": "cyrillic-code",
@@ -2258,10 +2243,10 @@
     "file": "hyimg/review/canvas.html",
     "text": "background: var(--paper); box-shadow: 0 30px 90px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.35); transform: translateY(10px) scale(.97); transition: transform .32s"
    },
-   "dc525a314e99": {
+   "dc9d929e523a": {
     "rule": "css-color",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": ".hcg-sw.master{background:conic-gradient(from 90deg,hsl(0 85% 55%),hsl(60 85% 55%),hsl(120 75% 48%),hsl(180 75% 48%),hsl(240 80% 60%),hsl(300 80% 58%),hsl(360 8"
+    "file": "hyimg-image-studio/grade.js",
+    "text": "backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 12px 40px rgba(0,0,0,.25);"
    },
    "dcc893d20f77": {
     "rule": "cyrillic-code",
@@ -2278,6 +2263,16 @@
     "file": "hyimg/review/canvas.html",
     "text": "\"Цвет\": \"Color\", \"Композиция\": \"Composition\", \"Чехол точный\": \"Exact case\", \"Для рекламы\": \"For ads\", \"Для анимации\": \"For animation\", \"Натурально\": \"Natural\","
    },
+   "de67b6061c02": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.createClip]: 'обтравочная маска обтравка clip', [T.releaseClip]: 'снять обтравку', [T.groupLayers]: 'сгруппировать папка', [T.ungroupLayers]: 'разгруппироват"
+   },
+   "dec1f08db811": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/canvas.js",
+    "text": "<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 -apple-system,system-ui,sans-serif;background:#f4f3ef;color:#1d1d1f}main{max"
+   },
    "dee20cfe878d": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
@@ -2287,11 +2282,6 @@
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": ".it .vp:hover { background: rgba(0,0,0,.78); }"
-   },
-   "df2b3a36f66c": {
-    "rule": "css-color",
-    "file": "hyimg-frames/canvas.js",
-    "text": "<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 -apple-system,system-ui,sans-serif;background:#f4f3ef;color:#1d1d1f}main{max"
    },
    "df33dd4f5cad": {
     "rule": "row-radius",
@@ -2318,30 +2308,25 @@
     "file": "hyimg/review/canvas.html",
     "text": "}).catch(() => { box.textContent = \"не удалось прочитать json кадра\"; });"
    },
-   "e227e939527d": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.tool.wand]: 'волшебная палочка', [T.tool.select]: 'выбор выделить слой стрелка указатель select pointer arrow', [T.tool.move]: 'перемещение двигать', [T.tool"
-   },
    "e25932ad37f7": {
     "rule": "css-color",
     "file": "hyimg/review/home.html",
     "text": ".list .card .op { display: inline-block; width: 6px; height: 6px; margin-left: 8px; border-radius: 99px; background: #22c55e; vertical-align: 2px; }"
+   },
+   "e2c64e59f7cb": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.newAdjustment]: 'корректирующий слой коррекция', [T.colorGrading + '…']: 'raw editor цветокоррекция цветокор кривые уровни цвет тон насыщенность curves level"
    },
    "e2d39713927e": {
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
     "text": "box-shadow: 0 12px 40px rgba(0,0,0,.35); overflow-x: auto; scrollbar-width: none; }"
    },
-   "e3ca8ce725d7": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.mergeDown]: 'объединить с нижним слить', [T.mergeLayers]: 'объединить выделенные', [T.mergeVisible]: 'объединить видимые свести flatten', [T.mergeToNew]: 'ра"
-   },
-   "e3cf95a55ecf": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.panels]: 'панели окна window', [T.tool.brush]: 'кисть рисовать paint', [T.tool.pick]: 'пипетка цвет color picker', [T.tool.marquee]: 'прямоугольное выделение"
+   "e34555f6d8e9": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "#rcard .pv canvas{max-width:100%;max-height:220px;display:block;box-shadow:0 4px 16px rgba(0,0,0,.3)}"
    },
    "e40143fcc505": {
     "rule": "css-color",
@@ -2352,11 +2337,6 @@
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": "border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; display: none; place-items: center; cursor: pointer; outline: none;"
-   },
-   "e58b68a319d4": {
-    "rule": "css-color",
-    "file": "hyimg-frames/canvas.js",
-    "text": ".plg[data-type=${TYPE}] iframe.hfl { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: #fff; }"
    },
    "e6f91e2ab21f": {
     "rule": "cyrillic-code",
@@ -2383,10 +2363,25 @@
     "file": "hyimg/review/home.html",
     "text": ".search input { width: 100%; height: 38px; padding: 0 14px 0 36px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--pan"
    },
+   "ea8b11a1f139": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": ".hcg-sw{position:relative;width:20px;height:20px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);transition:box-shadow .2s var(--ease),tr"
+   },
+   "eab577a58847": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.lockGuides]: 'закрепить направляющие', [T.snap]: 'привязка', [T.newGuide + '…']: 'новая направляющая', [T.clearGuides]: 'удалить направляющие', [T.maskOverla"
+   },
    "eb9434626c8f": {
     "rule": "css-color",
     "file": "hyimg/review/v2.html",
     "text": ".ntog .ncount { font-variant-numeric: tabular-nums; color: #ff2d9b; font-weight: 600; } .ntog .ncount:empty { display: none; }"
+   },
+   "ebccd37d1559": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": ".hcg-ck i svg{width:11px;height:11px;color:#fff;opacity:0;transform:scale(.6);transition:opacity .18s var(--ease),transform .25s var(--ease)}"
    },
    "ed18b6bf11fa": {
     "rule": "css-color",
@@ -2408,15 +2403,15 @@
     "file": "hyimg/review/v2.html",
     "text": ".verdicts button[data-v=take][aria-pressed=true] { background: var(--good); color: #fff !important; }"
    },
+   "ef4681433578": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.contract + '…']: 'сжать выделение shrink', [T.feather + '…']: 'растушевка', [T.blur]: 'размытие', [T.gaussian + '…']: 'размытие по гауссу размыть', [T.sharpe"
+   },
    "ef6ed01d353f": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": ".it.faved .mk.mk-fav { color: #fb7185; } .it.faved .mk.mk-fav svg path { fill: currentColor; }"
-   },
-   "f0532a15e586": {
-    "rule": "cyrillic-code",
-    "file": "hyimg-frames/editor/index.html",
-    "text": "[T.zoomIn]: 'увеличить', [T.zoomOut]: 'уменьшить', [T.fitScreen]: 'вписать fit', [T.extras]: 'вспомогательные элементы hairlines', [T.rulers]: 'линейки', [T.gri"
    },
    "f1feb85c33b7": {
     "rule": "cyrillic-code",
@@ -2438,10 +2433,10 @@
     "file": "hyimg/review/canvas.html",
     "text": "box-shadow: 0 0 0 calc(4px / var(--z)) rgba(0,0,0,.35); }"
    },
-   "f49a002127ef": {
+   "f48ec0de54da": {
     "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": ".hcg-seg .sw{width:7px;height:7px;border-radius:50%;flex:none}   /* a dot stays a dot when the words are long (Russian) */"
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": ".hcg-sw{position:relative;width:20px;height:20px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);transition:box-shadow .2s var(--ease),tr"
    },
    "f4b4307e536e": {
     "rule": "css-color",
@@ -2513,11 +2508,6 @@
     "file": "hyimg/review/v2.html",
     "text": ".verdicts .fav[aria-pressed=true] svg { fill: #ff2d6f; stroke: #ff2d6f; transform: scale(1.12); }"
    },
-   "fcbfa9fb481e": {
-    "rule": "hy-primitive",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": ".hcg-sw{position:relative;width:20px;height:20px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);transition:box-shadow .2s var(--ease),tr"
-   },
    "fce8562169e3": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
@@ -2533,15 +2523,25 @@
     "file": "hyimg/review/v2.html",
     "text": "[\"color\", \"Color\", \"Цвет не тот\", \"Цвет\", [\"Wrong\", \"Fine\", \"Color system\"]],"
    },
+   "fe2bebf91ffc": {
+    "rule": "cyrillic-code",
+    "file": "hyimg-image-studio/editor/index.html",
+    "text": "[T.panels]: 'панели окна window', [T.tool.brush]: 'кисть рисовать paint', [T.tool.pick]: 'пипетка цвет color picker', [T.tool.marquee]: 'прямоугольное выделение"
+   },
+   "fe62c3f13aa8": {
+    "rule": "css-color",
+    "file": "hyimg-image-studio/canvas.js",
+    "text": ".plg[data-type=${TYPE}] iframe.hfl { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: #fff; }"
+   },
    "fe8e676af763": {
     "rule": "css-color",
     "file": "hyimg/review/canvas.html",
     "text": ".it .vbar::before { content: \"\"; background: rgba(255,255,255,.3); }"
    },
-   "fe9dbe2dca22": {
+   "ff1bee6d6fb7": {
     "rule": "css-color",
-    "file": "hyimg-frames/editor/colorgrade.js",
-    "text": ".hcg-seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 1px var(--line)}"
+    "file": "hyimg-image-studio/editor/colorgrade.js",
+    "text": ".hcg-hsr .hcg-ib.on{background:var(--sel);color:#fff}"
    },
    "ff34325a3e1f": {
     "rule": "css-color",
@@ -2696,101 +2696,101 @@
     "long_lines": 8,
     "max_line": 323
    },
-   "hyimg-frames/canvas.js": {
+   "hyimg-image-studio/canvas.js": {
     "long_lines": 10,
     "max_line": 322
    },
-   "hyimg-frames/editor/colorgrade.js": {
+   "hyimg-image-studio/editor/colorgrade.js": {
     "lines": 2066,
     "long_lines": 9,
     "max_line": 282
    },
-   "hyimg-frames/editor/index.html": {
+   "hyimg-image-studio/editor/index.html": {
     "lines": 3941,
     "long_lines": 296,
     "max_line": 596
    },
-   "hyimg-frames/grade.js": {
+   "hyimg-image-studio/grade.js": {
     "long_lines": 6,
     "max_line": 250
    },
-   "hyimg-frames/imgframe.js": {
+   "hyimg-image-studio/imgframe.js": {
     "long_lines": 12,
     "max_line": 261
    },
-   "hyimg-frames/tests/test_actions_rulers.py": {
+   "hyimg-image-studio/tests/test_actions_rulers.py": {
     "long_lines": 3,
     "max_line": 229
    },
-   "hyimg-frames/tests/test_blend_preview.py": {
+   "hyimg-image-studio/tests/test_blend_preview.py": {
     "long_lines": 2,
     "max_line": 299
    },
-   "hyimg-frames/tests/test_frame_marks.py": {
+   "hyimg-image-studio/tests/test_frame_marks.py": {
     "long_lines": 2,
     "max_line": 298
    },
-   "hyimg-frames/tests/test_frames.py": {
+   "hyimg-image-studio/tests/test_frames.py": {
     "long_lines": 1,
     "max_line": 213
    },
-   "hyimg-frames/tests/test_grade.py": {
+   "hyimg-image-studio/tests/test_grade.py": {
     "long_lines": 4,
     "max_line": 249
    },
-   "hyimg-frames/tests/test_grade_eyes.py": {
+   "hyimg-image-studio/tests/test_grade_eyes.py": {
     "long_lines": 1,
     "max_line": 201
    },
-   "hyimg-frames/tests/test_grade_mark_zoom.py": {
+   "hyimg-image-studio/tests/test_grade_mark_zoom.py": {
     "long_lines": 3,
     "max_line": 217
    },
-   "hyimg-frames/tests/test_huesat.py": {
+   "hyimg-image-studio/tests/test_huesat.py": {
     "long_lines": 5,
     "max_line": 292
    },
-   "hyimg-frames/tests/test_imgframe.py": {
+   "hyimg-image-studio/tests/test_imgframe.py": {
     "long_lines": 8,
     "max_line": 326
    },
-   "hyimg-frames/tests/test_layer_inherit.py": {
+   "hyimg-image-studio/tests/test_layer_inherit.py": {
     "long_lines": 1,
     "max_line": 202
    },
-   "hyimg-frames/tests/test_master_mask.py": {
+   "hyimg-image-studio/tests/test_master_mask.py": {
     "long_lines": 2,
     "max_line": 243
    },
-   "hyimg-frames/tests/test_numbers.py": {
+   "hyimg-image-studio/tests/test_numbers.py": {
     "long_lines": 1,
     "max_line": 206
    },
-   "hyimg-frames/tests/test_panel_groups.py": {
+   "hyimg-image-studio/tests/test_panel_groups.py": {
     "long_lines": 1,
     "max_line": 220
    },
-   "hyimg-frames/tests/test_props_panel.py": {
+   "hyimg-image-studio/tests/test_props_panel.py": {
     "long_lines": 1,
     "max_line": 256
    },
-   "hyimg-frames/tests/test_select_tool.py": {
+   "hyimg-image-studio/tests/test_select_tool.py": {
     "long_lines": 3,
     "max_line": 246
    },
-   "hyimg-frames/tests/test_sliders.py": {
+   "hyimg-image-studio/tests/test_sliders.py": {
     "long_lines": 6,
     "max_line": 286
    },
-   "hyimg-frames/tests/unit/js/colorgrade.test.mjs": {
+   "hyimg-image-studio/tests/unit/js/colorgrade.test.mjs": {
     "long_lines": 1,
     "max_line": 201
    },
-   "hyimg-frames/tests/unit/js/grade.test.mjs": {
+   "hyimg-image-studio/tests/unit/js/grade.test.mjs": {
     "long_lines": 1,
     "max_line": 218
    },
-   "hyimg-frames/tests/unit/js/load.mjs": {
+   "hyimg-image-studio/tests/unit/js/load.mjs": {
     "long_lines": 1,
     "max_line": 205
    },

@@ -253,21 +253,15 @@ def test_other_board_contexts(server):
             shot(pg, "move-hint.png")
             assert words() == [(["⇧"], "One axis")] and drawn()
             pg.mouse.up(); pg.wait_for_function("() => !document.querySelector('hy-keyhint')", timeout=2000)
-            # an annotation tool: its ⇧ and Esc in the Hint bar, top centre of the board's free part on the line under the top row
-            pg.evaluate("() => hyAnnot.tool('arrow')"); pg.wait_for_timeout(450)
+            # the Annotation tool (C): its Esc in the Hint bar, top centre of the board's free part on the line under the top row (the
+            # drawing tools' ⇧ hints wait with them, docs/LATER.md)
+            pg.keyboard.press("c"); pg.wait_for_timeout(450)
             h = pg.evaluate(HINT, "#dock")
-            shot(pg, "annotate-arrow-hint.png")
-            assert words() == [(["⇧"], "45°"), (["Esc"], "Done")] and h["top"] and h["place"] == "top" and not h["bare"], h
+            shot(pg, "annotate-hint.png")
+            assert words() == [(["Esc"], "Done")] and h["top"] and h["place"] == "top" and not h["bare"], h
             free = pg.evaluate("() => { const f = hyBars.free(stage, INSET, { t: 58, b: 84 }); return [f.l, f.r]; }")
             assert h["box"][1] == 58 and abs((h["box"][0] + h["box"][2]) / 2 - sum(free) / 2) <= 1, (h, free)
-            pg.evaluate("() => hyAnnot.tool('rect')"); pg.wait_for_timeout(450)
-            assert words() == [(["⇧"], "Square"), (["Esc"], "Done")]
-            # the bar has done its job once one of its keys is used: it goes, and comes back with the next tool
-            pg.keyboard.press("Shift")
-            pg.wait_for_function("() => !document.querySelector('hy-keyhint[shown]')", timeout=2000)
-            pg.evaluate("() => hyAnnot.tool('ellipse')"); pg.wait_for_timeout(450)
-            assert words() == [(["⇧"], "Circle"), (["Esc"], "Done")]
-            pg.evaluate("() => hyAnnot.exit()"); pg.wait_for_function("() => !document.querySelector('hy-keyhint')", timeout=2000)
+            pg.keyboard.press("Escape"); pg.wait_for_function("() => !document.querySelector('hy-keyhint') && !hyAnnot.active", timeout=2000)
             # the comment box: the ↵ alone in its field's corner, bare in the field's ink (⇧↵ and @ work, not shown)
             pg.evaluate("() => hyComments.newAt({ x: 900, y: 300 })"); pg.wait_for_selector("#cmthread textarea"); pg.wait_for_timeout(450)
             shot(pg, "comment-hint.png")

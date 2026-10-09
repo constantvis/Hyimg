@@ -544,12 +544,12 @@ def test_crop_bar_buttons_and_the_key_for_a_video(server, engine):
         browser, page, errors = open_board(p, engine, server)
         page.mouse.click(*center(page, "v1"))
         b = page.locator(".tidy > button[data-crop]")
-        assert b.count() == 1 and b.inner_text().strip().startswith("Кроп и обрезка") and b.locator("> kbd").inner_text() == "C"
+        assert b.count() == 1 and b.inner_text().strip().startswith("Кроп и обрезка") and b.locator("> kbd").inner_text() == "⇧C"
         b.click()
         page.wait_for_function("() => cropState && cropState.id === 'v1' && cropState.vid")
         assert page.evaluate("() => document.querySelector('#hint').classList.contains('vid')")
         page.keyboard.press("Escape"); page.wait_for_function("() => !cropState")
-        page.keyboard.press("c"); page.wait_for_function("() => cropState && cropState.id === 'v1'")
+        page.keyboard.press("Shift+C"); page.wait_for_function("() => cropState && cropState.id === 'v1'")
         page.keyboard.press("Escape")
         # a duplicate carries its trim as its own copy
         page.evaluate("() => { board.items.v1.trim = [1, 3]; sel = new Set(['v1']); render(); duplicate(); }")

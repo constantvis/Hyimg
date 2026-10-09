@@ -24,6 +24,13 @@
   }
   function plate(el, w, ox, oy, out) {
     const r = el.getBoundingClientRect();
+    // a box with no size of its own holding fixed plates (a Studio's root: Dev Studio's .dvui with its Done, Reload and Open in the top
+    // row) lays nothing itself, its children may: they are looked at, else the window dragged under them and ate their clicks (owner
+    // 2026-10-09 in Dev Studio: «ты не можешь ничего нажать ... Кнопки не работают вообще»); one not drawn (display: none) holds none
+    if ((r.width < 4 || r.height < 4) && (el.getClientRects().length || w.getComputedStyle(el).display === "contents")) {
+      for (const c of el.children) if (!SKIP.has(c.tagName)) plate(c, w, ox, oy, out);
+      return;
+    }
     if (r.width < 4 || r.height < 4 || r.top + oy >= BAND || r.bottom + oy <= 0) return;   // nothing of it in the band
     if (el.tagName === "IFRAME") {
       try { const cw = el.contentWindow; if (cw && cw.document.documentElement) { watch(cw); holesIn(cw, ox + r.left + el.clientLeft, oy + r.top + el.clientTop, out); return; } } catch {}

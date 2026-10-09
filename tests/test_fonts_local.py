@@ -2,7 +2,7 @@
 to work offline). ui/fonts.css (imported by ui/tokens.css) names Geist and Geist Mono, the files are review/ui/fonts/*.woff2. Loaded here
 in Chromium and WebKit with fonts.googleapis.com and fonts.gstatic.com blocked: the board, the library, Home (a file page, as the app
 opens it), the primitives' showcase; the pages ask no font of Google and Geist (and Geist Mono) is the font the page draws with. The
-image studio's own check is hyimg-frames/tests/test_fonts_local.py. Another page that loads a font from the net fails the static scan."""
+image studio's own check is hyimg-image-studio/tests/test_fonts_local.py. Another page that loads a font from the net fails the static scan."""
 import re
 from pathlib import Path
 
@@ -71,7 +71,7 @@ def test_font_files_are_served_with_their_type_and_nothing_else_under_fonts(serv
 def test_no_repository_page_asks_the_net_for_a_font():
     """the four repositories' pages and styles: no Google Fonts link, @import or url() (the license files and notes may name them)"""
     hits = []
-    for repo in ("hyimg", "hyimg-frames", "hyimg-3d-studio", "hyimg-dev-studio"):
+    for repo in ("hyimg", "hyimg-image-studio", "hyimg-3d-studio", "hyimg-dev-studio"):
         base = ROOT.parent / repo
         if not base.is_dir(): continue
         for f in base.rglob("*"):

@@ -5,7 +5,7 @@
   R's Info says «Reply to: “…”», A's lists «Replies · 1», A selected outlines its thread; hy.py find prints the thread, the note files
   carry reply_to and replies
 - the arrow back from A to R would close a circle: refused with a toast, nothing changes
-- a picture under two notes has two dots in those notes' colours (the reply adds none), an HTML frame under three a stack of three,
+- a picture under two notes has two dots in those notes' colours (the reply adds none), an HTML frame under three a row of three,
   each the same size on screen at two zooms; hovering a dot outlines its note, a click on it selects that note
 Chromium, dark theme, a temporary library. HY_SHOTS=<folder> keeps screenshots."""
 import json
@@ -106,9 +106,10 @@ def test_a_reply_arrow_and_a_dot_per_note(server):
         page.wait_for_timeout(500)   # the marks grow in (.32 s)
 
         # a dot per note: the picture under A (blue) and B (yellow), the HTML frame under three notes
+        page.wait_for_function("() => EL.get('p').querySelector('.mk-note i').getBoundingClientRect().width > 11", timeout=5000)   # grown in
         d = page.evaluate(DOTS, "p")
         assert [x[0] for x in d] == ["A", "B"] and d[0][1] == "rgb(125, 187, 245)" and d[1][1] == "rgb(244, 196, 48)"
-        assert d[0][2] == d[1][2] and abs((d[1][3] - d[0][3]) - d[0][2] * .6) <= 1.5   # the next one 60 % of a dot further
+        assert d[0][2] == d[1][2] and abs((d[1][3] - d[0][3]) - d[0][2] - 3.5) <= 1.5   # side by side, 3.5 px apart (2026-10-09)
         h = page.evaluate(DOTS, "hf")
         assert [x[0] for x in h] == ["H1", "H2", "H3"] and page.evaluate("() => EL.get('hf').classList.contains('noted')")
         assert h[0][1] == "rgb(240, 140, 196)" and h[1][1] == "rgb(183, 156, 242)"

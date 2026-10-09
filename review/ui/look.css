@@ -30,7 +30,7 @@
    editor's --r-ctl all read it, so a panel never mixes two shapes. */
 /* A row of a tree list: the media library's folder row (review/v2.html .frow) is the look (owner 2026-10-06: «why so much inconsistencies in
    ui, just make all ui consistant»), and the 3D editor's layer list reads it from here: 28 px tall, 8 px corners, a grey hover. The selected
-   row is the image editor's selected layer (hyimg-frames editor .lr.sel, owner 2026-10-07: «выбранный объект вообще незаметен, должно быть,
+   row is the image editor's selected layer (hyimg-image-studio editor .lr.sel, owner 2026-10-07: «выбранный объект вообще незаметен, должно быть,
    как вот здесь в эдиторе фото»): a fill and a line in the selection colour (--sel of the page, blue, the accent in the studio look); a
    selected row under the pointer stays selected */
 
@@ -105,6 +105,18 @@
 :is(#ctx, #lctx, .menu, [data-hymenu]) :is(button:disabled, button[aria-disabled=true]), :is(#ctx, #lctx, .menu, [data-hymenu]) :is(button:disabled, button[aria-disabled=true]):hover {
   color: var(--muted); background: none; cursor: default; }
 :is(#ctx, #lctx, .menu, [data-hymenu]) :is(button:disabled, button[aria-disabled=true]) > :is(svg, img, .mk, .msub) { opacity: .45; }
+/* Two rows that can each be lit never touch (owner 2026-10-09 on the board's name menu, the open board's row and the one under the pointer one
+   block: «опять проблема с расстоянием ... в менюшках, в наших сайдбарах. Это все нужно поправить»): --hy-gap-row between what two rows paint.
+   A row keeps its pitch and the pointer never falls between two rows: its light stands half the gap in from its top and its bottom (a clear
+   border, the background clipped inside it), so a 32 px item is lit 30 px tall. Every menu and submenu, the pages, the library's folders,
+   the history, Home's bell and Dropbox rows, the 3D outliner, Dev Studio's tree, Image Studio's History and Channels. A list that spaces its
+   rows itself (Home's sidebar and list, the bell, Info's notes, the comments, Image Studio's Layers) keeps its gap; tests/test_design_rowgap.py */
+:is(#ctx, #lctx, .menu, [data-hymenu], .hy-sub, #fsMenu, .hy-oi-menu) > button, #pages .row:not(.dv), .frow, #ntf .hb-h, .dbx-row, #propsDlg label,
+#histList :is(.hv, .hgrp), #evList .ev, #actsList .ai, .m3l .row, .dvt .row, #phist .hrow, #pchan .chr {
+  box-sizing: border-box; border-block: calc(var(--hy-gap-row) / 2) solid transparent !important; background-clip: padding-box !important; }
+/* the history's timeline runs on through the rows' gap */
+#histList :is(.hv, .hgrp):not(.first)::before, #evList .ev:not(.first)::before { top: calc(var(--hy-gap-row) / -2); }
+#histList :is(.hv, .hgrp):not(.last)::before, #evList .ev:not(.last)::before { bottom: calc(var(--hy-gap-row) / -2); }
 
 /* The settings panel, the same on Home and on the board: ui/setpanel.js and setpanel.css (owner 2026-10-07) */
 .ml .mh { color: var(--muted); margin-left: 4px; }   /* a quiet note after a label («доски останутся») */

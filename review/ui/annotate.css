@@ -89,9 +89,13 @@
   backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: var(--plate-sh); color: var(--ink); font: 13px/1.4 var(--sans); --hy-av-ring: var(--panel); }
 #cmlist.open { display: grid; gap: 4px; animation: hySubIn .25s cubic-bezier(.32,.72,0,1); }
 .cm-lh { display: flex; align-items: center; min-height: 34px; padding: 0 0 0 6px; }
-.cm-tabs { display: flex; gap: 4px; padding: 0 2px 4px; }
-.cm-tabs button { height: 28px; padding: 0 12px; border: 0; border-radius: var(--hy-row-r); background: none; color: var(--sub); font: 500 12px var(--sans); cursor: pointer; }
-.cm-tabs button[aria-pressed=true] { background: var(--hy-tint-bg); color: var(--hy-tint-ink); }
+/* Open | Resolved: the block header's tabs at their standard size (ui/hy/block.css .hy-bh-tab: 24 px, 12.5 / 500, the chosen one on the
+   grey plate), no bigger tab anywhere (owner 2026-10-09 on round 13: «я бы все равно склонялся к стандартному размеру оставить») */
+.cm-tabs { display: flex; gap: 2px; padding: 0 2px 4px; }
+.cm-tabs button { height: var(--hy-h-s); padding: 0 8px; border: 0; border-radius: var(--hy-tab-r); background: none; color: var(--muted); font: 500 12.5px var(--sans);
+  cursor: pointer; transition: background-color .18s ease, color .18s ease; }
+.cm-tabs button:hover { color: var(--ink); }
+.cm-tabs button[aria-pressed=true] { background: var(--hy-tab-on); color: var(--ink); }
 .cm-ppl { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 2px 4px; }
 .cm-ppl button { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; }
 .cm-ppl button[aria-pressed=true] { background: var(--hy-tint-bg); }

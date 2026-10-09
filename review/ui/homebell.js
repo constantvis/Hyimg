@@ -49,7 +49,7 @@
   }
   const what = c => [c.add && T("+{n} images", { n: c.add }), c.rm && T("−{n} images", { n: c.rm }), c.groups && T("{n} groups", { n: c.groups }),
     c.notes && T("{n} notes", { n: c.notes }), c.heads && T("{n} headings", { n: c.heads }), c.moves && T("{n} moves", { n: c.moves }),
-    c.cms && T("{n} comments", { n: c.cms }), c.draws && T("{n} drawings", { n: c.draws }), c.other && T("{n} other changes", { n: c.other })].filter(Boolean).join(", ");
+    c.cms && T("{n} annotations", { n: c.cms }), c.draws && T("{n} drawings", { n: c.draws }), c.other && T("{n} other changes", { n: c.other })].filter(Boolean).join(", ");
   function text(nw) {
     const pages = tally(nw.rows, r => r.p || T("Page 1")), who = [];
     (nw.rows || []).forEach(r => { const w = window.hyPeople ? hyPeople.newsWho(r) : r.w; if (w && !who.includes(w)) who.push(w); });

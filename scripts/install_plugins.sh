@@ -18,7 +18,7 @@ usage() {
 Без флагов в терминале скрипт спрашивает про каждый плагин.
 
   --frames   Фреймы: Image Studio на доске (слои, маски, Color Grading, заливка) и HTML-фреймы
-             https://github.com/constantvis/hyimg-frames, папка плагина frames
+             https://github.com/constantvis/hyimg-image-studio, папка плагина frames
   --3d       3D-объекты: 3D-сцена карточкой на доске, 3D Studio, перенос в Blender (Blender не обязателен)
              https://github.com/constantvis/hyimg-3d-studio, папка плагина 3d
   --dev      Dev Studio: HTML-страницы карточками на доске, дерево элементов и инспектор, правки пишутся в сам файл
@@ -31,7 +31,7 @@ usage() {
 и запускай с флагами только того, на что он ответил «да». Модель LaMa спрашивай отдельно.
 Флаги не заменяют согласие человека.
 
-Копии плагинов берутся рядом с этим репозиторием (../hyimg-frames, ../hyimg-3d-studio, ../hyimg-dev-studio)
+Копии плагинов берутся рядом с этим репозиторием (../hyimg-image-studio, ../hyimg-3d-studio, ../hyimg-dev-studio)
 или клонируются туда. Ссылки ставятся в ~/Library/Application Support/Hyimg/plugins
 (другая папка: HYIMG_PLUGINS_DIR). После установки перезапусти сервер Hyimg (⇧⌘R).
 EOF
@@ -51,9 +51,9 @@ for arg in "$@"; do
   esac
 done
 
-# name|folder beside hyimg|repository|what it gives
+# name|folder beside hyimg|repository|what it gives|the folder's old name (a checkout from before a rename is used as it is)
 PLUGIN_LIST=(
-  "frames|hyimg-frames|https://github.com/constantvis/hyimg-frames.git|Фреймы: Image Studio на доске (слои, маски, Color Grading, заливка) и HTML-фреймы"
+  "frames|hyimg-image-studio|https://github.com/constantvis/hyimg-image-studio.git|Фреймы: Image Studio на доске (слои, маски, Color Grading, заливка) и HTML-фреймы|hyimg-frames"
   "3d|hyimg-3d-studio|https://github.com/constantvis/hyimg-3d-studio.git|3D-объекты: 3D-сцена карточкой на доске, 3D Studio, перенос в Blender"
   "dev|hyimg-dev-studio|https://github.com/constantvis/hyimg-dev-studio.git|Dev Studio: HTML-страницы карточками на доске, дерево элементов и инспектор, правки пишутся в сам файл"
 )
@@ -73,8 +73,9 @@ fi
 
 mkdir -p "$PLUGINS"
 for entry in "${PLUGIN_LIST[@]}"; do
-  IFS='|' read -r name folder repo about <<<"$entry"
+  IFS='|' read -r name folder repo about was <<<"$entry"
   link="$PLUGINS/$name"; src="$BESIDE/$folder"
+  if [ -n "$was" ] && [ ! -e "$src" ] && [ -d "$BESIDE/$was" ]; then src="$BESIDE/$was"; fi   # hyimg-frames became hyimg-image-studio 2026-10-09
   if [ "$remove" = 1 ]; then
     if [ -L "$link" ] && [ "$(readlink "$link")" = "$src" ]; then rm "$link" && echo "убрал $link"
     elif [ -e "$link" ] || [ -L "$link" ]; then echo "не наша ссылка, не трогаю: $link"; fi

@@ -80,8 +80,7 @@ extension App {
     func switcherClose(commit: Bool) {
         guard SW.open else { return }
         SW.open = false; SW.showWork?.cancel(); SW.showWork = nil
-        let target = commit && SW.ids.indices.contains(SW.pick) ? SW.ids[SW.pick] : nil
-        let going = target != nil && target != SW.ids.first
+        let target = commit ? SwitchOrder.target(SW.ids, pick: SW.pick) : nil, going = target != nil
         if SW.shown { pageEval("window.hyimgSwitcher && window.hyimgSwitcher({open: false, keep: \(going)})", SW.drawnOn) }
         SW.shown = false; SW.drawnOn = nil
         if going, let target { switchTo(target) }
@@ -89,7 +88,7 @@ extension App {
     func switchTo(_ id: String) {
         if id == "home" { showProjects(); return }
         guard let uuid = UUID(uuidString: id), let p = registry.projects.first(where: { $0.id == uuid }) else { return }
-        if uuid == selected && SW.pending == nil && !(homeWeb.map { inFront($0) } ?? false) { return }   // in front already
+        if uuid == selected && SW.pending == nil && !homeFront { return }   // in front already, or opening from Home
         openProject(p)
     }
     // the page messages: a card or a row of the crumb's list clicked, the pointer on a card, a click beside the cards, a page's sleep answer
@@ -215,15 +214,15 @@ extension App {
     // the cards: the one in front first (Home, when it is in front), then the open boards by when they were last in front, Home last;
     // a board in Home's Archive only while it is the one in front (HomeArchive.swift)
     func cardIDs() -> [String] {
-        let homeFront = homeWeb.map { inFront($0) } ?? false
-        let open = tabs.filter { id in sessions[id] != nil && registry.projects.contains { $0.id == id } }
-        let boards = HomeArchive.switchable(open, archived: archivedBoards, front: homeFront ? nil : selected)
-        let order = SwitchOrder.cards(front: homeFront ? nil : selected, open: boards, lastFront: BoardSleep.shared.lastFront).map(\.uuidString)
-        return homeFront ? ["home"] + order : order + ["home"]
+        let home = homeFront, open = tabs.filter { id in sessions[id] != nil && registry.projects.contains { $0.id == id } }
+        let boards = HomeArchive.switchable(open, archived: archivedBoards, front: home ? nil : selected)
+        return SwitchOrder.deck(homeFront: home, front: selected, open: boards, lastFront: BoardSleep.shared.lastFront)
     }
+    // Home is in front only as Home: on top with a board chosen it is leaving for that board, which is in front (SwitchOrder.homeFront)
+    var homeFront: Bool { SwitchOrder.homeFront(onTop: homeWeb.map { inFront($0) } ?? false, leavingFor: selected) }
     func boardState(_ id: UUID) -> BoardState? {
         guard let x = sessions[id] else { return nil }
-        let front = selected == id && SW.pending != id && !(homeWeb.map { inFront($0) } ?? false)
+        let front = selected == id && SW.pending != id && !homeFront
         return BoardState.of(front: front, asleep: x.asleep, drawn: x.drawn, loading: x.loading || SW.pending == id, waking: x.waking)
     }
     func boardCards(_ ids: [String]? = nil) -> [[String: Any]] {

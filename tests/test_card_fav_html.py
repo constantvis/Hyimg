@@ -25,7 +25,7 @@ from test_canvas_pages import free_port, png
 
 playwright = pytest.importorskip("playwright.sync_api")
 ROOT = Path(__file__).resolve().parents[1]
-PLUGINS = {"frames": "hyimg-frames", "dev": "hyimg-dev-studio"}
+PLUGINS = {"frames": "hyimg-image-studio", "dev": "hyimg-dev-studio"}
 PAGE = "<!doctype html><html><head><title>{t}</title></head><body><h1>{t}</h1></body></html>"
 PINK = "rgb(251, 113, 133)"
 

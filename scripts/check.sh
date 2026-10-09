@@ -6,14 +6,14 @@
 #   scripts/check.sh --fast [repo…]  the static validator (scripts/validate.py) and the unit tests (tests/unit: pytest and node --test): seconds
 #   scripts/check.sh --full [repo…]  and every Playwright suite of the repositories (tests/*.py, the design audit among them): minutes
 #   scripts/check.sh --staged        the pre-commit hook's check: the validator on the staged files of this repository, its unit tests
-# repo: hyimg, hyimg-frames, hyimg-3d-studio, hyimg-dev-studio (a name or a path). The core's tests run with HY_TEST_ONLY_PLUGINS=1
+# repo: hyimg, hyimg-image-studio, hyimg-3d-studio, hyimg-dev-studio (a name or a path). The core's tests run with HY_TEST_ONLY_PLUGINS=1
 # (tests/conftest.py), so the plugins installed on this Mac never take part; a plugin's suite mounts its own working copy itself.
 # Exit status: 0 everything passed, 1 something failed.
 set -u
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HYIMG="$(dirname "$HERE")"
 REPOS_DIR="$(dirname "$HYIMG")"
-ALL=(hyimg hyimg-frames hyimg-3d-studio hyimg-dev-studio)
+ALL=(hyimg hyimg-image-studio hyimg-3d-studio hyimg-dev-studio)
 MODE=fast; REPOS=(); LABEL=""
 for a in "$@"; do
   case "$a" in

@@ -4,24 +4,25 @@
 #links { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; z-index: 3; pointer-events: none; }
 /* the dashed zones of notes lie under the pictures (owner 2026-10-03: a selected note's zone tinted the frames yellow) */
 #zones { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; z-index: 1; pointer-events: none; }
-#links .hit { pointer-events: stroke; cursor: pointer; } #links .hd { pointer-events: all; }
+#links .hit { pointer-events: stroke; cursor: pointer; }
 /* a note's arrow (owner 2026-10-08, a7 «Arrow states», ui/notelink.js arrowSvg): 2 px; hovered 3 px and a round × at its middle, or beside
-   its end dot while the dot is hovered: one click takes the arrow off (2026-10-02: no select-then-Delete); picked: the selection's blue */
+   its note's dot while the dot is hovered (.dh): one click takes the arrow off (2026-10-02: no select-then-Delete); picked: the selection's blue */
 #links .arw .ln { stroke-width: calc(2px / var(--z)); transition: stroke-width .12s var(--hy-ease); }
-/* the rest of an arrow by --z too, live through a zoom (2026-10-08); far out its head and end dot stop at a share of the thing they end
-   on (--hmax, --rmax from arrowSvg) instead of covering it. fill-box: each part scales round its own point (the head round its tip) */
+/* the rest of an arrow by --z too, live through a zoom (2026-10-08); far out its head stops at a share of the thing it ends on (--hmax
+   from arrowSvg) instead of covering it. fill-box: each part scales round its own point (the head round its tip). An arrow that ends
+   at a note's dot has no dot of its own (2026-10-09): the dot is the one in the thing's row (ui/notelink.js paintDots, endX) */
 #links .arw .hit { stroke-width: calc(16px / var(--z)); }
 #links .arw .hh { transform-box: fill-box; transform-origin: right center; transform: scale(min(calc(1 / var(--z)), var(--hmax))); }
-#links .arw .hd { r: min(calc(7px / var(--z)), var(--rmax)); stroke: var(--mkring); stroke-width: min(calc(1.5px / var(--z)), calc(var(--rmax) * .22)); }
 #links .arw .xs { transform-box: fill-box; transform-origin: center; transform: scale(calc(.41667 / var(--z))); }
+/* the end ×: 8 px beyond the dot's edge, its way turned by --th (endX: under the row's dot, --dr its radius in board units) */
 #links .arw .xo { transform-box: fill-box; transform-origin: center;
-  transform: translateX(calc(-1 * (min(7px / var(--z), var(--rmax)) + 8px / var(--z)))) rotate(calc(-1deg * var(--th))); }
+  transform: translateX(calc(-1 * (var(--dr, min(7px / var(--z), var(--rmax))) + 8px / var(--z)))) rotate(calc(-1deg * var(--th))); }
 #links .lkg { rx: calc(14px / var(--z)); stroke-width: calc(2.5px / var(--z)); stroke-dasharray: calc(9px / var(--z)) calc(6px / var(--z)); }
 #links .lkc { rx: calc(10px / var(--z)); stroke-width: calc(2px / var(--z)); stroke-dasharray: calc(5px / var(--z)) calc(4px / var(--z)); }
 #links .lkd { stroke-width: calc(2px / var(--z)); stroke-dasharray: calc(6px / var(--z)) calc(4px / var(--z)); }
 #zones rect { rx: calc(6px / var(--z)); stroke-width: calc(1.5px / var(--z)); stroke-dasharray: calc(7px / var(--z)) calc(5px / var(--z)); }
-#links .arw:is(:hover, .pick) .ln { stroke-width: calc(3px / var(--z)); } #links .arw.pick .ln { stroke: var(--sel); } #links .arw.pick .hh { fill: var(--sel); }
+#links .arw:is(:hover, .pick, .dh) .ln { stroke-width: calc(3px / var(--z)); } #links .arw.pick .ln { stroke: var(--sel); } #links .arw.pick .hh { fill: var(--sel); }
 #links .arw .del { opacity: 0; pointer-events: none; cursor: pointer; transition: opacity .12s var(--hy-ease); }
-#links .arw:hover:not(:has(.hd:hover, .del.e:hover)) .del.m, #links .arw:has(.hd:hover) .del.e, #links .arw .del:hover { opacity: 1; pointer-events: all; }
+#links .arw:hover:not(.dh) .del.m, #links .arw.dh .del.e, #links .arw .del:hover { opacity: 1; pointer-events: all; }
 #links .del circle { fill: var(--panel); stroke: currentColor; } #links .del path { fill: none; stroke: var(--ink); }
 #links .del:hover circle { fill: var(--hy-red); stroke: var(--hy-red); } #links .del:hover path { stroke: var(--hy-on-accent); }

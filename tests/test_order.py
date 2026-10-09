@@ -120,7 +120,7 @@ def order_menu(page, id, at):
 
 @pytest.mark.parametrize("engine", ENGINES)
 def test_menu_moves_within_the_group(server, engine):
-    if not server["frames"]: pytest.skip("no hyimg-frames repository beside this one")
+    if not server["frames"]: pytest.skip("no hyimg-image-studio repository beside this one")
     port = server["port"]
     with playwright.sync_playwright() as p:
         browser, page, errors = open_board(p, engine, port, True)

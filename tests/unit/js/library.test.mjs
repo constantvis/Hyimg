@@ -171,6 +171,13 @@ test("hidden and see-through plates are no holes, a plate that lets clicks throu
   assert.deepEqual(plain(last().holes), [[620, 10, 40, 24]]);
 });
 
+test("a box with no size of its own gives the plates it holds: a Studio's root and its session actions in the top row", () => {
+  // Dev Studio's .dvui: no box, its <hy-studio-actions> (fixed, top right) and its panels (fixed, under the band) inside (owner
+  // 2026-10-09: «ты не можешь ничего нажать ... Кнопки не работают вообще», the window dragged under Done)
+  const { last } = band([[0, 0, 0, 0, { kids: [[900, 12, 300, 38], [12, 58, 260, 700]] }]]);
+  assert.deepEqual(plain(last()), { action: "dragband", h: 56, holes: [[900, 12, 300, 38]] });
+});
+
 test("a page's background elements and their deep insides drag the window", () => {
   const { p, sent } = band([], { flat: "#stage", deep: "#world" });
   const stage = p.el("div", { id: "stage" }, p.document.body); stage._rect = { left: 0, top: 0, width: 1280, height: 800 };

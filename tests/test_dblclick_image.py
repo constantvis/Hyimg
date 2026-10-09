@@ -1,7 +1,7 @@
 """A double click on a picture enters the dock's Image mode instead of the crop (owner 2026-10-07: «давай при двойном нажатии на картинку
 мы будем в режим картинки переходить, а не trim, trim добавим в меню сверху, которое появляется»). The core asks the mode switch to enter
 "image" for the picture (ui/modes.js enter); a fake plugin stands in for the frames plugin, which has its own test of the studio
-(hyimg-frames tests/test_picture_dblclick.py). With no Image mode that takes the picture the crop opens, as before; a PDF keeps its crop.
+(hyimg-image-studio tests/test_picture_dblclick.py). With no Image mode that takes the picture the crop opens, as before; a PDF keeps its crop.
 The crop of a picture is «Crop» on the bar over it. The video's double click (crop and trim) is in test_video.py. Chromium and WebKit."""
 import json, os, socket, subprocess, sys, time, urllib.request, uuid
 from pathlib import Path
@@ -88,11 +88,11 @@ def test_double_click_on_a_picture_enters_image_and_the_crop_is_on_the_bar(serve
         # «Crop» on the bar over the selected picture, its key in the tooltip and on the button, enters the crop
         page.evaluate("() => { sel = new Set(['i0']); render(); }"); page.wait_for_timeout(350)
         b = page.locator(".tidy > button[data-crop]")
-        assert b.count() == 1 and b.get_attribute("title") == "Crop · C" and b.locator("> kbd").inner_text() == "C"
+        assert b.count() == 1 and b.get_attribute("title") == "Crop · ⇧C" and b.locator("> kbd").inner_text() == "⇧C"
         b.click(); page.wait_for_function("() => cropState && cropState.id === 'i0' && !cropState.vid")
         page.keyboard.press("Escape")
         # the shortcuts panel tells the double click and C apart
         keys = page.evaluate("() => document.getElementById('keys').textContent.replace(/\\s+/g, ' ')")
-        assert "double-click an image: Image Studio; a video: crop and trim" in keys and "C crop; a video: crop and trim" in keys, keys
+        assert "double-click an image: Image Studio; a video: crop and trim" in keys and "⇧C crop; a video: crop and trim" in keys, keys
         assert not errors, errors
         browser.close()

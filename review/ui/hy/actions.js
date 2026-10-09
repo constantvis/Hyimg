@@ -2,10 +2,11 @@
 // <hy-studio-actions>: a Studio's session actions, the buttons that end or steer the session (Save, Cancel, Done, Reload, Open in <Browser>).
 // Owner 2026-10-09 on Dev Studio's dock, where Reload, Open and Done stood beside the tools: «кнопки Done у нас всегда стандартизированы
 // справа вверху, а не внизу ... Их тоже нужно систематизировать, чтобы они везде были идентичны». One element for Image Studio, 3D Studio,
-// Dev Studio and the HTML frame's live view. It stands in the top row at its right end, just left of the row's round buttons (the board's
-// bell, keys, history and settings; Image Studio's own gear), the row's gap apart: where Image Studio's Cancel and Save and Home's «New
-// board» stood first. Each action is a plate of the row (<hy-button size=plate>); the secondary ones in the order given, the one primary
-// last, filled with the colour of where it stands (--sel: a Studio's own colour inside its root) with white words and a check.
+// Dev Studio and the HTML frame's live view. It stands in the top row at its right end: in a Studio at the row's gutter, the round buttons
+// are away there (ui/modes.js, owner 2026-10-09: «В режиме студии мы вот эти все элементы убираем»); elsewhere (the HTML frame's live
+// view on the board) just left of the round buttons that show, the row's gap apart. Each action is a plate of the row
+// (<hy-button size=plate>); the secondary ones in the order given, the one primary last, filled with the colour of where it stands
+// (--sel: a Studio's own colour inside its root) with white words and a check.
 //   const a = document.createElement("hy-studio-actions"); studioRoot.append(a);
 //   a.actions = [{ id: "reload", label: "Reload", tip: "Reload the page", key: "⌘R" }, { id: "open", open: () => url, tip: "…" },
 //                { id: "done", label: "Done", tip: "Done", key: "Esc", primary: true, run: close }]
@@ -65,7 +66,8 @@ export class HyStudioActions extends HyElement {
     addEventListener("resize", this.#placeNow);
     // the round buttons move when the row changes: the merge's face slides the bell and the keys (ui/merge.css), the look resizes them
     this.#mo = new MutationObserver(() => { this.place(); clearTimeout(this.#later); this.#later = window.setTimeout(this.#placeNow, 450); });
-    this.#mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-ui", "data-shape"] });
+    // and go away in a Studio (ui/modes.js data-in-studio): the actions then stand at the row's gutter
+    this.#mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-ui", "data-shape", "data-in-studio"] });
     this.draw(); this.place(); requestAnimationFrame(this.#placeNow);
   }
 

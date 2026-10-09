@@ -320,8 +320,12 @@ HELP = """
   ungrid GRID|REF                     the grid record goes, everything stays where it is; a member: only it leaves
   zone NOTE REF... [pad=N]            the note's dashed zone around a grid (its id or a member), ids or a heading, pad of air (half the
                                       note's width): after a grid grew into a table, its pictures stay the note's
-  a table: text items as headings in the first row and the first column, the corner too (text "…" fs=40; set REF size=1), then
-                                      grid CORNER FIRST-COLUMN-TITLE cols=N and put the rest in reading order: head is set by itself
+  table REF... [cols=N] [title="Table"] [fs=N]   a table of pictures and cards (ids, «id,id», a path glob, a group), as the board's
+                                      right click › Arrange › Make table: their rows as they lie, a heading row A B C … over them, a
+                                      heading column 1 2 3 … left of them, the corner the title; the pictures keep their top left, the
+                                      headings are plain texts (rename them: set REF text=…)
+  a table by hand: text items as headings in the first row and the first column, the corner too (text "…" fs=40; set REF size=1),
+                                      then grid CORNER FIRST-COLUMN-TITLE cols=N and put the rest in reading order: head is set by itself
 """
 _hy = {}
 
@@ -409,6 +413,30 @@ def op_zone(b, args, kv):
     return f"zone «{nm[:30]}» вокруг {len(set(ids))}: x {round(z['x'])}..{round(z['x'] + z['w'])} y {round(z['y'])}..{round(z['y'] + z['h'])}"
 
 
+def op_table(b, args, kv):
+    """a table from things: their rows in reading order, wrapped at cols; a heading row (A, B, C …) and a heading column (1, 2, 3 …) with
+    the title in the corner; the first picture stays where it was (owner 2026-10-09: «сетка, таблица, вот это вот все. Где это все?»)"""
+    import patterns
+    if not args: raise SystemExit('table REF... [cols=N] [title="Table"]: из чего таблица')
+    ids = [i for a in args for p in str(a).split(",") if p for i in _ids(b, p)]
+    ids = [i for i in dict.fromkeys(placed(b, ids)) if items(b)[i].get("type") != "text"]
+    if len(ids) < 2: raise SystemExit("table: нужны хотя бы 2 картинки или карточки")
+    rws = rows_of(b, ids); flat = [i for r in rws for i in r]; first = box(items(b)[flat[0]])
+    cols = max(1, int(kv.get("cols") or max(len(r) for r in rws))); body = [flat[k:k + cols] for k in range(0, len(flat), cols)]
+    ws = sorted(items(b)[i]["w"] for i in flat); fs = round(kv.get("fs") or max(16, ws[len(ws) // 2] / 8))
+    letters = [chr(65 + c) if c < 26 else f"C{c + 1}" for c in range(cols)]
+    texts = [str(kv.get("title") or "Table")] + letters + [str(r + 1) for r in range(len(body))]
+    new = []
+    for t in texts:   # at the first picture's place: the grid lays them out from the top left of all
+        h = patterns.heading(t, fs); h.update(x=first[0], y=first[1]); k = _hy["uid"]("t"); items(b)[k] = h; new.append(k)
+    members = new[:cols + 1] + [m for r, row in enumerate(body) for m in [new[cols + 1 + r]] + row]
+    gid = make(b, members, cols=cols + 1, order=False)
+    pos = items(b)[flat[0]]; dx, dy = first[0] - pos["x"], first[1] - pos["y"]   # the first picture back where it was, the table round it
+    for m in table(b)[gid]["members"]: items(b)[m]["x"] = round(items(b)[m]["x"] + dx, 2); items(b)[m]["y"] = round(items(b)[m]["y"] + dy, 2)
+    regroup(b, new)
+    return f"table {cols} × {len(body)}: {title(b, gid)}, заголовки {', '.join(new)}"
+
+
 def _keep(f):
     """every do command: members it took off the page leave their grids, which close the gap from where they stood"""
     def run(b, args, kv):
@@ -420,6 +448,6 @@ def _keep(f):
 
 def register(OPS, resolve, pics_of):
     """hy.py: its do commands keep the grids right; grid, put and ungrid join them"""
-    _hy.update(resolve=resolve, pics_of=pics_of)
+    _hy.update(resolve=resolve, pics_of=pics_of, uid=lambda p: p + "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(7)))
     for k in list(OPS): OPS[k] = _keep(OPS[k])
-    OPS.update(grid=_keep(op_grid), put=_keep(op_put), ungrid=_keep(op_ungrid), zone=_keep(op_zone))
+    OPS.update(grid=_keep(op_grid), put=_keep(op_put), ungrid=_keep(op_ungrid), zone=_keep(op_zone), table=_keep(op_table))

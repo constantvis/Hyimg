@@ -27,7 +27,7 @@ URL = re.compile(r"https?://[^\s\"'<>`)\]]+")
 
 HERE = Path(__file__).resolve().parent
 REPOS_DIR = HERE.parent.parent
-REPOS = ["hyimg", "hyimg-frames", "hyimg-3d-studio", "hyimg-dev-studio"]
+REPOS = ["hyimg", "hyimg-image-studio", "hyimg-3d-studio", "hyimg-dev-studio"]
 last = {}   # the stats and baseline of the last check(), for summary() and listing()
 
 

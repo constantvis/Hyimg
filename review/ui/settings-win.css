@@ -31,7 +31,7 @@
 .sw-box.sw-full .sw-rail { padding-top: var(--hy-row-under); }
 
 /* the rail: search, the profile, the sections, the footnote at its foot; the section shown on the grey plate */
-.sw-rail { flex: none; width: 236px; box-sizing: border-box; display: flex; flex-direction: column; gap: 1px; padding: 12px 10px; overflow-y: auto; overscroll-behavior: contain;
+.sw-rail { flex: none; width: 236px; box-sizing: border-box; display: flex; flex-direction: column; gap: var(--hy-gap-row); padding: 12px 10px; overflow-y: auto; overscroll-behavior: contain;
   border-right: 1px solid var(--hy-pline); border-radius: var(--sw-r) 0 0 var(--sw-r); background: var(--hy-blk-deep); scrollbar-width: thin; }
 .sw-box.sw-full .sw-rail { border-radius: 0; }
 .sw-rail .sw-q { flex: none; margin: 0 2px 10px; }
@@ -116,7 +116,9 @@
 /* ⌘. hides the interface: the panel goes with it and takes no click while it is away */
 :root.hy-hideui #sets.sw-side .sw-box { pointer-events: none; }
 #sets.sw-side .sw-rz[data-rz=w] { top: 0; bottom: 0; left: -4px; width: 8px; }
-#sets.sw-side .sw-hd { height: 40px; padding: 0 6px 0 14px; gap: 2px; }
+/* no rule under the header: a block's top meets its content without a line, the hairlines stand between sections (owner 2026-10-09 on
+   round 13's headers: «Разделительную линию нужно точно убирать сверху»; DESIGN.md «Блоки») */
+#sets.sw-side .sw-hd { height: 40px; padding: 0 6px 0 14px; gap: 2px; border-bottom: 0; }
 #sets.sw-side .sw-hd h2 { gap: 8px; font: 500 13px var(--sans); }
 #sets.sw-side .sw-hd h2 > svg { color: var(--muted); }
 #sets.sw-side .sw-cnt { display: none; }

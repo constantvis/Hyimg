@@ -239,7 +239,7 @@ def op_text(b, args, kv):
 
 
 def op_htmlframe(b, args, kv):
-    """an HTML frame (Hyimg-frames plugin): a page of the library (html/<name>/index.html) seen at a viewport of vw × vh css px, the card
+    """an HTML frame (hyimg-image-studio plugin): a page of the library (html/<name>/index.html) seen at a viewport of vw × vh css px, the card
     w wide on the board (owner 2026-10-04: «a frame for HTML, interactive; change its width and height and see how it works»)"""
     try: st, _ = api_text("/lib/" + urllib.parse.quote(args[0]))
     except SystemExit: st = 404
@@ -545,7 +545,7 @@ def op_group(b, args, kv):
     gid = uid("g"); b["groups"][gid] = {"title": title, "x": x0 - pad, "y": y0 - pad, "w": x1 - x0 + 2 * pad, "h": y1 - y0 + 2 * pad, "members": ids}
     return f"group «{title}» {len(ids)} шт. x {round(x0 - pad)} y {round(y0 - pad)} [{gid}]"
 
-# ---- image frames (Hyimg-frames, owner 2026-10-05): an agent makes, takes apart, renames and reads frames as the owner does with ⌥⌘G
+# ---- image frames (hyimg-image-studio, owner 2026-10-05): an agent makes, takes apart, renames and reads frames as the owner does with ⌥⌘G
 # and ⌥⇧⌘G on the canvas; the files are the same (frames/<stamp>/frame.<n>.json, render.<n>.png), the pictures are only read
 def post_bytes(path, data):
     req = urllib.request.Request(BASE + path, data=data, headers={"Content-Type": "application/octet-stream", "X-Hyimg-Agent": os.environ.get("HYIMG_AGENT") or "agent"}, method="POST")
@@ -843,7 +843,7 @@ def frame_pics(layers):
 
 
 def img_frames(b):
-    """image frames on the page (Hyimg-frames, owner 2026-10-05): (id, name, size, pictures inside), read from each frame's frame.json;
+    """image frames on the page (hyimg-image-studio, owner 2026-10-05): (id, name, size, pictures inside), read from each frame's frame.json;
     a frame whose file cannot be read shows what its card remembers"""
     out = []
     for id, it in b["items"].items():
@@ -977,7 +977,7 @@ def cmd_dupes():
 # (crop, time, opacity, PDF page, colour grade, mask) by the canvas's own rules: prop_applies / prop_set, the «Paste properties» kinds.
 # Also the pages, the presets of properties and the feature catalog (review/features.json: what Hyimg can do and how an agent does it).
 FEATURES_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "features.json")
-PLUGIN_NAMES = {"3d": ("3d", "hyimg-3d-studio", "hyimg-3d"), "frames": ("frames", "hyimg-frames"), "dev": ("dev", "hyimg-dev-studio", "dev-studio")}
+PLUGIN_NAMES = {"3d": ("3d", "hyimg-3d-studio", "hyimg-3d"), "frames": ("frames", "hyimg-image-studio", "hyimg-frames"), "dev": ("dev", "hyimg-dev-studio", "dev-studio")}
 
 
 def plugin_name(kind):

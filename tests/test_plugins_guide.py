@@ -55,17 +55,17 @@ def test_agent_page_names_missing_plugins_once(tmp_path):
     page = agent_text(tmp_path, [])
     assert "## Плагины" in page and "Плагинов нет." in page
     assert "Спроси человека" in page and "install_plugins.sh" in page
-    assert page.count("https://github.com/constantvis/hyimg-frames") == 1 and page.count("https://github.com/constantvis/hyimg-3d-studio") == 1
+    assert page.count("https://github.com/constantvis/hyimg-image-studio") == 1 and page.count("https://github.com/constantvis/hyimg-3d-studio") == 1
     assert page.count("https://github.com/constantvis/hyimg-dev-studio") == 1
     assert "LaMa" in page and "Blender" in page
 
 
 def test_agent_page_lists_installed_plugins_and_only_the_missing_one(tmp_path):
     root = tmp_path / "plugins"; root.mkdir()
-    os.symlink(plugin(tmp_path / "src/hyimg-frames", "Фреймы"), root / "frames")
+    os.symlink(plugin(tmp_path / "src/hyimg-image-studio", "Фреймы"), root / "frames")
     page = agent_text(tmp_path, [root])
     assert "Подключен «Фреймы» (`frames`)" in page
-    assert "hyimg-frames" not in page.split("Не установлены")[-1]
+    assert "hyimg-image-studio" not in page.split("Не установлены")[-1]
     assert "https://github.com/constantvis/hyimg-3d-studio" in page
 
 
@@ -83,7 +83,7 @@ def test_install_script_links_only_the_named_plugins_and_never_asks_without_a_te
     beside = tmp_path / "repos"; hyimg = beside / "hyimg"
     (hyimg / "scripts").mkdir(parents=True)
     (hyimg / "scripts/install_plugins.sh").write_bytes(SCRIPT.read_bytes()); os.chmod(hyimg / "scripts/install_plugins.sh", 0o755)
-    plugin(beside / "hyimg-frames", "Фреймы"); plugin(beside / "hyimg-3d-studio", "3D-объекты")
+    plugin(beside / "hyimg-image-studio", "Фреймы"); plugin(beside / "hyimg-3d-studio", "3D-объекты")
     target = tmp_path / "plugins"
     env = {**os.environ, "HOME": str(tmp_path / "home"), "HYIMG_PLUGINS_DIR": str(target)}
     run = lambda *a: subprocess.run(["bash", str(hyimg / "scripts/install_plugins.sh"), *a], env=env, stdin=subprocess.DEVNULL,
@@ -92,7 +92,7 @@ def test_install_script_links_only_the_named_plugins_and_never_asks_without_a_te
     assert r.returncode == 2 and "Спроси человека" in r.stderr and not target.exists()
     r = run("--frames", "--yes")
     assert r.returncode == 0, r.stderr
-    assert (target / "frames").resolve() == (beside / "hyimg-frames").resolve() and not (target / "3d").exists()
+    assert (target / "frames").resolve() == (beside / "hyimg-image-studio").resolve() and not (target / "3d").exists()
     assert not (tmp_path / "home/Library/Caches/Hyimg/models").exists()   # the model only with --lama
     r = run("--remove")
     assert r.returncode == 0 and not (target / "frames").exists()

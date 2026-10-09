@@ -1,8 +1,9 @@
-// Comments on the board, as in Figma (owner 2026-10-07: «добавлять комменты, как в Figma ... возможность тегать участников»). A click
-// with the Comment tool (C in Annotate, ⇧C on the board) on an object or on empty canvas drops a pin with a thread: text with
+// Annotations on the board, as Figma's comments (owner 2026-10-07: «добавлять комменты, как в Figma ... возможность тегать участников»;
+// 2026-10-09: «сделай вместо комментариев Annotations»: the interface says Annotation, the code, the server and hy.py still «comment»). A
+// click with the Annotation tool (C on the board, ui/anncore.js) on an object or on empty canvas drops a pin with a thread: text with
 // @mentions (people this Mac knows, «@Claude» = your own Claude, «@Codex · Name» another person's agent), replies, edit and delete of
 // your own, Resolve and Reopen, and the list of the page's comments (open or resolved, by person, a click goes to the pin). A pin wears
-// its author's face, an agent's comment the agent's badge on its person's face. A pin on an object moves with it (ui/annotate.js
+// its author's face, an agent's comment the agent's badge on its person's face. A pin on an object moves with it (ui/anncore.js
 // anchorAt). Each action is one undo step. The bell names others' comments and every mention of you or your agents (review/comments.py).
 (() => {
   if (window.hyComments) return;
@@ -93,7 +94,7 @@
       const n = t.messages.length - 1, off = q ? "" : beyond(t);   // on the still: the element further down says so
       want.set(t.id, [p, `${face(t.by, 24)}${n ? `<b class="cmp-n">${n}</b>` : ""}`, `${window.hyWhoText ? hyWhoText(t) : ""}: ${t.messages[0].text.slice(0, 80)}${off}`]);
     }
-    if (C.draft) want.set("draft", [C.draft.pos, face(AN().state.me(), 24), T("New comment")]);
+    if (C.draft) want.set("draft", [C.draft.pos, face(AN().state.me(), 24), T("New annotation")]);
     drawAreas(el);
     for (const p of [...el.querySelectorAll(":scope > .cmpin")]) if (!want.has(p.dataset.c)) p.remove();
     for (const [id, [p, h, title]] of want) {
@@ -210,7 +211,7 @@
     C.open = id; C.ment = C.open === id ? C.ment || [] : [];
     const el = pop(), what = t.element ? t.element.css || t.element.tag || "" : t.anchor ? (window.hyNoteLink && board.items[t.anchor.obj]
       ? hyNoteLink.label(board, t.anchor.obj) : t.anchor.file || "") : "";
-    el.innerHTML = `<div class="cm-h"><b>${esc(T("Comment"))}</b>${what ? `<span class="cm-w" title="${esc(what)}">· ${esc(what.split("/").pop())}</span>` : ""}`
+    el.innerHTML = `<div class="cm-h"><b>${esc(T("Annotation"))}</b>${what ? `<span class="cm-w" title="${esc(what)}">· ${esc(what.split("/").pop())}</span>` : ""}`
       + `<span class="cm-sp"></span><hy-icon-button icon="${t.resolved ? "reset" : "resolve"}" size="s" label="${esc(t.resolved ? T("Reopen") : T("Resolve"))}"`
       + ` data-cm="${t.resolved ? "reopen" : "resolve"}"${t.resolved ? "" : ' class="cm-rs"'}></hy-icon-button>`
       + `<hy-icon-button icon="close" size="s" label="${esc(T("Close"))} · Esc" data-cm="close"></hy-icon-button></div>`
@@ -234,9 +235,9 @@
     C.ment = [];
     const el = pop();
     const what = C.draft.element ? C.draft.element.css || C.draft.element.tag || "" : "";
-    el.innerHTML = `<div class="cm-h"><b>${esc(T("New comment"))}</b>${what ? `<span class="cm-w" title="${esc(what)}">· ${esc(what)}</span>` : ""}<span class="cm-sp"></span>`
+    el.innerHTML = `<div class="cm-h"><b>${esc(T("New annotation"))}</b>${what ? `<span class="cm-w" title="${esc(what)}">· ${esc(what)}</span>` : ""}<span class="cm-sp"></span>`
       + `<hy-icon-button icon="close" size="s" label="${esc(T("Cancel"))} · Esc" data-cm="close"></hy-icon-button></div>`
-      + composer(C.draft.area ? T("Comment on area {n}", { n: areaN(C.draft.anchor) }) : T("Add a comment… @ to mention"));
+      + composer(C.draft.area ? T("Annotation on area {n}", { n: areaN(C.draft.anchor) }) : T("Add an annotation… @ to mention"));
     el.classList.add("open"); el.dataset.c = "draft";
     follow(); draw(); el.querySelector("textarea").focus(); setTimeout(() => { const ta = el.querySelector("textarea"); if (ta && document.activeElement !== ta) ta.focus(); }, 0);
   }
@@ -285,7 +286,7 @@
     if (k === "del" && m) { act({ op: "delete", id: t.id, mid: m.dataset.m }, clone(t)); return; }
     if (k === "edit" && m) {
       const x = t.messages.find(q => q.id === m.dataset.m), ta = pop().querySelector("textarea"); if (!x || !ta) return;
-      C.edit = x.id; C.ment = (x.mentions || []).map(q => ({ ...q })); ta.value = x.text; ta.placeholder = T("Edit the comment…"); grow(ta); ta.focus();
+      C.edit = x.id; C.ment = (x.mentions || []).map(q => ({ ...q })); ta.value = x.text; ta.placeholder = T("Edit the annotation…"); grow(ta); ta.focus();
     }
   }
   function key(e) {
@@ -347,7 +348,7 @@
     let el = document.getElementById("cmlist");
     if (el && el.classList.contains("open") && !refresh) { el.classList.remove("open"); return; }
     if (!el) {
-      el = document.createElement("div"); el.id = "cmlist"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", T("Comments")); stage.appendChild(el);
+      el = document.createElement("div"); el.id = "cmlist"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", T("Annotations")); stage.appendChild(el);
       ["pointerdown", "wheel"].forEach(k => el.addEventListener(k, e => e.stopPropagation(), { passive: true }));
       el.addEventListener("click", e => {
         const f = e.target.closest("[data-cf]"); if (f) { C.filter = f.dataset.cf; list(true); return; }
@@ -361,7 +362,7 @@
     const people = new Map(); all.forEach(t => people.set(AN().who(t.by), t.by));
     const pick = all.filter(t => (C.filter === "open" ? !t.resolved : !!t.resolved) && (!C.person || AN().who(t.by) === C.person));
     const nOpen = all.filter(t => !t.resolved).length, nDone = all.length - nOpen;
-    el.innerHTML = `<div class="cm-lh"><b>${esc(T("Comments"))}</b><span class="cm-sp"></span>`
+    el.innerHTML = `<div class="cm-lh"><b>${esc(T("Annotations"))}</b><span class="cm-sp"></span>`
       + `<hy-icon-button icon="close" size="s" label="${esc(T("Close"))}" data-cm="closelist"></hy-icon-button></div>`
       + `<div class="cm-tabs"><button data-cf="open" aria-pressed="${C.filter === "open"}">${esc(T("comments::Open"))} ${nOpen}</button>`
       + `<button data-cf="done" aria-pressed="${C.filter === "done"}">${esc(T("comments::Resolved"))} ${nDone}</button></div>`
@@ -372,7 +373,7 @@
           + `<time>${esc(ago(last.created))}</time></span>${t.area && t.anchor ? `<span class="cm-ra">${esc(T("Area"))} ${pctR(t.area)}</span>` : ""}`
           + `<span class="cm-rt">${esc(t.messages[0].text)}</span>`
           + `${t.messages.length > 1 ? `<span class="cm-rr">${esc(T("{n} replies", { n: t.messages.length - 1 }))}</span>` : ""}</span></button>`; }).join("")
-        : `<div class="none">${esc(C.filter === "open" ? T("No open comments on this page") : T("No resolved comments"))}</div>`);
+        : `<div class="none">${esc(C.filter === "open" ? T("No open annotations on this page") : T("No resolved annotations"))}</div>`);
     el.classList.add("open");
   }
   function go(id) {   // the camera to the pin, the thread open beside it
@@ -392,8 +393,9 @@
     if (n.page && n.page !== BOARD && typeof switchPage === "function") await switchPage(n.page);
     await load(); go(n.thread);
   }
-  const EV = { comment: "New comment", reply: "Reply in a thread", "comment-edit": "Comment changed", "comment-remove": "Comment deleted", resolve: "Comment resolved",
-    reopen: "Comment reopened", annotate: "Annotation", "annotate-edit": "Annotation changed", "annotate-remove": "Annotations erased" };
+  // history's words: a thread is an Annotation in the interface, a mark of the drawing tools a Drawing (owner 2026-10-09)
+  const EV = { comment: "New annotation", reply: "Reply in a thread", "comment-edit": "Annotation changed", "comment-remove": "Annotation deleted",
+    resolve: "Annotation resolved", reopen: "Annotation reopened", annotate: "Drawing", "annotate-edit": "Drawing changed", "annotate-remove": "Drawings erased" };
   window.hyEvView = (e, escape) => {
     const k = EV[e.kind]; if (!k) return null;
     const body = e.text ? `<div class="ecm">${escape(e.text)}</div>` : e.count > 1 ? `<div class="em">${escape(T("{n} drawings", { n: e.count }))}</div>` : "";
@@ -413,7 +415,7 @@
       const el = document.getElementById("cmthread");
       if (!el || !el.classList.contains("open") || el.contains(e.target) || (e.target.closest && e.target.closest(".cmpin, #cmlist, [data-cm-keep]"))) return;
       const onBoard = e.target === stage || (e.target.closest && e.target.closest("#world, .bgl, #marq, #gsticky"));
-      if (AN().active === "comment" && onBoard) return;   // the Comment tool's own press decides (annotate.js)
+      if (AN().active === "comment" && onBoard) return;   // the Annotation tool's own press decides (anncore.js)
       close();
     }, true);
     load(); setInterval(() => { if (!document.hidden && !C.busy) load(); }, 8000);

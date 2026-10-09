@@ -67,7 +67,8 @@ def test_clipboard_and_delete_on_the_menu(server, engine):
         menu(page, on("i1")); act(page, "copy")
         spot = [1150, 700]
         r = menu(page, spot)
-        assert list(r) == ["Paste here", "Hide annotations", "Copy app link to this view", "Copy browser link to this view"] and r["Paste here"][0] == ""
+        assert list(r) == ["Paste here", "Hide annotations", "Annotations on this page", "Copy app link to this view", "Copy browser link to this view"]
+        assert r["Paste here"][0] == ""
         at = page.evaluate(WORLD, spot)
         act(page, "paste"); assert n() == 7
         new = page.evaluate("() => [...sel].map(id => board.items[id]).filter(Boolean).map(it => [it.x + it.w / 2, it.y + itemH(it) / 2])")

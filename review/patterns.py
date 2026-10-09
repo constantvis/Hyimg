@@ -22,7 +22,13 @@ and 720 in docs, gaps 24 in a row and 80 between, headings 160 · 80 · 40.
 
 A pattern leaves a light mark: "pattern": <name> on its note (or its group, or its heading), and a choice grid's "num": "seq" (1…N),
 "rc" (A1, B1: the column's letter and the row), "row" (the row) or "col" (the place in the row): the board draws the numbers on the
-cells (ui/patterns.js), map and md show them. hook() in connectors.py registers all this with hy.py."""
+cells (ui/patterns.js), map and md show them. hook() in connectors.py registers all this with hy.py.
+
+The same patterns run on things already on the page (owner 2026-10-09: «Почему у меня нет кнопок для Arrange новых, которые мы
+разработали ... Где это все?»): an argument of ids («i1,i2,i3», a group's id: its pictures and cards) is those things, laid out where
+they are (x= y= at=grid: the first grid's top left there), kept at their own size unless w= is given. The board's right click ›
+Arrange › Layout patterns sends its selection through selection() and POST /api/arrange (arrange.py), so the owner gets exactly what
+an agent's `hy.py do 'pattern ab "i1,i2" "i3,i4" x=0 y=0 at=grid'` makes."""
 import fnmatch
 import math
 import re
@@ -127,14 +133,18 @@ class Block:
 
     def place(self, b, kv, what, moving=()):
         """onto the board; returns (log, {"ids": [...], "grids": [...], "note": id, "box": placed box})"""
-        g = _hy; self.layout(); w = self.w
+        g = _hy; gb = self.layout(); w = self.w
+        have = {id(v): k for k, v in b["items"].items()}   # the things already on the page: they move, and are not in their own way
+        mine = [have[id(t)] for t in self.things() if id(t) in have]; moving = list(moving) + mine
         rs = [box(t) for t in self.things()] + ([tuple(g["zone_rect"](self.note).values())] if self.note else [])
-        outer = bbox(rs); dx, dy, into = where(b, kv, outer, w, what, moving)
+        outer = bbox(rs)
+        if kv.get("at") == "grid" and "x" in kv and "y" in kv:   # the first grid's top left at x, y (the board: where the selection began)
+            kv = {**kv, "x": kv["x"] - (gb["x"] - outer["x"]), "y": kv["y"] - (gb["y"] - outer["y"])}
+        dx, dy, into = where(b, kv, outer, w, what, moving)
         made, ids, by = [], [], {}
         for it in self.things():
             it["x"], it["y"] = round(it["x"] + dx), round(it["y"] + dy)
-            old = next((k for k, v in b["items"].items() if v is it), None)
-            k = old or _hy["uid"]({"note": "n", "text": "t"}.get(it.get("type"), "i")); b["items"][k] = it; ids.append(k); by[id(it)] = k
+            k = have.get(id(it)) or _hy["uid"]({"note": "n", "text": "t"}.get(it.get("type"), "i")); b["items"][k] = it; ids.append(k); by[id(it)] = k
             if it.get("path"): b.get("removed", {}).pop(it["path"], None)
         for items, cols, num in self.rows:
             mem = [by[id(it)] for it in items]
@@ -154,13 +164,35 @@ class Block:
             b["groups"][gid] = {"title": str(kv["group"]), "x": round(placed["x"] - pad), "y": round(placed["y"] - pad), "w": round(placed["w"] + 2 * pad),
                                 "h": round(placed["h"] + 2 * pad), "members": ids}
             log += f" · группа «{kv['group']}» [{gid}]"
+        elif kv.get("at") == "grid" and (gid := _one_group(b, mine)):   # laid out where they were: they stay in their group, its frame grows
+            log += hold(b, gid, ids, placed, round(w * 1.5))
         else: grids.regroup(b, ids)
         return log, {"ids": ids, "grids": made, "note": note, "box": placed}
 
 
+def _one_group(b, ids):
+    """the one group all these things are in (the innermost when groups nest), else None"""
+    gs = [k for k, G in b["groups"].items() if ids and all(i in G.get("members", []) for i in ids)]
+    return min(gs, key=lambda k: b["groups"][k]["w"] * b["groups"][k]["h"]) if gs else None
+
+
+def hold(b, gid, ids, placed, pad):
+    """the group's frame holds the layout: it grows left and up here, right and down as hy.py block into= grows it (what stood under it
+    moves down)"""
+    G = b["groups"][gid]
+    if placed["x"] - pad < G["x"]: G["w"] += G["x"] - (placed["x"] - pad); G["x"] = placed["x"] - pad
+    if placed["y"] - pad < G["y"]: G["h"] += G["y"] - (placed["y"] - pad); G["y"] = placed["y"] - pad
+    return _hy["grow_into"](b, gid, ids, placed, pad)
+
+
+NOTE_COLORS = ("yellow", "orange", "red", "pink", "purple", "blue", "green", "grey")
+
+
 def note_for(kind, kv, w, default):
+    """the pattern's note «# title»: an agent's is blue; color= the owner's colour when the board lays it out (his notes are his colour)"""
     title = str(kv.get("title") or default); more = str(kv.get("text") or "").replace("\\n", "\n").strip()
-    n = {"type": "note", "text": f"# {title}" + (f"\n{more}" if more else ""), "w": w, "fs": w * _hy["NSIZE"][2], "size": 2, "h": 0, "color": "blue", "to": [],
+    col = kv.get("color") if kv.get("color") in NOTE_COLORS else "blue"
+    n = {"type": "note", "text": f"# {title}" + (f"\n{more}" if more else ""), "w": w, "fs": w * _hy["NSIZE"][2], "size": 2, "h": 0, "color": col, "to": [],
          "pattern": kind}
     return n
 
@@ -177,19 +209,119 @@ def html_kind():
 def ncols(n): return n if n <= 4 else max(3, min(ROW_MAX, math.ceil(math.sqrt(n))))
 
 
+# ---- things on the page as a pattern's input ----------------------------------------------------------------------------------------
+def on_page(b, a):
+    """an argument naming things on the page by id («i1,i2,i3»; a group's id gives its pictures and cards): their ids in that order,
+    the ones a grid holds (no notes, headings or timelines); None when it is not ids, a library folder or glob then"""
+    parts = [p for p in str(a).split(",") if p]; I, G = b["items"], b["groups"]
+    if not parts or not all(p in I or p in G for p in parts): return None
+    out = []
+    for p in parts:
+        for i in (G[p].get("members", []) if p in G else [p]):
+            if i not in out and grids.gridable(I.get(i)) and I[i].get("type") != "text": out.append(i)
+    return out
+
+
+def inputs(b, args):
+    """every argument a row: ("page", ids) for things on the page, ("lib", paths) for library pictures"""
+    out = []
+    for a in args:
+        ids = on_page(b, a)
+        out.append(("page", ids) if ids is not None else ("lib", paths([a])[0]))
+    return out
+
+
+def width(b, kv, rows, default):
+    """w= when asked; things on the page keep their size: the middle width of them; library pictures the pattern's own"""
+    if kv.get("w"): return round(kv["w"])
+    ws = sorted(b["items"][i]["w"] for k, r in rows if k == "page" for i in r)
+    return round(ws[len(ws) // 2]) if ws else default
+
+
+def cards(b, row, w, S, kv, html=None):
+    """a row's items: new cards for library files, the page's own things (at w= when it is asked, a card's height with it)"""
+    kind, r = row
+    if kind == "lib": return [card(p, w, S, html) for p in r]
+    out = [b["items"][i] for i in r]
+    if kv.get("w"):
+        for it in out:
+            if it.get("type") and it.get("h"): it["h"] = round(it["h"] * w / it["w"])
+            it["w"] = w
+    return out
+
+
+def hs(kind, w, base):
+    """a heading's size grows with the cards: 160 · 80 · 40 for cards of the pattern's own width"""
+    return round(HEAD[kind] * w / base)
+
+
+def favs(ps):
+    """the paths with the owner's ♥: the board's server reads their json (arrange.py), hy.py asks the library list"""
+    if _hy.get("favs"): return _hy["favs"](ps)
+    return {i.get("path") for i in _hy["api"]("/api/items?all=1")[1] if (i.get("feedback") or {}).get("fav")}
+
+
+SIDES = ("ab", "before-after", "directions")
+
+
+def selection(b, kind, ids):
+    """the board's selection as a pattern's arguments (ui/arrange.js, arrange.py). Flow: every selected thing a step, in reading order.
+    A / B, before / after, direction rows: a side each, from the grids they are in (two or more), else their groups (two or more), else
+    their rows, else (one row) its two halves. The rest: the pictures and cards in reading order, one argument"""
+    I, G = b["items"], b["groups"]
+    if kind == "flow": return _reading(b, [i for i in dict.fromkeys(ids) if i in G or (i in I and I[i].get("x") is not None)])
+    pics = on_page(b, ",".join(i for i in ids if i in I or i in G)) or []
+    if not pics: return []
+    rows = grids.rows_of(b, pics)
+    if kind not in SIDES: return [",".join(i for r in rows for i in r)]
+    return [",".join(s) for s in _sides(b, pics, rows, kind)]
+
+
+def _sides(b, pics, rows, kind):
+    S = set(pics)
+    by_grid = [[m for m in g["members"] if m in S] for g in grids.table(b).values()]
+    by_grid = [m for m in by_grid if m]
+    if len(by_grid) >= 2 and sum(map(len, by_grid)) == len(pics): return _order(b, by_grid)
+    by_group = {}
+    for i in pics: by_group.setdefault(_one_group(b, [i]), []).append(i)
+    if len(by_group) >= 2 and None not in by_group: return _order(b, [[i for r in grids.rows_of(b, m) for i in r] for m in by_group.values()])
+    if len(rows) >= 2 or kind == "directions": return rows
+    h = (len(rows[0]) + 1) // 2
+    return [rows[0][:h], rows[0][h:]]
+
+
+def _order(b, sides):
+    """sides in reading order of their first things: left to right, then top to bottom"""
+    at = [i for r in grids.rows_of(b, [s[0] for s in sides]) for i in r]
+    return sorted(sides, key=lambda s: at.index(s[0]))
+
+
+def _reading(b, ids):
+    """items and groups in reading order: rows top to bottom (a top within half the shortest height), each left to right"""
+    R = {i: _hy["rect"](b, i) for i in ids}; R = {i: r for i, r in R.items() if r}
+    if not R: return []
+    tol, out = min(r["h"] for r in R.values()) / 2, []
+    for i in sorted(R, key=lambda i: (R[i]["y"], R[i]["x"])):
+        if out and abs(R[i]["y"] - R[out[-1][0]]["y"]) <= tol: out[-1].append(i)
+        else: out.append([i])
+    return [i for r in out for i in sorted(r, key=lambda i: R[i]["x"])]
+
+
 # ---- the patterns ---------------------------------------------------------------------------------------------------------------
 def p_variants(b, args, kv, kind="variants"):
     """p01 one prompt, many tries: one numbered grid per mask, under a note «# title»; p07 moodboard: 5 a row, no numbers"""
-    if not args: raise SystemExit(f'pattern {kind} "папка/*" into="Группа" title="…" [cols=N]')
-    title = str(kv.get("title") or args[0].rstrip("/*").rsplit("/", 1)[-1])
-    if kv.get("into") and len(args) == 1:   # a batch still running: the same call adds its new frames to the same grid, the numbers go on
+    if not args: raise SystemExit(f'pattern {kind} "папка/*" | "id,id,…" into="Группа" title="…" [cols=N]')
+    rows = inputs(b, args); lib = [r for k, r in rows if k == "lib"]
+    title = str(kv.get("title") or (args[0].rstrip("/*").rsplit("/", 1)[-1] if lib else "Мудборд" if kind == "moodboard" else "Варианты"))
+    if kv.get("into") and len(args) == 1 and lib:   # a batch still running: the same call adds its new frames to the same grid, the numbers go on
         old = _same_note(b, kv["into"], kind, title)[0]
         if old: return _hy["OPS"]["block"](b, args, {"into": kv["into"], "note": "# " + title}) + f" · {kind}: дописал в «{title}»"
-    rows = paths(args); S = sizes_of(rows); w = round(kv.get("w", CARD)); blk = Block(w)
+    S = sizes_of(lib); w = width(b, kv, rows, CARD); blk = Block(w)
     blk.note = note_for(kind, {**kv, "title": title}, w, title)
     for r in rows:
-        cols = int(kv.get("cols") or (5 if kind == "moodboard" else ncols(len(r))))
-        blk.grid([card(p, w, S) for p in r], cols, None if kind == "moodboard" else "seq")
+        its = cards(b, r, w, S, kv)
+        cols = int(kv.get("cols") or (5 if kind == "moodboard" else ncols(len(its))))
+        blk.grid(its, cols, None if kind == "moodboard" else "seq")
     log, got = blk.place(b, kv, f"pattern {kind}")
     return log
 
@@ -197,19 +329,21 @@ def p_variants(b, args, kv, kind="variants"):
 def p_ab(b, args, kv, kind="ab"):
     """p02 two (or more) directions side by side: a table, its titles «A · current» «B · new», a row per try; p06 before / after"""
     if len(args) < 2: raise SystemExit(f'pattern {kind} "a/*" "b/*" into="Группа"' + (' a="сейчас" b="новое"' if kind == "ab" else ""))
-    rows = paths(args); S = sizes_of(rows); w = round(kv.get("w", CARD)); n = min(len(r) for r in rows)
-    if any(len(r) != n for r in rows): rows = [r[:n] for r in rows]   # a table has no holes: the shortest side sets the rows
+    rows = inputs(b, args); lib = [r for k, r in rows if k == "lib"]; S = sizes_of(lib); w = width(b, kv, rows, CARD)
+    n = min(len(r) for _k, r in rows); cut = any(len(r) > n for _k, r in rows)
+    rows = [(k, r[:n]) for k, r in rows]   # a table has no holes: the shortest side sets the rows
     letters = "ABCDEFGH"
     if kind == "before-after": titles = [str(kv.get("before", "До")), str(kv.get("after", "После"))] + [f"{k + 3}" for k in range(len(rows) - 2)]
     else: titles = [f"{letters[k]} · {kv[letters[k].lower()]}" if kv.get(letters[k].lower()) else letters[k] for k in range(len(rows))]
-    cells = [heading(t, HEAD["caption"]) for t in titles] + [card(rows[c][k], w, S) for k in range(n) for c in range(len(rows))]
     title = str(kv.get("title") or ("A / B" if kind == "ab" else "До / после"))
-    if kv.get("into"):   # a batch still running: its new pairs join the same table as new rows
+    if kv.get("into") and len(lib) == len(rows):   # a batch still running: its new pairs join the same table as new rows
         old = _same_note(b, kv["into"], kind, title)
-        if old[0]: return _more_rows(b, old, kv, [[p for p in r] for r in rows], w, S) + f" · {kind}: дописал в «{title}»"
+        if old[0]: return _more_rows(b, old, kv, [list(r) for r in lib], w, S) + f" · {kind}: дописал в «{title}»"
+    its = [cards(b, r, w, S, kv) for r in rows]
+    cells = [heading(t, hs("caption", w, CARD)) for t in titles] + [its[c][k] for k in range(n) for c in range(len(rows))]
     blk = Block(w); blk.note = note_for(kind, {**kv, "title": title}, w, title)
     blk.grid(cells, len(rows), "rc" if kind == "ab" else "row")
-    return blk.place(b, kv, f"pattern {kind}")[0] + (f" · по {n} в столбце, лишние не положил" if any(len(r) > n for r in paths(args)) else "")
+    return blk.place(b, kv, f"pattern {kind}")[0] + (f" · по {n} в столбце, лишние не положил" if cut else "")
 
 
 def _same_note(b, into, kind, title):
@@ -238,13 +372,13 @@ def _more_rows(b, found, kv, rows, w, S):
 def p_directions(b, args, kv):
     """p04 several directions: a row each, its label (D1, D2 …) first, the cells numbered in the row: he answers D2 or D3·4"""
     if not args: raise SystemExit('pattern directions "d1/*" "d2/*" … into="Группа" [labels="D1,D2"]')
-    rows = paths(args); S = sizes_of(rows); w = round(kv.get("w", CARD))
+    rows = inputs(b, args); S = sizes_of([r for k, r in rows if k == "lib"]); w = width(b, kv, rows, CARD)
     labels = [s.strip() for s in str(kv.get("labels") or "").split(",") if s.strip()] or [f"D{k + 1}" for k in range(len(rows))]
     if len(labels) < len(rows): labels += [f"D{k + 1}" for k in range(len(labels), len(rows))]
     blk = Block(w); blk.note = note_for("directions", kv, w, "Направления")
-    for lab, r in zip(labels, rows):
+    for lab, (k, r) in zip(labels, rows):
         r = r[:ROW_MAX]
-        blk.grid([heading(lab, HEAD["heading"])] + [card(p, w, S) for p in r], len(r) + 1, "col")
+        blk.grid([heading(lab, hs("heading", w, CARD))] + cards(b, (k, r), w, S, kv), len(r) + 1, "col")
     return blk.place(b, kv, "pattern directions")[0]
 
 
@@ -256,14 +390,14 @@ def p_timeline(b, args, kv):
     elif len(tls) == 1: tl = tls[0]
     else: raise SystemExit("pattern timeline: " + ("на странице нет таймлайна: его ставит владелец (L) или назови tl=" if not tls else
                                                     f"таймлайнов {len(tls)}, назови tl=<подпись или id>"))
-    t = I[tl]; phase = str(kv["phase"]); norm = _hy["norm"]
-    dot = next((p for p in t["points"] if norm(p.get("text")) == norm(phase)), None)
+    t = I[tl]; phase = str(kv["phase"]); norm = _hy["norm"]   # a phase by its label, or a dot by its id (an unnamed dot, the board's menu)
+    dot = next((p for p in t["points"] if p.get("id") == phase), None) or next((p for p in t["points"] if norm(p.get("text")) == norm(phase)), None)
     if dot is None:   # a new phase: right of everything under the timeline's last phase
         span = [box(it) for k, it in I.items() if k != tl and it.get("x") is not None and box(it)[1] > t["y"] and box(it)[0] >= t["x"] - 1]
         last = max([t["x"] + max((p["t"] for p in t["points"]), default=0)] + [r[0] + r[2] + BETWEEN * 6 for r in span])
         _hy["OPS"]["point"](b, [tl, phase], {"x": last}); dot = next(p for p in t["points"] if norm(p.get("text")) == norm(phase))
     kv = {**kv, "near": f"{tl}/{dot['id']}", "side": "below"}
-    kv.setdefault("title", phase)
+    kv.setdefault("title", dot.get("text") or phase); phase = dot.get("text") or kv["title"]
     return p_variants(b, args, kv, "timeline") + f" · под фазой «{phase}»"
 
 
@@ -271,15 +405,16 @@ def p_docs(b, args, kv, kind="docs"):
     """p05 documentation: a heading (160), the cards (720) in a numbered grid, a legend «1 layers, 2 camera» to its right; p10 glossary:
     term cards 640 wide, 6 a row, no numbers"""
     if not args: raise SystemExit(f'pattern {kind} ФАЙЛЫ… title="…"' + (' captions="слои;камера"' if kind == "docs" else ""))
-    rows = paths(args); files = [p for r in rows for p in r]; S = sizes_of([files])
-    w = round(kv.get("w", DOC if kind == "docs" else 640)); hk = html_kind() if any(p.lower().endswith(".html") for p in files) else None
-    cols = int(kv.get("cols") or (min(3, len(files)) if kind == "docs" else min(6, len(files))))
-    blk = Block(w); blk.top = heading(str(kv.get("title") or ("Документация" if kind == "docs" else "Термины")), HEAD["section"], 4)
+    rows = inputs(b, args); files = [p for k, r in rows if k == "lib" for p in r]; S = sizes_of([files]); base = DOC if kind == "docs" else 640
+    w = width(b, kv, rows, base); hk = html_kind() if any(p.lower().endswith(".html") for p in files) else None
+    its = [it for r in rows for it in cards(b, r, w, S, kv, hk)]
+    cols = int(kv.get("cols") or (min(3, len(its)) if kind == "docs" else min(6, len(its))))
+    blk = Block(w); blk.top = heading(str(kv.get("title") or ("Документация" if kind == "docs" else "Термины")), hs("section", w, base), 4)
     blk.top["pattern"] = kind
-    blk.grid([card(p, w, S, hk) for p in files], cols, "seq" if kind == "docs" else None)
-    caps = [c.strip() for c in str(kv.get("captions") or "").split(";") if c.strip()]
-    if caps: blk.legend = heading("\n".join(f"{k + 1} {c}" for k, c in enumerate(caps)), HEAD["caption"])
-    if blk.legend: blk.legend["h"] = round(HEAD["caption"] * 1.3 * len(caps)); blk.legend["w"] = round(HEAD["caption"] * .56 * max(len(c) + 2 for c in caps))
+    blk.grid(its, cols, "seq" if kind == "docs" else None)
+    caps = [c.strip() for c in str(kv.get("captions") or "").split(";") if c.strip()]; cap = hs("caption", w, base)
+    if caps: blk.legend = heading("\n".join(f"{k + 1} {c}" for k, c in enumerate(caps)), cap)
+    if blk.legend: blk.legend["h"] = round(cap * 1.3 * len(caps)); blk.legend["w"] = round(cap * .56 * max(len(c) + 2 for c in caps))
     return blk.place(b, kv, f"pattern {kind}")[0]
 
 
@@ -310,21 +445,25 @@ def p_review(b, args, kv):
     """p08 after a batch: three columns, Picked (the pictures with his ♥), To decide (the rest), Rejected (empty), each a caption over a
     grid 2 a row, in one group; the pictures already on the page move (as arrange), the others come from the library. He drags
     between the columns (a drop on a grid takes its cell)"""
-    if not args: raise SystemExit('pattern review "папка/*" | ID | "Группа"… near="Группа" title="Разбор P7"')
+    if not args: raise SystemExit('pattern review "папка/*" | ID | "id,id,…" | "Группа"… near="Группа" title="Разбор P7"')
     I = b["items"]; on, new = [], []
     for a in args:
+        ids = on_page(b, a)
+        if ids is not None: on += [i for i in ids if i not in on]; continue
         try: on += [i for i in _hy["pics_of"](b, a) if i not in on]
         except SystemExit: new += [p for r in paths([a]) for p in r]
-    fav = {i.get("path") for i in _hy["api"]("/api/items?all=1")[1] if (i.get("feedback") or {}).get("fav")}
-    S = sizes_of([new]); w = round(kv.get("w", CARD))
+    S = sizes_of([new]); w = width(b, kv, [("page", on)], CARD)
     things = [I[i] for i in on] + [card(p, w, S) for p in new]
-    for it in things: it["w"] = w
+    fav = favs([it.get("path") for it in things if it.get("path")])
+    for it in things:
+        if it.get("type") and it.get("h"): it["h"] = round(it["h"] * w / it["w"])
+        it["w"] = w
     cols = [(str(kv.get("picked", "Picked")), [it for it in things if it.get("path") in fav]),
             (str(kv.get("decide", "To decide")), [it for it in things if it.get("path") not in fav]), (str(kv.get("rejected", "Rejected")), [])]
     grids.leave(b, on)
     tmp, x, plan = {"items": {}}, 0, []
     for title, its in cols:   # a caption, then a grid of 2 a row under it
-        cap = heading(title, HEAD["heading"]); cap.update(x=x, y=0, pattern_col=title); y0 = cap["h"] + GAP; ids = []
+        cap = heading(title, hs("heading", w, CARD)); cap.update(x=x, y=0, pattern_col=title); y0 = cap["h"] + GAP; ids = []
         for k, it in enumerate(its): tmp["items"][f"_{id(it)}"] = it; it["x"], it["y"] = x, y0; ids.append(f"_{id(it)}")
         if ids:
             pos, _s = grids.layout(tmp, {"members": ids, "cols": 2, "gap": GAP}, at=(x, y0))

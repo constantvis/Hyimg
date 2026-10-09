@@ -1,6 +1,6 @@
 // The board's key hints and tips (ui/hy/keyhint.js and ui/hy/tip.js, owner 2026-10-08: «Shift+Enter — готово ... такого рода подсказки я бы
 // еще сделал много где»): each context of the board and the keys it really has, read from canvas.html and ui/comments.js. A key that does
-// not exist is not here. The studios and the shared slider hold their own (hyimg-frames, hyimg-3d-studio, hyimg-dev-studio, ui/slider.js).
+// not exist is not here. The studios and the shared slider hold their own (hyimg-image-studio, hyimg-3d-studio, hyimg-dev-studio, ui/slider.js).
 //   const h = hyHint("note", el)              shows the note's keys on it; h.hide() when the context ends, h.used("list")
 //   hyHint("move", el, { untilUp: true })     a drag's: gone with the pointer's release
 //   hyHint("ann:arrow", bar)                  a mode's tool, in the Hint bar: «ann» is what learns, so Esc used with the pen counts for the arrow

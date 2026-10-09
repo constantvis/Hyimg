@@ -9,7 +9,7 @@ hyLang({
     "{n} notes": ["{n} note", "{n} notes"],
     "{n} headings": ["{n} heading", "{n} headings"],
     "{n} moves": ["{n} move", "{n} moves"],
-    "{n} comments": ["{n} comment", "{n} comments"],
+    "{n} annotations": ["{n} annotation", "{n} annotations"],
     "{n} drawings": ["{n} drawing", "{n} drawings"],
     "{n} other changes": ["{n} other change", "{n} other changes"],
     "{n} more pages": ["{n} more page", "{n} more pages"],
@@ -55,7 +55,7 @@ hyLang({
     "{n} notes": ["{n} заметка", "{n} заметки", "{n} заметок"],
     "{n} headings": ["{n} заголовок", "{n} заголовка", "{n} заголовков"],
     "{n} moves": ["{n} перемещение", "{n} перемещения", "{n} перемещений"],
-    "{n} comments": ["{n} комментарий", "{n} комментария", "{n} комментариев"],
+    "{n} annotations": ["{n} аннотация", "{n} аннотации", "{n} аннотаций"],
     "{n} drawings": ["{n} рисунок", "{n} рисунка", "{n} рисунков"],
     "{n} other changes": ["{n} другое изменение", "{n} других изменения", "{n} других изменений"],
     // the page first, its name as written (2026-10-08: «+2 картинки на Страница 1» is not Russian); the tooltip's head ends in «·»

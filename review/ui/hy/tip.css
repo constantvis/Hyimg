@@ -10,11 +10,12 @@ hy-tip > svg { width: 11px; height: 11px; flex: none; color: var(--hy-tip-ic); }
 hy-tip .tip-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; transition: opacity .3s var(--hy-ease), translate .3s var(--hy-ease); }
 hy-tip b { font-weight: 500; color: var(--hy-tip-key); }
 hy-tip[out] .tip-t { opacity: 0; translate: 0 -4px; }
-hy-tip .tip-x { display: none; position: absolute; left: 100%; top: 50%; translate: 0 -50%;
-  width: 16px; height: 16px; margin: 0; padding: 0; place-items: center; border: 0; border-radius: 4px;
-  background: none; color: var(--muted); cursor: pointer; }
+/* drawn 16 px, a click takes 24 (the contract's target): the 4 px around it is padding the background does not paint */
+hy-tip .tip-x { display: none; position: absolute; left: calc(100% - 4px); top: 50%; translate: 0 -50%; box-sizing: border-box;
+  width: 24px; height: 24px; margin: 0; padding: 4px; place-items: center; border: 0; border-radius: 8px; background: none; background-clip: content-box;
+  color: var(--muted); cursor: pointer; }
 hy-tip .tip-x svg { width: 9px; height: 9px; }
-hy-tip .tip-x:hover { color: var(--ink); background: var(--hy-hov); }
+hy-tip .tip-x:hover { color: var(--ink); background-color: var(--hy-hov); }   /* the colour only: the shorthand would paint the padding too */
 hy-tip:hover:not([off]) .tip-x { display: grid; }
 /* × stands just past the line's end, so the line never moves when it shows; closed: the bulb alone, at half strength, the way back */
 hy-tip[off] .tip-t, hy-tip[off] .tip-x { display: none; }

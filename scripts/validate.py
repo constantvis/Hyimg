@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """The static design and code validator of Hyimg's four repositories (owner 2026-10-06: «делай юнит тесты, тесты ui, валидаторы,
-консистентный design валидатор»). It reads the .html, .js and .css of hyimg, hyimg-frames, hyimg-3d-studio and hyimg-dev-studio
+консистентный design валидатор»). It reads the .html, .js and .css of hyimg, hyimg-image-studio, hyimg-3d-studio and hyimg-dev-studio
 (vendor/, node_modules/, tests/, docs/, native/, dist/ and build/ are skipped) and checks them against the design contract
 (design/contract.json, its words in design/CONTRACT.md). The file-size rule (scripts/validate_size.py) reads every source file of the
 four repositories, .py, .swift and tests too: about 1000 lines and 160 characters a line, failing above 1100 and 200.
 
   python3 scripts/validate.py                      every file of the four repositories
-  python3 scripts/validate.py ../hyimg-frames      one repository (a folder or files; from any of the four)
+  python3 scripts/validate.py ../hyimg-image-studio      one repository (a folder or files; from any of the four)
   python3 scripts/validate.py --update-baseline    today's violations become the known ones (design/baseline.json, "static")
   python3 scripts/validate.py --list RULE          every violation of a rule, known ones too
   python3 scripts/validate.py --list file-size     every file over 1000 lines or with lines over 160 characters
@@ -24,7 +24,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 HYIMG = HERE.parent
 REPOS_DIR = HYIMG.parent
-REPOS = ["hyimg", "hyimg-frames", "hyimg-3d-studio", "hyimg-dev-studio"]
+REPOS = ["hyimg", "hyimg-image-studio", "hyimg-3d-studio", "hyimg-dev-studio"]
 CONTRACT = HYIMG / "design" / "contract.json"
 BASELINE = HYIMG / "design" / "baseline.json"
 SKIP_DIRS = {"vendor", "node_modules", ".git", "dist", "build", "__pycache__", "tests", "docs", "native", ".pytest_cache", "_review", ".venv"}

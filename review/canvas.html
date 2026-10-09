@@ -9,9 +9,9 @@
 <script src="/ui/lang-board.js"></script>
 <script src="/ui/paper.js"></script>
 <script src="/ui/stars.js"></script><script src="/ui/switchin.js"></script>   <!-- the loading stars; coming in through ⌃Tab (2026-10-08) -->
-<script src="/ui/dragband.js"></script>
-<script src="/ui/keyhints.js"></script>   <!-- key caps on buttons only while ⌘ is held (owner 2026-10-05) -->
-<script src="/ui/menu.js"></script>
+<script src="/ui/dragband.js"></script><script src="/ui/copyimage.js"></script>   <!-- ⇧⌘C: any card as a PNG (2026-10-09) -->
+<script src="/ui/keyhints.js"></script><script src="/ui/keyspanel.js"></script>   <!-- key caps under ⌘ (2026-10-05); the ? panel's icons (2026-10-09) -->
+<script src="/ui/menu.js"></script><script src="/ui/arrange.js"></script>   <!-- the menus; Arrange ›: tidy, grid and table, layout patterns -->
 <script src="/ui/video.js"></script>   <!-- which address a video plays from: the original, or a WebM copy for an engine without H.264 (owner 2026-10-05) -->
 <script src="/ui/projicon.js"></script><script src="/ui/storage.js"></script><script src="/ui/people.js"></script><script src="/ui/avatar.js"></script>   <!-- who: faces -->
 <script src="/ui/dotsgl.js"></script><script src="/ui/applink.js"></script>   <!-- hyimg:// links that open the app, and the browser's (owner 2026-10-07) -->
@@ -24,7 +24,7 @@
 <script src="/ui/eyedrag.js"></script>   <!-- Photoshop's eye drag: the 3D studio's outliner and Raw Editor's section eyes (owner 2026-10-07) -->
 <script src="/ui/newsize.js"></script><script src="/ui/multiscale.js"></script><script src="/ui/notelink.js"></script><script src="/ui/connectors.js"></script>
 <script src="/ui/gridnum.js"></script>   <!-- new notes by the zoom, scaling several, a note's links (2026-10-07); arrows between anything, a grid's numbers -->
-<script src="/ui/plugins.js"></script><script src="/ui/plugins-board.js"></script><script src="/ui/annotate.js"></script><script src="/ui/comments.js"></script>
+<script src="/ui/plugins.js"></script><script src="/ui/plugins-board.js"></script><script src="/ui/anncore.js"></script><script src="/ui/comments.js"></script>
 <script src="/ui/merge.js"></script><script src="/ui/grid.js"></script>   <!-- saves merged object by object (review/merge.py); Arrange's grids (2026-10-08) -->
 <script src="/ui/pagesleep.js"></script><link rel="stylesheet" href="/ui/noteglass.css">   <!-- pages asleep; glass notes (2026-10-09) -->
 <script src="/ui/bellrow.js"></script><script src="/ui/bellthumbs.js"></script><link rel="stylesheet" href="/ui/bell.css">   <!-- the bell: rows, pictures, look -->
@@ -342,7 +342,7 @@ html[data-bench~="nogrp"] #groups { display: none; }
 .tidy.tsz .hx.on { background: var(--ink); color: var(--panel); }
 .tidy.tsz .tsl { padding: 0 10px 0 6px; font: 500 12px var(--sans); color: var(--muted); }
 .tidy .op { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 10px; color: var(--ink); font: 500 12px var(--sans); cursor: default; }
-.tidy .op .hy-slider { width: 200px; --hy-sl-h: 28px; }
+.tidy .op .hy-slider { width: 200px; }
 .tidy .fz { width: 34px; padding: 0; justify-content: center; font-weight: 700; gap: 0; }
 .tidy .fz:disabled { opacity: .3; cursor: default; }
 .tidy .fz:disabled:hover { background: transparent; }
@@ -455,7 +455,7 @@ html[data-bench~="nogrp"] #groups { display: none; }
 /* the top right row, from the corner: ♥ (slot 0, always kept on a picture and an HTML card, ui/cardfav.js), the colour grade, crop */
 .it .mk.mk-grade { --mks: 1; }
 .it .mk.mk-crop { --mks: 1; } .it.graded:not([data-mkx~=grade]) .mk.mk-crop { --mks: 2; }
-/* the bottom left row: a picture's copy mark in the corner; a frame card's # there and its copy mark beside it (hyimg-frames) */
+/* the bottom left row: a picture's copy mark in the corner; a frame card's # there and its copy mark beside it (hyimg-image-studio) */
 .plg .mk.mk-bl.mk-dup { --mks: 1; }
 /* shown: what the card has, while the law leaves it room */
 .it.cropped:not(.mkoff):not([data-mkx~=crop]) .mk.mk-crop, .it.dup:not(.mkoff):not([data-mkx~=dup]) .mk.mk-dup,
@@ -479,11 +479,10 @@ html[data-bench~="nogrp"] #groups { display: none; }
 :is(.it, .plg).faved > .mk.mk-fav { color: var(--hy-heart); } :is(.it, .plg).faved > .mk.mk-fav svg path { fill: currentColor; }
 /* the note is the plain dot it always was (owner 2026-10-06: «before, like the blue dot, it worked perfectly»): 12 px on screen, at most
    35% of the card's width, a dark ring of 1.5 px; no plate and not scaled by k (only its inset is), it comes and goes the same way */
-/* several notes (owner 2026-10-08): a dot each in its note's colour (ui/notelink.js paintDots), 60 % of a dot apart, the board's colour between */
+/* several notes (owner 2026-10-08), an arrow's note too (2026-10-09): a dot each in its note's colour (ui/notelink.js paintDots), 3.5 px apart */
 :is(.it, .plg) .mk.mk-note { min-width: 0; width: min(calc(12px / var(--z)), 35%); height: auto; aspect-ratio: 1; padding: 0; background: none; transform: none; }
-:is(.it, .plg) .mk.mk-note i { position: absolute; top: 0; left: calc(var(--k) * 60%); width: 100%; height: 100%; border-radius: 50%; background: var(--c); z-index: var(--k);
-  box-shadow: 0 0 0 calc(1.5px / var(--z)) var(--board); pointer-events: auto; cursor: pointer; }
-:is(.it, .plg) .mk.mk-note i:first-child { box-shadow: 0 0 0 calc(1.5px / var(--z)) var(--mkring); }
+:is(.it, .plg) .mk.mk-note i { position: absolute; top: 0; left: calc(var(--k) * (100% + var(--mkgap))); width: 100%; height: 100%; border-radius: 50%; background: var(--c);
+  box-shadow: 0 0 0 calc(1.5px / var(--z)) var(--mkring); pointer-events: auto; cursor: pointer; }
 :is(.it, .plg) .mk.mk-note i.more { display: grid; place-items: center; background: var(--board); color: var(--sub); font: 600 calc(7px / var(--z))/1 var(--sans); }
 /* WebKit, while a zoom moves (see ZLIVE): the marks are out at once (a transition on every card cost frames there), and come back by
    the law's scale-up when the zoom settles; the time line steps out too */
@@ -779,7 +778,7 @@ body.embed #tlib { display: none !important; }
 #csteps li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; } #csteps li.gone { animation: hyStepOut .45s ease both; }
 #csteps li::before { content: "›"; color: var(--muted); width: 10px; flex: none; }
 #csteps li.ok { opacity: .5; } #csteps li.ok::before { content: "✓"; color: #22c55e; } #csteps li.now { opacity: 1; color: var(--ink); }
-#csteps li.now::after { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); border-right-color: transparent; animation: hySpin .7s linear infinite; }
+#csteps li.now::before { content: ""; flex: none; box-sizing: border-box; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); border-right-color: transparent; animation: hySpin .7s linear infinite; }
 @keyframes hyStep { from { opacity: 0; } }   /* «why does the text squeeze again, the lines have a fixed height»: a new line only fades in; the list glides up as one block */
 #csteps ol { margin: 0; padding: 0; list-style: none; will-change: transform; } @keyframes hyStepOut { to { opacity: 0; height: 0; } }
 @keyframes hySpin { to { transform: rotate(360deg); } } :root.preintro #stage { background: var(--board) !important; }
@@ -928,7 +927,7 @@ body.embed #tlib { display: none !important; }
       <div><span class="k"><kbd>⌥</kbd><kbd>⌘</kbd><kbd>]</kbd> <kbd>⌥</kbd><kbd>⌘</kbd><kbd>[</kbd></span> to the front, to the back</div>
       <div><span class="k"><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></span> move the selection a little, with <kbd>⇧</kbd> more</div>
       <div><span class="k">double-click</span> an image: Image Studio; a video: crop and trim</div>
-      <div><span class="k"><kbd>C</kbd></span> crop; a video: crop and trim</div>
+      <div><span class="k"><kbd>⇧</kbd><kbd>C</kbd></span> crop; a video: crop and trim</div>
       <div><span class="k">⤢ in a video's pill</span> full screen, <kbd>Esc</kbd> leaves it</div>
       <div><span class="k">pointer over a video</span> plays muted; pointer away: the still again</div>
       <div><span class="k">▶ in the video's corner, <kbd>Space</kbd></span> with sound, and pause (Space: for one selected video)</div>
@@ -1078,7 +1077,7 @@ function mkFit(sw, sh, f) {
   const row = (n, gaps, extra) => n ? (sw - gaps * MK.gap - extra) / (n * MK.px + 2 * I) : 9;
   let k = k0;
   for (;;) {
-    const t = on.fav + on.grade + on.crop, nd = on.note ? Math.min(MK.dot, sw * MK.dotMax) : 0;
+    const t = on.fav + on.grade + on.crop, nd = hyNoteLink.rowW(on.note, Math.min(MK.dot, sw * MK.dotMax));   // the notes' dots, a row
     const b = on.dup + (on.kind ? !!f.kind + !!f.frame : 0);
     const top = t || on.note, kw = Math.min(row(t, t - 1 + (nd ? 1 : 0), nd), row(b, b - 1, 0));
     const kh = top && b ? (sh - MK.gap) / (2 * MK.px + 2 * I) : top || b ? sh / (MK.px + 2 * I) : 9;
@@ -1223,7 +1222,7 @@ const HY = {
   // label, keys, title, fn, first}]; after the bar's own buttons (first: true at its start with a line after, as «Crop», the 3D card's
   // «3D Studio»), and a selection of groups or plugin cards gets a bar of its own
   bar(fn) { BARP.push(fn); },
-  // a plugin's own layer on the picture cards (owner 2026-10-06: «colour grading for all pictures on the board», Hyimg-frames): fn(el, it,
+  // a plugin's own layer on the picture cards (owner 2026-10-06: «colour grading for all pictures on the board», hyimg-image-studio): fn(el, it,
   // id) runs when key(it) changes, so the card is redrawn only when what the plugin draws from changed (the grade, the crop). A plugin
   // card's def.opacity: true gives it the pictures' opacity (the slider on the bar over the selection, the keys 1…9 and 0)
   // A plugin card with def.surface gets these layers too; drawn(el, it, id), if given, runs each time such a card's picture changed
@@ -1723,7 +1722,7 @@ async function renderEvents(more) {
     if (k === "timeline") return [T("New timeline"), ""];
     if (k === "move") return [`${T("Moved")}${e.count ? " " + T("{n} frames", { n: e.count }) : ""}${e.groups ? (e.count ? " " + T("and") + " " : " ") + T("{n} groups", { n: e.groups }) : ""}`,
       (e.titles && e.titles.length ? `<div class="em">${e.titles.map(t => Q(esc(t))).join(", ")}</div>` : "") + thumbs(e.paths, e.count)];
-    return window.hyEvView?.(e, esc) || [esc(k), ""];   // a comment, a drawing on the board (ui/comments.js, ui/annotate.js)
+    return window.hyEvView?.(e, esc) || [esc(k), ""];   // an annotation, a drawing on the board (ui/comments.js, ui/anncore.js)
   };
   const on = id => board.items[id] || board.groups[id];
   let html = "", day = "";
@@ -2174,7 +2173,7 @@ function lodDots() {
   for (const [id, it, f] of LOD.mks) {
     if (sel.has(id)) continue;
     const ih = itemH(it); if (it.x > cam.x + vw || it.x + it.w < cam.x || it.y > cam.y + vh || it.y + ih < cam.y) continue;
-    const sw = it.w * cam.z, sh = ih * cam.z, fit = mkFit(sw, sh, { kind: !!f.kind, kindW: f.kindW, fav: true, note: !!f.note, crop: f.crop, dup: f.dup, grade: f.grade, hs: false });
+    const sw = it.w * cam.z, sh = ih * cam.z, fit = mkFit(sw, sh, { kind: !!f.kind, kindW: f.kindW, fav: true, note: f.note.length, crop: f.crop, dup: f.dup, grade: f.grade, hs: false });
     const x0 = (it.x - cam.x) * cam.z, y0 = (it.y - cam.y) * cam.z, Q = mkGeo(x0, y0, x0 + sw, y0 + sh, fit, f);
     const draw = (name, has, paint) => {
       const q = Q[name]; if (!q) return;
@@ -2322,9 +2321,9 @@ function cull0() {   // frames outside the view (plus half a screen around it) a
     // the marks' law (mkFit): on every card on screen, a selected one in the far view too; a pill folds under 104 px on screen
     if (on && (!it.type || el.classList.contains("plg"))) {
       const sw = it.w * cam.z, sh = h * cam.z, hs = sel.size === 1 && sel.has(id) && !cropState && handlesOn(sw, sh);   // the card shows its corner squares (renderHandles)
-      const grade = el.classList.contains("graded");   // the frames plugin's colour grade mark (hyimg-frames grade.js)
+      const grade = el.classList.contains("graded");   // the frames plugin's colour grade mark (hyimg-image-studio grade.js)
       mkApply(el, sw, sh, it.type ? { ...(el._mkf || {}), kindW: el._mkf && el._mkf.kind ? mkPillW(el) : 0, grade, hs }
-        : { kind: !!el._kind, kindW: el._kind ? mkPillW(el) : 0, fav: true, note: el.classList.contains("noted"), crop: !!it.crop, dup: el.classList.contains("dup"), grade, hs });
+        : { kind: !!el._kind, kindW: el._kind ? mkPillW(el) : 0, fav: true, note: el._ndn, crop: !!it.crop, dup: el.classList.contains("dup"), grade, hs });
     }
     if (on && !it.type && !LOD.on) {
       if (el._vid) { const ok = it.w * cam.z >= VMINPX; if (el._vok !== ok) { el._vok = ok; el.classList.toggle("vok", ok); if (ok) vidPrep(it.path); } }   // a video plays only from 120 px on screen
@@ -2384,7 +2383,7 @@ function render() {
       // which of the board's marks the plugin put on its card, for the marks' law in cull: a kind pill (the 3D card's «3D»), a frame's #
       // and its copy mark while it is on (.mk-on), all in the bottom row; the colour grade's mark is read in cull (.graded); the notes'
       // dots in the top row (2026-10-08: without it a card with no other mark, an HTML frame, was «no marks at all», .mkoff, dots hidden)
-      el._mkf = { kind: !!el.querySelector(".mk-kind"), frame: !!el.querySelector(".mk-frame.mk-on"), dup: !!el.querySelector(".mk-dup.mk-on"), note: ND.has(id), fav: hyCardFav.paint(el, it) };
+      el._mkf = { kind: !!el.querySelector(".mk-kind"), frame: !!el.querySelector(".mk-frame.mk-on"), dup: !!el.querySelector(".mk-dup.mk-on"), note: el._ndn, fav: hyCardFav.paint(el, it) };
       return;
     }
     if (it.type && !isText(it) && !isTl(it) && !isNote(it)) { if (window.hyPlugBoard) hyPlugBoard.missing(it.type); return; }   // its plugin off or gone: a still
@@ -2471,9 +2470,7 @@ const opPlate = op => `<label class="op" title="${T("Opacity · keys 1…9 and 0
 // image, dev, video»): pictures, videos, PDFs and the plugins' cards (3D, HTML, Dev, image frames), mixed too; notes, headings and timelines
 // keep their own ways
 const arrangeable = it => !!it && !isNote(it) && !isText(it) && !isTl(it) && (isPic(it) || (!!it.type && it.w > 0 && it.h > 0));
-const tidyBtns = () => `<button class="ic" data-tidy="grid" title="${T("As a square block · ⌥A")}" aria-label="${T("Arrange")}">${hyIcon("tidyBlock", 15, 2)}<kbd>⌥A</kbd></button>`
-      + `<button class="ic" data-tidy="row" title="${T("In one row, aligned at the top · ⌥S")}" aria-label="${T("In a row")}">${hyIcon("tidyRow", 15, 2)}<kbd>⌥S</kbd></button>`
-      + `<button class="ic" data-tidy="smart" title="${T("Tidy: rows and blocks stay, the gaps become even · ⌥D")}" aria-label="${T("Tidy")}">${hyIcon("tidy", 15, 2)}<kbd>⌥D</kbd></button>`;
+const tidyBtns = () => hyArrange.bar();   // ⌥A ⌥S ⌥D and the button of the rest of Arrange (ui/arrange.js)
 function renderHandles() {
   const h = $("#handles"); h.innerHTML = "";
   let nb = 0;
@@ -2495,7 +2492,7 @@ function renderHandles() {
     const op = Math.round(100 * (board.items[many[0]].opacity ?? 1));
     const opHtml = opPlate(op);
     // one picture: «Crop», one video: «Crop & Trim» (owner 2026-10-06), the key cap a direct child as on the bar's other buttons
-    const one = !several && many.length === 1 ? board.items[many[0]] : null, cropB = !one ? "" : `<button data-crop title="${isVid(one) ? T("Crop the picture, trim the start and the end · C") : T("Crop · C")}">${IC_CROP}${isVid(one) ? T("Crop & Trim") : T("Crop")}<kbd>C</kbd></button><span class="sep"></span>`;
+    const one = !several && many.length === 1 ? board.items[many[0]] : null, cropB = !one ? "" : `<button data-crop title="${isVid(one) ? T("Crop the picture, trim the start and the end · ⇧C") : T("Crop · ⇧C")}">${IC_CROP}${isVid(one) ? T("Crop & Trim") : T("Crop")}<kbd>⇧C</kbd></button><span class="sep"></span>`;
     const splitB = !one || !splitable(one) ? "" : `<button data-split title="${T("Split into pages · ⌥P")}">${IC_SPLIT}${T("Split into pages ({n})", { n: pdfPages(one.path) })}<kbd>⌥P</kbd></button><span class="sep"></span>`;
     if (!several) t.innerHTML = cropB + splitB + (pbHtml ? pbHtml + `<span class="sep"></span>` : "") + opHtml; else t.innerHTML = tidyBtns() + (pbHtml ? `<span class="sep"></span>` + pbHtml : "")
       // ♥ for the whole selection right here (owner 2026-10-01): pink when every selected frame is already liked, a click then takes it off
@@ -3032,23 +3029,7 @@ async function copyText(text, done) {
   catch { const t = document.createElement("textarea"); t.value = text; t.style.position = "fixed"; t.style.opacity = "0"; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
   if (done) toast(done);
 }
-// the picture itself to the clipboard (owner 2026-10-01: to paste into Photoshop): the full file as PNG, crop applied, since the
-// clipboard takes only PNG from a page. The item is made at once with a promise, as Safari/WebKit wants it inside the click.
-// the frame as it stands on the board: the original file, crop applied, full resolution
-async function cropPng(it) {
-  const bm = await createImageBitmap(await (await fetch(`/img?p=${enc(it.path)}`)).blob());
-  const c = cropOf(it), sx = Math.round(c[0] * bm.width), sy = Math.round(c[1] * bm.height), w = Math.round((c[2] - c[0]) * bm.width), h = Math.round((c[3] - c[1]) * bm.height);
-  const cv = document.createElement("canvas"); cv.width = w; cv.height = h; cv.getContext("2d").drawImage(bm, sx, sy, w, h, 0, 0, w, h);
-  return await new Promise((ok, no) => cv.toBlob(b => b ? ok(b) : no(new Error("png")), "image/png"));
-}
-function copyPicture(id) {
-  const it = board.items[id]; if (!it || !it.path) return;
-  const png = cropPng(it);
-  toast(T("Copying the image…"));
-  navigator.clipboard.write([new ClipboardItem({ "image/png": png })])
-    .then(() => toast(it.crop ? T("Image copied (with the crop): paste it into Photoshop") : T("Image copied: paste it into Photoshop"), "success"))
-    .catch(err => toast(T("Couldn't copy the image: {why}", { why: err && err.message || err }), "error"));
-}
+// a card's picture to the clipboard as PNG (⇧⌘C, Copy as › Image): a picture, a video's frame, a PDF's page, an HTML page, a plugin's still (ui/copyimage.js)
 function ctxClose() { const was = $("#ctx").classList.contains("open"); $("#ctx").classList.remove("open"); if (was && typeof tellOver === "function") tellOver(); propsUnpreview(); }   // a paste shown on hover goes
 // Buttons and panels lie over the board. A click, double click, right click or wheel on them stays theirs and never reaches
 // the board under them (owner 2026-10-03: a double click on a notification started the crop of the frame below it).
@@ -3099,7 +3080,7 @@ stage.addEventListener("contextmenu", e => {
     // «Copy as ›» (owner 2026-10-07, as Figma's «Copy/Paste as»): the links to it and to this view, the app's first (ui/applink.js); a file's picture and path
     const pdf = has("pdf") && ids.length === 1 && it && isPdf(it);
     block(Object.assign(["copyas", "copy", T("Copy as")], { sub: () => [hyLink.items(kind),
-        ...(pics ? [hyMenuItem('data-act="image"', "image", T("Image"), ["⇧", "⌘", "C"], oneFile ? hyMenuOff(oneFile) : "")] : []),
+        ...(has("image", "pdf", "video", "card") ? [hyCopyImage.row(id)] : []),   // any card that is a picture (owner 2026-10-09, ui/copyimage.js)
         ...(has("file") ? [hyMenuItem('data-act="path"', "file", T("File path"), null, oneFile ? hyMenuOff(oneFile) : "")] : [])].join("") }),
       has("pdf") && off(["split", "split", pdf && splitable(it) ? T("Split into pages ({n})", { n: pdfPages(it.path) }) : T("Split into pages"), ["⌥", "P"]],
         ids.length > 1 ? T("Select one PDF") : !pdf ? T("Only for a PDF") : it.pageFixed ? T("This is already one page of a PDF") : !pdfPages(it.path) ? (pdfAsk(it.path), T("Counting the PDF's pages")) : !splitable(it) ? T("This PDF has one page") : ""),
@@ -3122,7 +3103,7 @@ stage.addEventListener("contextmenu", e => {
     else if (b.dataset.act === "ungroup") ungroup();
     else if (b.dataset.act === "split") splitPdf(id);
     else if (b.dataset.act === "link" || b.dataset.act === "applink") hyLink.copy(b.dataset.act, { obj: ids.join(",") });
-    else if (b.dataset.act === "image") copyPicture(id);
+    else if (b.dataset.act === "image") hyCopyImage.copy(id);
     else if (b.dataset.act === "path") copyText(fileOf(it), T("File path copied"));
     else if (b.dataset.act === "reveal") hyReveal(files, toast);
     else if (b.dataset.act === "topage") moveToPage(b.dataset.pg || null);
@@ -3153,7 +3134,7 @@ document.addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) e.preventD
 function snap() { return JSON.stringify({ items: board.items, groups: board.groups, removed: board.removed, grids: board.grids, links: board.links, sel: [...sel] }); }
 // "removed from the canvas" (owner 2026-09-29): a picture taken off the board with no other copy or crop of it left there is
 // remembered in board.removed; putting it back clears the mark. The library filters by these marks.
-// a picture inside an image frame (Hyimg-frames) lies on the page too (owner 2026-10-05): its card lists it in pics; fileOf: a card's own file (an HTML page, a 3D scene)
+// a picture inside an image frame (hyimg-image-studio) lies on the page too (owner 2026-10-05): its card lists it in pics; fileOf: a card's own file (an HTML page, a 3D scene)
 const picsOf = it => isPic(it) ? [it.path] : it && Array.isArray(it.pics) ? it.pics : [], fileOf = it => it && [it.path, it.src, it.scene].find(f => typeof f === "string" && f) || "";
 function paths() { return new Set(Object.values(board.items).flatMap(picsOf)); }
 function trackRemoved(before) {
@@ -3983,7 +3964,7 @@ function copySel() {
   try { localStorage.setItem("cv.clip", JSON.stringify(clip)); } catch {}
   // the system clipboard gets the link to what is selected (owner 2026-10-03: ⌘C, then ⌘V in the agent's chat gives the link); ⌘V on the
   // canvas still pastes the frames from cv.clip with their spacing, crops and groups, since no outside picture is in the clipboard.
-  // The picture itself, cropped as on the board, is ⇧⌘C (copyPicture)
+  // The picture itself, cropped as on the board, is ⇧⌘C (ui/copyimage.js)
   const link = linkTo({ obj: [...sel].filter(id => board.items[id] || board.groups[id]).join(",") });
   copyText(link);
   toast(T("Copied {n}. The clipboard holds a link; for the image: ⇧⌘C", { n: items.length }), "info"); return true;
@@ -4796,8 +4777,7 @@ addEventListener("keydown", e => {
   if (e.altKey && !mod && (e.code === "KeyD" || ["d", "в", "∂"].includes(k.toLowerCase()))) { e.preventDefault(); smartTidy(); return; }
   // by physical key when the browser reports it, else by the letter in either layout
   const is = (code, ...ks) => e.code === code || ks.includes(k.toLowerCase());
-  if (mod && e.shiftKey && is("KeyC", "c", "с")) {   // ⇧⌘C, as "Copy as PNG" in Figma: the selected picture into the clipboard
-    e.preventDefault(); const one = [...sel].find(i => board.items[i] && board.items[i].path); if (one) copyPicture(one); else toast(T("Select an image")); return; }
+  if (mod && e.shiftKey && is("KeyC", "c", "с")) { e.preventDefault(); hyCopyImage.key([...sel]); return; }   // ⇧⌘C, Figma's «Copy as PNG»: ui/copyimage.js
   if (mod && is("KeyC", "c", "с")) { e.preventDefault(); copySel(); return; }
   const paused = () => { if (!pausedSel()) return false; toast(T("The group is bigger than the screen, its selection is paused. Zoom out to delete or cut it")); return true; };
   if (mod && is("KeyX", "x", "ч")) { e.preventDefault(); if (!paused()) cutSel(); return; }
@@ -4811,7 +4791,7 @@ addEventListener("keydown", e => {
   if (mod) return;
   if (/^Arrow(Left|Right|Up|Down)$/.test(k) && !e.altKey) { if (nudgeOk()) { e.preventDefault(); nudge(k, e.shiftKey); } return; }   // the selection, a screen pixel (⇧ ten)
   if (k === "g" || k === "G" || k === "п" || k === "П") { e.preventDefault(); e.shiftKey ? ungroup() : makeGroup(); }   // the g is not typed into the new name
-  else if (k === "c" || k === "C" || k === "с" || k === "С") startCropSel();
+  else if (e.shiftKey && is("KeyC", "c", "с")) startCropSel();   // ⇧C: C alone starts an annotation (ui/anncore.js)
   else if (k === "Backspace" || k === "Delete") {
     const tli = tlSel && board.items[tlSel.id], q = tli && tli.points.find(x => x.id === tlSel.pid);
     if (q && q.t !== 0) { const before = snap(); tli.points = tli.points.filter(x => x !== q); tlSel = null; commit(before); }   // a picked dot goes, not the whole line
@@ -4962,8 +4942,8 @@ async function switchPage(id) {
   board = { schema: 1, revision: 0, items: {}, groups: {}, removed: {} }; hyPageSleep.take(id);
   await refreshPages(); await loadBoard();
 }
-// a page whose name is only dashes or underscores («---», «___», «--», «________») is a divider, not a page to open (owner 2026-10-06)
-const isDivider = t => /^[\s\-_–—]+$/.test(t || "") && (String(t).match(/[-_–—]/g) || []).length >= 2;
+// a page named only with «-», «_», «–», «—», mixed, spaces aside, 3 of them at least, is a divider, not a page (owner 2026-10-06; 2026-10-09: «Минимум, я думаю, 3»)
+const isDivider = t => /^[\s\-_–—]+$/.test(t || "") && (String(t).match(/[-_–—]/g) || []).length >= 3;
 let pagesBefore = null;
 function renderPages() {
   const box = $("#pages"), live = paths().size;
@@ -5001,19 +4981,19 @@ async function deletePage(id) {
 }
 function renamePage(id) {
   const row = $(`#pages .row[data-pg="${id}"]`); if (!row) return;
-  const pg = pages.find(p => p.id === id), t = row.querySelector(".t") || row.querySelector(".ln"), inp = document.createElement("input");
-  inp.value = pg.title; t.replaceWith(inp); inp.focus(); inp.select(); const kh = hyHint("rename", inp);
+  const pg0 = pages.find(p => p.id === id), t = row.querySelector(".t") || row.querySelector(".ln"), inp = document.createElement("input");
+  inp.value = pg0.title; t.replaceWith(inp); inp.focus(); inp.select(); const kh = hyHint("rename", inp);
   let closed = false;
   const done = ok => {
     if (closed) return; closed = true; kh.hide();
-    const v = inp.value.trim();
+    const v = inp.value.trim(), pg = pages.find(p => p.id === id) || pg0;   // the list's page now: «New page» opens this field before openPages' refresh
+    // lands with new objects, and the name went into the old one, unsaved (owner 2026-10-09: «--------» typed on a new page, it stayed «Page 9»)
     if (ok && v && v !== pg.title && isDivider(v)) {   // a divider holds nothing: only an empty page turns into one, and the board leaves it
       const n = pg.id === BOARD ? paths().size : (pg.on || []).length;
       if (n) { toast(T("Only an empty page can become a divider, this one holds {frames}", { frames: frames(n) })); renderPages(); window.focus(); return; }
       pg.title = v;
       const back = pg.id === BOARD && (pages.find(q => q.id === pagesBefore && !isDivider(q.title)) || [...pages].reverse().find(q => !isDivider(q.title)));
-      (async () => { await savePages(pages); if (back) await switchPage(back.id); renderPages(); })();   // the save first: a switch waits for it
-      renderPages(); window.focus(); return;
+      (async () => { await savePages(pages); if (back) await switchPage(back.id); renderPages(); })(); renderPages(); window.focus(); return;   // save, then switch
     }
     if (ok && v && v !== pg.title) { pg.title = v; savePages(pages); }
     renderPages(); window.focus();
@@ -5274,7 +5254,7 @@ $("#ctx").addEventListener("hymenusub", () => tellOver());   // a submenu opened
 // it (one undo step). Never rating, ♥ or tags: a kind is a look or a geometry.
 // The kinds are a registry (HY.props.register), the core's: crop (a share of the frame, any size takes it), time (a video's trim in
 // seconds; a shorter video takes it up to its end), size (the width; the height follows each card's own proportions), opacity, a PDF's
-// page; the plugins add theirs (Hyimg-frames: the colour grade, the mask; 3D can add a camera or a light):
+// page; the plugins add theirs (hyimg-image-studio: the colour grade, the mask; 3D can add a camera or a light):
 //   HY.props.register({ id, label, order, has(it), applies(it) -> true | "why not", get(it), set(it, value, ctx), preview?(el, it, value),
 //                       files?(value) -> [library paths the value refers to], lacks?(it) -> "why this object has none",
 //                       none?: the value that means «nothing applied» (null when absent), applied?(it) (has(it) when absent), clear: false (kept) })

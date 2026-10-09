@@ -9,7 +9,7 @@ set -eu
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPOS_DIR="$(dirname "$(dirname "$HERE")")"
 MARK="# hyimg-check-hook"
-for r in hyimg hyimg-frames hyimg-3d-studio hyimg-dev-studio; do
+for r in hyimg hyimg-image-studio hyimg-3d-studio hyimg-dev-studio; do
   d="$REPOS_DIR/$r"; [ -d "$d/.git" ] || { echo "skip $r: no git repository at $d"; continue; }
   hooks="$(git -C "$d" rev-parse --git-path hooks)"; case "$hooks" in /*) ;; *) hooks="$d/$hooks" ;; esac
   mkdir -p "$hooks"; h="$hooks/pre-commit"

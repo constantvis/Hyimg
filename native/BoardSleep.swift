@@ -66,6 +66,18 @@ enum SwitchOrder {
     /// the card ⌃Tab starts on: the next one (the board before this one), or the last one going back
     static func firstPick(count: Int, step: Int) -> Int { count < 2 ? 0 : step < 0 ? count - 1 : 1 }
     static func move(_ pick: Int, by step: Int, count: Int) -> Int { count == 0 ? 0 : ((pick + step) % count + count) % count }
+    /// Home is the card in front only while it is Home: on top with a board chosen it is leaving for that board (its plate and steps,
+    /// 750 ms for a drawn board, the whole load for one asleep), and that board is in front. Counted as Home, it was the first card: a
+    /// quick ⌃Tab went to the board again and Home picked was the card in front, so releasing on it did nothing (owner 2026-10-09: «не
+    /// всегда переключается на Home screen, особенно если мы открыли только одну вкладку. Я быстро переключаюсь назад»)
+    static func homeFront(onTop: Bool, leavingFor board: UUID?) -> Bool { onTop && board == nil }
+    /// the cards as the app sends them: the one in front first (Home when it is in front), then the boards (cards), Home last
+    static func deck(homeFront: Bool, front: UUID?, open: [UUID], lastFront: [UUID: Date]) -> [String] {
+        let order = cards(front: homeFront ? nil : front, open: open, lastFront: lastFront).map(\.uuidString)
+        return homeFront ? ["home"] + order : order + ["home"]
+    }
+    /// releasing ⌃ on `pick`: the card to go to; nil on the card in front (the first) or none
+    static func target(_ ids: [String], pick: Int) -> String? { pick > 0 && ids.indices.contains(pick) ? ids[pick] : nil }
 }
 
 /// The switched-to board's wait until what is on its screen is drawn (Switcher.swift, review/ui/switchin.js): each wait has a token, and

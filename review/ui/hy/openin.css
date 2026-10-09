@@ -1,6 +1,6 @@
 /* <hy-open-in>: «Open in <Browser>», a split plate of the top row (ui/hy/openin.js, owner 2026-10-09). One plate in the row's glass, edge
-   and shadow; the main part with the browser's own icon and its name, the chevron part behind a hairline when there is a choice. Without
-   the Mac app it is one plain plate, «Open in browser». The menu of browsers is the app's menu look: glass panel, 32 px rows, the default
+   and shadow; the main part with the browser's own icon and its name, the chevron part behind a hairline, always: without the Mac app
+   the main part reads «Open in browser» and the menu offers the default browser alone (owner 2026-10-09). The menu of browsers is the app's menu look: glass panel, 32 px rows, the default
    marked in muted words, the chosen one checked. */
 hy-open-in { display: inline-flex; align-items: stretch; box-sizing: border-box; height: var(--hy-plate-h); border: 1px solid var(--line); border-radius: var(--hy-plate-r);
   background: color-mix(in srgb, var(--panel) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--hy-sh-row);

@@ -152,7 +152,7 @@ def test_each_kind_its_own_list_grey_within(server, engine):
                               "Paste properties", "Clear properties", "—", "Copy as", "—", "Remove from the board"], LABELS(gr)
         page.keyboard.press("Escape")
         # the empty board: only its own
-        assert LABELS(menu(page, [1300, 900])) == ["Paste here", "—", "Hide annotations", "—", "Copy app link to this view", "Copy browser link to this view"]
+        assert LABELS(menu(page, [1300, 900])) == ["Paste here", "—", "Hide annotations", "Annotations on this page", "—", "Copy app link to this view", "Copy browser link to this view"]
         assert not errors, errors
         browser.close()
 

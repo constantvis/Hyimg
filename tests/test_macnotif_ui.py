@@ -95,7 +95,7 @@ def test_the_section_on_a_board(browser, board):
     page, errors = open_board(browser, port)
     rows = page.evaluate(ROWS)
     assert rows == [["mac", "Mac notifications", True, False], ["mac.agent", "An agent placed something on a board", True, False],
-                    ["mac.comment", "A comment on a board", True, False], ["mac.reply", "A reply to me", True, False],
+                    ["mac.comment", "An annotation on a board", True, False], ["mac.reply", "A reply to me", True, False],
                     ["mac.mention", "I or my agent was @mentioned", True, False], ["mac.note", "A reply to my note", True, False],
                     ["mac.bg", "Only when Hyimg is in the background", False, False]], rows
     # its own section of the settings (ui/settings-win.js): at a board's side under its header «Notifications»
@@ -137,7 +137,7 @@ def test_the_section_on_home_in_russian(browser):
     page, errors = open_home(browser, "ru", {"cv.mac.note": "0"})
     rows = page.evaluate(ROWS)
     assert page.evaluate("() => document.querySelector('#hyMacNotif .sh').textContent") == "Уведомления"
-    assert [r[1] for r in rows] == ["Уведомления Mac", "Агент что-то положил на доску", "Комментарий на доске", "Ответ мне",
+    assert [r[1] for r in rows] == ["Уведомления Mac", "Агент что-то положил на доску", "Аннотация на доске", "Ответ мне",
                                     "Упомянули меня или моего агента", "Ответ на мою заметку", "Только когда Hyimg в фоне"], rows
     assert [r[2] for r in rows] == [True, True, True, True, True, False, False]   # the file's cv.mac.note "0"
     if OUT: page.locator("#hyMacNotif").screenshot(path=os.path.join(OUT, "macnotif-home-ru.png"))

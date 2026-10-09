@@ -18,7 +18,7 @@ hyLang({
     // ui/hy/actions.js, ui/hy/openin.js: a Studio's actions top right, «Open in <Browser>» (owner 2026-10-09)
     "Studio actions": "Действия студии", "Open in browser": "Открыть в браузере", "Choose a browser": "Выбрать браузер",
     "Open the page in {app}": "Открыть страницу в {app}", "Open the page in a new tab": "Открыть страницу в новой вкладке",
-    "browser::Default": "По умолчанию", "The page did not open: {why}": "Страница не открылась: {why}",
+    "browser::Default": "По умолчанию", "Default browser": "Браузер по умолчанию", "The page did not open: {why}": "Страница не открылась: {why}",
     "The file did not open": "Файл не открылся",
     // menu.js: the marking colours (a folder in the library's tree, a node in the 3D editor's tree)
     "Colour": "Цвет",
@@ -219,7 +219,7 @@ hyLang({
     "hint::Done": "Готово", "hint::One axis": "По одной оси", "hint::From the centre": "От центра", "hint::Keep proportions": "Сохранить пропорции",
     "hint::45°": "45°", "hint::Square": "Квадрат", "hint::Circle": "Круг", "hint::Add to selection": "Добавить к выделению", "hint::Delete": "Удалить",
     "hint::Proportions": "Пропорции", "hint::Brush size": "Размер кисти", "hint::Black / white": "Черный / белый", "hint::Orbit": "Вращать",
-    "hint::Save": "Сохранить", "hint::Back": "Назад", "hint::Select an element": "Выбрать элемент", "hint::Comment": "Комментарий", "hint::Space": "Пробел",
+    "hint::Save": "Сохранить", "hint::Back": "Назад", "hint::Select an element": "Выбрать элемент", "hint::Annotation": "Аннотация", "hint::Space": "Пробел",
     // ui/hy/tip.js: a tip's place (round 12's version 9, owner 2026-10-09); the tips of the board (ui/boardhints.js) and the library (ui/libtips.js)
     "Hide tips here": "Скрыть советы здесь", "Tips are off here · click the bulb to bring them back": "Советы здесь скрыты · клик по лампочке вернет их",
     "tip::<b>N</b> puts a note here": "<b>N</b> ставит здесь заметку", "tip::<b>⌘V</b> pastes a picture": "<b>⌘V</b> вставляет картинку",
@@ -302,7 +302,9 @@ hyLang({
     "The board is already there": "Доска уже там",
     // macnotif.js: Settings › Notifications, the Mac's banners (owner 2026-10-08)
     "set::Notifications": "Уведомления", "Mac notifications": "Уведомления Mac",
-    "An agent placed something on a board": "Агент что-то положил на доску", "A comment on a board": "Комментарий на доске",
+    // bellrow.js: the bell's panel header on Home and on a board
+    "Notifications": "Уведомления",
+    "An agent placed something on a board": "Агент что-то положил на доску", "An annotation on a board": "Аннотация на доске",
     "A reply to me": "Ответ мне", "I or my agent was @mentioned": "Упомянули меня или моего агента", "A reply to my note": "Ответ на мою заметку",
     "Only when Hyimg is in the background": "Только когда Hyimg в фоне",
     // plugins.js: Settings › Plugins (owner 2026-10-07)

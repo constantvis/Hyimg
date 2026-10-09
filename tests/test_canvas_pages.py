@@ -336,7 +336,7 @@ def test_crop_and_crop_trim_buttons_on_the_selection_bar(server):
         browser, page, errors = open_crop(p, server)
         page.evaluate("() => { const id = Object.keys(board.items)[0]; sel = new Set([id]); render(); }")
         b = page.locator(".tidy > button[data-crop]")
-        assert b.count() == 1 and b.inner_text().strip().startswith("Кроп") and b.locator("> kbd").inner_text() == "C"
+        assert b.count() == 1 and b.inner_text().strip().startswith("Кроп") and b.locator("> kbd").inner_text() == "⇧C"
         assert page.evaluate("() => !cropState")
         b.click()
         assert page.evaluate("() => !!cropState && cropState.id === [...sel][0]")
@@ -719,7 +719,8 @@ def test_notes_stack_at_the_top_in_one_look(server):
         front = page.evaluate("() => { const L = [...document.querySelectorAll('#hyToasts .ht')]; return L.reduce((a, e) => +e.style.zIndex > +a.style.zIndex ? e : a).className }")
         assert "info" in front, front   # the newest stands in front
         tops = page.evaluate("() => [...document.querySelectorAll('#hyToasts .ht')].map(e => Math.round(e.getBoundingClientRect().top))")
-        assert 58 <= min(tops) and max(tops) < 80, tops   # folded: one behind the other, under the top row (its 58 px line, owner 2026-10-07)
+        # folded: the newest in the top row at --hy-row-top (12 px), each older one peeking 6 px above it, 12 at most (05ad58d, owner 2026-10-09)
+        assert sorted(tops) == [0, 6, 12], tops
         box = page.evaluate("() => { const r = document.querySelector('#hyToasts').getBoundingClientRect(); return [r.left + r.width / 2, r.top + 10] }")
         page.mouse.move(*box); page.wait_for_timeout(600)
         fanned = page.evaluate("() => [...document.querySelectorAll('#hyToasts .ht')].map(e => Math.round(e.getBoundingClientRect().top))")
@@ -943,5 +944,53 @@ def test_key_hints_wait_for_a_held_command_and_stay_off_during_a_zoom(server):
         w1 = page.evaluate("() => { gesture = true; cam.z *= 1.6; renderCam(); const h = document.querySelector('#handles [data-resize]'); return h.getBoundingClientRect().width; }")
         assert abs(w1 - w0) < 1.5, (w0, w1)
         page.evaluate("() => { gesture = false; renderCam(); }")
+        assert not errors, errors
+        browser.close()
+
+
+def test_a_page_renamed_to_three_or_more_dashes_turns_into_a_divider(server):
+    """Owner 2026-10-09: a page renamed to «--------» stayed a page: «Не важно, сколько минусов или нижних подчеркиваний, главное, чтобы
+    появилась вот эта линия, как выше. Минимум, я думаю, 3». «New page» opened the name field while openPages' refresh was on its way;
+    the refresh put new objects in `pages` and the name went into the old one, unsaved. Also a page that is not the open one."""
+    api = f"http://127.0.0.1:{server}/api/pages"
+    extra = [{"id": f"e{n}", "title": f"E{n}"} for n in range(3)]   # empty pages, no board file
+    urllib.request.urlopen(urllib.request.Request(api, json.dumps({"pages": [{"id": "main", "title": "A"}, {"id": "p2", "title": "B"}] + extra}).encode(),
+                                                  {"Content-Type": "application/json"}))
+    with playwright.sync_playwright() as p:
+        try: browser = p.chromium.launch()
+        except Exception as error: pytest.skip(f"no Chromium for Playwright: {error}")
+        page = browser.new_page(viewport={"width": 1400, "height": 900}, color_scheme="dark"); errors = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.goto(f"http://127.0.0.1:{server}/canvas.html")
+        page.wait_for_function("() => typeof BOARD !== 'undefined' && BOARD === 'main' && pages.length === 5", timeout=15000)
+        divider = "id => !!document.querySelector(`#pages .row.dv[data-pg=\"${id}\"]`) && !document.querySelector(`#pages .row.dv[data-pg=\"${id}\"] .t`)"
+        def saved(pid, title):   # the server's list, once the page's save has landed
+            for _ in range(50):
+                got = {q["id"]: q["title"] for q in json.load(urllib.request.urlopen(api))["pages"]}.get(pid)
+                if got == title: return True
+                time.sleep(0.1)
+            return got
+        for n, name in enumerate(["--------", "___", "-_-_-"]):
+            # the open page: a new one from «New page», named at once, as the owner did
+            if not page.locator("#pages.open").count(): page.click("#cPage")
+            page.click("#pgAdd"); page.wait_for_selector("#pages input"); new = page.evaluate("BOARD")
+            page.wait_for_timeout(300)   # openPages' refresh lands while the field is open
+            page.locator("#pages input").fill(name); page.keyboard.press("Enter")
+            page.wait_for_function(divider, arg=new, timeout=5000)
+            page.wait_for_function("id => BOARD !== id", arg=new, timeout=5000)   # the board leaves the divider for the page it came from
+            assert page.evaluate("BOARD") == "main" and saved(new, name) is True
+            # a page that is not open, from its right click
+            if not page.locator("#pages.open").count(): page.click("#cPage")
+            page.locator(f'#pages .row[data-pg="e{n}"]').click(button="right"); page.locator("#ctx [data-act=ren]").click()
+            page.locator("#pages input").fill(name); page.keyboard.press("Enter")
+            page.wait_for_function(divider, arg=f"e{n}", timeout=5000)
+            assert saved(f"e{n}", name) is True
+        # two are not enough; a page holding pictures stays a page and the toast says how many
+        if not page.locator("#pages.open").count(): page.click("#cPage")
+        page.locator('#pages .row[data-pg="p2"]').click(button="right"); page.locator("#ctx [data-act=ren]").click()
+        page.locator("#pages input").fill("---"); page.keyboard.press("Enter")
+        page.wait_for_function("() => [...document.querySelectorAll('#hyToasts .ht')].some(e => e.textContent.includes('12'))", timeout=5000)
+        assert saved("p2", "B") is True and not page.evaluate(divider, "p2")
+        assert page.evaluate("() => ['--', '- -', '---', '- - -', '—_–'].map(isDivider)") == [False, False, True, True, True]
         assert not errors, errors
         browser.close()

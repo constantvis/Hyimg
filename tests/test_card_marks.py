@@ -126,7 +126,7 @@ MARKS = """id => { const el = EL.get(id), c = el.getBoundingClientRect();
       ring: getComputedStyle(m.querySelector('.mk-note > i') || m).boxShadow,   // a note's dots are its children (2026-10-08), the first one ringed
       icon: (() => { const i = m.querySelector('.kp svg, :scope > svg'); if (!i) return 0; const b = i.getBoundingClientRect(); return Math.round(b.height * 100) / 100; })() }; }); }"""
 
-# a stand-in for the frames plugin's colour grade mark (hyimg-frames grade.js: the same class and the same rule that shows it), so the
+# a stand-in for the frames plugin's colour grade mark (hyimg-image-studio grade.js: the same class and the same rule that shows it), so the
 # core's law is tested with a full top row without the plugin; the plugin's own tests check the real one
 GRADE = """ids => { if (!document.getElementById('grst')) { const st = document.createElement('style'); st.id = 'grst';
     st.textContent = ':is(.it, .plg).graded:not(.mkoff):not([data-mkx~=grade]) > .mk.mk-grade { display: flex; scale: 1; opacity: 1; }'

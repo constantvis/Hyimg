@@ -122,7 +122,7 @@ def studio(world, theme, shape, lang, card, mode, ready):
 
 @pytest.mark.parametrize("theme,shape,lang", LOOKS)
 def test_image_studio(world, theme, shape, lang):
-    if not (REPOS / "hyimg-frames/manifest.json").is_file(): pytest.skip("no hyimg-frames beside hyimg")
+    if not (REPOS / "hyimg-image-studio/manifest.json").is_file(): pytest.skip("no hyimg-image-studio beside hyimg")
     page, frame = studio(world, theme, shape, lang, "p2", "image", "() => window.__frames && __frames.ED && __frames.ED.win")
     found = inset(frame, "image studio board")
     ed = next((f for f in page.frames if "/editor/" in f.url), None)

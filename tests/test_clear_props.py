@@ -77,7 +77,7 @@ STATE = "ids => ids.map(i => { const it = board.items[i]; return [it.crop || nul
 
 
 def test_clear_properties(server):
-    if not server["frames"]: pytest.skip("no hyimg-frames repository beside this one")
+    if not server["frames"]: pytest.skip("no hyimg-image-studio repository beside this one")
     port = server["port"]
     with playwright.sync_playwright() as p:
         try: browser = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])

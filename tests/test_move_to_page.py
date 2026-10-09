@@ -29,7 +29,7 @@ from test_canvas_pages import free_port, png
 
 playwright = pytest.importorskip("playwright.sync_api")
 ROOT = Path(__file__).resolve().parents[1]
-FRAMES = ROOT.parent / "hyimg-frames"
+FRAMES = ROOT.parent / "hyimg-image-studio"
 ENGINES = ["chromium", "webkit"]
 
 
@@ -324,7 +324,7 @@ def test_new_page_and_the_notes_undo_after_other_edits(server, engine):
 @pytest.mark.parametrize("engine", ENGINES)
 def test_move_a_plugin_card(server, engine):
     if not server["frames"]:
-        pytest.skip("no hyimg-frames repository beside this one")
+        pytest.skip("no hyimg-image-studio repository beside this one")
     port = server["port"]
     with playwright.sync_playwright() as p:
         browser, page, errors = open_board(p, engine, port)

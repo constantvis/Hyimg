@@ -5,7 +5,7 @@ on the HTML card «11 Hints», the card showed no dot: «И почему у HTML
 - a note on a picture, a Dev Studio HTML card, an HTML frame and a 3D card (lying on it, or its zone) shows its dot in the card's top
   left corner, on screen, at 50, 75 and 100 %, selected or not. The Dev card big enough on screen runs its live page, and that page's
   iframe had the class of Dev Studio's panels (.dvp, z-index 60): it lay over the card's marks, the dot among them
-- one dot per note: an arrow from another note ends at that note's own dot and adds none to the row
+- one dot per note: an arrow from another note ends at that note's own dot, in the card's row beside the first (2026-10-09)
 - in a Studio (Dev Studio on the HTML card, Image Studio on the picture) the card's dots and the arrows that end at it are hidden, the
   other cards' arrows stay; they come back on leaving
 - in a Studio the card lies over everything of the board on it (owner 2026-10-08: «Заметка поверх карточки в Studio — да, конечно,
@@ -32,7 +32,7 @@ from test_note_replies import note
 playwright = pytest.importorskip("playwright.sync_api")
 Image = pytest.importorskip("PIL.Image")
 ROOT = Path(__file__).resolve().parents[1]
-PLUGINS = {"frames": "hyimg-frames", "dev": "hyimg-dev-studio", "3d": "hyimg-3d-studio"}
+PLUGINS = {"frames": "hyimg-image-studio", "dev": "hyimg-dev-studio", "3d": "hyimg-3d-studio"}
 PAGE = "<!doctype html><html><head><title>{t}</title></head><body style='margin:0;background:#fff'><h1>{t}</h1></body></html>"
 CARDS = ("p", "d", "hf", "m")
 
@@ -100,15 +100,16 @@ def seen_on_screen(page, d):   # the dot's own colour in the middle of it on a s
     return max(abs(a - b) for a, b in zip(px, d["c"])) <= 24, px
 
 
-def check_dots(page, where, look=CARDS):   # look: the cards whose dot must be seen on the screenshot too
+def check_dots(page, where, look=CARDS, n=None):   # look: the cards whose dots must be seen on the screenshot too; n: card -> its notes
     for id in CARDS:
         r = page.evaluate(DOTS, id)
-        assert r and r["shown"] and len(r["dots"]) == 1, (where, id, r)   # one dot per note, never two
-        d, (x, y, w, _) = r["dots"][0], r["card"]
-        assert x < d["x"] < x + w * .12 and y < d["y"] < y + w * .12, (where, id, d, r["card"])   # in the top left corner
-        if id not in look: continue
-        ok, px = seen_on_screen(page, d)
-        assert ok, (where, id, "the dot is covered", px, d)
+        assert r and r["shown"] and len(r["dots"]) == (n or {}).get(id, 1), (where, id, r)   # one dot per note, never two
+        for d in r["dots"]:
+            x, y, w, _ = r["card"]
+            assert x < d["x"] < x + w * .12 and y < d["y"] < y + w * .12, (where, id, d, r["card"])   # in the top left corner
+            if id not in look: continue
+            ok, px = seen_on_screen(page, d)
+            assert ok, (where, id, "the dot is covered", px, d)
 
 
 def enter(page, id, mode, at=(.3, .6)):
@@ -158,13 +159,15 @@ def test_note_dots_on_every_card_and_not_in_a_studio(server):
         page.evaluate("() => { cam = { x: -40, y: -140, z: .75 }; render(); }")
         page.wait_for_function("() => EL.get('d').classList.contains('pv')", timeout=20000); page.wait_for_timeout(600)
 
-        # arrows to the HTML card and to the picture: each ends at its note's own dot, the rows keep one dot each
+        # arrows to the HTML card and to the picture: each ends at its note's own dot, one more in the card's row (2026-10-09: the arrow
+        # drew a dot of its own on the arrows' layer, of another size, over the row's first one)
         page.evaluate("""() => { board.items.Ad = { type: 'note', text: 'arrow to the page', x: 1100, y: 40, w: 140, fs: 140 / 18, size: 2, h: 0, color: 'blue', reach: null, to: ['d'] };
           board.items.Ap = { type: 'note', text: 'arrow to the picture', x: -300, y: 40, w: 140, fs: 140 / 18, size: 2, h: 0, color: 'blue', reach: null, to: ['p'] };
           render(); }""")
-        page.wait_for_function("() => document.querySelector(\"#links .arw[data-k='Ad|d'] .hd\") && document.querySelector(\"#links .arw[data-k='Ap|p'] .hd\")")
+        page.wait_for_function("() => document.querySelector(\"#links .arw[data-k='Ad|d'].ad\") && document.querySelector(\"#links .arw[data-k='Ap|p'].ad\")")
         page.wait_for_timeout(400)
-        check_dots(page, "with arrows", look=("hf", "m"))   # an arrow's end dot is drawn over the corner of p and d (a69dc0b), on the layer above
+        check_dots(page, "with arrows", n={"p": 2, "d": 2})
+        assert [i["nd"] for i in page.evaluate(DOTS, "d")["dots"]] == ["Nd", "Ad"] and not page.locator("#links circle[data-nd]").count()
         assert page.evaluate(ARROW, "Ad|d") == "visible" and page.evaluate(ARROW, "Ap|p") == "visible"
 
         # Dev Studio on the HTML card: its dot and the arrow to it gone, the picture's arrow stays; back on leaving
@@ -186,7 +189,7 @@ def test_note_dots_on_every_card_and_not_in_a_studio(server):
         leave(page)
         assert page.evaluate(ARROW, "Ap|p") == "visible" and page.evaluate(DOTS, "p")["shown"]
 
-        # without the arrows (their dots lie over the corner) every card's own dot is seen again, the HTML card's live page too
+        # without the arrows every card has its one dot again, the HTML card's live page too
         page.evaluate("() => { sel = new Set(); delete board.items.Ad; delete board.items.Ap; cam = { x: -40, y: -140, z: .75 }; render(); }")
         page.wait_for_function("() => EL.get('d').classList.contains('pv')", timeout=20000); page.wait_for_timeout(800)
         check_dots(page, "after the studios")

@@ -1,11 +1,12 @@
 """A note's arrow (owner 2026-10-08 on Concepts/html/notes-glass/a7-states.html «Arrow states»: «вот это очень круто, и по наведению на
 линию или на точку можно было бы удалить»).
 
-- a soft curve; on a picture or a card (an HTML card too: «почему-то здесь нет точки») it ends at the note's own dot inside the thing's
-  top left corner, with no head, and the thing's row of dots has no second one for that note; at a group it ends on the side, with a head
+- a soft curve; on a picture or a card (an HTML card too: «почему-то здесь нет точки») it ends inside the thing's top left corner at the
+  note's own dot in the thing's row, with no head and no dot of its own (2026-10-09, tests/test_note_dots_one.py); at a group it ends
+  on the side, with a head
 - where it ends is board geometry: the same path at 10 % and at 100 % («если мы не двигаем элементы, линия не двигается»); its sizes on
-  screen follow the zoom in CSS, live while the zoom moves («чтобы когда ты зумишь, оно плавно пересчитывалось»), and far out the dot
-  and the head shrink with the thing instead of covering it («стрелочки какие-то огромные»)
+  screen follow the zoom in CSS, live while the zoom moves («чтобы когда ты зумишь, оно плавно пересчитывалось»), and far out the head
+  shrinks with the thing instead of covering it («стрелочки какие-то огромные»); the dot follows the card's marks
 - hovering the line makes it thicker and shows a × under the pointer, riding along the line with it («я хочу, чтобы я мог водить мышкой,
   и у меня был этот символ удалить связь»); hovering the end dot (the note's dot: its note outlined) shows a × beside the dot instead;
   a click on a × removes the arrow (the note stays), «Arrow removed» with Undo, ⌘Z brings it back; with the × under the pointer a click
@@ -54,7 +55,7 @@ def server(tmp_path):
     for d in (lib / "a", lib / "html/x", state / "boards", plugins): d.mkdir(parents=True)
     (lib / "a/0.png").write_bytes(png(60, 40)); (lib / "a/1.png").write_bytes(png(60, 40))
     (lib / "html/x/index.html").write_text(PAGE.format(t="Frame"))
-    src = ROOT.parent / "hyimg-frames"   # the HTML frame's plugin as its last commit (other agents may be changing the working copy)
+    src = ROOT.parent / "hyimg-image-studio"   # the HTML frame's plugin as its last commit (other agents may be changing the working copy)
     if (src / "manifest.json").is_file():
         raw = subprocess.run(["git", "-C", str(src), "archive", "HEAD"], capture_output=True, check=True).stdout
         (plugins / "frames").mkdir(); tarfile.open(fileobj=io.BytesIO(raw)).extractall(plugins / "frames", filter="data")
@@ -103,23 +104,26 @@ def test_arrow_states_and_hover_to_delete(server):
         page.evaluate("""() => { localStorage.clear(); localStorage.setItem('cv.nolib', '1'); localStorage.setItem('cv.lod', '0');
           localStorage.setItem('cv.cam.main', JSON.stringify({ x: -480, y: -80, z: .8 })); }""")
         page.goto(url)
-        page.wait_for_function("() => typeof BOARD !== 'undefined' && EL.get('p') && EL.get('A') && document.querySelector(\".arw[data-k='A|p'] .hd\")", timeout=30000)
+        page.wait_for_function("() => typeof BOARD !== 'undefined' && EL.get('p') && EL.get('A') && document.querySelector(\".arw[data-k='A|p'].ad\")", timeout=30000)
         page.evaluate("() => render()")
         errors.clear()
 
-        # at the picture: the curve ends at the note's dot inside its top left corner, no head; no second dot of A in the picture's row
-        a = ".arw[data-k='A|p']"
-        dot, card = page.evaluate(BOX, f"{a} .hd"), page.evaluate(CARD, "p")
+        # at the picture: the curve ends inside its top left corner, at the note's dot there, no head; the dot is the one in the picture's
+        # row (2026-10-09: the arrow drew a dot of its own, of another size, over the row's first one), and the arrow draws none
+        a, rowdot = ".arw[data-k='A|p']", ".it[data-id=p] .mk-note i[data-nd=A]"
+        page.wait_for_function("s => document.querySelector(s).getBoundingClientRect().width > 11", arg=rowdot, timeout=5000)   # grown in
+        dot, card, end = page.evaluate(BOX, rowdot), page.evaluate(CARD, "p"), page.evaluate(AT, ["A|p", 1])
         assert card[0] < dot[0] < card[0] + card[2] * .15 and card[1] < dot[1] < card[1] + card[2] * .15, (dot, card)
-        assert abs(dot[2] - 2 * (7 + .75)) <= 1.5, dot   # 7 px and its ring, as the card's own dots
-        assert not page.locator(".it[data-id=p] .mk-note i[data-nd=A]").count()
+        assert card[0] < end[0] < card[0] + card[2] * .15 and card[1] < end[1] < card[1] + card[2] * .15, (end, card)
+        assert abs(dot[2] - 12) <= .5 and page.locator(rowdot).count() == 1, dot   # the card's own dot, once
+        assert not page.locator("#links circle[data-nd]").count()
         assert not page.locator(f"{a} .hh").count() and page.locator(".arw[data-k='B|g'] .hh").count() == 1
         assert page.evaluate("() => document.querySelector(\".arw[data-k='A|p'] .ln\").getAttribute('d')").count("C") == 1   # a curve
         assert abs(page.evaluate(WIDTH, "A|p") - 2) < .2
         # an HTML card shows the note's dot at the end too (owner: «и плюс почему-то здесь нет точки»), selected or not
-        assert page.locator(".arw[data-k='D|hf'] .hd").count() == 1 and not page.locator(".arw[data-k='D|hf'] .hh").count()
+        assert page.locator(".plg[data-id=hf] .mk-note i[data-nd=D]").count() == 1 and not page.locator(".arw[data-k='D|hf'] .hh").count()
         page.evaluate("() => { sel = new Set(['p']); render(); }")
-        assert page.evaluate(BOX, f"{a} .hd")[:2] == dot[:2]
+        assert page.locator(rowdot).count() == 1 and page.evaluate(AT, ["A|p", 1]) == end
         page.evaluate("() => { sel = new Set(); render(); }")
         shot(page, "arrows-rest.png")
 
@@ -128,8 +132,8 @@ def test_arrow_states_and_hover_to_delete(server):
         d1 = page.evaluate("() => [...document.querySelectorAll('#links .arw .ln')].map(e => e.getAttribute('d')).join('|')")
         page.evaluate(ZOOM, .1); page.wait_for_timeout(100)
         assert page.evaluate("() => [...document.querySelectorAll('#links .arw .ln')].map(e => e.getAttribute('d')).join('|')") == d1
-        far, pc = page.evaluate(BOX, f"{a} .hd"), page.evaluate(CARD, "p")
-        assert far[2] <= pc[2] * .1 + .5, (far, pc)   # was 15 px on a 30 px picture
+        # far out the dot follows the card's marks: a picture 20 px tall on screen shows none, and the arrow adds none of its own
+        assert page.evaluate("() => EL.get('p').classList.contains('mkoff')") and not page.locator("#links circle[data-nd]").count()
         hh, gr = page.evaluate(BOX, ".arw[data-k='B|g'] .hh"), page.evaluate("() => { const r = GEL.get('g').getBoundingClientRect(); return [r.width, r.height]; }")
         assert hh[2] <= min(gr) * .31 + .5, (hh, gr)
         shot(page, "arrows-far.png")
@@ -163,9 +167,9 @@ def test_arrow_states_and_hover_to_delete(server):
         page.keyboard.press("Meta+z")
         page.wait_for_function("() => (board.items.A.to || []).join() === 'p' && document.querySelector(\".arw[data-k='A|p']\")")
 
-        # hover the end dot: the × beside it, touching it, not the middle one
+        # hover the note's dot on the picture: the arrow's end × beside it, touching it, not the middle one
         page.mouse.move(10, 10); page.wait_for_timeout(150)
-        dot = page.evaluate(BOX, f"{a} .hd")
+        dot = page.evaluate(BOX, rowdot)
         page.mouse.move(dot[0], dot[1]); seen(page, f"{a} .del.e", True); seen(page, f"{a} .del.m", False)
         assert page.evaluate("() => EL.get('A').classList.contains('ndhot')")   # the note's dot: its note outlined
         xe = page.evaluate(BOX, f"{a} .del.e circle")
@@ -198,7 +202,7 @@ ON = """([k, id, m]) => { const ln = document.querySelector(`.arw[data-k='${k}']
     if (notes.some(r => ins(r, x, y, -m)) || !(x > 8 && x < innerWidth - 8 && y > 8 && y < innerHeight - 8)) continue;
     if (id ? ins(box(id), x, y, m) : !cards.some(r => ins(r, x, y, -m))) return [x, y]; }
   return null; }"""
-HIT = """([x, y]) => { const e = document.elementFromPoint(x, y); if (!e) return null; if (e.closest('#links')) return e.classList.contains('hd') ? 'dot' : 'arrow';
+HIT = """([x, y]) => { const e = document.elementFromPoint(x, y); if (!e) return null; if (e.closest('#links')) return 'arrow';
   const t = e.closest('#items > [data-id]'); return t ? t.dataset.id : e.tagName; }"""
 COL = "k => getComputedStyle(document.querySelector(`.arw[data-k='${k}'] .ln`)).stroke"
 
@@ -229,9 +233,9 @@ def test_the_line_runs_under_the_cards(server):
         page.evaluate("""() => { localStorage.clear(); localStorage.setItem('cv.nolib', '1'); localStorage.setItem('cv.lod', '0');
           localStorage.setItem('cv.cam.main', JSON.stringify({ x: -480, y: -80, z: 1 })); }""")
         page.goto(url)
-        page.wait_for_function("() => typeof BOARD !== 'undefined' && EL.get('p') && EL.get('hf') && document.querySelector(\".arw[data-k='A|p'] .hd\")", timeout=30000)
+        page.wait_for_function("() => typeof BOARD !== 'undefined' && EL.get('p') && EL.get('hf') && document.querySelector(\".arw[data-k='A|p'].ad\")", timeout=30000)
         page.evaluate(UNDER)
-        page.wait_for_function("() => ['E|p', 'F|hf', 'G|p', 'H|hf'].every(k => document.querySelector(`.arw[data-k='${k}'] .hd`)) && EL.get('H')")
+        page.wait_for_function("() => ['E|p', 'F|hf', 'G|p', 'H|hf'].every(k => document.querySelector(`.arw[data-k='${k}'].ad`)) && EL.get('H')")
         errors.clear()
         for z, m in ((1, 12), (.1, 3)):
             page.evaluate("z => { cam = { x: z === 1 ? -200 : -2600, y: z === 1 ? -60 : -1800, z }; render(); }", z); page.wait_for_timeout(300)
@@ -248,13 +252,13 @@ def test_the_line_runs_under_the_cards(server):
             for k, card in (("E|p", None), ("G|p", None), ("H|hf", None), ("H|hf", "q")):
                 pt = page.evaluate(ON, [k, card, m]); assert pt, (z, k, card)
                 assert page.evaluate(HIT, pt) == "arrow", (z, k, card, pt)
-            # the end dot over the card it ends on
-            for k in ("E|p", "F|hf", "G|p"):
-                dot = page.evaluate(BOX, f".arw[data-k='{k}'] .hd")
-                assert page.evaluate(HIT, dot[:2]) == "dot", (z, k, dot)
+            # the note's dot in the card's row, on top (far out the cards are too small for marks: none)
+            for k in ("E|p", "F|hf", "G|p") if z == 1 else ():
+                n, t = k.split("|"); dot = page.evaluate(BOX, f"[data-id='{t}'] > .mk-note i[data-nd='{n}']")
+                assert page.evaluate("([x, y]) => document.elementFromPoint(x, y).dataset.nd", dot[:2]) == n, (z, k, dot)
         page.evaluate("() => { cam = { x: -200, y: -60, z: 1 }; render(); }"); page.wait_for_timeout(200)
         # at 100 %: the dot's colour on the picture and a click on it selects its note
-        dot = page.evaluate(BOX, ".arw[data-k='E|p'] .hd")
+        dot = page.evaluate(BOX, "[data-id='p'] > .mk-note i[data-nd='E']")
         assert close(pixel(page, dot[:2]), rgb(page.evaluate(COL, "E|p"))), pixel(page, dot[:2])
         page.mouse.move(dot[0], dot[1]); page.mouse.down(); page.mouse.up()
         assert page.evaluate("() => [...sel]") == ["E"]

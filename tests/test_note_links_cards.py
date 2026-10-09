@@ -26,7 +26,7 @@ from test_canvas_pages import free_port, png
 
 playwright = pytest.importorskip("playwright.sync_api")
 ROOT = Path(__file__).resolve().parents[1]
-PLUGINS = {"frames": "hyimg-frames", "3d": "hyimg-3d-studio", "dev": "hyimg-dev-studio"}
+PLUGINS = {"frames": "hyimg-image-studio", "3d": "hyimg-3d-studio", "dev": "hyimg-dev-studio"}
 PAGE = "<!doctype html><html><head><title>Site</title></head><body><h1>A page</h1></body></html>"
 
 

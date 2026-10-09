@@ -140,7 +140,7 @@ def test_bell_lists_every_boards_news_and_opens_the_place():
         assert page.locator(f"{a} .nt.new").count() == 1 and page.locator(f"{a} .nt.new b").inner_text() == "Put 24 renderings on Renderings"
         assert page.get_attribute(f"{a} .nt .pv img", "src") == "http://127.0.0.1:4999/thumb?p=r%2Fa.png&s=320"   # from its board's server
         assert page.locator("#ntf .hb-b[data-hb-board=d] .nt b").all_inner_texts() == ["Gemini put 2 images"]
-        assert page.locator("#ntf .hb-b[data-hb-board=b] .nt b").all_inner_texts() == ["3 comments on Main"]   # stopped: its news
+        assert page.locator("#ntf .hb-b[data-hb-board=b] .nt b").all_inner_texts() == ["3 annotations on Main"]   # stopped: its news
         assert {"action": "bellRead", "read": {"a": ["n1"]}} in sent
         shot(page, "bell-rows")
         shot(page, "bell-panel", "#ntf")

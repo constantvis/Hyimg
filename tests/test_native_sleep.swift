@@ -60,6 +60,30 @@ import Foundation
         require(SwitchOrder.firstPick(count: 4, step: 1) == 1 && SwitchOrder.firstPick(count: 4, step: -1) == 3, "⌃Tab starts on the next, ⌃⇧Tab on the last")
         require(SwitchOrder.firstPick(count: 1, step: 1) == 0, "one card: it")
         require(SwitchOrder.move(3, by: 1, count: 4) == 0 && SwitchOrder.move(0, by: -1, count: 4) == 3, "the cards go round")
+        // where releasing ⌃ goes after `tabs` Tabs: Home on top (onTop) with the board chosen (chosen, nil on Home itself), as Switcher.swift
+        // cardIDs and switcherClose do (owner 2026-10-09: «почему-то не всегда переключается на Home screen, особенно если мы открыли только
+        // одну вкладку. Я быстро переключаюсь назад — он меня не переключает»)
+        func release(onTop: Bool, chosen: UUID?, open: [UUID], tabs: Int = 1) -> String? {
+            let home = SwitchOrder.homeFront(onTop: onTop, leavingFor: chosen)
+            let ids = SwitchOrder.deck(homeFront: home, front: chosen, open: open, lastFront: last)
+            var pick = SwitchOrder.firstPick(count: ids.count, step: 1)
+            for _ in 1..<max(tabs, 1) { pick = SwitchOrder.move(pick, by: 1, count: ids.count) }
+            return SwitchOrder.target(ids, pick: pick)
+        }
+        let A = a.uuidString, B = b.uuidString
+        require(SwitchOrder.homeFront(onTop: true, leavingFor: nil) && !SwitchOrder.homeFront(onTop: false, leavingFor: nil), "Home on top, no board chosen: Home in front")
+        require(!SwitchOrder.homeFront(onTop: true, leavingFor: a), "Home on top leaving for a board: that board in front")
+        // one board open: board → Home → board → Home, each a quick ⌃Tab
+        require(release(onTop: false, chosen: a, open: [a]) == "home", "one board, in front: a quick ⌃Tab goes Home")
+        require(release(onTop: true, chosen: nil, open: [a]) == A, "one board, Home: a quick ⌃Tab goes to the board")
+        require(release(onTop: true, chosen: a, open: [a]) == "home", "one board opening from Home: a quick ⌃Tab goes back Home, not to the board again")
+        require(release(onTop: true, chosen: a, open: [a], tabs: 2) == nil, "one board opening from Home: round to it, it stays")
+        // two boards: Home picked while a board opens from Home
+        require(SwitchOrder.deck(homeFront: false, front: a, open: [a, b], lastFront: last) == [A, B, "home"], "a board opening from Home: first, Home last")
+        require(release(onTop: true, chosen: a, open: [a, b], tabs: 2) == "home", "two boards opening from Home: Tab to Home and release, Home")
+        require(release(onTop: true, chosen: a, open: [a, b]) == B, "two boards opening from Home: a quick ⌃Tab goes to the other board")
+        require(release(onTop: false, chosen: a, open: [a, b], tabs: 2) == "home", "two boards, one in front: Tab to Home and release, Home")
+        require(SwitchOrder.target(["home", A], pick: 0) == nil && SwitchOrder.target([A], pick: 3) == nil, "the card in front or none: nowhere")
         // the switched-to board's wait for its screen (Switcher.swift): only the latest wait's answer brings it in, once. ⌃Tab to a board,
         // Esc while it waits, ⌃Tab to it again: the first wait's answer or its cap brought it in before the second wait was over
         var w = SwitchWait()

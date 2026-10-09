@@ -98,11 +98,11 @@ test("a page dictionary never gives a word another Russian than the shared one",
 const asked = f => [...new Set([...src(f).matchAll(/\b[tT]\(\s*"((?:[^"\\]|\\.)*)"/g)].map(m => JSON.parse('"' + m[1] + '"')))];
 
 test("every key the shared modules ask for has its Russian in lang-common.js", () => {
-  // menu.js is being edited by another session right now; modes.js, notelink.js, annotate.js and comments.js live on the board only (their words
+  // menu.js is being edited by another session right now; modes.js, notelink.js, anncore.js, annotate.js and comments.js live on the board only (their words
   // are in lang-board.js); homebell.js is Home's own (lang-home.js); cardfav.js, the ♥ on HTML cards, is the board's too, and so are textdoc.js
   // and connectors.js (the arrows between anything)
-  const skip = new Set(["menu.js", "modes.js", "notelink.js", "annotate.js", "comments.js", "grid.js", "i18n.js", "homebell.js", "cardfav.js", "textdoc.js",
-    "connectors.js"]);
+  const skip = new Set(["menu.js", "modes.js", "notelink.js", "anncore.js", "annotate.js", "comments.js", "grid.js", "i18n.js", "homebell.js", "cardfav.js", "textdoc.js",
+    "connectors.js", "arrange.js"]);
   const common = dict["lang-common.js"].ru, missing = [];
   for (const f of fs.readdirSync(UI).filter(f => f.endsWith(".js") && !f.startsWith("lang-") && !skip.has(f)))
     for (const k of asked(f)) if (!(k in common)) missing.push(`${f}: «${k}»`);
@@ -117,6 +117,16 @@ test("Home's news and bell (homebell.js, Home only) have their words in Home's d
 test("Arrange's grids (grid.js) have their words in the board's dictionary", () => {
   const board = dict["lang-board.js"].ru;
   for (const k of asked("grid.js")) assert.ok(k in board, `grid.js: «${k}»`);
+});
+
+test("Arrange › (arrange.js: tidy, grid and table, the layout patterns) has its words in the board's dictionary", () => {
+  const board = dict["lang-board.js"].ru;
+  for (const k of asked("arrange.js")) assert.ok(k in board, `arrange.js: «${k}»`);
+});
+
+test("Annotations (anncore.js, comments.js, the drawing tools in annotate.js) have their words in the board's dictionary", () => {
+  const board = dict["lang-board.js"].ru, common = dict["lang-common.js"].ru;
+  for (const f of ["anncore.js", "comments.js", "annotate.js"]) for (const k of asked(f)) assert.ok(k in board || k in common, `${f}: «${k}»`);
 });
 
 test("the ♥ on HTML cards (cardfav.js) has its words in the board's dictionary", () => {

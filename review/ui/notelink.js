@@ -161,10 +161,15 @@
     root.appendChild(s);
   }
   // ---- the note dots on a thing (owner 2026-10-08: «each video shows only ONE blue dot» under two notes): one dot per note that links
-  // it, in that note's colour, a row overlapping like avatars (each next one 60 % of a dot further, a ring of the board's colour
-  // between), in the order the notes were made, so the newest is on top at the right; 4 at most and «+N». Hover: that note is outlined,
-  // a click selects it. A reply's dot only on what it links itself, not on the things of the note it answers.
-  const MAXD = 4, STEP = .6;
+  // it, in that note's colour, in the order the notes were made, left to right; 3 at most, then «+N». Hover: that note is outlined, a
+  // click selects it. A reply's dot only on what it links itself, not on the things of the note it answers.
+  // One kind of dot (owner 2026-10-09, an HTML card with a big blue dot and a small yellow one over each other in its corner: «что за
+  // бардак с точками? ... Почему тут синяя большая, желтая маленькая»): a note whose arrow ends at the thing has its dot in this row too
+  // (the arrow's own end dot, arrowSvg a69dc0b, had its own size and place on the arrows' layer and covered the row's first dot), and the
+  // dots no longer overlap like avatars: side by side, the marks' 3.5 px apart (canvas.html MK.gap), each with the same dark ring.
+  const MAXD = 3, GAP = 3.5;
+  // the row's width in px on screen for n notes (a number, or true for one) with dots d px across: the marks' law counts it (mkFit)
+  const rowW = (n, d) => { const k = Math.min(+n || 0, MAXD + 1); return k ? k * (d + GAP) - GAP : 0; };
   // one pass over the notes: NL thing -> the colour for its old single-dot uses, HL the selected note's things, ND thing -> [note ids]
   function marks(board, sel, near, linksOf, noteCol) {
     const NL = new Map(), HL = new Map(), ND = new Map();
@@ -174,8 +179,7 @@
         if (on) HL.set(pid, c);
         if (v.size === 1 && v.has("reply")) return;
         if (!NL.has(pid) || on) NL.set(pid, c);
-        if ((nn.to || []).includes(pid)) return;   // an arrow straight to it: its dot is the arrow's end (arrowSvg), not one more in the row
-        (ND.get(pid) || ND.set(pid, []).get(pid)).push(nid);
+        if (caught(board.items[pid])) (ND.get(pid) || ND.set(pid, []).get(pid)).push(nid);   // a heading or a timeline has no dots
       });
     }
     return { NL, HL, ND };
@@ -185,27 +189,40 @@
     let s = el.querySelector(":scope > .mk-note");
     if (!s) { s = document.createElement("span"); s.className = "mk mk-tl mk-note"; el.appendChild(s); }
     const L = nids || [], key = L.map(n => n + noteCol(board.items[n])[0]).join();
-    if (s._k === key) return; s._k = key;
+    el._ndn = Math.min(L.length, MAXD + 1); if (s._k === key) return; s._k = key;   // its slots, for the marks' law
     const C = L.length > MAXD ? L.slice(0, MAXD) : L, more = L.length - C.length;
     s.innerHTML = C.map((n, k) => `<i data-nd="${n}" style="--c:${noteCol(board.items[n])[0]};--k:${k}" title="${escH(words(board.items[n].text, 8))}"></i>`).join("")
       + (more ? `<i class="more" data-nd="${L[MAXD]}" style="--k:${MAXD}" title="${escH(T("{n} more notes", { n: more }))}">+${more}</i>` : "");
   }
   let hotId = null;   // the note whose dot is under the pointer: outlined as an arrow's target is
+  // the dot of a note whose arrow ends at this thing, under the pointer: that arrow's × right under the dot, touching it (beside it, it
+  // covered the next dot of the row), and the line 3 px (.dh); the × stays while the pointer is on it. arrowSvg leaves it at the end
+  let endOn = null;
+  function endX(d, t) {
+    if (endOn && endOn.isConnected && endOn.contains(t) && t.closest(".del.e")) return;
+    const card = d && d.closest(":is(.it, .plg)[data-id]"), k = card && d.dataset.nd + "|" + card.dataset.id;
+    const g = k && [...document.querySelectorAll("#links .arw.ad")].find(a => a.dataset.k === k) || null;
+    if (g !== endOn) { if (endOn) endOn.classList.remove("dh"); endOn = g; }
+    const x = g && g.querySelector(".del.e"); if (!x || typeof toWorld !== "function") return;
+    const r = d.getBoundingClientRect(), c = toWorld(r.x + r.width / 2, r.y + r.height / 2), e = toWorld(r.right, r.y + r.height / 2), f = v => Math.round(v * 100) / 100;
+    x.setAttribute("transform", `translate(${f(c.x)} ${f(c.y)}) rotate(-90)`); x.style.setProperty("--th", -90);   // .xo: down, upright
+    x.style.setProperty("--dr", f(e.x - c.x) + "px"); g.classList.add("dh");
+  }
   document.addEventListener("pointerover", e => {
-    const d = e.target.closest && e.target.closest("[data-nd]"), id = d ? d.dataset.nd : null; if (id === hotId) return;
+    const d = e.target.closest && e.target.closest("[data-nd]"), id = d ? d.dataset.nd : null; if (e.target.closest) endX(d, e.target); if (id === hotId) return;
     const o = hotId && typeof EL !== "undefined" && EL.get(hotId); if (o) o.classList.remove("ndhot");
     hotId = id; const el = id && typeof EL !== "undefined" && EL.get(id); if (el) el.classList.add("ndhot");
   });
-  // the far view's stack on its canvas, as the elements draw it: (x, y) the first dot's centre and r its radius in screen px
+  // the far view's row on its canvas, as the elements draw it: (x, y) the first dot's centre and r its radius in screen px
   let paper = { t: 0, c: "#111113" };
   function lodDots(g, x, y, r, ring, dpr, cols) {
     if (performance.now() - paper.t > 1000) paper = { t: performance.now(), c: getComputedStyle($("#stage") || document.documentElement).getPropertyValue("--board").trim() || paper.c };
     const C = cols.slice(0, MAXD), more = cols.length - C.length;
-    const dot = (k, fill, ringCol) => { const cx = (x + k * r * 2 * STEP) * dpr; g.beginPath(); g.arc(cx, y * dpr, (r + ring) * dpr, 0, 7); g.fillStyle = ringCol; g.fill();
+    const dot = (k, fill, ringCol) => { const cx = (x + k * (r * 2 + GAP)) * dpr; g.beginPath(); g.arc(cx, y * dpr, (r + ring) * dpr, 0, 7); g.fillStyle = ringCol; g.fill();
       g.beginPath(); g.arc(cx, y * dpr, r * dpr, 0, 7); g.fillStyle = fill; g.fill(); return cx; };
-    C.forEach((c, k) => dot(k, c, k ? paper.c : "rgba(0,0,0,.6)"));
+    C.forEach((c, k) => dot(k, c, "rgba(0,0,0,.6)"));
     if (!more) return;
-    const cx = dot(MAXD, paper.c, paper.c); g.fillStyle = "#a1a1aa"; g.font = `600 ${Math.round(r * 1.1 * dpr)}px system-ui`;
+    const cx = dot(MAXD, paper.c, "rgba(0,0,0,.6)"); g.fillStyle = "#a1a1aa"; g.font = `600 ${Math.round(r * 1.1 * dpr)}px system-ui`;
     g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("+" + more, cx, y * dpr);
   }
   // ---- the arrows (owner 2026-10-08 on Concepts/html/notes-glass/a7-states.html «Arrow states»: «вот это очень круто, и по наведению
@@ -215,20 +232,25 @@
   // riding along the line with it, or beside the dot when the dot is hovered; the × removes the link (one undo step).
   // Where it starts and ends is board geometry only (owner 2026-10-08: «Если мы не двигаем элементы, линия не двигается, остается такой,
   // какая она, в зуме и в зум-ауте»): the end no longer jumped from the card's dot to its side when the card got too small for its
-  // marks. Its sizes on screen (line, head, dot, ×) follow --z in CSS (canvas.html), so the arrows keep up with a zoom without a redraw
-  // («оно пересчитывается, только когда остановили зум»), and far out the head and the dot shrink with the thing they end on instead of
-  // covering it («стрелочки какие-то огромные»): --hmax and --rmax, from the thing's size.
-  // anchor: the end of the k-th arrow (in board order) on thing box r: inside its top left corner, the next ones along its top
+  // marks. Its sizes on screen (line, head, ×) follow --z in CSS (ui/notelink.css), so the arrows keep up with a zoom without a redraw
+  // («оно пересчитывается, только когда остановили зум»), and far out the head shrinks with the thing it ends on instead of covering
+  // it («стрелочки какие-то огромные»): --hmax, from the thing's size.
+  // The dot it ends at is the note's dot in the thing's row (paintDots, 2026-10-09), drawn by the marks' law in px on screen; the line
+  // ends under the thing (underCut), so where exactly inside the corner it ends is not seen: its anchor is board geometry towards the
+  // corner, in the row's order, and only the line's way in at the thing's edge shows.
+  // anchor: the end of the arrow of the k-th dot on thing box r: inside its top left corner, the next ones along its top
   const anchor = (r, k) => { const m = Math.min(r.w, r.h), c = Math.min(60, Math.max(6, m * .085)), g = Math.min(60, Math.max(10, m * .12));
     return { x: r.x + c + k * g, y: r.y + c }; };
-  // the arrows' ends of a pass: note id + "|" + thing id -> its anchor, for every arrow that ends at a dot
-  function anchors(board, rectOf) {
+  // the arrows' ends of a pass: note id + "|" + thing id -> its anchor, for every arrow that ends at a dot. dots: render's thing -> its
+  // row's notes (canvas.html NOTEDOT), the slot of the note's dot there
+  function anchors(board, rectOf, dots = typeof NOTEDOT !== "undefined" ? NOTEDOT : null) {
     const out = new Map(), on = new Map();
     for (const nid in board.items) {
       const n = board.items[nid]; if (!isNote(n)) continue;
       for (const t of n.to || []) {
         if (t === nid || !caught(board.items[t])) continue; const r = rectOf(t); if (!r) continue;
-        const k = on.get(t) || 0; on.set(t, k + 1); out.set(nid + "|" + t, anchor(r, Math.min(k, MAXD)));
+        const row = dots && dots.get(t), i = row ? row.indexOf(nid) : -1, k = i >= 0 ? i : on.get(t) || 0; on.set(t, k + 1);
+        out.set(nid + "|" + t, anchor(r, Math.min(k, MAXD)));
       }
     }
     let ix = null; out.near = r => (ix || (ix = index(board, rectOf, it => caught(it) || isNote(it))))(r);   // for the lines under them (arrowSvg)
@@ -318,16 +340,16 @@
       return `<g class="del ${cls}" data-arrowdel="${o.key}" transform="translate(${pt(q)})${r ? ` rotate(${rot})` : ""}" style="color:${o.col}${r ? `;--th:${rot}` : ""}">`
         + `${r ? `<g class="xo">` : ""}<g class="xs"><title>${escH(T("Remove arrow"))}</title><circle r="${f(DR / XG)}" stroke-width="${f(2 / XG)}"/>`
         + `<path transform="translate(-12 -12)" d="${hyIconPath("close")}" stroke-width="${f(1.9 / XG)}" stroke-linecap="round"/></g>${r ? "</g>" : ""}</g>`; };
-    // the caps far out: a dot at most 4.5 % of the thing's smaller side across its radius, a head at most 30 % of it long
+    // the caps far out: a head at most 30 % of the thing's smaller side long (--rmax: the end ×'s place until endX gives it the dot's)
     const cut = underCut(o, P, f);
     let h = `<g class="arw${o.pick ? " pick" : ""}${dot ? " ad" : ""}" data-k="${o.key}" style="--rmax:${f(m * .045)}px;--hmax:${f(m * .3 / HL)}">`
       + (cut ? `<g${cut}>` : "") + `<path class="hit" data-arrow="${o.key}" d="${d}" fill="none" stroke="transparent"/>`
       + `<path class="ln" d="${d}" fill="none" stroke="${o.col}" stroke-opacity="${op}" stroke-linecap="${dot ? "round" : "butt"}"/>` + (cut ? "</g>" : "");
     if (!dot) h += `<g transform="translate(${pt(b)}) rotate(${deg(u)})"><polygon class="hh" points="0 0 ${-HL} ${HW} ${-HL} ${-HW}" fill="${o.col}" fill-opacity="${op}"/></g>`;
     h += x("m", bz(P, .5));
-    // the dot is the note's dot on the thing: hover outlines the note, a click selects it, and its × sits beside it, back along the line
-    if (dot) h += `<circle class="hit hd" data-nd="${o.key.split("|")[0]}" cx="${f(b.x)}" cy="${f(b.y)}" fill="${o.col}"/>`
-      + x("e", b, deg({ x: P[2].x - b.x, y: P[2].y - b.y }));
+    // its dot is the note's dot in the thing's row (paintDots): hover outlines the note and shows this × under it (endX), a click selects
+    // the note; the × waits here
+    if (dot) h += x("e", b, deg({ x: P[2].x - b.x, y: P[2].y - b.y }));
     return h + "</g>";
   }
   // hy-allow-end
@@ -345,5 +367,5 @@
     xm.setAttribute("transform", `translate(${Math.round(q.x * 100) / 100} ${Math.round(q.y * 100) / 100})`);
   });
   window.hyNoteLink = { target, caught, kind, index, links, what, meta, label, dropEl, cardNotes, WORD,
-    replyOf, replies, circle, reply, chain, chainSvg, replyInfo, marks, paintDots, lodDots, placeReply, anchors, arrowSvg, underCut, side, bz, holds };   // the last four: ui/connectors.js
+    replyOf, replies, circle, reply, chain, chainSvg, replyInfo, marks, paintDots, lodDots, rowW, placeReply, anchors, arrowSvg, underCut, side, bz, holds };   // the last four: ui/connectors.js
 })();

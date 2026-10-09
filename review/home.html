@@ -115,7 +115,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .prog li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prog li::before { content: "›"; color: #a1a1aa; width: 8px; flex: none; }
 .prog li.ok::before { content: "✓"; color: #4ade80; } .prog li.bad { color: #ff8a8a; } .prog li.bad::before { content: "×"; color: #ff8a8a; }
-.prog li.now::after { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #a1a1aa; border-right-color: transparent; animation: spin .7s linear infinite; }
+.prog li.now::before { content: ""; flex: none; box-sizing: border-box; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; }
 /* leaving for a board (owner 2026-10-04: «everything on Home scales 1 > 1.5 and fades out, then the content comes in», then «not so
    fast, there is time»): Home grows from the pressed board and fades, the paper stays; coming back, Home settles in from a little
    larger. Each is one layer moving on the GPU: the glass of the panels loses its blur while it moves (behind it is plain paper, so the
@@ -187,7 +187,7 @@ body.leave #wl { transition: background-color .3s ease, border-color .35s ease .
 #load li::before { content: "›"; color: var(--muted); width: 10px; flex: none; }
 #load li.ok { opacity: .5; } #load li.ok::before { content: "✓"; color: #22c55e; } #load li.bad { color: #ef4444; } #load li.bad::before { content: "×"; color: #ef4444; }
 #load li.now { opacity: 1; color: var(--ink); }
-#load li.now::after { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); border-right-color: transparent; animation: spin .7s linear infinite; }
+#load li.now::before { content: ""; flex: none; box-sizing: border-box; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); border-right-color: transparent; animation: spin .7s linear infinite; }
 @keyframes stepIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .prog li { animation: none; } }
@@ -610,8 +610,8 @@ window.hyimgOpen = (id, name) => {
 // the canvas is drawn: the steps finish (all shown, Home fully gone), fade, and the app puts the canvas in front, which then comes in;
 // only the steps fade, the paper and the plate are the canvas's own, so the swap does not show
 window.hyimgHandoff = id => {
-  if (!LOADING || LOADING.id !== id) return false;
-  const go = () => {
+  if (!LOADING || LOADING.id !== id) return false; const L0 = LOADING;   // Home back or another board meanwhile: this wait ends
+  const go = () => { if (LOADING !== L0) return;
     const st = PROG.get(id), wait = Math.max(0, LEAVE_MS - (performance.now() - LOADING.t));
     if ((st && (st.queue.length || st.t)) || wait > 0) { setTimeout(go, Math.max(60, wait)); return; }
     // no fade here: the board's page carries the list on as it stands («it fades, then appears again», owner 2026-10-04)

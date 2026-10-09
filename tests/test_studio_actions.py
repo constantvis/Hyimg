@@ -3,7 +3,8 @@
 со стрелочкой, чтобы выбрать браузер»): ui/hy/actions.js and ui/hy/openin.js on a temporary board, no plugin. The element stands in the top
 row just left of the round buttons, the row's gap apart, at the row's line and height; the secondary actions in the order given, the one
 primary last, filled with the colour of where it stands and white words, its key in the tooltip and as the key cap. «Open in <Browser>»
-without the Mac app is «Open in browser» with no icon and no chevron and opens a new tab; with the app (a stand-in for native/Browsers.swift
+without the Mac app is «Open in browser» with no icon and opens a new tab, a split button all the same: the chevron behind its hairline, its
+menu the one row «Default browser» (owner 2026-10-09: «Ты не добавил стрелочки у этой кнопки, которая имеет разделитель вертикальный»); with the app (a stand-in for native/Browsers.swift
 through hyBrowsers.via) it names the default browser with its icon, its chevron lists the browsers with their icons and the default marked,
 a choice opens the page there and becomes the main part's browser, Esc closes the menu and nothing else. Chromium, dark."""
 import json, os, socket, subprocess, sys, time, urllib.request, uuid
@@ -31,6 +32,8 @@ ACTS = [{"id": "done", "label": "Done", "tip": "Done", "key": "Esc", "primary": 
 BOX = "(s) => { const r = document.querySelector(s).getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.height)]; }"
 GO = """() => { const g = document.querySelector('hy-open-in .oi-go'), i = g.querySelector('img');
   return [g.textContent, i ? i.getAttribute('src') : null, document.querySelector('hy-open-in .oi-more').hidden]; }"""
+SPLIT = """() => { const e = document.querySelector('hy-open-in'), m = e.querySelector('.oi-more');
+  return [e.hasAttribute('split'), Math.round(m.getBoundingClientRect().width), getComputedStyle(m).borderLeftWidth]; }"""
 ROWS = """() => [...document.querySelectorAll('.hy-oi-menu [data-b]')].map(b => { const i = b.querySelector('img');
   return [b.dataset.b, b.querySelector('.oi-n').textContent, i ? i.getAttribute('src') : null, b.getAttribute('aria-checked'), (b.querySelector('.oi-def') || {}).textContent || '']; })"""
 
@@ -102,13 +105,22 @@ def test_open_in_browser_without_the_app(srv):
     with sync_playwright() as p:
         br, ctx, page, errors = board(p, srv)
         page.evaluate(MOUNT, ACTS); page.wait_for_timeout(300)
-        # no app to ask: the plain words, no icon, no chevron; its tooltip the studio's
-        assert page.evaluate(GO) == ["Open in browser", None, True]
+        # no app to ask: the plain words, no icon; its tooltip the studio's; the chevron there all the same, 30 px behind a hairline
+        assert page.evaluate(GO) == ["Open in browser", None, False]
         assert page.evaluate("() => document.querySelector('hy-open-in .oi-go').title") == "Open the page alone in a new tab"
+        assert page.evaluate(SPLIT) == [True, 30, "1px"], page.evaluate(SPLIT)
         with ctx.expect_page() as tab:
             page.click("hy-open-in .oi-go")
         new = tab.value; new.wait_for_load_state()
         assert new.url == f"http://127.0.0.1:{srv}/lib/a/page.html", new.url
+        new.close()
+        # its menu: the default browser alone, checked; choosing it opens a new tab too
+        page.click("hy-open-in .oi-more"); page.wait_for_selector(".hy-oi-menu")
+        assert page.evaluate(ROWS) == [["", "Default browser", None, "true", ""]], page.evaluate(ROWS)
+        with ctx.expect_page() as tab:
+            page.click(".hy-oi-menu [data-b]")
+        tab.value.wait_for_load_state()
+        assert tab.value.url == f"http://127.0.0.1:{srv}/lib/a/page.html" and not page.evaluate("() => !!document.querySelector('.hy-oi-menu')")
         assert not errors, errors
         br.close()
 
@@ -119,7 +131,7 @@ def test_open_in_the_browsers_of_the_app(srv):
         page.evaluate(STUB, LIST); page.evaluate(MOUNT, ACTS)
         page.wait_for_function("() => document.querySelector('hy-open-in .oi-go').textContent === 'Open in Safari'", timeout=5000)
         # the system's default with its own icon; the chevron is there; the page asked the app for its browsers
-        assert page.evaluate(GO) == ["Open in Safari", ICON_S, False]
+        assert page.evaluate(GO) == ["Open in Safari", ICON_S, False] and page.evaluate(SPLIT) == [True, 30, "1px"]
         assert {"action": "browsers", "op": "list"} in page.evaluate("SENT")
         # the menu: every browser with its icon, the default marked, the main part's one checked; a bad icon is dropped, its row stays
         page.click("hy-open-in .oi-more"); page.wait_for_selector(".hy-oi-menu")

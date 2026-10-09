@@ -32,7 +32,7 @@ HOME = (ROOT / "review/home.html").as_uri()
 FFMPEG = shutil.which("ffmpeg")
 QUICK = os.environ.get("HY_AUDIT_QUICK") == "1"
 LOOKS = [("dark", "round", 1600)] if QUICK else [(t, s, w) for t in ("dark", "light") for s in ("round", "pro") for w in (1000, 1600)]
-PLUGINS = {"frames": "hyimg-frames", "3d": "hyimg-3d-studio", "dev": "hyimg-dev-studio"}
+PLUGINS = {"frames": "hyimg-image-studio", "3d": "hyimg-3d-studio", "dev": "hyimg-dev-studio"}
 FOUND = defaultdict(set)   # (page, check, key) -> the looks it was seen in
 MSG = {}
 W = 240
@@ -342,7 +342,7 @@ def editor(world, theme, shape, width, card, mode, ready):
 
 @pytest.mark.parametrize("theme,shape,width", LOOKS)
 def test_image_studio(world, theme, shape, width):
-    if not (REPOS / "hyimg-frames/manifest.json").is_file(): pytest.skip("no hyimg-frames beside hyimg")
+    if not (REPOS / "hyimg-image-studio/manifest.json").is_file(): pytest.skip("no hyimg-image-studio beside hyimg")
     page, frame = editor(world, theme, shape, width, "p2", "image", "() => window.__frames && __frames.ED && __frames.ED.win")
     ed = next((f for f in page.frames if "/editor/" in f.url or "plugin/frames" in f.url and f is not frame), None)
     found = audit(frame)

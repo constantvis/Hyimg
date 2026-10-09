@@ -56,14 +56,18 @@
 #dock #modes > button[aria-pressed=true] { color: var(--hy-mode-c, var(--sel)) !important; }
 /* the open Studio's colour on the whole window (see color above); :not(#_) outranks the theme's :root[data-theme] of ui/tokens.css */
 :root[data-studio]:not(#_) { --sel: var(--hy-studio); --hy-sel: var(--hy-studio); --ht-info: var(--hy-studio); }
+/* in any Studio the top row's right end is the Studio's own: its session actions (ui/hy/actions.js) stand at the window's edge, the
+   board's round buttons and the panels they open are away until the board is back (owner 2026-10-09 on round 14's 3D Studio: «В режиме
+   студии мы вот эти все элементы убираем»); <html data-in-studio> is set below for every Studio, a colourless plugin's too */
+:root[data-in-studio] :is(#bntf, #bkeys, #bhist, #bset, #ntf, #hist, #keys, #sets.sw-side) { display: none !important; }
 #dock #modes > button[aria-disabled=true] { opacity: .38; cursor: default; }
 #dock #modes > button[aria-disabled=true]:hover { color: var(--sub) !important; }
 #dock #modes > button svg { flex: none; display: block; }
 #dock #modes.few > button[aria-disabled=true] { display: none !important; }
 :root[data-shape=pro] #dock #modes { border-radius: var(--hy-row-r, 8px) !important; }
 :root[data-shape=pro] #dock #modes > :is(.st, button) { border-radius: calc(var(--hy-row-r, 8px) - var(--hy-seg-pad, 3px)) !important; }   /* concentric with the track */
-/* the tooltip: the image studio's (hyimg-frames editor #tip), a small plate over the segment; the name, and what enables a disabled one.
-   On the menus' layer, over an editor's panels (the 3D studio's are 60, 61); the frame editor lifts it with the dock (hyimg-frames) */
+/* the tooltip: the image studio's (hyimg-image-studio editor #tip), a small plate over the segment; the name, and what enables a disabled one.
+   On the menus' layer, over an editor's panels (the 3D studio's are 60, 61); the frame editor lifts it with the dock (hyimg-image-studio) */
 #modetip { position: fixed; left: 0; top: 0; z-index: 79; display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; white-space: nowrap;
   border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--panel) 86%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   box-shadow: var(--plate-sh, 0 8px 24px rgba(0,0,0,.35)); color: var(--ink); font: 500 12px var(--sans); pointer-events: none; opacity: 0;
@@ -119,6 +123,7 @@
     // the open Studio's colour on <html> (data-studio, --hy-studio), gone on the board or in a Studio that brings none
     function paint(open) {
       const d = open !== "board" && M.get(open), c = d && d.color ? String(d.color) : "", r = document.documentElement;
+      if (r.hasAttribute("data-in-studio") !== !!d) r.toggleAttribute("data-in-studio", !!d);   // any Studio: the row's right end is its own
       if ((r.dataset.studio || "") === (c ? open : "") && r.style.getPropertyValue("--hy-studio") === c) return;
       if (c) { r.dataset.studio = open; r.style.setProperty("--hy-studio", c); } else { delete r.dataset.studio; r.style.removeProperty("--hy-studio"); }
     }

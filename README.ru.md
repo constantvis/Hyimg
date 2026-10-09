@@ -22,7 +22,7 @@ Image Studio открывается на месте карточки, доска
 
 Hyimg работает и без них, но с ними доска умеет больше. Каждый плагин живет в своем репозитории:
 
-- **Фреймы**, https://github.com/constantvis/hyimg-frames: фрейм картинок и Image Studio прямо на доске (слои, маски, кисть, Raw Editor, заливка с учетом содержимого) и HTML-фрейм, живая страница карточкой. Маска объекта через macOS Vision, он встроен в систему. Для заливки нужна модель LaMa (около 208 МБ, `~/Library/Caches/Hyimg/models/lama`), ее скачивает только `--lama`.
+- **Фреймы**, https://github.com/constantvis/hyimg-image-studio: фрейм картинок и Image Studio прямо на доске (слои, маски, кисть, Raw Editor, заливка с учетом содержимого) и HTML-фрейм, живая страница карточкой. Маска объекта через macOS Vision, он встроен в систему. Для заливки нужна модель LaMa (около 208 МБ, `~/Library/Caches/Hyimg/models/lama`), ее скачивает только `--lama`.
 - **3D-объекты**, https://github.com/constantvis/hyimg-3d-studio: 3D-сцена карточкой на доске, 3D Studio на three.js, снимок в картинку. Для переноса сцены в Blender и обратно нужен Blender.
 - **Dev Studio**, https://github.com/constantvis/hyimg-dev-studio: HTML-файлы библиотеки карточками на доске и Dev Studio, где со страницей работаешь как с фреймом в Figma: дерево элементов, живая страница, инспектор, правки которого пишутся в сам `.html`-файл.
 

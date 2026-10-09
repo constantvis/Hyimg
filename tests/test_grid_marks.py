@@ -16,7 +16,7 @@ def test_a_drawing_rides_with_its_picture_through_a_grid_reflow_and_a_heading_ho
     servers, port = board(tmp_path, "en")
     try:
         with playwright.sync_playwright() as p:
-            browser, page, errors = open_board(p, port)
+            browser, page, errors = open_board(p, port, draw=True)   # the drawing tools, behind their flag (docs/LATER.md)
             page.evaluate("""() => { const before = HY.snap();
               board.items.t1 = { type: 'text', text: 'Light', x: 0, y: -160, w: 300, h: 60, fs: 48, size: 1 };
               hyGrid.make(board, ['i0', 'i1', 'i2'], 3, false, HY.uid); HY.commit(before, 'grid'); }""")

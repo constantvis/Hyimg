@@ -6,7 +6,7 @@
 //   hySplit(el, { start(e) -> ctx, move(dy, ctx, e), end(ctx), reset() })
 // el gets the class .hy-split (the look below); .off on it hides it and makes it inert (a folded neighbour). The pointer is captured, so
 // the drag goes on outside the line; while it runs the page has .hy-splitting (hosts turn their height transitions off with it).
-// Used by the frame editor (hyimg-frames editor/index.html #split) and the 3D editor's layer list (hyimg-3d-studio engine.js).
+// Used by the frame editor (hyimg-image-studio editor/index.html #split) and the 3D editor's layer list (hyimg-3d-studio engine.js).
 (() => {
   if (window.hySplit) return;
   const css = `

@@ -9,7 +9,7 @@
 // ⌥-drag copy too); ⌘D puts the copy right after its original; a member deleted or resized reflows the grid from its old top left. Cells are
 // "fit": a column is as wide as its widest member, a row as tall as its tallest, a member at its cell's top left. Every gesture is one undo
 // step (the grids ride in the board's snapshot). canvas.html calls: arranged (the three Arrange commands), settle (each commit), moving and
-// drop (a drag), dup (⌘D), draw (the handles), entry and act (the right click), merged (ui/merge.js).
+// drop (a drag), dup (⌘D), draw (the handles), entry and act (the right click, built by ui/arrange.js), merged (ui/merge.js).
 (() => {
   const GAP = 24, EASE = "cubic-bezier(.32,.72,0,1)";
   const items = b => b.items || {}, table = b => b.grids || {};
@@ -97,7 +97,7 @@
       const was = B && table(B)[gid], live = g.members.filter(m => items(b)[m]);
       const sized = B ? live.filter(m => { const p = rect(B, m), q = rect(b, m); return !p || Math.abs(p.w - q.w) > .01 || Math.abs(p.h - q.h) > .01; }) : [];
       const changed = live.length !== g.members.length || sized.length || (was && was.members.join("\n") !== g.members.join("\n"));
-      g.members = live; if (!changed || live.length < 2) continue;
+      g.members = live; if (!changed || live.length < 2 || (B && !was)) continue;   // a grid this edit made is laid out by what made it
       const all = sized.length === live.length && was && was.members.length === live.length;
       reflow(b, gid, B && !all ? origin(B, (was || g).members.filter(m => items(B)[m])) : null);
     }
@@ -203,34 +203,8 @@
     const c = P.slot, el = document.createElement("div"); el.className = "gridslot";
     Object.assign(el.style, { left: c.x + "px", top: c.y + "px", width: c.w + "px", height: c.h + "px" }); h.appendChild(el);
   }
-  // the right click's «Arrange ›»: the three commands and the grid's own two, grey with the reason when they cannot run
-  const arrOk = it => !!it && it.type !== "note" && it.type !== "text" && it.type !== "timeline" && (!it.type || it.w > 0);
-  function pick(ids) { return [...new Set(ids.flatMap(id => board.groups[id] ? board.groups[id].members : [id]))].filter(id => board.items[id]); }
-  function entry(ids) {
-    const all = pick(ids); if (!all.some(id => gridable(board.items[id]))) return null;
-    const two = all.filter(id => arrOk(board.items[id])).length >= 2 ? "" : T("Select two or more pictures or cards");
-    const two2 = placed(board, all).length >= 2 ? "" : T("Select two or more pictures or cards"), gs = [...new Set(all.map(id => of(board, id)).filter(Boolean))];
-    const it = (act, icon, label, keys, why) => hyMenuItem(`data-act="garr" data-how="${act}"`, icon, label, keys, why ? hyMenuOff(why) : "");
-    return Object.assign(["arrange", "tidyBlock", T("Arrange")], { sub: () => [it("grid", "tidyBlock", T("As a square block"), ["⌥", "A"], two),
-      it("row", "tidyRow", T("In a row"), ["⌥", "S"], two), it("smart", "tidy", T("Tidy"), ["⌥", "D"], two), `<div class="sep"></div>`,
-      it("make", "gridMake", T("Make grid"), null, two2), it("remove", "gridRemove", T("Remove grid"), null, gs.length ? "" : T("Not in a grid"))].join("") });
-  }
-  function act(b, ids) {
-    if (b.dataset.act !== "garr") return false;
-    const how = b.dataset.how, all = pick(ids);
-    if (how === "grid" || how === "row" || how === "smart") { sel = new Set(all); ({ grid: tidy, row: tidyRow, smart: smartTidy })[how](); return true; }
-    const before = HY.snap();
-    if (how === "make") {
-      const gid = make(board, all, null, false, HY.uid), g = gid && board.grids[gid];
-      if (g) HY.commit(before, T("Grid {c} × {r}", { c: Math.min(g.cols, g.members.length), r: g.rows }));
-    }
-    if (how === "remove") {
-      new Set(all.map(id => of(board, id)).filter(Boolean)).forEach(g => delete board.grids[g]);
-      if (!Object.keys(board.grids).length) delete board.grids;
-      HY.commit(before, T("Grid removed, everything stays where it is"));
-    }
-    return true;
-  }
+  // the right click's «Arrange ›» lives in ui/arrange.js (tidy, grid and table, the layout patterns); canvas.html asks here
+  const entry = ids => window.hyArrange ? hyArrange.entry(ids) : null, act = (b, ids) => !!window.hyArrange && hyArrange.act(b, ids);
   const css = document.createElement("style");
   css.textContent = `#handles .gridhint { position: absolute; box-sizing: border-box; pointer-events: none; border-radius: calc(6px / var(--z, 1));
   outline: calc(1px / var(--z, 1)) dashed color-mix(in srgb, var(--sel) 45%, transparent); outline-offset: calc(6px / var(--z, 1)); }
@@ -240,5 +214,5 @@
 #handles .gridslot { position: absolute; pointer-events: none; border-radius: calc(6px / var(--z, 1)); background: color-mix(in srgb, var(--sel) 14%, transparent);
   transition: left .18s ${EASE}, top .18s ${EASE}; }`;
   (document.head || document.documentElement).appendChild(css);
-  window.hyGrid = { rect, rowsOf, layout, reflow, make, leave, prune, merged, slot, heads, of, arranged, settle, dup, moving, drop, draw, entry, act };
+  window.hyGrid = { rect, rowsOf, layout, reflow, make, leave, prune, merged, slot, heads, of, gridable, placed, arranged, settle, dup, moving, drop, draw, entry, act };
 })();

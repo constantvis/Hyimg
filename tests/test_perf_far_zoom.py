@@ -25,7 +25,7 @@ from PIL import Image
 
 playwright = pytest.importorskip("playwright.sync_api")
 ROOT = Path(__file__).resolve().parents[1]
-FRAMES = ROOT.parent / "hyimg-frames"
+FRAMES = ROOT.parent / "hyimg-image-studio"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_canvas_pages import free_port  # noqa: E402
 

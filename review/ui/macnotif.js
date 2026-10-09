@@ -20,7 +20,7 @@
   const UP = n => !!(window.customElements && customElements.get(n)) || !!document.querySelector('script[type="module"][src$="hy/index.js"]');
   const ROWS = [
     ["mac.agent", "An agent placed something on a board"],
-    ["mac.comment", "A comment on a board"],
+    ["mac.comment", "An annotation on a board"],
     ["mac.reply", "A reply to me"],
     ["mac.mention", "I or my agent was @mentioned"],
     ["mac.note", "A reply to my note"],

@@ -1,8 +1,11 @@
-"""Annotations and comments on the board (owner 2026-10-07: «рисовать и добавлять комменты, как в Figma ... тегать участников»).
-A pen stroke drawn over a picture is anchored to it and moves with it; ⌘Z and ⇧⌘Z take it back and bring it again; the eraser; the
-eye hides them all. A comment pinned to a picture with an @mention of Claude, a reply, resolve; the bell names another person's
-comment that mentions you and his mention of your agent, never your own; hy.py lists the threads and answers in one; History has
-every step. Chromium, dark theme, English and Russian, temporary folders. HY_SHOTS=<folder> keeps screenshots."""
+"""Annotations on the board (owner 2026-10-07: «рисовать и добавлять комменты, как в Figma ... тегать участников»; 2026-10-09: «Режим
+аннотации ... я бы его спрятал ... сделай вместо комментариев Annotations: комментарии будут на букву»). By default the drawing tools
+are not loaded (ui/annotate.js is never requested), P draws nothing, a drawing already there still shows; C takes the Annotation tool
+without changing the dock, ⇧C crops; the interface says Annotation(s) / Аннотация(и). An annotation pinned to a picture with an
+@mention of Claude, a reply, resolve; the bell names another person's annotation that mentions you and his mention of your agent, never
+your own; hy.py lists the threads and answers in one; History has every step. Behind the flag cv.annDraw (docs/LATER.md) the drawing
+tools still work: a pen stroke anchored to its picture, ⌘Z and ⇧⌘Z, the eraser, the eye. Chromium, dark theme, English and Russian,
+temporary folders. HY_SHOTS=<folder> keeps screenshots."""
 import json
 import os
 import subprocess
@@ -47,15 +50,19 @@ def board(tmp_path, lang):
     return servers, port
 
 
-def open_board(p, port):
+def open_board(p, port, draw=False, asked=None):
+    """draw: the drawing tools behind their flag (docs/LATER.md); asked: a list that gets every URL the page requests"""
     try: browser = p.chromium.launch()
     except Exception as error: pytest.skip(f"no Chromium for Playwright: {error}")
     page = browser.new_page(viewport={"width": 1440, "height": 900}, color_scheme="dark")
     errors = []; page.on("pageerror", lambda e: errors.append(str(e)))
     url = f"http://127.0.0.1:{port}/canvas.html"
-    page.goto(url); page.evaluate("() => { localStorage.setItem('cv.nolib', '1'); localStorage.setItem('cv.lod', '0'); }"); page.goto(url)
-    page.wait_for_function("() => typeof BOARD !== 'undefined' && EL.get('i1') && window.hyAnnot && document.getElementById('bann') && window.hyPeople && hyPeople.me()",
-                           timeout=20000)
+    page.goto(url)
+    page.evaluate(f"() => {{ localStorage.setItem('cv.nolib', '1'); localStorage.setItem('cv.lod', '0'); {'localStorage.setItem(\'cv.annDraw\', \'1\');' if draw else ''} }}")
+    if asked is not None: page.on("request", lambda r: asked.append(r.url))
+    page.goto(url)
+    page.wait_for_function("() => typeof BOARD !== 'undefined' && EL.get('i1') && window.hyAnnot && document.getElementById('bann') && window.hyPeople && hyPeople.me()"
+                           + (" && hyAnnot.drawing" if draw else ""), timeout=20000)
     page.evaluate("() => { cam.x = -60; cam.y = -120; cam.z = 1; renderCam(); render(); }")
     return browser, page, errors
 
@@ -64,13 +71,81 @@ def box(page, sel):
     return page.evaluate(f"() => {{ const r = document.querySelector({json.dumps(sel)}).getBoundingClientRect(); return {{ x: r.x, y: r.y, w: r.width, h: r.height }}; }}")
 
 
+def post(port, path, body):
+    req = urllib.request.Request(f"http://127.0.0.1:{port}{path}", data=json.dumps(body).encode(), method="POST", headers={"Content-Type": "application/json"})
+    return json.load(urllib.request.urlopen(req, timeout=10))
+
+
 @pytest.mark.parametrize("lang", ["en", "ru"])
-def test_draw_on_a_picture_it_moves_with_it_undo_eraser_and_the_eye(tmp_path, lang):
+def test_by_default_no_drawing_tools_C_annotates_shift_C_crops(tmp_path, lang):
+    """owner 2026-10-09: the drawing tools hidden and not loaded (a drawing already on the board still shows, read only), C an annotation
+    at once with the dock as it is, ⇧C the crop, the words Annotation(s) / Аннотация(и)"""
+    servers, port = board(tmp_path, lang)
+    en = lang == "en"
+    try:
+        post(port, "/api/annotations", {"op": "put", "name": "main", "item": {"id": "aold00001", "kind": "rect", "color": "yellow", "w": 0.01,
+             "pts": [[0.1, 0.1], [0.9, 0.9]], "anchor": {"obj": "i1", "kind": "picture", "file": "a/1.png"}}})
+        with playwright.sync_playwright() as p:
+            asked = []
+            browser, page, errors = open_board(p, port, asked=asked)
+            page.wait_for_timeout(500)
+            assert not [u for u in asked if "annotate.js" in u], asked   # the drawing tools' code never loads
+            assert page.evaluate("() => hyAnnot.drawing") is False
+            page.wait_for_selector('#annsvg g[data-a="aold00001"] rect')   # the old drawing still shows
+            # the dock: one Annotation button, no drawing tool anywhere
+            dock = page.locator("#dock")
+            assert page.locator("#bann").get_attribute("title") == ("Annotation · C" if en else "Аннотация · C")
+            assert dock.locator("[data-tool=pen], [data-tool=rect], .ann-bar").count() == 0
+            before = dock.inner_html()
+            page.keyboard.press("p")   # P draws nothing
+            page.wait_for_timeout(200)
+            assert page.locator("#stage.annot").count() == 0 and dock.locator(".ann-bar").count() == 0
+            # C: the Annotation tool at once, the dock as it was
+            page.keyboard.press("c")
+            page.wait_for_selector("#stage.annot[data-ann-tool=comment]")
+            assert page.locator("#bann.on").count() == 1 and dock.locator(".ann-bar").count() == 0
+            assert dock.inner_html().replace(' class="ic on"', ' class="ic"') == before
+            r = box(page, '.it[data-id="i2"]')
+            page.mouse.click(r["x"] + 100, r["y"] + 90)
+            page.wait_for_selector("#cmthread.open textarea")
+            assert page.locator("#cmthread .cm-h b").inner_text() == ("New annotation" if en else "Новая аннотация")
+            page.keyboard.type("here"); page.keyboard.press("Enter")
+            page.wait_for_function("() => document.querySelector('#cmthread.open .cm-h b')?.textContent === " + json.dumps("Annotation" if en else "Аннотация"))
+            shot(page, f"annotation-{lang}-1-C")
+            page.keyboard.press("Escape"); page.keyboard.press("Escape")
+            page.wait_for_function("() => !document.querySelector('#stage.annot')")
+            page.evaluate("() => hyComments.list()")
+            assert page.locator("#cmlist .cm-lh b").inner_text() == ("Annotations" if en else "Аннотации")
+            page.evaluate("() => hyComments.list()")
+            # ⇧C crops the selected picture; C with it selected is an annotation, never the crop
+            page.evaluate("() => { sel = new Set(['i3']); render(); }")
+            page.keyboard.press("c")
+            page.wait_for_selector("#stage.annot[data-ann-tool=comment]")
+            assert page.evaluate("() => !cropState")
+            page.keyboard.press("Escape")
+            page.evaluate("() => { sel = new Set(['i3']); render(); }")
+            page.keyboard.press("Shift+C")
+            page.wait_for_function("() => cropState && cropState.id === 'i3'")
+            assert page.locator("#stage.annot").count() == 0
+            page.keyboard.press("Escape")
+            # the words: the crop's ⇧C, the shortcuts panel's C
+            page.evaluate("() => { sel = new Set(['i3']); render(); }")
+            assert page.locator(".tidy [data-crop] kbd").inner_text() == "⇧C"
+            keys = page.locator("#keys").inner_text()
+            assert ("annotation, an area by a drag" if en else "аннотация, область протяжкой") in keys
+            assert not errors, errors
+            browser.close()
+    finally:
+        servers.close()
+
+
+@pytest.mark.parametrize("lang", ["en", "ru"])
+def test_drawing_tools_behind_the_flag_draw_on_a_picture_undo_eraser_and_the_eye(tmp_path, lang):
     servers, port = board(tmp_path, lang)
     try:
         with playwright.sync_playwright() as p:
-            browser, page, errors = open_board(p, port)
-            page.keyboard.press("p")   # Annotate, the pen
+            browser, page, errors = open_board(p, port, draw=True)
+            page.keyboard.press("p")   # the drawing tools, the pen
             page.wait_for_selector("#dock .ann-bar [data-tool=pen].on")
             r = box(page, '.it[data-id="i1"]')
             page.mouse.move(r["x"] + 40, r["y"] + 80); page.mouse.down()
@@ -143,7 +218,7 @@ def test_comment_mentions_reply_resolve_bell_and_hy_py(tmp_path, lang):
         with playwright.sync_playwright() as p:
             browser, page, errors = open_board(p, port)
             r = box(page, '.it[data-id="i2"]')
-            page.keyboard.press("Shift+C")   # a comment straight from the board
+            page.keyboard.press("c")   # an annotation straight from the board
             page.mouse.click(r["x"] + 200, r["y"] + 90)
             page.wait_for_selector("#cmthread.open textarea")
             page.keyboard.type("@Cl")
@@ -225,21 +300,21 @@ def test_comment_mentions_reply_resolve_bell_and_hy_py(tmp_path, lang):
 
 @pytest.mark.parametrize("lang", ["en", "ru"])
 def test_comment_on_an_area_like_the_library_preview(tmp_path, lang):
-    """the Comment tool (first in Annotate, its default): a drag draws an area on the picture and opens the box at once; the area is a thin
-    outline in the author's colour with the pin at its top right corner, it moves with the picture, the list and hy.py say where it is"""
+    """the Annotation tool (the dock's button, the dock stays as it is): a drag draws an area on the picture and opens the box at once; the
+    area is a thin outline in the author's colour with the pin at its top right corner, it moves with the picture, the list and hy.py say
+    where it is"""
     servers, port = board(tmp_path, lang)
     try:
         with playwright.sync_playwright() as p:
             browser, page, errors = open_board(p, port)
             page.locator("#bann").click()
-            page.wait_for_selector("#dock .ann-bar [data-tool=comment].on")
-            assert page.locator("#dock .ann-bar > button.ic").first.get_attribute("data-tool") == "comment"
-            assert page.evaluate("() => document.querySelector('#dock .ann-bar [data-tool=comment]').nextElementSibling.className") == "sep"
+            page.wait_for_selector("#stage.annot[data-ann-tool=comment]")
+            assert page.locator("#bann.on").count() == 1 and page.locator("#dock .ann-bar").count() == 0
             r = box(page, '.it[data-id="i3"]')
             page.mouse.move(r["x"] + r["w"] * .5, r["y"] + r["h"] * .1); page.mouse.down()
             page.mouse.move(r["x"] + r["w"] * .9, r["y"] + r["h"] * .4, steps=8); page.mouse.up()
             page.wait_for_selector("#cmthread.open textarea")
-            want = "Comment on area 1" if lang == "en" else "Комментарий к области 1"
+            want = "Annotation on area 1" if lang == "en" else "Аннотация к области 1"
             assert page.locator("#cmthread textarea").get_attribute("placeholder") == want
             page.keyboard.type("too bright here"); page.keyboard.press("Enter")
             t = wait(lambda: get(port, "/api/comments?name=main")["items"], "the area comment was not saved")[0]
@@ -252,8 +327,10 @@ def test_comment_on_an_area_like_the_library_preview(tmp_path, lang):
             shot(page, f"area-{lang}-1-thread")
             page.evaluate("() => { board.items.i3.y += 30; render(); }")
             assert abs(area.bounding_box()["y"] - ab["y"] - 30) < 1.5
-            page.keyboard.press("Escape")
-            page.locator("#dock .ann-bar [data-ann=list]").click()
+            page.keyboard.press("Escape"); page.keyboard.press("Escape")
+            page.wait_for_function("() => !document.querySelector('#stage.annot')")
+            page.mouse.click(1300, 820, button="right")   # the empty board's menu: the page's annotations
+            page.locator("#ctx").get_by_text("Annotations on this page" if lang == "en" else "Аннотации на этой странице").click()
             row = page.locator(f'#cmlist [data-go="{t["id"]}"] .cm-ra')
             assert row.inner_text().endswith("x 50–90 %, y 10–40 %")
             row.hover(); assert "on" in area.get_attribute("class")

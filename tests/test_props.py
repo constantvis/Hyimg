@@ -324,7 +324,7 @@ def test_a_mask_goes_to_another_project_with_its_file(tmp_path):
     two = start(tmp_path / "two", tmp_path, items={"schema": 1, "revision": 1, "removed": {}, "groups": {},
                 "items": {"x": {"path": "a/0.png", "x": 0, "y": 0, "w": 100, "ar": 1, "crop": None}}})
     try:
-        if not one["frames"]: pytest.skip("no hyimg-frames repository beside this one")
+        if not one["frames"]: pytest.skip("no hyimg-image-studio repository beside this one")
         src_png, other_png = png(30, 30), png(31, 30)
         for d, data in ((tmp_path / "one/lib", src_png), (tmp_path / "two/lib", other_png)):   # project two has another file at that path
             (d / mask).parent.mkdir(parents=True); (d / mask).write_bytes(data)

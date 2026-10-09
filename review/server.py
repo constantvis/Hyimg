@@ -22,9 +22,10 @@ import lifetime      # how long a server lives: with the app, or with whoever st
 import storage, perflog   # where the disk goes, Settings › Storage, the one safe cleanup (owner 2026-10-07); slow frames logged (2026-10-08)
 import foldercolors   # a folder's colour in the library's tree, a mark for finding your way (owner 2026-10-06)
 import notifplace, notifsince   # every notification has a place on the board; the Mac app asks what came since a time (2026-10-08)
-import feedthumbs, favread   # and pictures in the bell: an area's crop, a card's still, the board around (2026-10-08); ♥ read by path
+import feedthumbs, favread, copyimg   # pictures in the bell: an area's crop, a card's still, the board around (2026-10-08); ♥ read by path; ⇧⌘C
 import people, comments, boardid   # who wrote what (profile, stamps, shared or private boards); drawings and comments on the board (2026-10-07)
 import plugins_admin   # Settings › Plugins: where plugins are, which are on, a page's hold on one, add and remove (owner 2026-10-07)
+import arrange   # the board's right click › Arrange runs the agents' layout patterns and the table on the selection (owner 2026-10-09)
 tags.configure(RULES)   # the board's theme tags, from its rules
 
 THUMBS = thumbcache.THUMBS   # ~/Library/Caches/Hyimg/<board>/thumbs, outside Dropbox, capped; moved from <state>/_thumbs (thumbcache.py)
@@ -278,7 +279,7 @@ def scan():
         if any(part in SKIP for part in rel_root.split(os.sep)):
             dirs[:] = []
             continue
-        # HTML frames' pages and their own pictures, and image frames' renders, masks and painted layers (Hyimg-frames, owner
+        # HTML frames' pages and their own pictures, and image frames' renders, masks and painted layers (hyimg-image-studio, owner
         # 2026-10-05: «the frame's render must not show in the library as a picture») are not library frames
         if rel_root.split(os.sep)[0] in ("html", "frames"):
             dirs[:] = []
@@ -1285,8 +1286,8 @@ def save_snapshot(data, name, folder, meta):
 
 
 PLUGIN_DATA = re.compile(r"3d/[^\x00]+\.(json|glb)|3d/[^\x00]+/\.posters/[A-Za-z0-9_-]+\.(jpg|png)"
-                         r"|html/[^\x00]+\.(html|css|js|json|svg|png|jpg)"   # HTML frames (Hyimg-frames): a page and its files under html/
-                         # image frames (Hyimg-frames, owner 2026-10-05): each frame is one folder frames/<stamp>/ with its document, its render
+                         r"|html/[^\x00]+\.(html|css|js|json|svg|png|jpg)"   # HTML frames (hyimg-image-studio): a page and its files under html/
+                         # image frames (hyimg-image-studio, owner 2026-10-05): each frame is one folder frames/<stamp>/ with its document, its render
                          # and the masks and painted layers as png; nothing else, and nothing outside its folder (the pictures in it are never written).
                          # Each Save is a new version beside the old ones (frame.<n>.json, render.<n>.png, <layer>.<n>.png), so undo on the
                          # board finds the version it goes back to (owner 2026-10-05); the plugin keeps the last 10
@@ -1626,7 +1627,7 @@ def project_name():
 # The plugins an agent asks the person about (owner 2026-10-05: «if we give this repository to an agent, it must know and ASK the person
 # whether they want to install the plugins, 3D and image frames, so it doesn't slip past their attention»).
 KNOWN_PLUGINS = [
-    ("frames", "Фреймы", "https://github.com/constantvis/hyimg-frames", "Image Studio на доске (слои, маски, Color Grading, заливка) и HTML-фреймы,"
+    ("frames", "Фреймы", "https://github.com/constantvis/hyimg-image-studio", "Image Studio на доске (слои, маски, Color Grading, заливка) и HTML-фреймы,"
      " маска объекта через macOS Vision, для заливки по желанию модель LaMa около 208 МБ (скачивать только с согласия человека)"),
     ("3d", "3D-объекты", "https://github.com/constantvis/hyimg-3d-studio", "3D-сцена карточкой на доске, 3D Studio, снимок в картинку,"
      " для переноса в Blender нужен Blender"),
@@ -1668,7 +1669,7 @@ def features_brief(hy):
     feature says when that plugin is not installed here"""
     try: have = set(plugins())
     except Exception: have = set()
-    alias = {"3d": ("3d", "hyimg-3d-studio", "hyimg-3d"), "frames": ("frames", "hyimg-frames"), "dev": ("dev", "hyimg-dev-studio", "dev-studio")}
+    alias = {"3d": ("3d", "hyimg-3d-studio", "hyimg-3d"), "frames": ("frames", "hyimg-image-studio", "hyimg-frames"), "dev": ("dev", "hyimg-dev-studio", "dev-studio")}
     F = features_read()["features"]
     L = ["## Что умеет Hyimg", "",
          f"Каталог функций ({len(F)}): что это, как агент это делает и какой скилл объясняет. `hy.py` ниже значит `{hy}`."
@@ -2101,6 +2102,7 @@ class H(BaseHTTPRequestHandler):
             if u.path == "/feedthumb":   # a bell tile: an area's crop, a card's still, the board around a pin (feedthumbs.py)
                 out = feedthumbs.http(sys.modules[__name__], q)
                 return self.file(out, "image/webp") if out else self.send(404, b"nothing to show", "text/plain")
+            if u.path == "/api/copyimage": return self.send(*copyimg.http(sys.modules[__name__], q, self.server.server_port))   # ⇧⌘C: a video's frame, a page
             if u.path == "/api/defaultapp":   # {name, path}: the app macOS opens this library file with ({} when none), for «Open in <App>»
                 return self.send(200, json.dumps(default_app(library_file(q["p"][0])), ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/appicon":   # that app's icon, a 64 px PNG
@@ -2195,6 +2197,7 @@ class H(BaseHTTPRequestHandler):
             return
         if self.path == "/api/profile": return people.http(self, "POST", PEOPLE, HERE)   # name, colour, sign out, aliases, places (people.py)
         if self.path in ("/api/comments", "/api/annotations"): return comments.http(self, "POST", PEOPLE, HERE)   # threads, drawings (comments.py)
+        if self.path == "/api/arrange": return arrange.http(self, sys.modules[__name__])   # Arrange › Layout patterns, Make table (arrange.py)
         if self.path.startswith("/api/storage/"): return storage.http(self, "POST")   # «Clear cache», old app copies to the Trash (storage_clean.py)
         if self.path.startswith("/api/perflog"): return perflog.http(self, "POST", settings_read)   # an entry of a frame drop, «Clear» (perflog.py)
         if self.path == "/api/pages":
@@ -2400,7 +2403,7 @@ class H(BaseHTTPRequestHandler):
             try: change = json.loads(self.rfile.read(n) or b"{}"); assert isinstance(change, dict)
             except (ValueError, AssertionError): return self.send(400, b"bad settings", "text/plain")
             return self.send(200, json.dumps(settings_write(change), ensure_ascii=False).encode(), "application/json")
-        if self.path.startswith("/api/htmlstill"):   # ?p=<page.html>&w=&h=: a still of an HTML frame (Hyimg-frames)
+        if self.path.startswith("/api/htmlstill"):   # ?p=<page.html>&w=&h=: a still of an HTML frame (hyimg-image-studio)
             q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             try: res = html_still(q["p"][0], q.get("w", ["1440"])[0], q.get("h", ["900"])[0], self.server.server_port)
             except (KeyError, ValueError, PermissionError, FileNotFoundError) as ex: return self.send(400, (tr("no snapshot: ", "нет снимка: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")

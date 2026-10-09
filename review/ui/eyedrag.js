@@ -13,7 +13,7 @@
 // (a row's id; the button itself when the list keeps its rows); can: false leaves a press to the host; also: at the press, the host sets
 // the other chosen rows of the pressed one to the same state, adds their keys to done (a Set) and returns how many changed; begin before the first change, end after the last (count: how many
 // things changed). The click that follows a press is swallowed, so a host keeps its click handler for the keys (Enter, Space) alone.
-// Used by the frame editor's Layers (eyes and locks), the Raw Editor's section eyes (hyimg-frames editor/colorgrade.js) and the 3D
+// Used by the frame editor's Layers (eyes and locks), the Raw Editor's section eyes (hyimg-image-studio editor/colorgrade.js) and the 3D
 // studio's outliner (eyes and locks of objects, lights and cameras, hyimg-3d-studio engine.js).
 (() => {
   if (window.hyEyeDrag) return;

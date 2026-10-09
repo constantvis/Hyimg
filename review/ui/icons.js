@@ -182,11 +182,24 @@
     tidyRow: '<path d="M3 4h18"/><rect x="4" y="7" width="4.5" height="10" rx="1"/><rect x="10" y="7" width="4.5" height="7" rx="1"/><rect x="16" y="7" width="4" height="12" rx="1"/>',   // arrange in one row, aligned at the top
     gridMake: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 3.5v17M14.5 3.5v17"/>',   // make a grid (Arrange ›)
     gridRemove: '<path d="M9.5 3.5v3M3.5 9.5h3M20.5 14.5h-3M14.5 20.5v-3M4 4l16 16"/><path d="M8 3.5h10.5a2 2 0 0 1 2 2V16M16 20.5H5.5a2 2 0 0 1-2-2V8"/>',   // remove a grid
+    // Arrange › Make table, Layout patterns › (owner 2026-10-09: «Почему у меня нет кнопок для Arrange новых?»): a picture of each layout
+    table: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 6.5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v3h-17z" fill="currentColor"/><path d="M9 9.5v10M3.5 14.5h17"/>',   // a table
+    layouts: '<path d="M3.5 3.5h8v17h-8zM14.5 3.5h6v7h-6zM14.5 13.5h6v7h-6z"/>',   // the layout patterns › (Arrange)
+    layoutVariants: '<path d="M3 5h5v5H3zM9.5 5h5v5h-5zM16 5h5v5h-5zM3 14h5v5H3zM9.5 14h5v5h-5zM16 14h5v5h-5z"/>',   // variants grid: one idea, many tries, numbered
+    layoutAB: '<path d="M5 4.5h3M16 4.5h3M3.5 8h7v5h-7zM13.5 8h7v5h-7zM3.5 15h7v5h-7zM13.5 15h7v5h-7z"/>',   // A / B: two columns under their letters
+    layoutTimeline: '<path d="M3 5.5h18M11 10.5h9v4h-9zM11 16.5h9v4h-9z"/><circle cx="6" cy="5.5" r="1.5"/><circle cx="15.5" cy="5.5" r="1.5"/>',   // a batch under its phase
+    layoutDirections: '<path d="M3 6.5h2M3 12h2M3 17.5h2M8 5h5v3H8zM15 5h5v3h-5zM8 10.5h5v3H8zM15 10.5h5v3h-5zM8 16h5v3H8zM15 16h5v3h-5z"/>',   // direction rows, a label each
+    layoutDocs: '<path d="M3.5 4.5h11M3.5 9.5h5v10h-5zM10.5 9.5h5v10h-5zM17.5 9.5h3v10h-3z"/>',   // documentation: a heading over big cards
+    layoutBeforeAfter: '<path d="M3.5 6.5h6v11h-6zM14.5 6.5h6v11h-6zM10.8 12h2.4M12 10.6l1.4 1.4-1.4 1.4"/>',   // before / after: a pair, a row each
+    layoutMoodboard: '<path d="M3.5 3.5h7v9h-7zM13.5 3.5h7v5h-7zM13.5 11.5h7v9h-7zM3.5 15.5h7v5h-7z"/>',   // moodboard cluster: references, no numbers
+    layoutReview: '<path d="M3.5 4.5h4M10 4.5h4M16.5 4.5h4M3.5 8h4v5h-4zM10 8h4v5h-4zM10 15h4v5h-4zM16.5 8h4v5h-4z"/>',   // review board: picked, to decide, rejected
+    layoutFlow: '<path d="M2.5 9.5h5v5h-5zM16.5 9.5h5v5h-5zM7.5 12h8.5M13.8 9.8 16 12l-2.2 2.2"/>',   // process / flow: steps joined by arrows
+    layoutGlossary: '<path d="M3.5 4.5h7v6h-7zM13.5 4.5h7v6h-7zM3.5 13.5h7v6h-7zM13.5 13.5h7v6h-7zM5.5 8h3M15.5 8h3M5.5 17h3M15.5 17h3"/>',   // glossary cards: a term each
     tidy: '<rect x="3" y="4" width="4" height="5" rx="1"/><rect x="9" y="4" width="4" height="5" rx="1"/><rect x="15" y="4" width="4" height="5" rx="1"/><rect x="3" y="15" width="4" height="5" rx="1"/><rect x="9" y="15" width="4" height="5" rx="1"/><path d="M21 9.5v5M19.5 11l1.5-1.5 1.5 1.5M19.5 13l1.5 1.5 1.5-1.5"/>',   // tidy: rows and blocks stay, the gaps become even
     opacity: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>',   // opacity (only that: never an adjustment)
     orientation: '<rect x="7" y="3.5" width="10" height="17" rx="2.6"/>',   // turn a frame or a ratio between portrait and landscape
     actions: '<path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"/>',   // Actions, ⌘K
-    // the image studio (hyimg-frames): tools, layers, panels
+    // the image studio (hyimg-image-studio): tools, layers, panels
     brush: '<path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/>',   // the brush
     eyedropper: '<path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/>',   // pick a colour
     eyedropperAdd: '<path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/><path d="M18.5 15v6M15.5 18h6"/>',   // add to a colour range
@@ -248,13 +261,13 @@
     alignTop: '<path d="M3 4h18"/><rect x="6" y="7" width="4" height="12" rx="1"/><rect x="14" y="7" width="4" height="7" rx="1"/>',   // align the tops
     alignMiddle: '<path d="M3 12h18"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="8" width="4" height="8" rx="1"/>',   // align the middles
     alignBottom: '<path d="M3 20h18"/><rect x="6" y="5" width="4" height="12" rx="1"/><rect x="14" y="10" width="4" height="7" rx="1"/>',   // align the bottoms
-    // Raw Editor's sections (hyimg-frames editor/colorgrade.js); Raw Editor itself is rawEditor below
+    // Raw Editor's sections (hyimg-image-studio editor/colorgrade.js); Raw Editor itself is rawEditor below
     rawLight: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',   // Light: exposure, contrast, tones
     rawCurve: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M6 18C10 18 9 6 18 6"/>',   // Curves
     rawDetail: '<path d="M12 3 3 19h18z"/><path d="M8.5 13h7"/>',   // Detail: sharpening, noise
     rawMixer: '<path d="M6 4v16M12 4v16M18 4v16"/><circle cx="6" cy="14" r="2" fill="currentColor"/><circle cx="12" cy="8" r="2" fill="currentColor"/><circle cx="18" cy="16" r="2" fill="currentColor"/>',   // Color Mixer: hue, saturation, luminance per colour
     rawHueSat: '<path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="1.9" fill="currentColor"/><circle cx="15.5" cy="12" r="1.9" fill="currentColor"/><circle cx="7" cy="17" r="1.9" fill="currentColor"/>',   // Hue/Saturation
-    // Selective Color (Photoshop's, hyimg-frames editor/selcolor.js): one colour range of the nine picked, the swatch ringed as in its row
+    // Selective Color (Photoshop's, hyimg-image-studio editor/selcolor.js): one colour range of the nine picked, the swatch ringed as in its row
     rawSelColor: '<circle cx="4" cy="12" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/><circle cx="12" cy="12" r="5.2"/>',
     rawGrading: '<circle cx="12" cy="7.5" r="4"/><circle cx="6.5" cy="16" r="4"/><circle cx="17.5" cy="16" r="4"/>',   // Color Grading: the shadows', midtones' and highlights' wheels
     rawEffects: '<rect x="3" y="4" width="18" height="16" rx="3"/><ellipse cx="12" cy="12" rx="5" ry="4"/>',   // Effects: vignette, grain
