@@ -21,6 +21,8 @@
      the notes at the top;
    - a panel or a menu opened over it: settings, history, notifications, keys, pages, the right-click menu, the frame card, the
      library beside the canvas, the viewer's side, popovers, the 3D editor's panels.
-   Darker in the dark theme, where a light shadow does not show. */
-:is(#bset, #bhist, #bkeys, #bntf, #crumb, #jump, #pv, #hint, .bar, .tidy, .vsw, header.hy-dock, #hyToasts .ht, .tools, .pickbar) { box-shadow: var(--hy-sh-ctl) !important; }
+   Darker in the dark theme, where a light shadow does not show. The controls of the top row, a mode's hint plate and the docks read
+   --hy-sh-row-ctl, flat with «Тени: только панели»; the bars over a selection and the toasts keep theirs (ui/tokens.css). */
+:is(#bset, #bhist, #bkeys, #bntf, #crumb, #jump, #pv, #hint, .bar, .vsw, header.hy-dock, .tools) { box-shadow: var(--hy-sh-row-ctl) !important; }
+:is(.tidy, #hyToasts .ht, .pickbar) { box-shadow: var(--hy-sh-ctl) !important; }
 :is(#sets, #hist, #ntf, #keys, #pages, #ctx, #info, .pop, .side, .tfpanel, body.cv-on main, .fdrawer.open:not(body.fdock .fdrawer), .m3p) { box-shadow: var(--hy-sh-pop) !important; }

@@ -36,9 +36,21 @@ const last = el => el.events[el.events.length - 1];
 
 test("index.js defines every primitive once, under its tag", () => {
   const tags = ["hy-switch", "hy-check", "hy-kbd", "hy-badge", "hy-chip", "hy-hint", "hy-info", "hy-swatch", "hy-swatches", "hy-button",
-    "hy-icon-button", "hy-plate", "hy-segmented"];
+    "hy-icon-button", "hy-plate", "hy-segmented", "hy-keyhint", "hy-tip", "hy-studio-actions", "hy-open-in"];
   assert.deepEqual([...registry.keys()].sort(), [...tags].sort());
   assert.equal(Object.keys(HY).length, tags.length);
+});
+
+test("hy-keyhint: a combination's caps, and which key presses it (any layout, modifiers exact, a sign without ⇧)", async () => {
+  const { caps, matches } = await mod("keyhint.js");
+  assert.deepEqual(["shift+enter", "mod+b", "escape", "alt", "[", "-", "mod+enter"].map(caps), ["⇧↵", "⌘B", "Esc", "⌥", "[", "-", "⌘↵"]);
+  const k = (key, o = {}) => ({ key, code: o.code || "", metaKey: !!o.meta, ctrlKey: false, shiftKey: !!o.shift, altKey: !!o.alt });
+  assert.ok(matches("shift+enter", k("Enter", { shift: true })));
+  assert.ok(!matches("shift+enter", k("Enter")) && !matches("enter", k("Enter", { shift: true })));   // Enter is not ⇧↵
+  assert.ok(matches("mod+b", k("и", { meta: true, code: "KeyB" })));   // the Russian layout
+  assert.ok(!matches("mod+b", k("b")));
+  assert.ok(matches("@", k("@", { shift: true })) && matches("]", k("ъ", { code: "BracketRight" })));
+  assert.ok(matches("alt", k("Alt", { alt: true })) && matches("escape", k("Escape")));
 });
 
 test("define() keeps the first class of a tag: a second import is harmless", () => {

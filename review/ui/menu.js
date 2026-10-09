@@ -10,7 +10,7 @@
   // a menu item's icon is the app's (ui/icons.js hyIcon, owner 2026-10-07: «одно значение, одна иконка»), 15 px in the menus' 1.9 line.
   // The menus' names are the registry's; the few older ones the callers still pass are listed here once, each to its registry name:
   // «Show in Finder» wears a plain folder, not the Finder face (owner 2026-10-06: «иконку нужно взять просто папку, а не finder»)
-  const NAME = { del: "trash", dup: "duplicate", file: "doc", finder: "folder", topage: "toPage", copyprops: "copyProps", pasteprops: "pasteProps",
+  const NAME = { del: "trash", dup: "duplicate", file: "doc", finder: "folder", topage: "toPage", copyprops: "copyProps", pasteprops: "pasteProps", clearprops: "clearProps",
     orderfront: "orderFront", orderforward: "orderForward", orderbackward: "orderBackward", orderback: "orderBack" };
   const IC = new Proxy({}, { get: (o, k) => typeof k === "string" && window.hyIcon ? window.hyIcon(NAME[k] || k, 15, 1.9) || undefined : undefined });
   window.HY_IC = IC;
@@ -175,8 +175,11 @@
   }, true);
   addEventListener("keydown", e => {
     prune();
+    // the key's own test first: the open menus are looked for in the whole page and measured (a forced layout), on every key typed
+    // into a note too (2026-10-08, the «Renderings» page of 48 000 elements: 21 ms a key with the CPU 4× slower)
+    if (e.metaKey || e.ctrlKey || e.altKey || (e.target.closest && e.target.closest("input, textarea, [contenteditable=true]"))) return;
     const roots = [...document.querySelectorAll(ROOTS)].filter(r => isOpen(r) && !r.parentElement.closest(ROOTS) && r.querySelector("[role=menuitem]"));
-    if (!roots.length || e.metaKey || e.ctrlKey || e.altKey || (e.target.closest && e.target.closest("input, textarea, [contenteditable=true]"))) return;
+    if (!roots.length) return;
     const a = document.activeElement, focused = a && a.matches && a.matches("[role=menuitem]") && roots.includes(rootOf(a)) ? a : null;
     const cur = focused || (hoverItem && shown(hoverItem) && roots.includes(rootOf(hoverItem)) ? hoverItem : null);
     const panel = cur ? panelOf(cur) : stack.length ? stack[stack.length - 1].panel : roots[roots.length - 1];

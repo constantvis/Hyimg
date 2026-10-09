@@ -1,8 +1,9 @@
 // @ts-check
-// <hy-switch checked disabled label="…">: on or off (ui/hy/switch.css). A real checkbox with role=switch lies over the track: Space and
-// Enter toggle it, a <label> around the switch toggles it, VoiceOver reads it. Events: the checkbox's own input and change bubble out of
-// the element, and hy-change { checked } follows each change made by the person (not one made by code). static: a switch that only shows
-// a state, inside a row that toggles it (a menu item): no checkbox of its own, hidden from VoiceOver, the row says it.
+// <hy-switch checked disabled label="…" variant="well">: on or off (ui/hy/switch.css; variant=well: the wells' look of Settings). A real
+// checkbox with role=switch lies over the track: Space and Enter toggle it, a <label> around the switch toggles it, VoiceOver reads it.
+// Events: the checkbox's own input and change bubble out of the element, and hy-change { checked } follows each change made by the person
+// (not one made by code). static: a switch that only shows a state, inside a row that toggles it (a menu item): no checkbox of its own,
+// hidden from VoiceOver, the row says it.
 import { HyElement, define } from "./base.js";
 
 export class HySwitch extends HyElement {

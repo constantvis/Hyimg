@@ -28,7 +28,7 @@ from test_move_to_page import frames_plugin, screen
 
 playwright = pytest.importorskip("playwright.sync_api")
 ROOT = Path(__file__).resolve().parents[1]
-ENGINES = ["chromium", "webkit"]
+ENGINES = ["chromium"]   # the board's tests run in Chromium, dark (owner 2026-10-07)
 FFMPEG = shutil.which("ffmpeg")
 GRADE = {"basic": {"exposure": 0.6}}
 
@@ -90,7 +90,7 @@ def open_board(p, engine, port):
         browser = getattr(p, engine).launch()
     except Exception as error:
         pytest.skip(f"no {engine} for Playwright: {error}")
-    page = browser.new_page(viewport={"width": 1400, "height": 900})
+    page = browser.new_page(viewport={"width": 1400, "height": 900}, color_scheme="dark")
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     url = f"http://127.0.0.1:{port}/canvas.html"
@@ -136,7 +136,7 @@ def test_copy_menu_paste_with_live_preview_and_one_undo(server, engine):
         kinds = (["Raw Editor"] if server["frames"] else []) + ["Crop", "Size", "Opacity"]
         # every kind is listed (owner 2026-10-06: «I want users to know what functions exist»), what this picture has not, grey with why
         every = (["Raw Editor", "Mask [off: This picture has no mask]"] if server["frames"] else []) + [
-            "Crop", "Time [off: Time only on videos]", "Size", "Opacity", "PDF page [off: A page only on a PDF that is not split]"]
+            "Crop", "Size", "Opacity"]   # the kinds a picture can have (the menu by kind, owner 2026-10-07): no time, no PDF page
         assert page.evaluate(SUBITEMS) == ["Custom…"] + every + ["Save as preset…"]
         page.mouse.click(op["x"] + 30, op["y"] + op["height"] / 2)   # the item itself: everything it has
         clip = page.evaluate("() => JSON.parse(localStorage.getItem('cv.propsClip'))")
@@ -157,7 +157,7 @@ def test_copy_menu_paste_with_live_preview_and_one_undo(server, engine):
         low = lambda k: k if k[1:2].isupper() or re.search(r"[\s-][A-ZА-ЯЁ][a-zа-яё]", k) else k[0].lower() + k[1:]   # a name («Raw Editor», «PDF page») keeps its case
         assert sub[0] == "hint: from 0: " + ", ".join(low(k) for k in kinds), sub
         assert [k for k in sub[1:] if "[off" not in k] == kinds, sub
-        assert "Time [off: Not in the clipboard]" in sub and sub[-1].startswith("Presets [off: No presets yet"), sub
+        assert ("Mask [off: Not in the clipboard]" in sub) == bool(server["frames"]) and sub[-1].startswith("Presets [off: No presets yet"), sub
         # one kind: only the crop shows
         page.mouse.move(pp["x"] + 30, pp["y"] + pp["height"] / 2 + 2)
         crop = page.locator("#ctx .hy-sub [role=menuitem]", has_text="Crop").bounding_box()
@@ -199,7 +199,7 @@ def test_greyed_kinds_keys_custom_window_and_presets(server, engine):
         page.keyboard.press("Control+Alt+Shift+KeyC"); page.wait_for_selector("#propsDlg")
         assert not page.evaluate("() => document.querySelector('#propsDlg [data-k=size]').checked")
         page.keyboard.press("Escape"); assert not page.evaluate("() => !!document.querySelector('#propsDlg')")
-        # ⌥⌘V onto a note only: nothing applies but the… nothing: crop and opacity are greyed with their reasons
+        # ⌥⌘V onto a note only: nothing it holds applies; the submenu lists only what a note can have (its size, not in the clipboard)
         page.evaluate("() => { sel = new Set(['nt']); render(); }")
         ctx(page, "nt")
         pp = item(page, "[data-sub=props-paste]")
@@ -209,7 +209,7 @@ def test_greyed_kinds_keys_custom_window_and_presets(server, engine):
         page.mouse.move(pp["x"] + 30, pp["y"] + pp["height"] / 2)
         page.wait_for_function("() => document.querySelector('#ctx .hy-sub')")
         sub = page.evaluate(SUBITEMS)
-        assert "Crop [off: Crop only on images and videos]" in sub and "Opacity [off: Opacity only on images, videos and cards]" in sub, sub
+        assert not any(k.startswith(("Crop", "Opacity", "Raw Editor", "Mask")) for k in sub) and "Size [off: Not in the clipboard]" in sub, sub
         page.keyboard.press("Escape"); page.keyboard.press("Escape")
         # ⌥⌘C / ⌥⌘V by keys: everything from src onto plain
         page.evaluate("() => { sel = new Set(['src']); render(); }")

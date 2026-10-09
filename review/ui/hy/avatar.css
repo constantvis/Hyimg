@@ -1,0 +1,29 @@
+/* <hy-avatar> (ui/avatar.js): a person's face, his picture or his initials on his colour; an agent acting for him is a round badge on
+   the bottom right, 45 % of the face, ringed in the surface it lies on (--hy-av-ring, the panel by default). 16, 20, 24 and 32 px.
+   The badge alone (.hya-solo) is as big as a face: Settings › Profile › Agents. */
+hy-avatar { --hya-s: 20px; position: relative; display: inline-block; flex: none; width: var(--hya-s); height: var(--hya-s); vertical-align: middle; line-height: 0; }
+hy-avatar[size="16"] { --hya-s: 16px; } hy-avatar[size="24"] { --hya-s: 24px; } hy-avatar[size="32"] { --hya-s: 32px; }
+hy-avatar .hya-p { display: grid; place-items: center; width: 100%; height: 100%; box-sizing: border-box; overflow: hidden; border-radius: 999px;
+  background: var(--hya-c, var(--muted)); color: var(--hy-av-ink); font: 650 calc(var(--hya-s) * .42)/1 var(--sans); letter-spacing: -.02em;
+  box-shadow: inset 0 0 0 1px var(--hy-swatch-rim); user-select: none; }
+hy-avatar .hya-p[data-i]::before { content: attr(data-i); }
+hy-avatar .hya-p img { display: block; width: 100%; height: 100%; object-fit: cover; }
+hy-avatar .hya-p > svg { display: block; width: 62%; height: 62%; }   /* a face with no name and no picture: the registry's person */
+/* the badge: our glyph on the kind's colour; the company's mark or this Mac's own picture lies over it (::after, ui/avatar.js paints which) */
+.hya-b { display: grid; place-items: center; box-sizing: border-box; border-radius: 999px; background: var(--hy-ag-agent); color: var(--hy-on-accent); }
+.hya-b svg { display: block; width: 78%; height: 78%; }
+.hya-b::after { position: absolute; inset: 0; border-radius: inherit; background: center / cover no-repeat; box-shadow: inset 0 0 0 .5px var(--hy-swatch-rim); }
+hy-avatar .hya-b { position: absolute; right: calc(var(--hya-s) * -.1); bottom: calc(var(--hya-s) * -.1);
+  width: calc(var(--hya-s) * .45); height: calc(var(--hya-s) * .45); box-shadow: 0 0 0 2px var(--hy-av-ring, var(--panel)); }
+hy-avatar[size="16"] .hya-b { box-shadow: 0 0 0 1.5px var(--hy-av-ring, var(--panel)); }
+.hya-b.hya-solo { position: relative; flex: none; width: var(--hya-bs, 24px); height: var(--hya-bs, 24px); overflow: hidden; }
+.hya-b.hya-solo svg { width: 62%; height: 62%; }
+.hya-b[data-k=claude] { background: var(--hy-ag-claude); }
+.hya-b[data-k=codex] { background: var(--hy-ag-codex); }
+.hya-b[data-k=gemini] { background: var(--hy-ag-gemini); }
+.hya-b[data-k=kimi] { background: var(--hy-ag-kimi); }
+.hya-b[data-k=opencode] { background: var(--hy-ag-opencode); }
+/* a row of faces (Home's news, a thread's people): each over the one before by a third */
+.hy-faces { display: inline-flex; align-items: center; }
+.hy-faces > hy-avatar + hy-avatar { margin-left: calc(var(--hya-s) * -.3); }
+.hy-faces > hy-avatar .hya-p { box-shadow: 0 0 0 1.5px var(--hy-av-ring, var(--panel)); }

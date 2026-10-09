@@ -147,22 +147,6 @@
      "light/round/1600"
     ]
    },
-   "368379098738": {
-    "page": "3d",
-    "check": "row-radius",
-    "key": "div.m3ui.dialkit-root > div.m3p.m3r",
-    "msg": "2 radii in one panel: 8px (button.dialkit-select-trigger, div.hy-slider, div.dialkit-color-control); 0px (input.dialkit-color-value)",
-    "looks": [
-     "dark/pro/1000",
-     "dark/pro/1600",
-     "dark/round/1000",
-     "dark/round/1600",
-     "light/pro/1000",
-     "light/pro/1600",
-     "light/round/1000",
-     "light/round/1600"
-    ]
-   },
    "4d61ed9b6b48": {
     "page": "library",
     "check": "bar-height",
@@ -227,6 +211,22 @@
      "light/round/1600"
     ]
    },
+   "87180e290783": {
+    "page": "3d",
+    "check": "target",
+    "key": "div.m3p.m3l.hy-blk > div.opts > input",
+    "msg": "div.m3p.m3l.hy-blk > div.opts > input is 13×13 px, less than 24",
+    "looks": [
+     "dark/pro/1000",
+     "dark/pro/1600",
+     "dark/round/1000",
+     "dark/round/1600",
+     "light/pro/1000",
+     "light/pro/1600",
+     "light/round/1000",
+     "light/round/1600"
+    ]
+   },
    "8a448def6159": {
     "page": "image",
     "check": "covered",
@@ -276,6 +276,22 @@
     "check": "bar-height",
     "key": "editor div#rail",
     "msg": "4 heights in one bar: 30px (button.ib[data-tool=select], button.ib[data-tool=move], button.ib.grp[data-tool=lasso]); 17px (button.sw.bg, button.sw.fg); 12px (button.swap); 11px (button.rst)",
+    "looks": [
+     "dark/pro/1000",
+     "dark/pro/1600",
+     "dark/round/1000",
+     "dark/round/1600",
+     "light/pro/1000",
+     "light/pro/1600",
+     "light/round/1000",
+     "light/round/1600"
+    ]
+   },
+   "ae22c683bfee": {
+    "page": "3d",
+    "check": "row-radius",
+    "key": "div.m3ui.dialkit-root > div.m3p.m3r.hy-blk",
+    "msg": "2 radii in one panel: 6px (button.dialkit-select-trigger, div.hy-slider, div.dialkit-color-control); 0px (input.dialkit-color-value)",
     "looks": [
      "dark/pro/1000",
      "dark/pro/1600",
@@ -363,18 +379,6 @@
      "light/round/1600"
     ]
    },
-   "cd1d48bbd272": {
-    "page": "3d",
-    "check": "covered",
-    "key": "div#handles > div.tidy.cratio > button under div.m3ui.dialkit-root > div.m3p.m3r > div.dk",
-    "msg": "div#handles > div.tidy.cratio > button: its centre is covered by div.m3ui.dialkit-root > div.m3p.m3r > div.dk",
-    "looks": [
-     "dark/pro/1000",
-     "dark/round/1000",
-     "light/pro/1000",
-     "light/round/1000"
-    ]
-   },
    "d087104d6ebd": {
     "page": "image",
     "check": "target",
@@ -439,27 +443,23 @@
      "light/round/1600"
     ]
    },
+   "e0dc461314e5": {
+    "page": "3d",
+    "check": "covered",
+    "key": "div#handles > div.tidy.cratio > button under div.m3ui.dialkit-root > div.m3p.m3r.hy-blk > div.dk",
+    "msg": "div#handles > div.tidy.cratio > button: its centre is covered by div.m3ui.dialkit-root > div.m3p.m3r.hy-blk > div.dk",
+    "looks": [
+     "dark/pro/1000",
+     "dark/round/1000",
+     "light/pro/1000",
+     "light/round/1000"
+    ]
+   },
    "e127edf757bd": {
     "page": "image",
     "check": "target",
     "key": "editor div#rows > div.lr > button.rb.keep[data-a=lock]",
     "msg": "div#rows > div.lr > button.rb.keep[data-a=lock] is 22×22 px, less than 24",
-    "looks": [
-     "dark/pro/1000",
-     "dark/pro/1600",
-     "dark/round/1000",
-     "dark/round/1600",
-     "light/pro/1000",
-     "light/pro/1600",
-     "light/round/1000",
-     "light/round/1600"
-    ]
-   },
-   "eb3768d1f919": {
-    "page": "3d",
-    "check": "target",
-    "key": "div.m3p.m3l > div.opts > input",
-    "msg": "div.m3p.m3l > div.opts > input is 13×13 px, less than 24",
     "looks": [
      "dark/pro/1000",
      "dark/pro/1600",

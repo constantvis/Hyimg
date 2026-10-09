@@ -10,6 +10,7 @@ import WebKit
 //   backups   the app's older copies beside it beyond the newest 2, into the Trash (the page asked first)
 //   caps      the thumbnail cache's ceiling, {board, total} in GB (storage.py caps)
 //   stop      one lost server or Blender of Hyimg, parent gone (storage.py stop <pid>, review/procs.py checks it again)
+//   perflog   the performance log's «Clear» on Home: perflog.py clear, in the cache folder perflog.py computes (the page asked first)
 extension App {
     func storageMessage(_ body: [String: Any], _ project: Project?) {
         let op = body["op"] as? String ?? "summary"
@@ -40,7 +41,7 @@ extension App {
                 let out = Self.runStorage(args, root: root, catalog: catalog, wait: true)
                 reply(out.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? ["error": "storage.py did not answer"])
             }
-        case "clear", "backups", "stop":
+        case "clear", "backups", "stop", "perflog":
             // Home is a file page without the board's dialog (ui/confirm.js is a module): the app asks with the page's own words
             if body["confirm"] as? Bool == true {
                 let alert = NSAlert()
@@ -49,9 +50,11 @@ extension App {
                 guard alert.runModal() == .alertFirstButtonReturn else { reply(["cancelled": true]); return }
             }
             DispatchQueue.global(qos: .userInitiated).async {
-                let args = op == "clear" ? ["clear-cache"] : op == "stop" ? ["stop", String(describing: body["pid"] ?? "")] : ["backups", "--keep", "2"]
-                let out = Self.runStorage(args, root: root, catalog: catalog, wait: true)
-                let res = out.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? ["error": "storage.py did not answer"]
+                let args = op == "clear" ? ["clear-cache"] : op == "stop" ? ["stop", String(describing: body["pid"] ?? "")]
+                    : op == "perflog" ? ["clear"] : ["backups", "--keep", "2"]
+                let script = op == "perflog" ? "perflog.py" : "storage.py"
+                let out = Self.runStorage(args, root: root, catalog: catalog, wait: true, script: script)
+                let res = out.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? ["error": "\(script) did not answer"]
                 if res["error"] == nil, op != "stop" { _ = Self.runStorage(["scan"], root: root, catalog: catalog, wait: false) }
                 reply(res)
             }
@@ -59,13 +62,14 @@ extension App {
         }
     }
 
-    // review/storage.py with the catalog's folder and the folder the app is installed in; its output when waited for
+    // review/storage.py with the catalog's folder and the folder the app is installed in; its output when waited for. review/perflog.py
+    // (script) runs the same way: the same Python and the app's environment, so HYIMG_CACHE_ROOT names the same cache for both
     @discardableResult
-    static func runStorage(_ args: [String], root: URL, catalog: URL, wait: Bool) -> Data? {
+    static func runStorage(_ args: [String], root: URL, catalog: URL, wait: Bool, script: String = "storage.py") -> Data? {
         guard let python = try? ServerSession.findPython(sourceRoot: root) else { return nil }
         let task = Process(), pipe = Pipe()
         task.executableURL = python
-        task.arguments = [root.appendingPathComponent("review/storage.py").path] + args
+        task.arguments = [root.appendingPathComponent("review/" + script).path] + args
         var env = ProcessInfo.processInfo.environment
         env["HYIMG_SUPPORT_ROOT"] = catalog.deletingLastPathComponent().path
         env["HYIMG_INSTALL_DIR"] = Bundle.main.bundleURL.deletingLastPathComponent().path   // the copies lie beside the app

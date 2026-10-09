@@ -13,3 +13,7 @@ export { HySwatch, HySwatches } from "./swatch.js";
 export { HyButton, HyIconButton } from "./button.js";
 export { HyPlate } from "./plate.js";
 export { HySegmented } from "./segmented.js";
+export { HyKeyHint } from "./keyhint.js";   // also window.hyKeyHint for the classic scripts
+export { HyTip } from "./tip.js";   // also window.hyTip for the classic scripts
+export { HyStudioActions } from "./actions.js";   // a Studio's session actions, top right (owner 2026-10-09)
+export { HyOpenIn } from "./openin.js";   // «Open in <Browser>»; its way to the app is window.hyBrowsers

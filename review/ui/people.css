@@ -1,0 +1,72 @@
+/* Who made a change (ui/people.js): the person's dot, the first launch's question, Settings › Profile, the lock on a private board */
+.hy-by { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.hy-pdot { flex: none; display: inline-block; width: 7px; height: 7px; border-radius: 99px; background: var(--muted); box-shadow: inset 0 0 0 1px var(--hy-swatch-rim); }
+.hy-by .hy-pdot { margin: 0; }
+.hy-edited { display: block; margin-top: 2px; color: inherit; }
+.hy-edited .hy-ew { display: inline-flex; color: var(--ink); font-weight: 500; }
+
+/* the first launch: a card in the middle over a dimmed Home, grows in like the app's panels */
+.hy-welcome { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: color-mix(in srgb, var(--paper, #17171a) 70%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); opacity: 0; transition: opacity .3s ease; }
+.hy-welcome.in { opacity: 1; }
+.hy-welcome .hw-card { width: 340px; box-sizing: border-box; padding: 22px 22px 18px; display: grid; gap: 14px; border: 1px solid var(--line); border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent); box-shadow: var(--hy-sh-pop); color: var(--ink); font: 400 13px/1.35 var(--sans);
+  transform: scale(.96); transition: transform .5s cubic-bezier(.3, .8, .25, 1); }
+.hy-welcome.in .hw-card { transform: none; }
+:root[data-shape=pro] .hy-welcome .hw-card { border-radius: var(--hy-bar-r, 14px); }
+.hy-welcome h2 { margin: 0; font: 600 17px/1.2 var(--sans); }
+.hy-welcome .hy-hint { margin: -8px 0 0; }
+.hy-welcome input { height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--hy-row-r); background: var(--raise); color: var(--ink);
+  font: 400 14px var(--sans); outline: none; }
+.hy-welcome input:focus { border-color: color-mix(in srgb, var(--ink) 40%, var(--line)); }
+.hy-welcome.need input { border-color: var(--hy-red); }
+.hy-welcome .hw-row { display: flex; justify-content: flex-end; }
+@media (prefers-reduced-motion: reduce) { .hy-welcome, .hy-welcome .hw-card { transition: none; } }
+
+/* Settings › Profile: the rows of ui/setpanel.css, an input for a name, a folder's last part with its «Choose…» */
+#sets .hp { display: grid; gap: 2px; padding: 8px 0 10px; border-bottom: 1px solid var(--line); }
+#sets .hp .sp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; min-width: 0; }
+#sets .hp .sp-l { display: inline-flex; align-items: center; gap: 6px; flex: none; white-space: nowrap; color: var(--ink); }
+#sets .hp .hp-name { width: 150px; min-width: 0; height: 26px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--raise); color: var(--ink); font: 400 12px var(--sans); outline: none; }
+#sets .hp .hp-name:focus { border-color: color-mix(in srgb, var(--ink) 40%, var(--line)); }
+#sets .hp .hp-pc { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+#sets .hp .hp-path { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sub); font-size: 12px; }
+#sets .hp .hp-sub .sp-l { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+#sets .hp .hp-person .hp-name { flex: 1 1 auto; width: auto; }
+#sets .hp hy-swatches { gap: 5px; }
+#sets .hp .hy-hint { margin-top: 4px; }
+
+/* Home: the lock after a private board's name, the filter beside «Only new» */
+.hp-lock { display: inline-grid; place-items: center; margin-left: 6px; color: var(--sub); vertical-align: -1px; }
+.hp-vis { margin-left: 8px; }
+
+/* Settings › Profile: the picture, Team and Agents (owner 2026-10-07): a face per person, his agents under him with when they last acted */
+#sets .hp .hp-me { justify-content: flex-start; }
+#sets .hp .hp-me .hp-name { flex: 1 1 auto; width: auto; }
+#sets .hp .hp-pic { flex: none; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer;
+  --hy-av-ring: var(--panel); transition: transform .3s cubic-bezier(.32,.72,0,1); }
+#sets .hp .hp-pic:hover { transform: scale(1.06); }
+#sets .hp .hp-person { gap: 8px; }
+#sets .hp .hp-person .sp-l { gap: 8px; }
+#sets .hp .hp-agent { min-height: 28px; padding-left: 32px; }
+#sets .hp .hp-agent .sp-l { gap: 8px; }
+#sets .hp .hp-an { color: var(--ink); font-size: 12px; }
+#sets .hp .hp-when { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#sets .hp .hp-off .hp-an { color: var(--sub); }
+#sets .hp .hp-none { margin: 0 0 4px; }
+/* this Mac's agents (owner 2026-10-08): the badge alone is a button that changes its picture, a kind that has not acted yet is quieter */
+#sets .hp .hp-mine .hp-pc { gap: 2px; }
+#sets .hp .hp-mine .hp-when { margin-right: 4px; }
+#sets .hp .hp-badge { flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer;
+  transition: transform .3s cubic-bezier(.32,.72,0,1); }
+#sets .hp .hp-badge:hover { transform: scale(1.1); }
+#sets .hp .hp-idle .hp-an { color: var(--sub); }
+
+/* Home: the faces of who did the news, before its count */
+.nb-who { margin-right: 4px; vertical-align: middle; --hy-av-ring: var(--panel); }
+/* their rings and agents' badges reach 3 px past the 17 px line, whose clip keeps the words' ellipsis: the line holding them gets 4 px of
+   room above and below, laid out where it was (owner 2026-10-08: «почему-то обрезаны иконки»; the card's line and the list's «Edited») */
+:is(.meta .s, .list .card .c3):has(> .nb-who) { padding-block: 4px; margin-block: -4px; }
+/* and no face lies over the badge of the one before: the first on top, the badge at its bottom right over the next face's edge */
+.nb-who > hy-avatar:nth-child(1) { z-index: 3; } .nb-who > hy-avatar:nth-child(2) { z-index: 2; } .nb-who > hy-avatar:nth-child(3) { z-index: 1; }

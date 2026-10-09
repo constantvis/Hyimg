@@ -1,0 +1,18 @@
+/* The bell (owner 2026-10-03): what agents and people put on the boards, a red dot while there is news, a jump to the place. One look
+   for the board's bell (canvas.html #bntf, its own board) and Home's (ui/homebell.js, every board on this Mac, owner 2026-10-08: «вверху
+   справа, где настройки, тоже нотификации, чтобы я мог видеть: так, у меня тут что-то новенькое появилось»). The rows: ui/bellrow.js,
+   their pictures: ui/bellthumbs.js. */
+.hy-bell svg circle { transition: fill .2s var(--hy-ease), stroke .2s var(--hy-ease); }   /* news: the glyph's own dot turns red (icons.js notifications) */
+.hy-bell.dot svg circle { fill: var(--hy-red); stroke: var(--hy-red); }
+#ntf { --ntf-sh: 0 12px 40px rgba(0,0,0,.35); position: absolute; top: 58px; right: 12px; z-index: 32; width: 380px; max-height: calc(100% - 80px); overflow: auto;
+  display: none; padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: var(--ntf-sh); font-size: 13px; }
+#ntf.open { display: grid; gap: 4px; }
+#ntf .nh0 { margin: -8px -8px -4px; }   /* the block's header (ui/hy/block.css .hy-bh, hyBellHead), flush with the panel's edges over its 8 px */
+#ntf .none { padding: 18px 10px; color: var(--sub); }
+#ntf .nt { display: grid; gap: 4px; text-align: left; width: 100%; padding: 10px; border: 0; border-radius: 10px; background: none; color: var(--ink);
+  font: inherit; cursor: pointer; }
+#ntf .nt:hover { background: var(--raise); } #ntf .nt.new { background: color-mix(in srgb, var(--sel) 12%, transparent); }
+#ntf .nt b { font-weight: 600; } #ntf .nt p { margin: 0; color: var(--sub); line-height: 1.45; }
+#ntf .nt .who { display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--sub); font-size: 11px; }   /* the face, then the words */
+#ntf .nt .pv { display: flex; gap: 4px; margin-top: 2px; } #ntf .nt .pv img { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; background: var(--raise); }

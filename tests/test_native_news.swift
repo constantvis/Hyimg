@@ -47,6 +47,7 @@ import Foundation
         try require(!rows.contains { $0["pid"] as? String == "gone" }, "a deleted page's log is not news")
         try require(rows.first?["pid"] as? String == "main" && rows.last?["pid"] as? String == "p2", "rows in the board's page order")
         try require((s?["t"] as? Double) == 260, "the newest news' time")
+        try require((s?["since"] as? Double) == 200, "the last look it counts from (Home's bell, ui/homebell.js)")
         try require(BoardNews.summary(stateRoot: state.path, since: 300) == nil, "nothing after the last look: nil")
 
         // a log not written since the last look is not even opened (its lines would count, its time says no)
@@ -81,5 +82,22 @@ import Foundation
         try require(BoardNews.summary(stateRoot: state.path, since: BoardSeen.read(seenFile)[a.uuidString]!) != nil, "news before the board is opened")
         BoardSeen.mark(seenFile, [a])
         try require(BoardNews.summary(stateRoot: state.path, since: BoardSeen.read(seenFile)[a.uuidString]!) == nil, "opening the board clears its news")
+
+        // two people on one shared board (owner 2026-10-07): an app edit by another person's profile is news, this Mac's own is not;
+        // rows carry the person's id (u), so Home names him from its address book
+        let mine = UUID().uuidString.lowercased(), theirs = UUID().uuidString.lowercased()
+        BoardNews.me = mine
+        try log("main", [
+            ["kind": "note", "who": "owner", "ts": 610, "by": ["person": mine, "via": "app"]],
+            ["kind": "add", "who": "owner", "ts": 620, "count": 4, "by": ["person": theirs, "via": "app"]],
+            ["kind": "add", "who": "ai", "agent": "Codex", "ts": 630, "count": 2, "by": ["person": theirs, "via": "Codex"]],
+            ["kind": "add", "who": "ai", "agent": "Codex", "ts": 640, "count": 1, "by": ["person": mine, "via": "Codex"]],
+        ])
+        let two = (BoardNews.summary(stateRoot: state.path, since: 600)?["rows"] as? [[String: Any]]) ?? []
+        try require(two.count == 3 && !two.contains { $0["k"] as? String == "note" }, "this Mac's own app edit is not news, the other person's is")
+        try require(two.contains { $0["w"] as? String == "owner" && $0["u"] as? String == theirs && $0["c"] as? Int == 4 }, "the other person's own edit names him")
+        try require(two.contains { $0["w"] as? String == "Codex" && $0["u"] as? String == theirs } && two.contains { $0["w"] as? String == "Codex" && $0["u"] as? String == mine },
+                    "each person's agent is its own row")
+        BoardNews.me = nil
     }
 }

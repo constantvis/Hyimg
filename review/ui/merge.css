@@ -1,0 +1,31 @@
+/* A merged save, quietly (ui/merge.js tell; owner 2026-10-09 on r12/docs-merge.html: «6 версия отличная»). The author's colour comes
+   in --mg: a person's colour, or an agent kind's (--hy-ag-*) when the writer has no profile. */
+
+/* the things the other side changed: a ring in the author's colour and the author's name over the top left corner, as wide on screen
+   at any zoom (--z, the board's camera); they live in #world, so they ride with the board */
+#hyMergeGlow { position: absolute; left: 0; top: 0; pointer-events: none; }
+.hy-mg { position: absolute; box-sizing: border-box; border-radius: calc(3px / var(--z, 1)); outline: calc(2px / var(--z, 1)) solid var(--mg);
+  outline-offset: 0; opacity: 0; transition: opacity .5s var(--hy-ease); }
+.hy-mg.on { opacity: 1; }
+.hy-mgt { position: absolute; left: calc(-2px / var(--z, 1)); bottom: calc(100% + 4px / var(--z, 1)); height: 16px; padding: 0 6px; border-radius: 4px 4px 4px 0;
+  background: var(--mg); color: var(--hy-av-ink); font: 600 10px/16px var(--sans); white-space: nowrap; transform-origin: 0 100%; scale: calc(1 / var(--z, 1)); }
+.hy-mg.warn { outline-color: var(--ht-warn); outline-offset: calc(6px / var(--z, 1)); }   /* Show: outside the selection's ring */
+
+/* the author's face by History: a plate of the top row (<hy-plate>, its look is ui/hy/plate.css) where «?» stands; «?» and the bell
+   step one plate aside while it is there */
+hy-plate.hy-mface { position: absolute; top: var(--hy-row-top, 12px); right: 104px; z-index: 31; width: var(--hy-plate-h, 38px); padding: 0;
+  display: grid; place-items: center; opacity: 0; scale: .5; pointer-events: none; transition: opacity .3s var(--hy-ease), scale .4s var(--hy-ease); }
+.hy-mface hy-avatar .hya-p { box-shadow: 0 0 0 2px color-mix(in srgb, var(--mg) 35%, transparent); }
+:root.hy-mface-on hy-plate.hy-mface { opacity: 1; scale: 1; pointer-events: auto; }
+#bkeys, #bntf { transition: translate .4s var(--hy-ease); }
+:root.hy-mface-on :is(#bkeys, #bntf) { translate: -46px 0; }
+
+/* History's dot until it is opened, and what pointing at History says */
+#bhist .hy-mdot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--mg); box-shadow: 0 0 0 2px var(--panel);
+  opacity: 0; scale: .4; transition: opacity .25s var(--hy-ease), scale .3s var(--hy-ease); pointer-events: none; }
+#bhist.hy-mdot-on .hy-mdot { opacity: 1; scale: 1; }
+#bhist .hy-mhv { position: absolute; right: 0; top: calc(100% + 8px); padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 96%, transparent); box-shadow: var(--hy-sh-pop); color: var(--ink); font: 400 12px/1.3 var(--sans);
+  white-space: nowrap; pointer-events: none; display: none; }
+#bhist.hy-mdot-on:hover .hy-mhv { display: block; }
+@media (prefers-reduced-motion: reduce) { .hy-mg, .hy-mface, #bkeys, #bntf, #bhist .hy-mdot { transition-duration: .01s; } }

@@ -2,8 +2,9 @@
 click takes me there"). Every save of a board is compared with the board it replaces: pictures added or removed, notes and headings
 written, groups made, renamed or taken away, things moved. One line per event in <state>/boards/_events/<page>.jsonl, newest last,
 the last KEEP kept. Moves of the same author within a couple of minutes fold into one event, so a long drag is one line."""
-import json, os, time
+import json, os, threading, time
 
+import notelinks
 from config import BOARDS
 
 # The labels this file writes for the interface in the app's language (owner 2026-10-06: «make 2 versions, Russian and English,
@@ -13,6 +14,7 @@ tr = lambda en, ru: en
 KEEP = 3000          # events per page; about a month of busy work
 SAMPLE = 24          # pictures remembered per event for the thumbnails
 FOLD_S = 150         # moves of one author closer than this fold into one event
+_LOCK = threading.RLock()   # a board save's events and a comment's (append) never write the file at once
 
 
 def _path(page):
@@ -60,6 +62,11 @@ def diff(old, new):
             out.append({"kind": t, "ids": [i], "text": _first(it.get("text") or it.get("label")), "color": it.get("color", "")})
         elif t in ("note", "text") and _first(oi[i].get("text"), 400) != _first(it.get("text"), 400) and _first(it.get("text")):
             out.append({"kind": t + "-edit", "ids": [i], "text": _first(it.get("text")), "color": it.get("color", "")})
+    for i, it in ni.items():   # a reply (notelinks.py, 2026-10-08): when a written note first answers that note; to_by is its author
+        r = notelinks.reply_of(ni, i) if it.get("type") == "note" and _first(it.get("text")) else None
+        if r and not (notelinks.reply_of(oi, i) == r and _first(oi[i].get("text"))):
+            out.append({"kind": "note-reply", "ids": [i, r], "text": _first(it.get("text")), "to": _first(ni[r].get("text"), 80), "color": it.get("color", ""),
+                        **({"to_by": ni[r]["by"]} if ni[r].get("by") else {})})
     for i, it in oi.items():
         if it.get("type") in ("note", "text") and i not in ni:
             out.append({"kind": it["type"] + "-remove", "ids": [i], "text": _first(it.get("text")), "color": it.get("color", "")})
@@ -72,10 +79,24 @@ def diff(old, new):
     return out
 
 
-def record(page, old, new, who="owner", label="", agent=""):
-    """agent: the name of the agent behind an AI save (hy.py sends HYIMG_AGENT, e.g. Codex): Home names it in a board's news"""
+def record(page, old, new, who="owner", label="", agent="", by=None):
+    """agent: the name of the agent behind an AI save (hy.py sends HYIMG_AGENT, e.g. Codex): Home names it in a board's news;
+    by: who, {"person": profile id, "via": "app" | agent} (people.py, owner 2026-10-07)"""
     evs = diff(old, new)
     if not evs: return 0
+    with _LOCK: return _record(page, new, evs, who, label, agent, by)
+
+
+def append(page, e):
+    """one event that is not a board save (a comment, a drawing on the board: comments.py), newest last"""
+    p = _path(page); os.makedirs(os.path.dirname(p), exist_ok=True)
+    e = {**e, "t": e.get("t") or time.strftime("%Y-%m-%d %H:%M:%S"), "ts": e.get("ts") or time.time()}
+    with _LOCK:
+        with open(p, "a", encoding="utf-8") as fh: fh.write(json.dumps(e, ensure_ascii=False) + "\n")
+    return e
+
+
+def _record(page, new, evs, who, label, agent, by):
     p = _path(page); os.makedirs(os.path.dirname(p), exist_ok=True)
     t = time.strftime("%Y-%m-%d %H:%M:%S"); now = time.time()
     try: lines = open(p, encoding="utf-8").read().splitlines()
@@ -85,7 +106,9 @@ def record(page, old, new, who="owner", label="", agent=""):
         e.update(t=t, ts=now, who=who, rev=new.get("revision"))
         if label: e["label"] = label[:120]
         if agent: e["agent"] = agent[:40]
-        if e["kind"] == "move" and last and last.get("kind") == "move" and last.get("who") == who and last.get("agent", "") == e.get("agent", "") and now - last.get("ts", 0) < FOLD_S:
+        if by: e["by"] = by
+        if e["kind"] == "move" and last and last.get("kind") == "move" and last.get("who") == who and last.get("agent", "") == e.get("agent", "") \
+                and last.get("by") == e.get("by") and now - last.get("ts", 0) < FOLD_S:
             ids = list(dict.fromkeys(e["ids"] + last["ids"]))[:200]
             paths = list(dict.fromkeys(e["paths"] + last.get("paths", [])))[:SAMPLE]
             titles = list(dict.fromkeys(e.get("titles", []) + last.get("titles", [])))[:4]

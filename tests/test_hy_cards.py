@@ -131,7 +131,7 @@ def test_pdf_page_and_presets(hyimg):
 
 def test_html_card_needs_dev_studio(hyimg):
     hy, board, lib = hyimg
-    assert "Dev studio" in hy("do", "html page.html x=0 y=2000", ok=False)
+    assert "Dev Studio" in hy("do", "html page.html x=0 y=2000", ok=False)
     hy("do", "html page.html x=0 y=2000 force=1", "--quiet")
     card = next(it for it in board()["items"].values() if it.get("type") == "html")
     assert card["src"] == "page.html" and card["pics"] == ["page.html"] and card["vw"] == 1280 and card["h"] == 300

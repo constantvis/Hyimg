@@ -12,7 +12,7 @@ function response(revision = 1, status = 200) {
 function canvasHarness() {
   const pending = [], timers = new Map();
   let timerId = 0;
-  const context = vm.createContext({ window: {}, document: {activeElement:null}, status() {}, toast() { return null; }, openEditor: null, cropState: null,
+  const context = vm.createContext({ window: {}, document: {activeElement:null}, status() {}, toast() { return null; }, T: k => k, openEditor: null, cropState: null,
     setTimeout(fn) { timers.set(++timerId, fn); return timerId; }, clearTimeout(id) { timers.delete(id); },
     fetch(url, options) { return new Promise(resolve => pending.push({ url, body: JSON.parse(options.body), resolve })); }
   });
@@ -67,7 +67,8 @@ function libraryHarness() {
   const pending = [], timers = new Map(), saved = {};
   let timer = 0, delegateCalls = 0;
   const frame = { getAttribute: () => '/canvas?embed=1', contentWindow: { hyimgFlush: async () => { delegateCalls++; return true; } } };
-  const context = vm.createContext({ window: {}, $: selector => selector === '#cvFrame' ? frame : saved,
+  // T: the library's words go through T() since e4761b4 (the library in English or Russian), as the canvas harness has had since db4836d
+  const context = vm.createContext({ window: {}, $: selector => selector === '#cvFrame' ? frame : saved, T: k => k,
     setTimeout(fn) { timers.set(++timer, fn); return timer; }, clearTimeout(id) { timers.delete(id); },
     fetch(url, options) { return new Promise(resolve => pending.push({ url, body: JSON.parse(options.body), resolve })); }
   });

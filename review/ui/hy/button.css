@@ -3,7 +3,8 @@
    <button> that fills it, so the keyboard, VoiceOver, menu.js and keyhints.js (a key cap in the button shows under ⌘) work as they did.
    Heights are the scale's tokens: s 24, m 28 (the default, a panel's row), l 30 (a button inside a plate), row 32, dock 34, plate 38.
    variant: plain (the raised ground), solid (the ink plate: the one action of a panel or a row), ghost (no ground until the pointer),
-   danger (red words on a red tint), reset (the resets: red once there is something to take back, solid red in a dock).
+   danger (red words on a red tint), reset (the resets: red once there is something to take back, solid red in a dock), accent (a Studio's
+   primary action in its colour).
    pressed: an option that is on is the ink plate inside a bar; a plate of the top row lifts to the raised ground with ink words. */
 hy-button, hy-icon-button { --hy-bh: var(--hy-h-m); position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box;
   height: var(--hy-bh); border: 0; border-radius: var(--hy-btn-r); vertical-align: middle; background: var(--raise); color: var(--sub);
@@ -22,7 +23,8 @@ hy-button[size=s], hy-button[size=s] > button { --hy-cap-pad: 8px; }
 :is(hy-button, hy-icon-button)[size=row] { --hy-bh: var(--hy-h-row); font-size: 13px; }
 :is(hy-button, hy-icon-button)[size=dock] { --hy-bh: var(--hy-h-dock); font-size: 13px; }
 :is(hy-button, hy-icon-button)[size=plate] { --hy-bh: var(--hy-h-plate); font-size: 13px; border-radius: var(--hy-plate-r); border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--plate-sh); }
+  /* a plate of the top row: its shadow is the row's (ui/tokens.css --hy-sh-row) */
+  background: color-mix(in srgb, var(--panel) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--hy-sh-row); }
 /* an icon button is a square of its height, a circle in the round look, no ground until the pointer unless plain */
 hy-icon-button { width: var(--hy-bh); padding: 0; background: transparent; }
 hy-icon-button[variant=plain] { background: var(--raise); }
@@ -36,6 +38,10 @@ hy-icon-button[variant=plain] { background: var(--raise); }
 :is(hy-button, hy-icon-button)[variant=reset]:not([disabled]) { background: color-mix(in srgb, var(--hy-red) 15%, transparent); color: var(--hy-red); }
 :is(hy-button, hy-icon-button)[variant=reset]:not([disabled]):hover { background: color-mix(in srgb, var(--hy-red) 24%, transparent); }
 :is(hy-button, hy-icon-button)[variant=reset][size=dock]:not([disabled]) { background: var(--hy-red); color: var(--hy-on-accent); }
+/* accent: a Studio's primary action (Save, Done; ui/hy/actions.js), filled with the colour of the place it stands in (--sel: the board's blue,
+   a Studio's own colour inside its root), white words; a plate keeps its height and corners, its edge takes the fill */
+:is(hy-button, hy-icon-button)[variant=accent], :is(hy-button, hy-icon-button)[variant=accent]:hover { background: var(--sel); border-color: var(--sel); color: var(--hy-on-accent); }
+:is(hy-button, hy-icon-button)[variant=accent]:hover { background: color-mix(in srgb, var(--sel) 88%, var(--ink)); }
 :is(hy-button, hy-icon-button)[pressed] { background: var(--ink); color: var(--panel); }
 :is(hy-button, hy-icon-button)[size=plate][pressed] { background: var(--raise); color: var(--ink); }
 :is(hy-button, hy-icon-button)[disabled] { opacity: .45; cursor: default; }

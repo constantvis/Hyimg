@@ -59,6 +59,10 @@
     const emit = (type, v) => { input.value = String(v); paint(); input.dispatchEvent(new Event(type, { bubbles: true })); };
     const api = { el: root, input, paint, set(v) { input.value = String(snap(+v, range().min, range().max, range().step)); paint(); }, destroy() { root._hy = null; root.removeEventListener("pointerdown", down); } };
     let drag = null, jump = 0;
+    // a typed number's ↵ at the field's end, bare in its ink, until learned (ui/hy/keyhint.js); a drag shows none (owner 2026-10-09 on
+    // «Contrast ⇧ 10× finer ⌥ 100× … ↵ Apply»: «вот так точно не надо ... достаточно просто enter символа»)
+    const TYPE_KEYS = [{ id: "done", keys: ["enter"], t: "" }];
+    const hint = f => (window.hyKeyHint ? window.hyKeyHint.show(f, "number", TYPE_KEYS, { place: "end", bare: true, after: false, field: f }) : null);
     const at = x => { const r = root.getBoundingClientRect(); return fromP((x - r.left) / (r.width || 1)); };
     function down(e) {
       if (e.button !== 0 || e.target.closest(".hy-slider-ed") || input.disabled) return;
@@ -96,9 +100,9 @@
     function edit() {
       if (!out || out._edit || input.disabled) return;
       const cur = num(input.value, 0), f = el("input", "hy-slider-ed"); f.type = "text"; f.inputMode = "decimal"; f.value = text(cur); const was = f.value; f.setAttribute("aria-label", (input.getAttribute("aria-label") || "") + " value");
-      out._edit = true; out.hidden = true; out.after(f); f.focus(); f.select();
+      out._edit = true; out.hidden = true; out.after(f); f.focus(); f.select(); const kh = hint(f);
       const end = cancel => {
-        if (!out._edit) return; out._edit = false;
+        if (!out._edit) return; out._edit = false; if (kh) kh.hide();
         const raw = f.value.trim(), v = raw === "" || raw === was ? NaN : api.parse ? api.parse(raw, cur) : Number(raw.replace(",", ".")); f.remove(); out.hidden = false;
         if (!cancel && Number.isFinite(v)) { const { min, max, step } = range(); emit("input", snap(v, min, max, step)); input.dispatchEvent(new Event("change", { bubbles: true })); }
         paint(); input.focus({ preventScroll: true });

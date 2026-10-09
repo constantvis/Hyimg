@@ -47,7 +47,7 @@
    "token": "--hy-row-r",
    "round": "999px",
    "pro": "8px",
-   "who": "every control that is a row of a panel: slider (--hy-sl-r), select, field, option button, filter chip, search field, the 3D editor's DialKit rows, the frame editor's --r-ctl (look.css, owner 2026-10-06: «одни круглые другие квадратные»)"
+   "who": "every control that is a row of a panel: slider (--hy-sl-r), select, field, option button, filter chip, search field, 3D Studio's DialKit rows, Image Studio's --r-ctl (look.css, owner 2026-10-06: «одни круглые другие квадратные»)"
   },
   "tree_row": {
    "token": "--hy-trow-r",
@@ -105,7 +105,7 @@
   "family": {
    "line": 1.85,
    "grid": 24,
-   "source": "ui/icons.js HY_IC_LINE: Lucide geometry on a 24 grid, round caps and joins (owner 2026-10-06: the frame editor's set is the family)"
+   "source": "ui/icons.js HY_IC_LINE: Lucide geometry on a 24 grid, round caps and joins (owner 2026-10-06: Image Studio's set is the family)"
   },
   "menu": {
    "line": 1.9,
@@ -119,7 +119,7 @@
   },
   "why": "1.8 to 1.9 is the family's line as written in different files (26 + 15 + the 1.85 family: indistinguishable on screen, one value would be better); 2, 2.2 and 2.4 are the heavier line of 12-14 px glyphs. Other lines (1.5, 1.6, 1.7, 2.6, 2.8, 3, 4) are flagged.",
   "registry": "hyimg/review/ui/icons.js",
-  "rule": "one meaning, one icon, only from ui/icons.js (owner 2026-10-07: «Иконка Adjustments неверная. Нужно, чтобы это было систематизировано ... консистентные иконки, консистентные стили, консистентные цвета»). The registry HY_TOOL_IC names each glyph by its meaning (the comment after it); a page or a plugin draws an icon with hyIcon(name, size, line, cls), <svg data-ic=name> in static markup, hyIconPath(name) on a canvas or the --hy-ic-* CSS images, and writes no <path>, <circle> or <rect> of its own (validate.py icon-inline). A name is one glyph, a glyph is one name, every name asked for exists (icon-registry); a glyph is drawn in currentColor (icon-color), the one exception Raw Editor's «on» disc (hyGradeIcon). A table of older names (ui/menu.js NAME, the image studio's ICON_NAME, the 3D studio's FAMILY) is marked hy-icon-names and points only at registry names.",
+  "rule": "one meaning, one icon, only from ui/icons.js (owner 2026-10-07: «Иконка Adjustments неверная. Нужно, чтобы это было систематизировано ... консистентные иконки, консистентные стили, консистентные цвета»). The registry HY_TOOL_IC names each glyph by its meaning (the comment after it); a page or a plugin draws an icon with hyIcon(name, size, line, cls), <svg data-ic=name> in static markup, hyIconPath(name) on a canvas or the --hy-ic-* CSS images, and writes no <path>, <circle> or <rect> of its own (validate.py icon-inline). A name is one glyph, a glyph is one name, every name asked for exists (icon-registry); a glyph is drawn in currentColor (icon-color), the one exception Raw Editor's «on» disc (hyGradeIcon). A table of older names (ui/menu.js NAME, Image Studio's ICON_NAME, 3D Studio's FAMILY) is marked hy-icon-names and points only at registry names.",
   "name_tables": "a comment with hy-icon-names on the line of a table's opening brace (or the line above): its string values are registry names",
   "allow_files": {
    "hyimg/review/ui/projicon.js": "the pictograms a person picks for a project on Home (stored by name in home.json, beside the emoji): a catalog of pictures, not the app's meanings"
@@ -214,9 +214,11 @@
    "reset_light": "#d70015"
   },
   "shadows": {
-   "--plate-sh": "ui/look.css (with or without, cv.shadow)",
-   "--hy-sh-ctl": "ui/ui.css, a control on the surface",
-   "--hy-sh-pop": "ui/ui.css, a panel or menu over it"
+   "--plate-sh": "ui/look.css, a panel or a menu (cv.shadow: 1, panels, 0 the default; none at 0)",
+   "--hy-sh-ctl": "ui/ui.css, a control on the surface (flat at 0)",
+   "--hy-sh-pop": "ui/ui.css, a panel or menu over it (flat at 0)",
+   "--hy-sh-row": "ui/look.css, ui/hy/plate.css: a plate of the top row, a mode's hint plate, a dock (flat at panels and 0)",
+   "--hy-sh-row-ctl": "ui/ui.css: the same in the control depth (flat at panels and 0)"
   },
   "rule": "colours only by tokens (owner 2026-10-07: «консистентные цвета»): a CSS declaration takes var(--ink), var(--sel) and the rest; a hex, rgb() or hsl() is written only as a token's value (--name: #...), in a var() fallback, or where it is not a colour of the interface: a mask's alpha (mask, -webkit-mask), a drawn swatch of a colour itself (a hue track). validate.py css-color; what is known is in design/baseline.json",
   "not_colour_props": ["mask", "mask-image", "-webkit-mask", "-webkit-mask-image", "mask-border", "-webkit-mask-box-image"]
@@ -268,13 +270,13 @@
    "name": "takeover",
    "min": 1100,
    "max": 1299,
-   "who": "the frame editor over the board, and the board's crumb and dock lifted over it"
+   "who": "Image Studio over the board, and the board's crumb and dock lifted over it"
   },
   {
    "name": "inspector",
    "min": 2147483647,
    "max": 2147483647,
-   "who": "Dev studio's marks inside a page it inspects (a foreign page: it must win)"
+   "who": "Dev Studio's marks inside a page it inspects (a foreign page: it must win)"
   }
  ],
  "focus": {
@@ -283,7 +285,7 @@
  },
  "runtime": {
   "prose": {
-   "about": "panel prose (owner 2026-10-06, the 3D studio's Scene panel in white body text: «Вот эти комментарии никто не читает ... микро шрифтом, как Apple обычно делает ... Если текст не ключевой, то зачем он вообще нужен»): an explanation in a panel, popover, empty state or setting is not written when it is not key, one footnote line (ui/hy/hint.css .hy-hint or <hy-hint>, key words in <b>) when it is, a ⓘ (.hy-info, the text in its tooltip) when something is really unclear. Static: scripts/validate.py panel-prose; runtime: design/audit.js prose",
+   "about": "panel prose (owner 2026-10-06, 3D Studio's Scene panel in white body text: «Вот эти комментарии никто не читает ... микро шрифтом, как Apple обычно делает ... Если текст не ключевой, то зачем он вообще нужен»): an explanation in a panel, popover, empty state or setting is not written when it is not key, one footnote line (ui/hy/hint.css .hy-hint or <hy-hint>, key words in <b>) when it is, a ⓘ (.hy-info, the text in its tooltip) when something is really unclear. Static: scripts/validate.py panel-prose; runtime: design/audit.js prose",
    "max_words": 14,
    "hint_max_words": 20,
    "hint_classes": ["hy-hint"],
@@ -438,7 +440,7 @@
    "option": 5
   },
   "top_row": {
-   "about": "the top row in every mode (design/audit.js top-row, owner 2026-10-07: «breadcrumb area тоже разношерстная»): the plates whose top is within band px of the window's top and that are no taller than max_h (the window buttons' capsule, the library button, the crumb, a title plate after it, «To the original», the round buttons, Home's search and «New board», the image studio's Save) stand top px down, height px tall, gutter px from the window's sides, gap px from a neighbour (a plate nearer than near px), with one glass, one shadow, one corner and text px words; a mode's hint plate (hint) is one of them under the row, under px from the top and gutter in; the side panels (panels) start under px from the top; nothing lies on a band a page draws as the window's edge (window.hyEdges(), the image studio's rulers); no note (toasts) covers a plate of the row. The tokens: ui/look.css --hy-row-top, --hy-row-gut, --hy-row-gap, --hy-plate-h, --hy-row-under, the look .hy-plate",
+   "about": "the top row in every mode (design/audit.js top-row, owner 2026-10-07: «breadcrumb area тоже разношерстная»): the plates whose top is within band px of the window's top and that are no taller than max_h (the window buttons' capsule, the library button, the crumb, a title plate after it, «To the original», the round buttons, Home's search and «New board», Image Studio's Save) stand top px down, height px tall, gutter px from the window's sides, gap px from a neighbour (a plate nearer than near px), with one glass, one shadow, one corner and text px words; a mode's hint plate (hint) is one of them under the row, under px from the top and gutter in (Image Studio's options ride over the dock on the board since 2026-10-08, round 11 D3: there they are no hint plate); the side panels (panels) start under px from the top; nothing lies on a band a page draws as the window's edge (window.hyEdges(), Image Studio's rulers); no note (toasts) covers a plate of the row. The tokens: ui/look.css --hy-row-top, --hy-row-gut, --hy-row-gap, --hy-plate-h, --hy-row-under, the look .hy-plate",
    "top": 12,
    "gutter": 12,
    "height": 38,
@@ -450,7 +452,7 @@
    "max_h": 60,
    "near": 32,
    "skip": ["#world", "#handles", "#hyToasts", ".menu", "[role=menu]", "[role=dialog]", "#ctx", "#lctx", "#sets", "#hist", "#ntf", "#keys", "#pages", "#tip", "#modetip", "#load"],
-   "hint": ["#obar"],
+   "hint": ["#obar:not(.indock)"],
    "toasts": ["#hyToasts .ht"],
    "panels": [".m3l", ".m3r", ".dvl", ".dvr", "#side", "body.cv-on:not(.cv-only) main#list"],
    "title_plates": ["gst", "m3title"],

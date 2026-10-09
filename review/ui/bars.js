@@ -8,7 +8,10 @@
 // third of the board, [data-hyside]), each only where it is: a panel at the top right narrows the board for a bar at its height, not
 // for one far under it; the top row and the dock with a plugin's axes or title as bands; 8 px from each. Up and down the bars of the
 // selection move as one: where they stand when that fits, else mirrored to the selection's other side, else pinned to the free part's
-// top over the selection; bars marked data-up (the frame bar and a plugin's bar of a card in its editor) never go under the card.
+// top over the selection; bars marked data-up (the frame bar and a plugin's bar of a card in its editor) never go under the card. A
+// selection wholly out of the window takes its bars and its Info card (#info) with it (owner 2026-10-08: a woken board's opacity bar
+// stood alone at the top and its Info card at the right with nothing selected in view), they come back with it; one under the library is
+// still pushed to the free part's edge.
 //   hyBars.free(stage, inset, band)   {l, r, t, b}: the free part; with band {t, b} the side panels count only where they reach it
 //   hyBars.clamp(o)                   o: {stage, inset, cam, sel: {l, r, t, b} on screen or null}
 (() => {
@@ -29,11 +32,13 @@
     return f;
   }
   function clamp(o) {
-    const bars = [...document.querySelectorAll("#handles .tidy")];
-    bars.forEach(t => { t.style.translate = ""; });
+    const bars = [...document.querySelectorAll("#handles .tidy")], S = o.sel, st = o.stage.getBoundingClientRect(), info = document.getElementById("info");
+    const out = !!S && (S.r < st.left || S.l > st.right || S.b < st.top || S.t > st.bottom);
+    bars.forEach(t => { t.style.translate = ""; t.style.visibility = out ? "hidden" : ""; });
+    if (info) info.style.visibility = out ? "hidden" : "";
     const rs = bars.map(t => t.getBoundingClientRect()), ix = bars.map((t, i) => i).filter(i => rs[i].width);
-    if (!ix.length) return;
-    const S = o.sel, fv = free(o.stage, o.inset);
+    if (out || !ix.length) return;
+    const fv = free(o.stage, o.inset);
     // up and down, all the bars of the selection as one
     const top = Math.min(...ix.map(i => rs[i].top)), bot = Math.max(...ix.map(i => rs[i].bottom));
     const fits = (a, b) => a >= fv.t - 0.5 && b <= fv.b + 0.5;

@@ -240,7 +240,7 @@ TOOLS = [
     ("hyimg_features", "Search Hyimg's feature catalog (review/features.json): how the owner uses a feature (keys, right click) and how an agent does it (exact hy.py command or HTTP route), plus the skill that explains it. No query lists all features.",
      {"type": "object", "properties": {"query": {"type": "string", "description": "a word: цветокор, grade, pdf, 3d, props, topage, mask, video, ..."}}, "additionalProperties": False}, t_features),
     ("hyimg_active", "What the owner has selected and sees right now in the front project (canvas and library): «these pictures», «the selected ones». With link: what a board link (?obj= or &at=) points at.",
-     {"type": "object", "properties": {"link": {"type": "string", "description": "a board link the owner sent, http://localhost:41xx/?view=canvas&page=…&obj=…"},
+     {"type": "object", "properties": {"link": {"type": "string", "description": "a board link the owner sent, hyimg://board/<id>?page=…&obj=… or http://localhost:41xx/?view=canvas&page=…&obj=…"},
                                        "paths_only": {"type": "boolean", "description": "only the selected pictures' library paths"}}, "additionalProperties": False}, t_active),
     ("hyimg_map", "Read a board page without screenshots: headings, groups (with picture counts), timelines, image frames; with ref, everything around one thing including notes.",
      schema({"page": P_PAGE, "ref": {"type": "string", "description": "a group, note, heading or id to look around"}, "groups": {"type": "boolean", "description": "also near-misses in group alignment"}}), t_map),
@@ -252,7 +252,7 @@ TOOLS = [
     ("hyimg_page_new", "Add a page to the project's board (as «+» on the canvas); prints its id.", schema({"title": {"type": "string"}}, ["title"]), t_page_new),
     ("hyimg_do", "Change a board page: one or more hy.py do commands separated by ';'. Saves versions before and after, retries when the owner saved in between, reports "
      "new layout problems and notifies the owner of what was added. Commands: block, arrange, move, fit, set, point, note, text, group, remove, frame, "
-     "htmlframe, model, html, link, topage, props, front, forward, backward, back, crop, trim, opacity, pdfpage, grade, mask, card3d, cards3d, camera3d, "
+     "htmlframe, model, html, link, topage, props, clearprops, front, forward, backward, back, crop, trim, opacity, pdfpage, grade, mask, card3d, cards3d, camera3d, "
      "variant3d (hyimg_features or `hy.py` without arguments for their syntax). Example: block \"batch/*\" into=\"Theme\" note=\"# Batch name\". Use dry "
      "first for big changes.",
      schema({"page": P_PAGE, "script": {"type": "string", "description": "e.g. block \"arc/2610061200-p7/*\" into=\"Тема\" note=\"# P7\""},

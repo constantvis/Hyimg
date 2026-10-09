@@ -28,9 +28,18 @@ addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) e.preventDefault();
 <script src="ui/dragband.js"></script>
 <script src="ui/icons.js"></script>   <!-- the app's icons, one per meaning (owner 2026-10-07); before the menus, which draw theirs from it -->
 <script src="ui/menu.js"></script>
-<script src="ui/projicon.js"></script><script src="ui/toasts.js"></script><script src="ui/storage.js"></script>   <!-- Settings › Storage, sizes (2026-10-07) -->
+<script src="ui/switcher.js"></script>   <!-- ⌃Tab's cards over Home, the boards in front of it (owner 2026-10-08, «Вкладки со сном») -->
+<script src="ui/projicon.js"></script><script src="ui/toasts.js"></script><script src="ui/storage.js"></script><script src="ui/people.js"></script><script src="ui/avatar.js"></script>   <!-- Storage; who: profile, people, faces -->
 <script src="ui/seg.js"></script>   <!-- the app's one choice switch, a thumb sliding under the chosen option (owner 2026-10-06) -->
 <script src="ui/slider.js"></script>   <!-- the app's one slider, the 3D editor's look (owner 2026-10-06: «why are the sliders everywhere not the same as in 3D») -->
+<script src="ui/settings-win.js"></script>   <!-- the settings' window over the page: a rail of sections, resizable (owner 2026-10-08, E1 «Rail popover») -->
+<script src="ui/setpanel.js"></script>   <!-- the settings panel, the board's too (owner 2026-10-07: «настройки на доске отличаются от настроек тут») -->
+<script src="ui/plugins.js"></script>   <!-- Settings › Plugins: which are on, add, remove (owner 2026-10-07) -->
+<script src="ui/dropbox.js"></script><link rel="stylesheet" href="ui/dropbox.css">   <!-- boards in Dropbox not on this Mac (owner 2026-10-08) -->
+<script src="ui/homeserver.js"></script><link rel="stylesheet" href="ui/homeserver.css">   <!-- a board's server: start or stop on its card (owner 2026-10-08) -->
+<script src="ui/bellrow.js"></script><script src="ui/bellthumbs.js"></script><script src="ui/homebell.js"></script>   <!-- news by project, the bell (2026-10-08) -->
+<link rel="stylesheet" href="ui/bell.css"><link rel="stylesheet" href="ui/homebell.css">
+<script src="ui/homearchive.js"></script><link rel="stylesheet" href="ui/homearchive.css">   <!-- the standard Archive project (2026-10-08) -->
 <link rel="stylesheet" href="ui/tokens.css">   <!-- the app's tokens, one source (ui/tokens.css); the light ones until applySettings sets the theme -->
 <link rel="stylesheet" href="ui/ui.css"><link rel="stylesheet" href="ui/hy/hy.css"><link rel="stylesheet" href="ui/look.css"><link rel="stylesheet" href="ui/slider.css">
 <style>
@@ -78,7 +87,7 @@ aside .nav input { flex: 1; min-width: 0; height: 24px; border: 1px solid var(--
 @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 
 main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.top { display: flex; align-items: center; gap: 10px; padding: 12px 58px 12px 32px; }   /* «New board» the row's gap (8) before the gear */
+.top { display: flex; align-items: center; gap: 10px; padding: 12px 104px 12px 32px; }   /* «New board» the row's gap (8) before the bell */
 .search { position: relative; flex: 0 1 360px; }
 .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; z-index: 1; }
 .search input { width: 100%; height: 38px; padding: 0 14px 0 36px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--ink); font: 13px var(--sans); outline: none;
@@ -95,13 +104,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 #bset { position: fixed; top: 12px; right: 12px; z-index: 30; width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; cursor: pointer;
   border: 1px solid var(--line); color: var(--sub); background: color-mix(in srgb, var(--panel) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--hy-sh-ctl); }
 #bset:hover, #bset[aria-expanded=true] { color: var(--ink); }
-#sets { position: fixed; top: 58px; right: 12px; z-index: 30; width: 280px; padding: 12px; display: none; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 14px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: var(--hy-sh-pop); }
-#sets.open { display: flex; }
-#sets .sh { font: 500 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-/* the settings' choices are the app's one switch (ui/look.css .seg, owner 2026-10-06), as wide as the panel */
-#sets .seg { display: flex; width: 100%; box-sizing: border-box; }
-#sets .seg > button { flex: 1 1 auto; min-width: 0; height: 26px; padding: 0 6px; font: 500 12px var(--sans); white-space: nowrap; }
+#sets { position: fixed; top: 58px; right: 12px; z-index: 30; display: none; }   /* its look and rows: ui/setpanel.js, .css */
 /* opening and saving a project, on its own cover (owner 2026-10-04: «the steps one after another», then «just an indicator right on
    the file's thumb when something is saving»): the last steps the app reports, small, at the bottom of the cover */
 .prog { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 7px 10px; border-radius: 10px; background: rgba(9,9,11,.74); color: #e4e4e7;
@@ -339,22 +342,7 @@ aside .nav [data-ficon]:hover { background: var(--raise2); }
 <div id="wl" aria-hidden="true"></div>
 <div id="load" aria-live="polite"><span class="lb" aria-hidden="true"><svg data-ic="library" class="lbi" width="18" height="18" stroke-width="1.8"></svg></span><canvas id="stars" aria-hidden="true"></canvas><div class="crumb"><span class="hm" title="Home: the board will finish loading on its own"><svg data-ic="home" width="16" height="16" stroke-width="1.9"></svg></span><span class="cs"><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><span class="fd" hidden title="The project on Home: the board will finish loading on its own"><i class="fdi"></i><span class="fdn"></span></span><span class="cs fds" hidden><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><span class="nm"></span><span class="cs"><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><span class="pg"><span class="pn" data-e="Loading"></span><svg data-ic="chevron" class="hy-chev dn" stroke-width="2.4"></svg></span></div><div class="steps"><ol></ol></div></div>
 <button id="bset" title="App settings" aria-label="App settings" aria-expanded="false"><svg data-ic="settings" width="18" height="18" stroke-width="1.8"></svg></button>
-<div id="sets" role="dialog" aria-label="App settings">
-  <!-- the language first, each named in itself so it is found in either (owner 2026-10-06); the app writes it and reloads Home and the boards -->
-  <div class="sh">Language</div><div class="seg" data-set="cv.lang" data-not><button data-v="en" lang="en">English</button><button data-v="ru" lang="ru">Русский</button></div>
-  <div class="sh">Theme</div><div class="seg" data-set="cv.theme"><button data-v="auto" title="Like macOS: light by day, dark in the evening, if the system is set that way">Auto</button><button data-v="dark" title="Dark theme, graphite paper">Dark</button><button data-v="light" title="Light theme, light paper">Light</button></div>
-  <div class="sh">Paper grain</div><div class="seg" data-set="cv.grain"><button data-v="0">Very fine</button><button data-v="1">Fine</button><button data-v="2">Visible</button><button data-v="3">Strong</button></div>
-  <div id="engineSet" hidden><div class="sh">Engine</div><div class="seg" id="engineOpts"><button data-engine="webkit" title="The macOS engine, like Safari: draws on the CPU">WebKit</button><button data-engine="chromium" title="Chrome's engine inside Hyimg: the GPU draws the board and it stays smooth">Chromium</button></div></div>
-  <div class="sh">Rendering</div><div class="seg" data-set="cv.lod"><button data-v="0" title="Each image as its own element">Standard</button><button data-v="1" title="From afar the images are drawn as one canvas (canvas 2D)">Canvas</button><button data-v="2" title="From afar the GPU draws the images (WebGL), like Figma">WebGL</button></div>
-  <div class="sh">Notes</div><div class="seg" data-set="cv.glass"><button data-v="1" title="Translucent, with a strong blur under them">Glass</button><button data-v="0" title="Solid, no blur">Solid</button></div>
-  <div class="sh">Dots</div><div class="seg" data-set="cv.dotsgl"><button data-v="0" title="A grid of CSS layers, as always">Classic</button><button data-v="1" title="One WebGL layer: alive, waves run through them when you drop images">WebGL</button></div>
-  <div class="sh">Shadows</div><div class="seg" data-set="cv.shadow"><button data-v="1" title="Panels and buttons float above the board">With shadows</button><button data-v="0" title="Panels lie flat">No shadows</button></div>
-  <div class="sh">Hide interface · ⌘.</div><div class="seg" data-set="cv.hideui"><button data-v="zoom" title="Everything around the board grows a little and fades out">Zoom</button><button data-v="slide" title="Everything slides off to its edge and fades">Slide</button></div>
-  <div class="sh">Corners</div><div class="seg" data-set="cv.shape"><button data-v="round" title="Round buttons and panels">Round</button><button data-v="pro" title="Stricter: almost square, with a moderate radius">Pro</button></div>
-  <div class="sh">Paper color</div>
-  <div class="paper"><label>Dark<input type="color" data-paper="paperDark" aria-label="Paper color in the dark theme"></label><label>Light<input type="color" data-paper="paperLight" aria-label="Paper color in the light theme"></label><button data-paper-reset title="Restore the default colors">Reset</button></div>
-  <div class="hy-slider" data-unit="%"><input id="dotsVis" type="range" min="0" max="300" step="5" aria-label="Dots visibility, percent"><span class="hy-slider-l">Dots visibility</span><output class="hy-slider-v"></output></div>
-  <div class="hy-hint" data-th="For <b>the whole app</b>: Home and every board">For <b>the whole app</b>: Home and every board</div></div>
+<div id="sets" role="dialog" aria-label="App settings" data-sw-window></div>   <!-- Home keeps the window (ui/settings-win.js) -->
 <script>T.dom(); document.querySelector("#load .pn").dataset.e = T("Loading");   // the markup above in the app's language, before the owner's data comes</script>
 
 <script>
@@ -362,55 +350,37 @@ const $ = s => document.querySelector(s);
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const send = (action, id, more) => { try { webkit.messageHandlers.hyimg.postMessage({ action, id, ...more }); } catch (e) { console.log("no native bridge", action, id); } };
 let DATA = null, TAB = "recent";   // null until the app sends the projects: Home shows it is loading, not «no projects»
-let HOME = { folders: [] }, EDIT = null;   // folders of projects (home.json through the app); the folder being named
+let HOME = { folders: [] }, EDIT = null, HOME_READ = false;   // folders of projects (home.json through the app); the folder being named
 const saveHome = () => { try { webkit.messageHandlers.hyimg.postMessage({ action: "homeSave", home: HOME }); } catch (e) { console.log("no native bridge", HOME); } };
 const folderOf = id => HOME.folders.find(f => f.projects.includes(id));
 const ICO_PROJ = `${hyIcon("board", 16, 1.8)}`;
 try { TAB = localStorage.getItem("home.tab") || "recent"; } catch {}
 
-// when a board changed, in the app's language (ui/i18n.js T, its Russian in ui/lang-home.js)
+// when a board changed, in the app's language (ui/i18n.js T, its Russian in ui/lang-home.js): the time alone, no «Edited» (owner
+// 2026-10-08: «Зачем мне эта писанина? ... Мне главное данные: сколько гигабайт, сколько чего, frames достаточно»)
 function ago(ts) {
   if (!ts) return T("Never opened");
   const s = (Date.now() - ts * 1000) / 1000;
-  if (s < 60) return T("Edited just now");
-  if (s < 3600) return T("Edited {n} min ago", { n: Math.round(s / 60) });
-  if (s < 86400) return T("Edited {n} h ago", { n: Math.round(s / 3600) });
+  if (s < 60) return T("just now");
+  if (s < 3600) return T("{n} min ago", { n: Math.round(s / 60) });
+  if (s < 86400) return T("{n} h ago", { n: Math.round(s / 3600) });
   const d = new Date(ts * 1000), y = new Date(Date.now() - 864e5);
-  if (d.toDateString() === y.toDateString()) return T("Edited yesterday");
-  return T("Edited {date}", { date: T.date(d, { day: "numeric", month: "long" }) });
+  return d.toDateString() === y.toDateString() ? T("yesterday") : T.date(d, { day: "numeric", month: "long" });
 }
 
 // News on a board without the owner (owner 2026-10-06: «on Home show how many new events happened on each board without him»): the
 // app counts what agents, the AI and other sessions did on it since he last had it in front (native BoardNews reads the board's own
 // event logs, no server is started) and sends it with the board: news {n, rows: [{p: page, k: kind, w: author, n: events, c: pictures}]}.
-// The number is a red capsule after «Edited …»; the usual tooltip says what and who in one line; it goes as soon as the board opens.
-const newsN = p => (p && p.news && p.news.n) || 0;
+// The number is a red capsule after the time; the usual tooltip says what and who in one line; it goes as soon as the board opens.
+const newsN = p => (p && p.news && !hyArchive.has(p.id) && p.news.n) || 0;   // an archived board has no news on Home (ui/homearchive.js)
+// Home's filters on a list: «Only new», shared or only mine (ui/people.js), «Size» the biggest first (ui/storage.js)
+const shown = list => hyStore.sort(hyPeople.filter(HOME.onlyNew ? list.filter(newsN) : list, HOME), HOME.sort);
 const BADGE_N = new Map();   // the number each board's capsule showed last: a new or changed one comes in, an unchanged one stays still
-// «12 new: +24 images, 2 notes on Renderings · Codex»: by page (the first three) and kind, then who
-function newsText(nw) {
-  const pages = new Map(), who = [];
-  (nw.rows || []).forEach(r => {
-    const name = r.p || T("Page 1");
-    if (!pages.has(name)) pages.set(name, { add: 0, rm: 0, groups: 0, notes: 0, heads: 0, moves: 0, other: 0 });
-    const c = pages.get(name), k = r.k;
-    if (k === "add") c.add += r.c; else if (k === "group") { c.groups += r.n; c.add += r.c; } else if (k === "remove") c.rm += r.c;
-    else if (k === "note" || k === "note-edit") c.notes += r.n; else if (k === "text" || k === "text-edit") c.heads += r.n;
-    else if (k === "move") c.moves += r.n; else c.other += r.n;
-    const w = r.w === "ai" ? T("AI") : r.w; if (w && !who.includes(w)) who.push(w);
-  });
-  const parts = [...pages].slice(0, 3).map(([name, c]) => {
-    const what = [c.add && T("+{n} images", { n: c.add }), c.rm && T("−{n} images", { n: c.rm }), c.groups && T("{n} groups", { n: c.groups }),
-      c.notes && T("{n} notes", { n: c.notes }), c.heads && T("{n} headings", { n: c.heads }), c.moves && T("{n} moves", { n: c.moves }),
-      c.other && T("{n} other changes", { n: c.other })].filter(Boolean).join(", ");
-    return what && T("{what} on {page}", { what, page: name });
-  }).filter(Boolean);
-  if (pages.size > 3) parts.push(T("{n} more pages", { n: pages.size - 3 }));
-  return T("{n} new", { n: nw.n }) + (parts.length ? ": " + parts.join("; ") : "") + (who.length ? " · " + who.join(", ") : "");
-}
+const newsText = nw => hyHomeBell.text(nw);   // «12 new: +24 images, 2 notes on Renderings · Codex» (ui/homebell.js)
 function badge(p) {
   const n = newsN(p); if (!n) { BADGE_N.delete(p.id); return ""; }
   const pop = BADGE_N.get(p.id) !== n, t = newsText(p.news); BADGE_N.set(p.id, n);
-  return `<span class="nb${pop ? " in" : ""}" title="${esc(t)}" aria-label="${esc(t)}">${n > 99 ? "99+" : n}</span>`;
+  return `${hyPeople.newsFaces(p.news)}<span class="nb${pop ? " in" : ""}" title="${esc(t)}" aria-label="${esc(t)}">${n > 99 ? "99+" : n}</span>`;   // faces: ui/people.js
 }
 function cover(p) {
   const im = (p.covers || []).slice(0, 3);
@@ -418,11 +388,12 @@ function cover(p) {
   return `<div class="mos ${im.length < 3 ? "one" : ""}">${(im.length < 3 ? im.slice(0, 1) : im).map(u => `<img src="${esc(u)}" alt="" loading="lazy" decoding="async">`).join("")}</div>`;
 }
 function cardHtml(p) {
-  const meta = [ago(p.updated), p.onCanvas ? T("{n} frames on the canvas", { n: p.onCanvas }) : "", hyStore.size(p)].filter(Boolean).join(" · ");
-  return `<div class="card ${p.available ? "" : "missing"}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="${esc(T("Open {name}", { name: p.name }))}">
-    <div class="cover">${cover(p)}<button class="fav" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" aria-label="${isFav(p.id) ? T("Remove from favorites") : T("Add to favorites")}" title="${isFav(p.id) ? T("Remove from favorites") : T("Add to favorites")}">${HEART}</button>${p.open ? `<span class="chip"><i></i>${T("state::Open")}</span>` : ""}<div class="prog" data-prog="${p.id}" aria-live="polite"><ol></ol></div>
+  const meta = [ago(p.updated), p.onCanvas ? T("{n} frames", { n: p.onCanvas }) : "", hyStore.size(p)].filter(Boolean).join(" · ");   // data only
+  return `<div class="card ${p.available ? "" : "missing"}${hyArchive.cls(p.id)}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="${esc(T("Open {name}", { name: p.name }))}">
+    <div class="cover">${cover(p)}${hyHomeServer.key(p, "card")}${hyArchive.tag(p.id)}
+      <button class="fav" data-fav="${p.id}" aria-pressed="${isFav(p.id)}" aria-label="${isFav(p.id) ? T("Remove from favorites") : T("Add to favorites")}" title="${isFav(p.id) ? T("Remove from favorites") : T("Add to favorites")}">${HEART}</button>${p.open ? `<span class="chip"><i></i>${T("state::Open")}</span>` : ""}<div class="prog" data-prog="${p.id}" aria-live="polite"><ol></ol></div>
       ${p.available ? "" : `<div class="warn">${T("Folder unavailable")}<button class="btn" data-act="relink" data-id="${p.id}">${T("Locate folder…")}</button></div>`}</div>
-    <div class="meta"><div class="t"><div class="n">${esc(p.name)}</div><div class="s" title="${esc(p.path)}"><span>${esc(meta)}</span>${badge(p)}</div></div>
+    <div class="meta"><div class="t"><div class="n">${esc(p.name)}${hyPeople.lock(p)}</div><div class="s" title="${esc(p.path)}"><span>${esc(meta)}</span>${badge(p)}</div></div>
       <button class="more" data-more="${p.id}" aria-label="${T("Board actions")}" aria-haspopup="menu" aria-expanded="false">${hyIcon("more", 16, 0, "", { fill: true })}</button></div>
   </div>`;
 }
@@ -442,8 +413,9 @@ const pathHtml = path => { const s = shortPath(path), i = s.lastIndexOf("/"); re
 // a board as a row of the list: a small cover, its name, its project, when it changed, the heart and «⋯»
 function rowHtml(p) {
   const f = folderOf(p.id), fav = isFav(p.id), fl = fav ? T("Remove from favorites") : T("Add to favorites");
-  return `<div class="card ${p.available ? "" : "missing"}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="${esc(T("Open {name}", { name: p.name }))}" title="${esc(p.path)}">
-    <div class="nmc"><div class="cover">${cover(p)}</div><div class="n">${esc(p.name)}${p.open ? `<i class="op" title="${T("state::Open")}"></i>` : ""}${p.available ? "" : " · " + T("folder unavailable")}</div></div>
+  return `<div class="card ${p.available ? "" : "missing"}${hyArchive.cls(p.id)}" role="button" tabindex="0" data-id="${p.id}" draggable="true" aria-label="${esc(T("Open {name}", { name: p.name }))}" title="${esc(p.path)}">
+    <div class="nmc"><div class="cover">${cover(p)}</div><div class="n">${esc(p.name)}${hyPeople.lock(p)}${p.open ? `<i class="op" title="${T("state::Open")}"></i>` : ""}${p.available ? "" : " · " + T("folder unavailable")}</div>
+      ${hyHomeServer.key(p, "row")}</div>
     <div class="c2">${f ? HY_PROJ.html(f, 15) + esc(f.name) : ""}</div>
     <div><button class="pth" data-act="openFolder" data-id="${p.id}" title="${esc(T("Open the folder in Finder · {path}", { path: p.path }))}">${HY_IC.folder}<span><bdi>${pathHtml(p.path)}</bdi></span></button></div><div class="c3"><span>${esc(ago(p.updated))}</span>${badge(p)}</div>${hyStore.sizeCell(p)}
     <div class="acts"><button class="fav" data-fav="${p.id}" aria-pressed="${fav}" aria-label="${fl}" title="${fl}">${HEART}</button>
@@ -454,7 +426,7 @@ const ICO_NONE = `<span class="pji" style="--pj:16px" aria-hidden="true">${hyIco
 const VT = `<div class="seg vt" role="group" aria-label="${T("View")}"><button data-view="grid" title="${T("Cards")}" aria-label="${T("Cards")}">${hyIcon("grid", 15, 1.9)}</button><button data-view="list" title="${T("List")}" aria-label="${T("List")}">${hyIcon("list", 15, 1.9)}</button></div>`;
 const NF = `<div class="seg nf" role="group" aria-label="${T("Filter")}"><button data-onlynew aria-pressed="false" title="${T("Only the boards where something changed without you")}">${T("Only new")}</button></div>`;
 function projRow(p, sub) {
-  return `<button class="nav ${sub ? "sub" : ""}" data-open="${p.id}" title="${esc(p.path)}" draggable="true">${ICO_PROJ}<span class="nm">${esc(p.name)}</span>${p.open ? `<span class="dot" title="${T("state::Open")}"></span>` : ""}</button>`;
+  return `<button class="nav ${sub ? "sub" : ""}" data-open="${p.id}" title="${esc(p.path)}" draggable="true">${ICO_PROJ}<span class="nm">${esc(p.name)}</span>${hyHomeBell.count([p])}${p.open ? `<span class="dot" title="${T("state::Open")}"></span>` : ""}</button>`;
 }
 function render() {
   const q = $("#q").value.trim().toLowerCase();
@@ -465,37 +437,48 @@ function render() {
     return;
   }
   const all = DATA.projects || [], byId = new Map(all.map(p => [p.id, p]));
+  // the standard Archive is always there, last of the projects (ui/homearchive.js); written at once only over a home.json the app could
+  // read: an empty or unreadable one (home {}) waits for the owner's own change, so a broken file is not replaced by the Archive alone
+  if (hyArchive.ensure(HOME) && HOME_READ) saveHome();
+  const live = all.filter(p => !hyArchive.has(p.id));   // the boards not in the Archive: Recent, All boards, the bell
   HOME.folders.forEach(f => { f.projects = f.projects.filter(id => byId.has(id)); });   // a project removed from the catalog leaves its folder
+  const loose = all.filter(p => !folderOf(p.id));   // the boards in no project
   // the left: folders of projects (open ones show their projects), then the projects in no folder
   // a project is one row, its boards show on the right when it is picked (owner 2026-10-04: it does not open into a list here)
-  const folders = HOME.folders.map(f => `<button class="nav folder" data-folder="${f.id}" aria-current="${TAB === "f:" + f.id}">
+  const folders = hyArchive.mine(HOME).map(f => `<button class="nav folder" data-folder="${f.id}" aria-current="${TAB === "f:" + f.id}">
       <span data-ficon="${f.id}" title="${T("Project icon")}">${HY_PROJ.html(f)}</span>
-      ${EDIT === f.id ? `<input data-fname="${f.id}" value="${esc(f.name)}" aria-label="${T("Project name")}">` : `<span class="nm">${esc(f.name)}</span><span class="ct">${f.projects.length}</span>`}</button>`
+      ${EDIT === f.id ? `<input data-fname="${f.id}" value="${esc(f.name)}" aria-label="${T("Project name")}">` : `<span class="nm">${esc(f.name)}</span>${hyHomeBell.count(f.projects.map(id => byId.get(id)))}<span class="ct">${f.projects.length}</span>`}</button>`
     ).join("")
     // «Без проекта» (owner 2026-10-04): the boards in no project, always last in the list; not a project of home.json, so it is not
     // renamed, deleted or given an icon; a board dragged onto it leaves its project
-    + `<button class="nav folder noproj" data-tab="none" aria-current="${TAB === "none"}">${ICO_NONE}<span class="nm">${T("No project")}</span><span class="ct">${all.filter(p => !folderOf(p.id)).length}</span></button>`;
+    + `<button class="nav folder noproj" data-tab="none" aria-current="${TAB === "none"}">${ICO_NONE}<span class="nm">${T("No project")}</span>${hyHomeBell.count(loose)}<span class="ct">${loose.length}</span></button>`
+    + hyArchive.row(HOME, TAB);   // then the standard Archive, at the very bottom (ui/homearchive.js says why)
   HOME.favs = (HOME.favs || []).filter(id => byId.has(id));
-  const favs = HOME.favs.map(id => byId.get(id));
+  const favs = HOME.favs.filter(id => !hyArchive.has(id)).map(id => byId.get(id));   // an archived favourite waits for its «Restore»
   $("#plist").innerHTML = (favs.length ? `<h4>${T("Favorites")}</h4>${favs.map(p => projRow(p)).join("")}` : "") + `<h4 class="ph">${T("Projects")}<button data-local="newfolder" title="${T("New project")}" aria-label="${T("New project")}">${hyIcon("plus", 14, 2.2)}</button></h4>${folders}`;
   const inp = $("#plist input[data-fname]"); if (inp) { inp.focus(); inp.select(); }
+  hyHomeBell.paint(hyArchive.live(DATA));   // «All boards»' news, the bell's dot and its list (ui/homebell.js), the Archive left out
   if (!all.length) {
     $("#body").innerHTML = `<div class="empty"><div><h2>${T("No boards yet")}</h2><p class="hy-hint">${T("A board is a <b>Finder folder</b> with images")}</p>
       <div class="row"><button class="btn primary" data-act="create">${T("New board")}</button></div></div></div>`;
+    $("#body").insertAdjacentHTML("afterbegin", hyDropbox.top()); $("#body").insertAdjacentHTML("beforeend", hyDropbox.section(DATA, "all", q));   // ui/dropbox.js
     return;
   }
   const folder = TAB.startsWith("f:") && HOME.folders.find(f => "f:" + f.id === TAB);
   if (TAB.startsWith("f:") && !folder) TAB = "recent";
-  let list = (folder ? folder.projects.map(id => byId.get(id)) : TAB === "none" ? all.filter(p => !folderOf(p.id)) : all).filter(p => !q || p.name.toLowerCase().includes(q) || (p.path || "").toLowerCase().includes(q));
+  let list = (folder ? folder.projects.map(id => byId.get(id)) : TAB === "none" ? all.filter(p => !folderOf(p.id)) : live).filter(p => !q || p.name.toLowerCase().includes(q) || (p.path || "").toLowerCase().includes(q));
   if (TAB === "recent") list = [...list].sort((a, b) => (b.opened || b.updated || 0) - (a.opened || a.updated || 0));
   else if (!folder) list = [...list].sort((a, b) => a.name.localeCompare(b.name, T.locale));
   // boards with news first in Recent, the rest in their order; «Only new» (home.json onlyNew) keeps only them, in every list
   if (TAB === "recent") list = [...list.filter(newsN), ...list.filter(p => !newsN(p))];
-  if (HOME.onlyNew) list = list.filter(newsN); list = hyStore.sort(list, HOME.sort);   // «Size» in the list: the biggest first (ui/storage.js)
+  list = shown(list);
   // the title row stays the same element while only the view or the boards change, so the view switch's thumb slides (owner 2026-10-06)
-  const headIn = `${folder ? `<button class="hic" data-ficon="${folder.id}" title="${T("Project icon")}">${HY_PROJ.html(folder, 22)}</button>` : ""}${TAB === "none" ? `<span class="hic">${ICO_NONE.replace("--pj:16px", "--pj:22px")}</span>` : ""}<h1>${folder ? esc(folder.name) : TAB === "recent" ? T("Recent") : TAB === "none" ? T("No project") : T("All boards")}</h1><span class="hn"></span>`;
-  const rest = (!list.length ? "" : HOME.view === "list" ? `<div class="list"><div class="lh"><span>${T("Name")}</span><span>${T("Project")}</span><span>${T("Path")}</span><span>${T("Edited")}</span>${hyStore.th(HOME.sort)}<span></span></div>${list.map(rowHtml).join("")}</div>` : `<div class="grid">${list.map(cardHtml).join("")}</div>`)
-    + (list.length ? "" : `<div class="none">${q ? T("Nothing found for “{q}”.", { q: esc(q) }) : HOME.onlyNew ? T("Nothing new on the boards") : TAB === "none" ? T("Every board is in a project.") : T("No boards in this project yet") + `<p class="hy-hint">${T("<b>Drag boards here</b> or pick a project in a board's menu")}</p>`}</div>`);
+  const headIn = `${folder ? `<button class="hic" data-ficon="${folder.id}" title="${T("Project icon")}">${HY_PROJ.html(folder, 22)}</button>` : ""}${TAB === "none" ? `<span class="hic">${ICO_NONE.replace("--pj:16px", "--pj:22px")}</span>` : ""}<h1>${folder ? esc(folder.name) : TAB === "recent" ? T("Recent") : TAB === "none" ? T("No project") : T("All boards")}</h1><span class="hn"></span>`
+    + hyPeople.visSeg(HOME, all);
+  let rest = (!list.length ? "" : HOME.view === "list" ? `<div class="list"><div class="lh"><span>${T("Name")}</span><span>${T("Project")}</span><span>${T("Path")}</span><span>${T("Edited")}</span>${hyStore.th(HOME.sort)}<span></span></div>${list.map(rowHtml).join("")}</div>` : `<div class="grid">${list.map(cardHtml).join("")}</div>`)
+    + (list.length ? "" : `<div class="none">${q ? T("Nothing found for “{q}”.", { q: esc(q) }) : HOME.onlyNew ? T("Nothing new on the boards") : TAB === "none" ? T("Every board is in a project.") : hyArchive.is(folder) ? hyArchive.empty() : T("No boards in this project yet") + `<p class="hy-hint">${T("<b>Drag boards here</b> or pick a project in a board's menu")}</p>`}</div>`);
+  rest += hyArchive.found(shown(all), TAB, q, HOME.view === "list");   // a search's matches in the Archive, filtered as the rest, under it
+  rest = hyDropbox.top() + rest + hyDropbox.section(DATA, TAB, q);   // a link's board to add, the boards in Dropbox not on this Mac (ui/dropbox.js)
   const oh = $("#body > .head");
   if (oh && oh._k === headIn) { while (oh.nextSibling) oh.nextSibling.remove(); oh.insertAdjacentHTML("afterend", rest); }
   else { $("#body").innerHTML = `<div class="head">${headIn}${NF}${VT}</div>` + rest; $("#body > .head")._k = headIn; if (window.hySeg) hySeg($("#body")); }
@@ -508,9 +491,10 @@ function render() {
 function newFolder(withProject) {
   const f = { id: "f" + Date.now().toString(36), name: T("New project"), projects: [] };
   if (withProject) { HOME.folders.forEach(x => x.projects = x.projects.filter(id => id !== withProject)); f.projects.push(withProject); }
-  HOME.folders.push(f); EDIT = f.id; saveHome(); render();
+  hyArchive.add(HOME, f); EDIT = f.id; saveHome(); render();   // before the Archive, which stays last
 }
 function moveTo(pid, fid) {
+  hyArchive.moving(HOME, DATA, pid, fid);   // into the Archive: where it came from, for «Restore»; out of it: forgotten (ui/homearchive.js)
   HOME.folders.forEach(f => f.projects = f.projects.filter(id => id !== pid));
   const f = HOME.folders.find(x => x.id === fid); if (f) f.projects.push(pid);
   saveHome(); render();
@@ -518,43 +502,45 @@ function moveTo(pid, fid) {
 function nameFolder(fid, name) { const f = HOME.folders.find(x => x.id === fid); EDIT = null; if (f && name.trim()) f.name = name.trim(); saveHome(); render(); }
 // the app's settings (theme, grain): sent with the projects, changed here and written back by the app
 let SET = {};
-const SET_DEF = { "cv.dotsgl": "0", "cv.grain": "2", "cv.lod": "1", "cv.glass": "1", "cv.shadow": "1", "cv.shape": "round", "cv.hideui": "zoom" };   // the board's defaults (canvas.html SETS)
+const SET_DEF = { "cv.dotsgl": "0", "cv.grain": "0", "cv.lod": "1", "cv.glass": "1", "cv.shadow": "0", "cv.shape": "round", "cv.hideui": "zoom", "cv.dotsv": "100" };   // the board's defaults (canvas.html SETS)
 let DATA_ENGINE = { cef: false, engine: "webkit" };   // which engine draws the boards, from the app
 const sendSettings = change => { try { webkit.messageHandlers.hyimg.postMessage({ action: "settings", change }); } catch (e) { console.log("no native bridge", change); } };
 const SYS = matchMedia("(prefers-color-scheme: dark)");
 function applySettings() {
   const t = SET["cv.theme"] || "auto", theme = t === "auto" ? (SYS.matches ? "dark" : "light") : t, kind = theme === "light" ? "light" : "graphite";
   document.documentElement.dataset.theme = theme;
-  document.documentElement.dataset.shadow = SET["cv.shadow"] ?? "1"; document.documentElement.dataset.shape = SET["cv.shape"] ?? "round";   // ui/look.css
+  document.documentElement.dataset.shadow = SET["cv.shadow"] ?? SET_DEF["cv.shadow"]; document.documentElement.dataset.shape = SET["cv.shape"] ?? "round";   // ui/look.css
   if (window.hyPaper) { hyPaper.apply(SET["cv.paperDark"], SET["cv.paperLight"]);   // the paper's colours, the whole app's (ui/look.css --paper)
-    document.body.style.background = hyPaper.css(kind, +(SET["cv.grain"] ?? 2), SET[kind === "light" ? "cv.paperLight" : "cv.paperDark"]); }
+    document.body.style.background = hyPaper.css(kind, +(SET["cv.grain"] ?? 0), SET[kind === "light" ? "cv.paperLight" : "cv.paperDark"]); }
   SET_DEF["cv.lod"] = DATA_ENGINE.engine === "chromium" ? "2" : "1";   // the boards' default drawing: WebGL in Chromium (canvas.html SETS)
-  document.querySelectorAll("#sets [data-paper]").forEach(i => { i.value = SET["cv." + i.dataset.paper] || hyPaper.BOARD[i.dataset.paper === "paperDark" ? "graphite" : "light"]; });
-  document.querySelectorAll("#sets [data-set]").forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === String(g.dataset.set === "cv.theme" ? t : g.dataset.set === "cv.lang" ? T.lang : (SET[g.dataset.set] ?? SET_DEF[g.dataset.set])))));
-  const dv = SET["cv.dotsv"] ?? "100"; hySlider.mount($("#dotsVis").closest(".hy-slider")).set(dv);
-  $("#engineSet").hidden = !DATA_ENGINE.cef; $("#engineOpts").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.engine === DATA_ENGINE.engine));
+  if (typeof SP !== "undefined") SP.refresh();
 }
+// the settings panel (ui/setpanel.js), the board's rows: Home reads and writes the app's settings (settings.json, through the app); the
+// paper's colours and the dots' visibility follow the picker and the slider, the file gets them once they rest
+const SP_T = {}, SP = hySetPanel.mount($("#sets"), {
+  get: k => k === "lang" ? T.lang : k === "engine" ? DATA_ENGINE.engine : k === "theme" ? SET["cv.theme"] || "auto"
+    : /^paper/.test(k) ? SET["cv." + k] || hyPaper.BOARD[k === "paperDark" ? "graphite" : "light"] : String(SET["cv." + k] ?? SET_DEF["cv." + k] ?? ""),
+  set(ch) {
+    // the engine is the app's own setting, not the file's: the app switches it
+    if ("engine" in ch) { DATA_ENGINE.engine = ch.engine; applySettings(); try { webkit.messageHandlers.hyimg.postMessage({ action: "engine", engine: ch.engine }); } catch {} return; }
+    for (const [k, v] of Object.entries(ch)) { if (v == null) delete SET["cv." + k]; else SET["cv." + k] = v; }
+    applySettings();
+    for (const [k, v] of Object.entries(ch)) {
+      clearTimeout(SP_T[k]); if (v != null && (k === "dotsv" || /^paper/.test(k))) SP_T[k] = setTimeout(() => sendSettings({ ["cv." + k]: v }), 250); else sendSettings({ ["cv." + k]: v });
+    }
+    // the language: the app writes it and reloads Home and the boards in it; without the app (no HY_LANG: tests, a browser) Home does
+    if ("lang" in ch && !window.HY_LANG) T.set(ch.lang);
+  },
+  engine: () => DATA_ENGINE.cef,
+});
 SYS.addEventListener("change", applySettings);
 $("#bset").addEventListener("click", e => { e.stopPropagation(); const on = !$("#sets").classList.contains("open"); $("#sets").classList.toggle("open", on); $("#bset").setAttribute("aria-expanded", on); });
-$("#sets").addEventListener("click", e => {
-  e.stopPropagation();
-  const en = e.target.closest("[data-engine]");   // the engine is the app's own setting, not the file's: the app switches it
-  if (en) { DATA_ENGINE.engine = en.dataset.engine; applySettings(); try { webkit.messageHandlers.hyimg.postMessage({ action: "engine", engine: en.dataset.engine }); } catch {} return; }
-  const b = e.target.closest("button[data-v]"), g = b && b.closest("[data-set]"); if (!b) return;
-  SET[g.dataset.set] = b.dataset.v; applySettings(); sendSettings({ [g.dataset.set]: b.dataset.v });
-  // the language: the app writes it and reloads Home and the boards in it; without the app (no HY_LANG: tests, a browser) Home does
-  if (g.dataset.set === "cv.lang" && !window.HY_LANG) T.set(b.dataset.v);
-});
-// «Цвет бумаги», as on the board: Home, the boards and the window's ground take it
-$("#sets").addEventListener("input", e => { const i = e.target.closest("[data-paper]"); if (!i) return; SET["cv." + i.dataset.paper] = i.value; applySettings();
-  clearTimeout(i.t); i.t = setTimeout(() => sendSettings({ ["cv." + i.dataset.paper]: i.value }), 250); });
-$("#sets").addEventListener("click", e => { if (!e.target.closest("[data-paper-reset]")) return; delete SET["cv.paperDark"]; delete SET["cv.paperLight"]; applySettings(); sendSettings({ "cv.paperDark": null, "cv.paperLight": null }); }, true);
-// the dots' visibility, as on the board: the number follows the slider, the file gets it once the slider rests
-$("#dotsVis").addEventListener("input", e => { SET["cv.dotsv"] = e.target.value; clearTimeout(e.target.t); e.target.t = setTimeout(() => sendSettings({ "cv.dotsv": e.target.value }), 200); });
+$("#sets").addEventListener("click", e => e.stopPropagation());
 document.addEventListener("pointerdown", e => { if (!e.target.closest("#sets, #bset")) { $("#sets").classList.remove("open"); $("#bset").setAttribute("aria-expanded", "false"); } });
 // opening or saving a project: the steps come one after another, at least a beat apart, on the project's cover; the last three show
 const PROG = new Map();   // id -> {lines: [{text, cls}], queue, t, out}
 function paintProg(id) {
+  hyHomeServer.sync(id, PROG.get(id));   // its server key stands aside while the board loads (ui/homeserver.js)
   if (LOADING && LOADING.id === id) {   // the board opening in front: its steps in the middle; new lines are added, not the list redrawn
     const st = PROG.get(id), ol = $("#load ol"); if (!st) { ol.innerHTML = ""; return; }
     const byK = new Map([...ol.children].map(li => [+li.dataset.k, li]));
@@ -681,12 +667,14 @@ window.hyimgShowFolder = id => { if (HOME.folders.some(f => f.id === id)) { TAB 
 // the app calls this with the project list (and again when something changes, and when Home comes back to the front)
 window.hyimgHome = data => {
   DATA = data || { projects: [] }; if (DATA.engine) DATA_ENGINE = { cef: !!DATA.cef, engine: DATA.engine };
+  hyPeople.set(DATA);   // this Mac's profile, the address book, the two places (the app reads them, ui/people.js)
   if (DATA.settings) { SET = DATA.settings; applySettings(); try { localStorage.setItem("home.set", JSON.stringify(SET)); } catch {}
     // the language the app's settings have (none: English) and this page's differ: without the app's HY_LANG (a page opened by hand,
     // tests) Home keeps it and reloads in it; in the app the app reloads Home itself
     const lg = SET["cv.lang"] === "ru" ? "ru" : "en";
     if (lg !== T.lang && !window.HY_LANG) try { localStorage.setItem("cv.lang", lg); if (localStorage.getItem("cv.lang") === lg) { location.reload(); return; } } catch {} }
-  if (DATA.home && Array.isArray(DATA.home.folders)) HOME = { ...DATA.home, folders: DATA.home.folders.map(f => ({ ...f, projects: [...(f.projects || [])] })) };
+  const h = DATA.home;   // home.json as the app read it: {} when it has none or can't read it
+  if (h && Array.isArray(h.folders)) { HOME_READ = true; HOME = { ...h, folders: h.folders.map(f => ({ ...f, projects: [...(f.projects || [])] })) }; }
   render();
 };
 
@@ -695,13 +683,17 @@ function openMenu(id, x, y, btn) {
   const m = $("#menu");
   const inF = folderOf(id);
   m.innerHTML = hyMenuItem(`data-act="open" data-id="${id}"`, "open", T("Open"), ["↩"]) + hyMenuItem(`data-act="rename" data-id="${id}"`, "rename", T("Rename…"))
-    + hyMenuItem(`data-fav="${id}"`, "heart", isFav(id) ? T("Remove from favorites") : T("Add to favorites"))
-    + "<hr>" + HOME.folders.filter(f => f !== inF).map(f => hyMenuItem(`data-local="move" data-id="${id}" data-f="${f.id}"`, HY_PROJ.html(f, 15), T("Move to “{name}”", { name: esc(f.name) }))).join("")
+    + (hyArchive.has(id) ? "" : hyMenuItem(`data-fav="${id}"`, "heart", isFav(id) ? T("Remove from favorites") : T("Add to favorites")))
+    + "<hr>" + (hyArchive.has(id) ? hyArchive.menu(HOME, id) : "")   // an archived board: «Restore» first (ui/homearchive.js)
+    + hyArchive.mine(HOME).filter(f => f !== inF).map(f => hyMenuItem(`data-local="move" data-id="${id}" data-f="${f.id}"`, HY_PROJ.html(f, 15), T("Move to “{name}”", { name: esc(f.name) }))).join("")
     + hyMenuItem(`data-local="newfolder" data-id="${id}"`, "plus", T("Move to a new project"))
-    + (inF ? hyMenuItem(`data-local="unfile" data-id="${id}"`, "unfile", T("Remove from “{name}”", { name: esc(inF.name) })) : "")
+    + (inF && !hyArchive.is(inF) ? hyMenuItem(`data-local="unfile" data-id="${id}"`, "unfile", T("Remove from “{name}”", { name: esc(inF.name) })) : "")
+    + (hyArchive.has(id) ? "" : hyArchive.menu(HOME, id))   // «Move to Archive», last of the moves
+    + hyPeople.menu(p)   // shared or only for me: the app moves the board's folder (ui/people.js)
     + "<hr>" + hyMenuItem(`data-act="relink" data-id="${id}"`, "relink", T("Locate the folder in Finder…")) + hyMenuItem(`data-act="reveal" data-id="${id}"`, "finder", T("Show in Finder"))
     // its server without opening it (owner 2026-10-04): started, it loads behind with its steps on the card; stopped, its green mark goes
-    + "<hr>" + (p.open ? hyMenuItem(`data-act="stopServer" data-id="${id}"`, "stop", T("Stop server")) : hyMenuItem(`data-act="startServer" data-id="${id}"`, "play", T("Start server")))
+    + (p.open ? "<hr>" + hyMenuItem(`data-act="stopServer" data-id="${id}"`, "stop", T("Stop server"))
+      : hyArchive.has(id) ? "" : "<hr>" + hyMenuItem(`data-act="startServer" data-id="${id}"`, "play", T("Start server")))   // an archived one: never
     // off the list altogether, in red (owner 2026-10-06: «why can't I remove it completely? write it in red»); the app asks first, the
     // folder and its pictures stay on disk
     + "<hr>" + hyMenuItem(`data-act="removeBoard" data-id="${id}"`, "del", T("Remove board…"), null, ' class="danger"');
@@ -712,7 +704,7 @@ function openMenu(id, x, y, btn) {
   if (btn) btn.setAttribute("aria-expanded", "true");
   m.querySelector("button").focus();
 }
-function openProject(id) { OPEN_ASK = id; send("open", id); }   // the app reports the steps if it has to load it
+function openProject(id, at) { OPEN_ASK = id; send("open", id, at); }   // the app reports the steps if it has to load it; at: a bell row's page and objects
 // the app says a board was seen (it came to the front or left it): its number goes now, not with the next list. Home on screen draws
 // at once; Home leaving for that board (or already gone) draws when it comes back, so the card does not jump under the press
 let OPEN_ASK = null, NEWS_DIRTY = false;
@@ -748,11 +740,12 @@ document.addEventListener("click", e => {
   // drawn the list again, so the second one is caught here (detail 2), a dblclick would land on an element no longer there
   // the folder being named takes no click of its own: a space typed in its name pressed the folder's button and drew the list again
   if (e.target.closest("[data-folder]") && EDIT === e.target.closest("[data-folder]").dataset.folder) return;
-  const fo = e.target.closest("[data-folder]"); if (fo && !e.target.closest("input")) { if (e.detail >= 2) EDIT = fo.dataset.folder; TAB = "f:" + fo.dataset.folder; render(); return; }
+  const fo = e.target.closest("[data-folder]");   // the Archive is never renamed (ui/homearchive.js)
+  if (fo && !e.target.closest("input")) { if (e.detail >= 2 && !hyArchive.is(fo.dataset.folder)) EDIT = fo.dataset.folder; TAB = "f:" + fo.dataset.folder; render(); return; }
   const act = e.target.closest("[data-act]");
   // a new board made while a project is picked goes into that project (owner 2026-10-06: «in Studio North, add board: it appears there,
-  // not somewhere outside of it»)
-  const into = ["create", "add"].includes(act && act.dataset.act) && TAB.startsWith("f:") ? { folder: TAB.slice(2) } : undefined;
+  // not somewhere outside of it»); made while the Archive is open it goes into no project, a new board is not put away
+  const into = ["create", "add"].includes(act && act.dataset.act) && TAB.startsWith("f:") && !hyArchive.is(TAB.slice(2)) ? { folder: TAB.slice(2) } : undefined;
   if (act) { closeMenu(); if (act.dataset.act === "open") openProject(act.dataset.id); else send(act.dataset.act, act.dataset.id || null, into); return; }
   if (!e.target.closest("#menu")) closeMenu();
   const tab = e.target.closest("[data-tab]"); if (tab) { TAB = tab.dataset.tab; try { localStorage.setItem("home.tab", TAB); } catch {} render(); return; }
@@ -763,7 +756,7 @@ document.addEventListener("contextmenu", e => {
   if (e.target.closest("input")) return;
   e.preventDefault();
   const card = e.target.closest(".card, [data-open]"); if (card) return openMenu(card.dataset.id || card.dataset.open, e.clientX, e.clientY);
-  const fo = e.target.closest("[data-folder]");
+  const fo = e.target.closest("[data-folder]:not([data-folder=archive])");   // the Archive: the empty space's menu, as «No project»
   if (fo) return openMenuHtml(hyMenuItem(`data-local="renamefolder" data-f="${fo.dataset.folder}"`, "rename", T("Rename project"))
     + hyMenuItem(`data-local="iconfolder" data-f="${fo.dataset.folder}"`, HY_PROJ.html(HOME.folders.find(f => f.id === fo.dataset.folder), 15), T("Project icon…")) + "<hr>"
     + hyMenuItem(`data-local="delfolder" data-f="${fo.dataset.folder}"`, "del", `${T("Delete project")} <span class="mh">${T("boards stay")}</span>`), e.clientX, e.clientY);
@@ -792,7 +785,7 @@ $("#q").addEventListener("input", render);
 // icon pressed (the sidebar's, the head's) or from the project's right click; every pick is saved at once and drawn everywhere
 let PJ = null;
 function openPick(id, anchor) {
-  const f = HOME.folders.find(x => x.id === id); if (!f) return;
+  const f = HOME.folders.find(x => x.id === id); if (!f || hyArchive.is(f)) return;   // the Archive keeps its box
   PJ = { id, tab: null }; drawPick();
   const p = $("#pjpick"), r = anchor.getBoundingClientRect();
   p.style.left = Math.max(8, Math.min(r.left - 6, innerWidth - p.offsetWidth - 8)) + "px";

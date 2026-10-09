@@ -1,16 +1,18 @@
 // @ts-check
-// <hy-segmented value="b" size="s|m|l" variant="choice|tabs" full label="…"><button value="a">A</button>…</hy-segmented>: one choice
+// <hy-segmented value="b" size="s|m|l" variant="choice|tabs|tint|well" full label="…"><button value="a">A</button>…</hy-segmented>: one choice
 // of a few (ui/hy/segmented.css). Built on ui/seg.js: the element is a .seg and the thumb slides under the chosen option. A click, or
 // ← → ↑ ↓ Home End on the focused option, chooses; only the chosen option is in the Tab order. hy-change { value } and change follow a
-// choice made by the person; setting value from code moves the thumb and sends nothing. variant=tabs: role tablist / tab, aria-selected.
+// choice made by the person; setting value from code moves the thumb and sends nothing. variant=tabs: role tablist / tab, aria-selected;
+// variant=tint: a choice drawn without a track, the chosen option tinted; variant=well: a dark well, the chosen option on a grey
+// plate (segmented.css).
 import { HyElement, define, oneOf } from "./base.js";
 
 // the thumb's engine: the page's ui/seg.js, or loaded here without its own pass over the page (ui/seg.js HY_SEG_MANUAL)
 if (typeof window.hySeg !== "function") { window.HY_SEG_MANUAL = true; await import(new URL("../seg.js", import.meta.url).href); }
 
-/** @typedef {"choice" | "tabs"} SegVariant */
+/** @typedef {"choice" | "tabs" | "tint" | "well"} SegVariant */
 /** @type {readonly SegVariant[]} */
-export const SEG_VARIANTS = ["choice", "tabs"];
+export const SEG_VARIANTS = ["choice", "tabs", "tint", "well"];
 
 /**
  * Where an arrow key goes in a row of n options from i: the next or previous one around the ends, Home and End.

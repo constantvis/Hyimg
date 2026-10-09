@@ -482,16 +482,16 @@ def test_note_links_by_cells_match_and_arrow_line_clears(server):
         dashed = page.evaluate("""() => {
           const p = { x: 500, y: 500 }; sel = new Set(['nb']); render();
           drag = { mode: 'connect', id: 'nb', before: snap(), p, cur: { x: 2600, y: 2600 }, target: null }; renderLinks();
-          const during = document.querySelectorAll('#links line[stroke-dasharray]').length;
+          const during = document.querySelectorAll('#links line.lkd').length;
           stage.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
-          return [during, document.querySelectorAll('#links line[stroke-dasharray]').length];
+          return [during, document.querySelectorAll('#links line.lkd').length];
         }""")
         assert dashed == [1, 0], dashed
         browser.close()
 
 
 def test_hovered_arrow_shows_a_minus_that_removes_it(server):
-    """Owner 2026-10-02: a round − on an arrow under the pointer, one click takes the arrow off, no select-then-Delete."""
+    """Owner 2026-10-02: a round − (a × since 2026-10-08) on an arrow under the pointer, one click takes the arrow off, no select-then-Delete."""
     with playwright.sync_playwright() as p:
         try:
             browser = p.chromium.launch()
@@ -506,13 +506,18 @@ def test_hovered_arrow_shows_a_minus_that_removes_it(server):
           cam.x = -100; cam.y = -100; cam.z = 0.5; renderCam(); sel = new Set(); render(); renderLinks();
         }""")
         page.wait_for_timeout(300)   # the board's late loads (project, plugins) redraw the arrows once more
-        box = page.locator("#links .del").bounding_box()
-        assert page.evaluate("() => getComputedStyle(document.querySelector('#links .del')).opacity") == "0"
-        page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2); page.wait_for_timeout(250)
-        assert page.evaluate("() => getComputedStyle(document.querySelector('#links .del')).opacity") == "1"
+        # a point of the line not under a picture (2026-10-08: the line goes under the cards it crosses); the × rides to the pointer
+        pt = page.evaluate("""() => { const ln = document.querySelector('#links .arw .ln'), M = ln.getScreenCTM(), L = ln.getTotalLength();
+          for (let i = 5; i < 95; i++) { const q = ln.getPointAtLength(L * i / 100), x = M.a * q.x + M.e, y = M.d * q.y + M.f, e = document.elementFromPoint(x, y);
+            if (e && e.closest('#links .arw')) return [x, y]; }
+          return null; }""")
+        assert pt
+        assert page.evaluate("() => getComputedStyle(document.querySelector('#links .del.m')).opacity") == "0"
+        page.mouse.move(*pt); page.wait_for_timeout(250)
+        assert page.evaluate("() => getComputedStyle(document.querySelector('#links .del.m')).opacity") == "1"
         page.mouse.down(); page.mouse.up()
         assert page.evaluate("() => board.items.na.to.length") == 0
-        assert page.locator("#links .del").count() == 0
+        assert page.locator("#links .del.m").count() == 0
         browser.close()
 
 
@@ -580,8 +585,8 @@ def test_opacity_slider_and_digit_keys(server):
         pid = page.evaluate("() => { const id = Object.keys(board.items).find(k => board.items[k].x === 340 && board.items[k].y === 520); cam.x = 0; cam.y = 200; cam.z = 0.8; renderCam(); sel = new Set([id]); render(); return id; }")
         assert page.locator("#handles .tidy .op input").count() == 1
         page.keyboard.press("5"); page.wait_for_timeout(200)
-        st = page.evaluate(f"() => [board.items['{pid}'].opacity, EL.get('{pid}').style.opacity, document.querySelector('.tidy .op b').textContent]")
-        assert st == [0.5, "0.5", "50%"], st
+        st = page.evaluate(f"() => [board.items['{pid}'].opacity, EL.get('{pid}').style.opacity, document.querySelector('.tidy .op .hy-slider-v').textContent.replace('%', '')]")
+        assert st == [0.5, "0.5", "50"], st
         page.evaluate("() => { const r = document.querySelector('.tidy [data-op]'); r.value = 30; r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true })); }")
         page.wait_for_timeout(200)
         assert page.evaluate(f"() => board.items['{pid}'].opacity") == 0.3
@@ -749,7 +754,8 @@ def test_one_side_panel_at_a_time(server):
         page.goto(f"http://127.0.0.1:{server}/canvas.html")
         page.wait_for_function("() => typeof BOARD !== 'undefined' && BOARD === 'main' && Object.keys(board.items).length")
         page.evaluate("() => { sel = new Set([Object.keys(board.items)[0]]); render(); }")
-        shown = lambda q: page.evaluate(f"() => {{ const e = document.querySelector('{q}'); return !!e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0 }}")
+        shown = lambda q: page.evaluate(f"() => {{ const e = document.querySelector('{q}'); const s = !!e && getComputedStyle(e);"
+                                        f" return !!e && s.display !== 'none' && s.visibility !== 'hidden' && e.getBoundingClientRect().width > 0 }}")
         page.wait_for_function("() => getComputedStyle(document.querySelector('#info')).display !== 'none'")
         panels = {"#bntf": "#ntf", "#bkeys": "#keys", "#bhist": "#hist", "#bset": "#sets"}
         for b, q in panels.items():
@@ -757,10 +763,13 @@ def test_one_side_panel_at_a_time(server):
             open_now = [x for x in panels.values() if shown(x)]
             assert open_now == [q], (b, open_now)
             assert not shown("#info"), f"the frame card stays hidden while {q} is open"
-        page.click("#bset"); page.wait_for_timeout(150)
+        page.click("#bset"); page.wait_for_timeout(450)   # the settings' window fades out, then is hidden (ui/settings-win.js)
         assert not [x for x in panels.values() if shown(x)] and shown("#info")
-        # a click past the open panel closes it (owner 2026-10-04) ...
-        page.click("#bset"); page.mouse.click(300, 700); page.wait_for_timeout(150)
+        # a click past the open panel closes it (owner 2026-10-04) ... except the settings at the board's side: the board beside them works
+        # (round 11, owner 2026-10-08); as a window, a click on its veil closes it
+        page.click("#bset"); page.wait_for_timeout(400); page.mouse.click(60, 450); page.wait_for_timeout(450)
+        assert shown("#sets") and page.evaluate("() => document.querySelector('#sets').classList.contains('sw-side')")
+        page.click("#sets [data-sw-act=mode]"); page.wait_for_timeout(500); page.mouse.click(60, 450); page.wait_for_timeout(450)   # on the veil
         assert not shown("#sets")
         # ... but not while a saved version is looked at: the history stays with it
         page.click("#bhist"); page.evaluate("() => { PREV = { id: 'v', back: board, backSel: [] }; }")
@@ -775,6 +784,10 @@ def test_one_side_panel_at_a_time(server):
         cv.click("#bset"); cv.wait_for_selector("#sets.open")
         page.mouse.click(60, 400); page.wait_for_timeout(300)
         assert not cv.evaluate("() => document.querySelector('#sets').classList.contains('open')")
+        # at the side they stay while the library is used
+        cv.click("#bset"); cv.wait_for_selector("#sets.open"); cv.click("#sets [data-sw-act=mode]"); cv.wait_for_timeout(500)
+        page.mouse.click(60, 400); page.wait_for_timeout(300)
+        assert cv.evaluate("() => document.querySelector('#sets').classList.contains('open') && document.querySelector('#sets').classList.contains('sw-side')")
         assert not errors, errors
         browser.close()
 
@@ -809,7 +822,7 @@ def test_settings_are_one_for_the_whole_app(tmp_path):
             for page in (a, b):   # the file decides, whatever the project kept before; one look
                 assert page.evaluate("() => [document.documentElement.dataset.theme, document.documentElement.dataset.ui]") == ["light", "classic"]
                 assert not page.locator("#sets [data-set=ui]").count()
-            a.click("#bset"); a.click("#sets [data-set=theme] [data-v=dark]")
+            a.click("#bset"); a.evaluate("s => hySetPanel.go(s)", "appearance"); a.click("#sets [data-set=theme] [data-v=dark]")
             for _ in range(50):
                 if json.loads(settings.read_text()).get("cv.theme") == "dark": break
                 time.sleep(0.1)
@@ -838,11 +851,15 @@ def test_bell_shows_agent_news_and_jumps_there(server):
         page.on("pageerror", lambda e: errors.append(str(e)))
         page.goto(f"http://127.0.0.1:{server}/canvas.html")
         page.wait_for_function("() => typeof BOARD !== 'undefined' && BOARD === 'main' && document.querySelector('#bntf.dot')", timeout=15000)
+        red = "() => getComputedStyle(document.querySelector('#bntf svg circle')).fill"   # the bell's own dot (icons.js B4) turns red for news
+        tok = "() => { const i = document.createElement('i'); i.style.color = 'var(--hy-red)'; document.body.appendChild(i); const c = getComputedStyle(i).color; i.remove(); return c; }"
+        page.wait_for_function(f"() => ({red})() === ({tok})()")
         page.click("#bntf")
         page.wait_for_selector("#ntf.open .nt")
         assert "Собрал партию на второй странице" in page.inner_text("#ntf") and "Codex" in page.inner_text("#ntf")
         assert page.locator("#ntf .nt .pv img").count() == 3
         assert not page.locator("#bntf.dot").count(), "opening the list reads the news"
+        page.wait_for_function(f"() => ({red})() === 'none'")   # and the dot is a plain line again
         page.click("#ntf .nt")
         page.wait_for_function("() => BOARD === 'p2' && sel.size === 3 && ['i103', 'i104', 'i105'].every(i => sel.has(i))", timeout=15000)
         assert not page.locator("#ntf.open").count()
@@ -897,7 +914,7 @@ def test_plate_home_project_page_and_the_pages_menu(server):
 
 def test_key_hints_wait_for_a_held_command_and_stay_off_during_a_zoom(server):
     """(owner 2026-10-06) the key caps show once ⌘ is held a moment; a ⌘ + scroll zoom never shows them over the selection bar.
-    In Chromium the selection's corner squares keep their screen size through the zoom (--z live on the whole board layer)."""
+    In Chromium the selection's corner squares keep their screen size through the zoom (--z live on the board's layers and the cards on screen, canvas.html zLive)."""
     with playwright.sync_playwright() as p:
         try:
             browser = p.chromium.launch()

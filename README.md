@@ -28,14 +28,15 @@ Nothing leaves your Mac. There is no account and no upload: each project is a fo
 
 Hyimg works without them. With them the board does more, and each one lives in its own repository:
 
-- **[Frames](https://github.com/constantvis/hyimg-frames)**: an image editor that opens in place on the board, with layers, masks, a brush, Raw Editor (Camera Raw style grading, also on any picture of the board), subject selection through macOS Vision and content-aware fill with LaMa. The originals are never touched: a frame keeps its own layers and renders to its own file. The same plugin adds HTML frames, live web pages as cards.
-- **[3D objects](https://github.com/constantvis/hyimg-3d-studio)**: a 3D scene as a card on the board, a three.js editor, snapshots to images, and a bridge to Blender and back.
+- **[Frames](https://github.com/constantvis/hyimg-frames)**: Image Studio, which opens in place on the board, with layers, masks, a brush, Raw Editor (Camera Raw style grading, also on any picture of the board), subject selection through macOS Vision and content-aware fill with LaMa. The originals are never touched: a frame keeps its own layers and renders to its own file. The same plugin adds HTML frames, live web pages as cards.
+- **[3D objects](https://github.com/constantvis/hyimg-3d-studio)**: a 3D scene as a card on the board, 3D Studio on three.js, snapshots to images, and a bridge to Blender and back.
+- **[Dev Studio](https://github.com/constantvis/hyimg-dev-studio)**: HTML files of the library as cards on the board, and Dev Studio, where you work on a page the way you work on a frame in Figma: its element tree, the live page, an inspector whose changes go into the `.html` file itself.
 
-![The frame editor open in place on the board](docs/images/frame-editor.webp)
+![Image Studio open in place on the board](docs/images/frame-editor.webp)
 
 ```sh
-./scripts/install_plugins.sh                       # asks about each plugin
-./scripts/install_plugins.sh --frames --3d --yes   # no questions, for an agent after the person said yes
+./scripts/install_plugins.sh                             # asks about each plugin
+./scripts/install_plugins.sh --frames --3d --dev --yes   # no questions, for an agent after the person said yes
 ```
 
 The script uses checkouts next to this repository or clones them there and links them into `~/Library/Application Support/Hyimg/plugins`. Then View › Restart server (⇧⌘R). The LaMa model for content-aware fill (about 208 MB) is downloaded only with `--lama`.

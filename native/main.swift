@@ -2,30 +2,7 @@ import AppKit
 import UniformTypeIdentifiers
 import WebKit
 
-final class ProjectView {
-    let server: ServerSession
-    let web: WKWebView
-    var cef: HYCefView?   // CEF: the page in Chromium instead of the WKWebView (Вид › Движок Chromium)
-    var surface: NSView { cef ?? web }
-    var pageURL: URL? { cef.flatMap { $0.currentURL.flatMap(URL.init(string:)) } ?? web.url }
-    var flushWaiters: [String: (Result<Bool, Error>) -> Void] = [:]   // CEF: flush answers arrive as console lines
-    var loaded = false
-    var loading = false
-    var shown = false   // its page has been there at least once: before that there is nothing of it to save
-    var drawn = false   // its canvas said the board and its controls are drawn (canvasReady), pictures may still be coming
-    var band: DragStrip.Band?   // where its page's plates are in the window's top band (the "dragband" message)
-    var operationPending = false
-    init(project: Project, sourceRoot: URL) {
-        server = ServerSession(project: project, sourceRoot: sourceRoot)
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = WKWebsiteDataStore(forIdentifier: project.id)
-        configuration.preferences.isElementFullscreenEnabled = true   // a video's ⤢ opens the player in true full screen (owner 2026-10-06)
-        web = FirstClickWebView(frame: .zero, configuration: configuration)
-        web.allowsBackForwardNavigationGestures = false
-        web.isInspectable = true
-    }
-}
-
+// ProjectView, a board's page and server, is in BoardSleep.swift: its page may sleep while its server goes on
 final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, NSWindowDelegate, WKScriptMessageHandler {
     let registry: ProjectRegistry
     let sourceRoot: URL
@@ -57,11 +34,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         buildMenu()
         // macOS switching light/dark: the project pages' «Авто» theme follows (the window chrome stays dark)
         appearanceWatch = NSApp.observe(\.effectiveAppearance) { [weak self] app, _ in self?.sessions.values.forEach { $0.web.appearance = app.effectiveAppearance } }
-        // ⌃Tab never reaches the menu: the web view takes Tab for focus moves first, so it is caught for the whole app here
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
-            guard let self, e.keyCode == 48, e.modifierFlags.contains(.control), !e.modifierFlags.contains(.command) else { return e }
-            self.stepTab(e.modifierFlags.contains(.shift) ? -1 : 1); return nil
-        }
+        installSwitcher()   // ⌃Tab's cards between the boards (Switcher.swift) and the boards' sleep (BoardSleep.swift)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1440, height: 920),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         self.window = window
@@ -201,6 +174,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     func saveTabs() { defaults.set(tabs.map(\.uuidString), forKey: key("openTabs")); defaults.set(selected?.uuidString, forKey: key("selectedTab")) }
     // Home is an HTML page (review/home.html) in its own web view: edits show with ⌘R like the canvas; actions come back through "hyimg"
     @objc func showProjects() {
+        switchLeave()   // a switch under way ends, the board that kept the row goes back to its look (Switcher.swift)
         markSeen(selected)   // the board leaving the front: what was done on it while it was there is not news
         selected = nil
         tabBar?.selected = nil
@@ -241,14 +215,14 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         var seen = BoardSeen.read(seenFile); let now = Date().timeIntervalSince1970, front = selected
         let fresh = projects.filter { seen[$0.id.uuidString] == nil }
         if !fresh.isEmpty { fresh.forEach { seen[$0.id.uuidString] = opened[$0.id.uuidString] ?? now }; BoardSeen.write(seenFile, seen) }
-        let since = seen
+        let since = seen, people = People.home(registry.file, projects: projects).merging(dropboxHome(projects)) { a, _ in a }   // + boards in Dropbox
         DispatchQueue.global(qos: .userInitiated).async(group: homeWork) {
             let list: [[String: Any]] = projects.map { p in
                 var d = HomeData.info(for: p); d["open"] = openIDs.contains(p.id); d["opened"] = opened[p.id.uuidString] ?? 0
                 if p.id != front, let news = BoardNews.summary(stateRoot: p.stateRoot, since: since[p.id.uuidString] ?? now) { d["news"] = news }
                 return d
             }
-            guard let data = try? JSONSerialization.data(withJSONObject: ["projects": list, "settings": self.readSettings(), "home": self.readHome(), "engine": engine, "cef": cef]), let json = String(data: data, encoding: .utf8) else { return }
+            guard let data = try? JSONSerialization.data(withJSONObject: ["projects": list, "settings": self.readSettings(), "home": self.readHome(), "engine": engine, "cef": cef].merging(people) { a, _ in a }), let json = String(data: data, encoding: .utf8) else { return }
             // (owner 2026-10-06: a removed board stayed on Home: closing its tab asked for the list first, and that list, built in
             // parallel and later, landed after the one without it)
             DispatchQueue.main.async { guard seq == self.homeSeq else { return }; web.evaluateJavaScript("window.hyimgHome && window.hyimgHome(\(json))") }
@@ -299,7 +273,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         case "homeSave": if let h = body["home"] as? [String: Any] { writeHome(h) }   // Home's folders of projects
         case "handoff": if let id = (body["id"] as? String).flatMap(UUID.init) { handoff(id, stars: body["stars"] as? [String: Any], lines: body["lines"] as? [String]) }
         case "settings": if let change = body["change"] as? [String: Any] { writeSettings(change) }   // Home's gear: the app's settings
-        case "open": if let project { openProject(project) }
+        case "open": if let project { homeOpen(project, body) }   // a row of Home's bell: at its page and objects (MacNotifications.swift)
         case "add": addProject(into: body["folder"] as? String)
         case "create": createProject(into: body["folder"] as? String)
         case "rename": if let project { rename(project) }
@@ -309,7 +283,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         case "openFolder": if let project { NSWorkspace.shared.open(URL(fileURLWithPath: project.libraryRoot, isDirectory: true)) }   // Home's list: the board's own folder, opened in Finder
         case "storage": storageMessage(body, project)   // Settings › Storage: sizes, memory, «Clear cache» (StorageBridge.swift)
         case "engine": if let e = body["engine"] as? String, (e == "chromium") != useChromium { toggleEngine() }   // CEF: the canvas gear
-        default: break
+        default: otherMessage(action, body, project)   // Settings › Plugins, › Profile, Home's boards in Dropbox (DropboxBoards.swift)
         }
     }
     // the app's settings (settings.json beside the catalog, owner 2026-10-04): the same file every project's server reads and writes,
@@ -340,9 +314,10 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         return nil
     }
     func jsString(_ s: String) -> String { (try? JSONSerialization.data(withJSONObject: [s])).flatMap { String(data: $0, encoding: .utf8) }.map { "\($0)[0]" } ?? "\"\"" }
-    // a board's server and page started from Home's card menu, without opening it: it loads behind, its steps on its card, its green mark on
+    // a board's server and page started from Home's card menu, without opening it: it loads behind, its steps on its card, its green mark on;
+    // never a board in Home's Archive (HomeArchive.swift)
     func warm(_ project: Project) {
-        guard sessions[project.id] == nil, FileManager.default.fileExists(atPath: project.libraryRoot) else { return }
+        guard sessions[project.id] == nil, FileManager.default.fileExists(atPath: project.libraryRoot), !archivedBoards.contains(project.id) else { return }
         if !tabs.contains(project.id) { tabs.append(project.id); saveTabs() }
         let session = makeSession(project)
         homeProgress(project.id, L("Starting “%@”", project.name))
@@ -352,6 +327,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         (try? Data(contentsOf: homeFile)).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
     }
     func writeHome(_ h: [String: Any]) {
+        let h = HomeArchive.kept(h, file: homeFile)   // the Archive is never dropped, an unreadable file is kept aside first (HomeArchive.swift)
         if let data = try? JSONSerialization.data(withJSONObject: h, options: [.prettyPrinted, .sortedKeys]) { try? data.write(to: homeFile, options: .atomic) }
     }
     func writeSettings(_ change: [String: Any]) {
@@ -384,7 +360,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     // for the agent (owner 2026-09-30: "you should see which project I'm in and what I selected"): scripts/active.py reads this
     func writeActive() {
         let dir = registry.file.deletingLastPathComponent()
-        var d: [String: Any] = ["t": Date().timeIntervalSince1970, "view": selected == nil ? "home" : "project", "tabs": tabs.map(\.uuidString)]
+        var d: [String: Any] = ["t": Date().timeIntervalSince1970, "view": selected == nil ? "home" : "project", "tabs": tabs.map(\.uuidString), "boards": activeBoards()]
         if let id = selected, let p = registry.projects.first(where: { $0.id == id }) {
             d["project"] = ["id": id.uuidString, "name": p.name, "libraryRoot": p.libraryRoot, "stateRoot": p.stateRoot, "styleRefs": p.styleRefs ?? "", "port": p.port]
         }
@@ -454,7 +430,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     }
     // a board made while a project was picked on Home goes into that project (home.json, the same list Home's drag writes)
     func fileInto(_ folder: String?, _ project: Project) {
-        guard let folder else { return }
+        guard let folder, folder != HomeArchive.id else { return }   // a new board is in use: not put away into the Archive
         var h = readHome(); var folders = h["folders"] as? [[String: Any]] ?? []
         guard let k = folders.firstIndex(where: { $0["id"] as? String == folder }) else { return }
         var ids = folders[k]["projects"] as? [String] ?? []
@@ -523,7 +499,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         guard FileManager.default.fileExists(atPath: project.libraryRoot) else { showProjects(); relink(project); return }
         if selected != project.id { markSeen(selected) }   // the board it replaces in front
         selected = project.id
-        markSeen(project.id)
+        markSeen(project.id); ensureFolderID(project)   // board.json: the board's id in its folder, for both Macs (DropboxBoards.swift)
         if !tabs.contains(project.id) { tabs.append(project.id); tabBar?.items = tabItems() }
         tabBar?.selected = project.id
         updateTitle()
@@ -533,21 +509,20 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         if let folder = folderOf(project.id) { evaluate(session, "window.hyimgFolder && window.hyimgFolder(\(jsString(folder.name)), \(jsString(folder.id)), \(jsString(folder.icon)), \(jsString(folder.color)))") }   // the project with its icon
         openSession(project, session)
     }
-    // a board's page and server, made once and kept while the board is open
+    // a board's page and server, made once and kept while the board is open; a board that slept gets a new page (BoardSleep.swift)
     func makeSession(_ project: Project) -> ProjectView {
-        let session: ProjectView
-        if let existing = sessions[project.id] { session = existing }
-        else {
-            session = ProjectView(project: project, sourceRoot: sourceRoot)
-            if useChromium && startChromium() { attachChromium(session) }   // CEF
-            else { session.web.configuration.userContentController.add(self, name: "hyimg") }   // the canvas gear «Движок»
-            session.web.appearance = NSApp.effectiveAppearance   // the page's «Авто» theme follows macOS, not the dark window chrome
-            session.web.setValue(false, forKey: "drawsBackground")   // the window's paper shows until the page paints
-            session.web.navigationDelegate = self
-            session.web.uiDelegate = self
-            sessions[project.id] = session
-        }
+        if let existing = sessions[project.id] { if existing.asleep { revive(existing) }; return existing }
+        let session = ProjectView(project: project, sourceRoot: sourceRoot)
+        wire(session); sessions[project.id] = session
         return session
+    }
+    func wire(_ session: ProjectView) {
+        if useChromium && startChromium() { attachChromium(session) }   // CEF
+        else { session.web.configuration.userContentController.add(self, name: "hyimg") }   // the canvas gear «Движок»
+        session.web.appearance = NSApp.effectiveAppearance   // the page's «Авто» theme follows macOS, not the dark window chrome
+        session.web.setValue(false, forKey: "drawsBackground")   // the window's paper shows until the page paints
+        session.web.navigationDelegate = self
+        session.web.uiDelegate = self
     }
     func openSession(_ project: Project, _ session: ProjectView) {
         // owner 2026-10-04: «we go from Home to the chosen board and the loading happens there, the server and so on, and then the
@@ -577,6 +552,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
                 if !session.loading && !session.loaded { load(session) }
             }
         } else {   // no Home behind (a test catalog, a failure, a tab): at once, the canvas starts its entrance when it is drawn
+            if switchAnimated(project, session) { return }   // a board in front: ⌃Tab's motion, the row kept while it loads (Switcher.swift)
             front(session)
             if session.drawn { evaluate(session, "window.hyimgIntro && window.hyimgIntro()") }
             else if !session.loading && !session.loaded { load(session) }
@@ -589,6 +565,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         appLog("canvasReady \(session.server.project.name) opening=\(opening == session.server.project.id) front=\(inFront(session.surface))")
         let id = session.server.project.id
         if opening != id { homeProgress(id, L("Board drawn"), done: true) }   // steps of a board opened without Home do not hang on its cover
+        if switchReady(session) { return }   // the board switched to while the one in front kept the row comes in now (Switcher.swift)
         if inFront(session.surface) { evaluate(session, "window.hyimgIntro && window.hyimgIntro()"); return }
         guard selected == id, opening == id else { return }   // drawn in the background: its entrance plays when it comes
         if let text, !text.isEmpty { homeProgress(id, text) }
@@ -661,6 +638,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     func front(_ session: ProjectView, why: String = "") {
         appLog("front \(session.server.project.name) \(why) drawn=\(session.drawn) loaded=\(session.loaded)")   // a board in front before its entrance (owner 2026-10-04)
         if opening == session.server.project.id { opening = nil }
+        switchFronted(session)   // the page that kept the row during a switch goes back to its own look (Switcher.swift)
         syncLang()   // the fallback for a language changed where the app was not told (owner 2026-10-06)
         pullSettings(session)
         replaceContent(session.surface)
@@ -774,7 +752,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
                 self.homeProgress(id, L("Loading the canvas and the library"))
                 session.loaded = false
                 var open = URLComponents(url: url, resolvingAgainstBaseURL: false)
-                if open?.path == "/" || open?.path == "" { open?.queryItems = [URLQueryItem(name: "view", value: "canvas")] }   // a project opens on its canvas
+                if open?.path == "/" || open?.path == "" { open?.queryItems = [URLQueryItem(name: "view", value: "canvas")] + self.linkQuery(id) }   // a link's place (LinkRouting)
                 if self.inFront(session.surface) { let items = open?.queryItems ?? []; open?.queryItems = items + [URLQueryItem(name: "stars", value: "1")] }   // loading in front: its own stars at once
                 appLog("load \(session.server.project.name) \((open?.url ?? url).absoluteString) front=\(self.inFront(session.surface))")
                 if let cef = session.cef { cef.loadURL((open?.url ?? url).absoluteString) } else { session.web.load(URLRequest(url: open?.url ?? url)) }
@@ -812,7 +790,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     }
     @objc func openInBrowser() {
         guard let selected, let session = sessions[selected], let url = session.pageURL ?? session.server.baseURL else { return }
-        NSWorkspace.shared.open(url)
+        NSWorkspace.shared.open(AppLink.stayInBrowser(url))   // the page there neither offers the app back nor goes back to it (ui/applink.js)
     }
     func flush(_ session: ProjectView, completion: @escaping (Result<Void, Error>) -> Void) {
         if let cef = session.cef {   // CEF: the page answers with a console line HYIMG_FLUSH:<token>:<true|false>

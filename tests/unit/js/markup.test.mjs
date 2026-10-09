@@ -35,6 +35,34 @@ test("every tool icon is drawn of shapes only, closed and without its own fill o
   }
 });
 
+test("the owner's picks of 2026-10-08 (Concepts/html/icons-redesign): knob, RGB, badge, pentagon, one diamond", () => {
+  const p = page({ scripts: ["ui/icons.js"] }), IC = p.window.HY_TOOL_IC, tags = n => [...frag(p, IC[n]).children].map(e => e.tagName).join();
+  assert.equal(tags("settings"), "CIRCLE,PATH");   // S4 «Knob», no gear
+  assert.equal(tags("notifications"), "PATH,CIRCLE");   // B4 «Badge»: its dot is the circle the bell's news turns red
+  assert.equal(tags("home"), "PATH"); assert.match(IC.home, /v10\.3h-15z/);   // H5, the pentagon
+  assert.equal(tags("rawEditor"), "CIRCLE,CIRCLE,CIRCLE");   // C1 «RGB»
+  const comp = frag(p, IC.component).firstElementChild, inst = frag(p, IC.instance).firstElementChild;   // K1: one solid diamond, the instance hollow
+  assert.equal(comp.getAttribute("fill"), "currentColor"); assert.equal(inst.getAttribute("fill"), null);
+  assert.equal(comp.getAttribute("d"), inst.getAttribute("d"));
+  const on = frag(p, p.window.hyGradeIcon(true, 15, 1.9)).firstElementChild, off = p.window.hyGradeIcon(false, 15, 1.9);
+  assert.deepEqual([...on.querySelectorAll("circle")].map(c => c.getAttribute("fill")), ["#ff3b30", "#34c759", "#0a84ff"]);
+  assert.ok(off.includes(IC.rawEditor) && !/#[0-9a-f]{6}/.test(off));
+});
+
+test("the group is Figma's dashed square (owner 2026-10-09: «let's make same as in figma and apply it»), the Board's and 3D Studio's", () => {
+  const p = page({ scripts: ["ui/icons.js"] }), IC = p.window.HY_TOOL_IC, box = frag(p, IC.group);
+  assert.deepEqual([...box.children].map(e => e.tagName), ["PATH", "PATH"]);   // no frame drawn with a dash pattern, no pictures inside it
+  assert.ok(!/dasharray|rect/.test(IC.group));
+  const [corners, dashes] = [...box.children].map(e => e.getAttribute("d"));
+  assert.equal(corners.match(/M/g).length, 4); assert.equal(corners.match(/A/gi).length, 4);   // four round corners
+  assert.equal(dashes.match(/M/g).length, 4);   // and a dash in the middle of each side
+  const nums = (corners + dashes).match(/-?\d*\.?\d+/g).map(Number);
+  assert.ok(Math.min(...nums.filter(n => n > 0)) >= 1 && Math.max(...nums) <= 20.5);   // on the family's square, 3.5 to 20.5
+  assert.notEqual(IC.group, IC.folder);   // a group is no longer a folder (3D Studio drew one)
+  const m = page({ scripts: ["ui/icons.js", "ui/menu.js"] });
+  assert.ok(m.window.hyMenuItem('data-act="group"', "group", "Group", ["⌘", "G"]).includes(dashes));   // the menus' «Group ⌘G»
+});
+
 /* ---- menu.js */
 const menu = (fetch) => page({ scripts: ["ui/icons.js", "ui/menu.js"], fetch });   // the menu draws its icons from the registry
 

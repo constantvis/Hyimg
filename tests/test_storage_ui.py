@@ -79,7 +79,7 @@ def test_home_shows_each_boards_size_and_sorts_by_it(browser):
 
 def test_home_settings_storage_section_and_clear_asks_the_app(browser):
     page, errors = home(browser)
-    page.click("#bset")
+    page.click("#bset"); page.evaluate("s => hySetPanel.go(s)", "storage")
     page.wait_for_function("() => (window.__sent || []).some(m => m.action === 'storage' && m.op === 'ram')")
     page.evaluate(f"hyimgStorage({json.dumps(RAM)})")
     sec = page.locator("#sets #hyStore")
@@ -102,7 +102,7 @@ def test_home_settings_storage_section_and_clear_asks_the_app(browser):
 
 def test_home_storage_in_russian(browser):
     page, errors = home(browser, "ru", "light")
-    page.click("#bset"); page.evaluate(f"hyimgStorage({json.dumps(RAM)})")
+    page.click("#bset"); page.evaluate("s => hySetPanel.go(s)", "storage"); page.evaluate(f"hyimgStorage({json.dumps(RAM)})")
     text = page.locator("#hyStore").text_content()
     for words in ("Хранилище", "Доски", "65 ГБ", "Кэш", "Очистить 580 МБ", "Копии приложения · 5", "Память сейчас", "6,9 ГБ", "Графика"):
         assert words in text, words
@@ -118,7 +118,7 @@ def test_board_settings_storage_from_its_server(browser, env):  # noqa: F811
         page.on("pageerror", lambda e: errors.append(str(e)))
         page.goto(f"http://127.0.0.1:{port}/canvas")
         page.wait_for_selector("#bset")
-        page.click("#bset")
+        page.click("#bset"); page.evaluate("s => hySetPanel.go(s)", "storage")
         page.wait_for_function("() => document.querySelector('#hyStore') && /Boards/.test(document.querySelector('#hyStore').innerText)", timeout=30000)
         text = page.locator("#hyStore").text_content()
         assert "Board" in text and "Server memory" in text and "Duplicates" in text   # a plain browser: no app, its server's memory
@@ -144,7 +144,7 @@ def test_home_lists_lost_processes_and_stop_asks_the_app(browser):
     lost = [{"pid": 4242, "kind": "server", "port": "59674", "age": 54000, "bytes": 45 * 10 ** 6},
             {"pid": 4343, "kind": "blender", "port": "", "age": 600, "bytes": 300 * 10 ** 6}]
     page.evaluate(f"hyimgStorage({json.dumps({'op': 'summary', 'summary': SUMMARY, 'age': 5, 'scanning': False, 'lost': lost})})")
-    page.click("#bset")
+    page.click("#bset"); page.evaluate("s => hySetPanel.go(s)", "storage")
     text = page.locator("#hyStore").text_content()
     for words in ("Lost processes · 2", "345 MB", "Server 59674 · 15 h", "Blender · 10 min"):
         assert words in text, words
@@ -162,11 +162,34 @@ def test_home_lists_lost_processes_and_stop_asks_the_app(browser):
 def test_home_sets_the_thumbnail_ceiling_through_the_app(browser):
     page, errors = home(browser)
     page.evaluate(f"hyimgStorage({json.dumps({'op': 'summary', 'summary': SUMMARY, 'age': 5, 'scanning': False, 'caps': {'board': 2, 'total': 8}})})")
-    page.click("#bset")
-    assert page.locator("#hyStore [data-hscap=board] [aria-pressed=true]").inner_text() == "2 GB"
+    page.click("#bset"); page.evaluate("s => hySetPanel.go(s)", "storage")
+    assert page.locator("#hyStore [data-hscap=board] button.on").inner_text() == "2 GB"
     page.locator("#hyStore [data-hscap=board] [data-cap='5']").click()
     assert sent(page, action="storage", op="caps")[-1]["board"] == 5
-    assert page.locator("#hyStore [data-hscap=board] [aria-pressed=true]").inner_text() == "5 GB"
+    assert page.locator("#hyStore [data-hscap=board] button.on").inner_text() == "5 GB"
     assert page.locator("#sets").evaluate("e => e.classList.contains('open')")   # the panel stays open
     shot(page, f"home-caps-{browser.browser_type.name}")
+    assert not errors
+
+
+def test_home_clears_the_performance_log_through_the_app(browser):
+    """the log's «Clear» on Home (a file page): asked by the app's dialog, op "perflog" (native/StorageBridge.swift runs perflog.py
+    clear), the row at 0 once the app answers; before 2026-10-08 it was greyed out there («Cleared from a board's settings»)"""
+    page, errors = home(browser)
+    page.evaluate(f"hyimgStorage({json.dumps({'op': 'summary', 'summary': SUMMARY, 'age': 5, 'scanning': False, 'perflog': {'bytes': 48000, 'files': 2}})})")
+    page.click("#bset"); page.evaluate("s => hySetPanel.go(s)", "storage")
+    row = page.locator("#hyStore .hs-row", has=page.locator("[data-hs=perflog]"))
+    assert "Performance log" in row.text_content() and row.locator("b").inner_text() == "48 KB"
+    clear = row.locator("[data-hs=perflog]")
+    assert clear.get_attribute("disabled") is None and clear.get_attribute("title") is None
+    clear.locator("button").click()
+    ask = sent(page, action="storage", op="perflog")
+    assert len(ask) == 1 and ask[0]["confirm"] is True and ask[0]["title"] == "Clear the performance log, 48 KB?", ask
+    assert ask[0]["ok"] == "Clear" and ask[0]["note"] == "Only the log of frame drops in the app's cache"
+    assert row.locator("[data-hs=perflog]").get_attribute("disabled") is not None   # busy until the answer
+    page.evaluate("hyimgStorage({op: 'perflog', freed: 48000, removed: 2})")
+    page.wait_for_selector("#hyToasts .ht")
+    assert "Freed 48 KB" in page.locator("#hyToasts").inner_text()
+    assert row.locator("b").inner_text() == "0 KB" and row.locator("[data-hs=perflog]").get_attribute("disabled") is not None   # nothing left
+    shot(page, f"home-perflog-{browser.browser_type.name}")
     assert not errors

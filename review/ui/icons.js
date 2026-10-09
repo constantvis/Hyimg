@@ -30,7 +30,7 @@
     camera: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>',
     // take a picture: the 3D studio's Snapshot, the image studio's history snapshots
     snapshot: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
-    folder: '<path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',   // a folder (a Finder folder, a 3D group of parts)
+    folder: '<path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',   // a folder (a Finder folder; a group is group)
     doc: '<path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-10z"/><path d="M14 3.5v5h5"/>',   // a file, a document (a PDF, an HTML page)
     // the link between two fields side by side, W and H (owner 2026-10-07: «вот это горизонтально должно быть, а не вертикально»): two
     // halves and the bar between them, Lucide's link-2. Drawn with the class hy-link, look.css closes the halves on the bar while its
@@ -38,6 +38,8 @@
     linkWH: '<path class="la" d="M9 17H7A5 5 0 0 1 7 7h2"/><path class="lb" d="M15 7h2a5 5 0 1 1 0 10h-2"/><path class="lm" d="M8 12h8"/>',
     // ⓘ beside a title whose explanation is its tooltip (look.css .hy-info draws the same geometry as a mask)
     info: '<circle cx="12" cy="12" r="9.5"/><path d="M12 16.5v-5M12 7.5h.01"/>',
+    // a tip: the bulb in front of the line that teaches one thing you can do here (the Hints family, DESIGN.md «Семья подсказок», 2026-10-08)
+    tip: '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
     // ---- the rest of the app's icons, one per meaning (owner 2026-10-07, the image studio's Adjustments tab wore the opacity's half
     // circle: «Нужно, чтобы это было систематизировано ... консистентные иконки, консистентные стили, консистентные цвета»). Every icon of
     // the board, the library, Home and the plugins is drawn from here by its name (hyIcon below); a page or a plugin writes no <path> of its
@@ -55,11 +57,16 @@
     minus: '<path d="M5 12h14"/>',   // less, remove one
     check: '<path d="M20 6 9 17l-5-5"/>',   // done, on, chosen
     more: '<circle cx="5.5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.6" fill="currentColor" stroke="none"/>',   // more actions
-    home: '<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',   // Home: all boards
-    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',   // settings
-    notifications: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',   // what agents put on the boards
+    // Home: all boards; the ⌂ pentagon, H5 of Concepts/html/icons-redesign (owner 2026-10-08: «вот это больше всего нравится»)
+    home: '<path d="M4.5 10.2 12 4l7.5 6.2v10.3h-15z"/>',
+    // the app's settings: a knob, S4 of icons-redesign, picked on its round 2 (owner 2026-10-08: «вот этот берем»), the gear was «outdated»
+    settings: '<circle cx="12" cy="12" r="8.5"/><path d="M17.3 6.7 14.6 9.4"/>',
+    // what agents put on the boards: a square with its dot, B4 «Badge» of round 2 (owner 2026-10-08: «давай этот пока берем»); the dot
+    // turns red while there is news (canvas.html #bntf.dot), so the button wears no second dot
+    notifications: '<path d="M12.5 5.5H8a4 4 0 0 0-4 4V16a4 4 0 0 0 4 4h6.5a4 4 0 0 0 4-4v-4.5"/><circle cx="18" cy="6" r="2.5"/>',
     history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',   // the history of versions and steps
     recent: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',   // the boards opened last
+    sleep: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',   // a board asleep: its page gave its memory back, its server runs (⌃Tab, the crumb's list)
     reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',   // back to the start: filters, a section, the whole scene
     undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',   // undo one step
     redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',   // redo one step
@@ -70,6 +77,8 @@
     collapse: '<path d="M14 4v6h6M10 20v-6H4M14 10l6-6M10 14l-6 6"/>',   // back from full screen or full width
     library: '<rect x="3" y="4" width="18" height="16" rx="2"/><rect class="pane" x="5.5" y="6.5" width="6" height="11" rx="1" fill="currentColor" stroke="none"/>',   // show or hide the library beside the board
     sidebar: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/><path class="ar" d="M15.5 10 13 12l2.5 2"/>',   // show or hide the library's folder tree
+    dockSide: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M14.5 4v16"/><path d="M17 8.5h1.5M17 11.5h1.5"/>',   // a panel docked at the window's side (Settings)
+    asWindow: '<rect x="3" y="4" width="18" height="16" rx="3"/><rect x="7.5" y="8.5" width="9" height="7" rx="1.5"/>',   // a panel as a window in the middle (Settings)
     grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',   // all of them as cards in a grid (all boards, all folders, the grid view)
     rows: '<rect x="3.5" y="5" width="6" height="6" rx="1.5"/><rect x="11.5" y="5" width="9" height="6" rx="1.5"/><rect x="3.5" y="13" width="10" height="6" rx="1.5"/><rect x="15.5" y="13" width="5" height="6" rx="1.5"/>',   // the view of rows of one height
     list: '<path d="M8.5 6.5h12M8.5 12h12M8.5 17.5h12"/><circle cx="4.5" cy="6.5" r=".9" fill="currentColor"/><circle cx="4.5" cy="12" r=".9" fill="currentColor"/><circle cx="4.5" cy="17.5" r=".9" fill="currentColor"/>',   // the view of a list
@@ -79,6 +88,10 @@
     onBoard: '<rect x="3" y="3" width="18" height="18" rx="3"/><rect x="7" y="7" width="4" height="4" fill="currentColor"/><rect x="13" y="12" width="4" height="5" fill="currentColor"/>',   // a picture that is on the board
     archived: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M4 20 20 4"/>',   // taken off the board, left out of the work
     noProject: '<rect x="4" y="4" width="16" height="16" rx="3.5" stroke-dasharray="3.2 2.6"/>',   // the boards in no project
+    // Home's standard Archive (ui/homearchive.js, owner 2026-10-08): a box with its lid, Lucide's archive
+    archive: '<rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M4.5 8.5V18a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8.5"/><path d="M10 12.5h4"/>',
+    // out of the Archive, back to its project («Restore»): the same box, an arrow up out of it
+    unarchive: '<rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M4.5 8.5V18a2 2 0 0 0 2 2h1.5M19.5 8.5V18a2 2 0 0 1-2 2H16"/><path d="m9 14.5 3-3 3 3M12 11.5V21"/>',
     // things
     image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-5-5-8 8.5"/>',   // a picture (a file kind, Image mode, a board without covers)
     board: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M3.5 9h17M9 9v11.5"/>',   // a board (Board mode, a board in Home's list)
@@ -86,14 +99,59 @@
     htmlFrame: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 8.5h18"/><path d="m9.5 12.5-2 2 2 2M14.5 12.5l2 2-2 2"/>',   // an HTML frame: a live page on the board
     code: '<path d="m8.5 7-5 5 5 5"/><path d="m15.5 7 5 5-5 5"/><path d="m13.5 4.5-3 15"/>',   // a page's code (Dev mode)
     tag: '<path d="M8 6 3 12l5 6"/><path d="m16 6 5 6-5 6"/>',   // an element of a page
+    plugin: '<path d="M9 3v4.5M15 3v4.5"/><path d="M6.5 7.5h11V11a5.5 5.5 0 0 1-11 0z"/><path d="M12 16.5V21"/>',   // a plugin (a plug): Settings › Plugins, a card whose plugin is off
     heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',   // like (♥)
     play: '<path d="M8 5.6v12.8a.8.8 0 0 0 1.2.7l10.2-6.4a.8.8 0 0 0 0-1.4L9.2 4.9A.8.8 0 0 0 8 5.6z"/>',   // play (drawn filled on a video)
     pause: '<rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/>',   // pause
     stop: '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>',   // stop
     note: '<path d="M5 4h14a1 1 0 0 1 1 1v9l-6 6H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 20v-5a1 1 0 0 1 1-1h5"/>',   // a sticky note
     timeline: '<path d="M3 14h18"/><circle cx="5" cy="14" r="2" fill="currentColor"/><circle cx="12" cy="14" r="2"/><circle cx="19" cy="14" r="2"/><path d="M9.5 9h5"/>',   // a timeline
+    heading: '<path d="M6 4.5v15M18 4.5v15M6 12h12"/>',   // a heading: big text over a column of groups (docs/glossary.md)
+    // a component (docs/glossary.md): made once, used many times; one solid diamond, K1 of icons-redesign round 2 (owner 2026-10-08: «да вот
+    // так отлично»), it replaced Figma's four diamonds
+    component: '<path d="M12 4.3 19.7 12 12 19.7 4.3 12z" fill="currentColor"/>',
+    instance: '<path d="M12 4.3 19.7 12 12 19.7 4.3 12z"/>',   // an instance: one placement of a component, the same diamond hollow (K2)
+    // the agents that act for a person (ui/avatar.js, the badge on his avatar; owner 2026-10-07): neutral glyphs; since 2026-10-08 the companies'
+    // marks (ui/agents) cover claude, codex and gemini in the owner's app, these stay for the others and for the public repositories
+    agentClaude: '<path d="M5 19 14.5 9.5"/><path d="M19.5 4.5c-6 0-10.5 4-12 11l1.5 1.5c7-1.5 10.5-6 10.5-12.5z"/>',   // Claude: a quill
+    // Codex: braces
+    agentCodex: '<path d="M9 4.5c-2 0-3 1-3 3v2c0 1.3-.8 2.5-2 2.5 1.2 0 2 1.2 2 2.5v2c0 2 1 3 3 3"/>'
+      + '<path d="M15 4.5c2 0 3 1 3 3v2c0 1.3.8 2.5 2 2.5-1.2 0-2 1.2-2 2.5v2c0 2-1 3-3 3"/>',
+    agentGemini: '<circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/>',   // Gemini: two rings, the twins
+    agentKimi: '<path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.5 6.5 0 0 0 10 10z"/>',   // Kimi: a crescent
+    agentOpencode: '<path d="m5 7 5 5-5 5"/><path d="M12.5 17.5h6.5"/>',   // OpenCode: a prompt
+    agent: '<rect x="5" y="8.5" width="14" height="11" rx="3"/><path d="M12 4.5v4"/><path d="M9.5 14h.01M14.5 14h.01"/>',   // an agent (docs/glossary.md), the badge of one the catalog does not know
+    // a person who works on the board (docs/glossary.md, owner 2026-10-08): head and shoulders; a face with no name and no picture
+    person: '<circle cx="12" cy="7.5" r="4"/><path d="M4.5 20.5a7.5 6.5 0 0 1 15 0"/>',
+    // the sections of Settings (ui/settings-win.js, owner 2026-10-08: E1 «Rail popover» of Concepts/html/settings-concepts), each its own
+    team: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 5.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M21.5 20a6.5 5.5 0 0 0-4-5.1"/>',   // Team & agents
+    // Appearance: a painter's palette (theme, corners, shadows, notes)
+    palette: '<circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/>'
+      + '<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2'
+      + 'c3.05 0 5.56-2.5 5.56-5.55C21.97 6.01 17.46 2 12 2z"/>',
+    // Storage: a disk (the boards' folders, the cache, the memory)
+    drive: '<path d="M22 12H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'
+      + '<path d="M6 16h.01M10 16h.01"/>',
+    keyboard: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M7 15h10"/>',   // Interface: keys, hiding it
+    gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',   // Performance: the engine, the drawing, the log of frame drops
+    // annotations and comments on the board (ui/annotate.js, ui/comments.js; owner 2026-10-07: «как в Figma»)
+    annotate: '<path d="M4 20c3-1 4-4 7-4s3 2 5 2"/><path d="m13.5 11.5 6-6a1.8 1.8 0 0 0-2.5-2.5l-6 6-1 3.5z"/>',   // the Annotate tool: draw and comment
+    comment: '<path d="M4.5 12a7.5 7.5 0 1 1 3.4 6.3L4 19.5l1.3-3.6A7.4 7.4 0 0 1 4.5 12z"/>',   // a comment, a pin with a thread
+    marker: '<path d="m15 5 4 4"/><path d="M5.5 18.5 4 20l1.5-.3 3-.7L18 9.5 14.5 6 5 15.5z"/>',   // freehand drawing on the board
+    drawArrow: '<path d="M5 19 19 5"/><path d="M10 5h9v9"/>',   // an arrow drawn on the board
+    drawRect: '<rect x="4" y="5.5" width="16" height="13" rx="1.5"/>',   // a rectangle drawn on the board
+    drawEllipse: '<ellipse cx="12" cy="12" rx="8.5" ry="6.5"/>',   // an ellipse drawn on the board
+    drawText: '<path d="M5.5 6.5V5h13v1.5"/><path d="M12 5v14"/><path d="M9.5 19h5"/>',   // a short text label on the board
+    eraser: '<path d="m7 20-3.3-3.3a1.5 1.5 0 0 1 0-2.1L13.6 4.7a1.5 1.5 0 0 1 2.1 0l4.6 4.6a1.5 1.5 0 0 1 0 2.1L11.5 20z"/><path d="M8.5 9.5 15 16M7 20h13"/>',   // erase
+    resolve: '<circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-4.8"/>',   // resolve a comment thread
+    reply: '<path d="M10 8 5 12.5l5 4.5"/><path d="M5 12.5h9a5 5 0 0 1 5 5V19"/>',   // reply in a thread
+    mention: '<circle cx="12" cy="12" r="3.5"/><path d="M15.5 9v4.3a2.2 2.2 0 0 0 4.4 0V12a8 8 0 1 0-3.2 6.4"/>',   // @ someone
+    editText: '<path d="M4.5 19.5h4l10-10-4-4-10 10z"/><path d="m13 7 4 4"/>',   // change what one wrote (a comment)
+    send: '<path d="M12 19V5"/><path d="m6 11 6-6 6 6"/>',   // send a comment or a reply
     // the board's and the library's actions (the menus: ui/menu.js hyMenuItem)
-    group: '<rect x="3.5" y="3.5" width="17" height="17" rx="3" stroke-dasharray="3 2.4"/><rect x="7.5" y="7.5" width="4" height="4" rx="1"/><rect x="12.5" y="12.5" width="4" height="4" rx="1"/>',   // group
+    // a group, on the Board and in 3D Studio alike (owner 2026-10-09 on Figma's, his screenshot on r12/3d-group.html: «let's make same as in
+    // figma and apply it»): Figma's dashed square, four round corners and a dash in each side's middle, in our line
+    group: '<path d="M3.5 6.2V5A1.5 1.5 0 0 1 5 3.5h1.2M17.8 3.5H19a1.5 1.5 0 0 1 1.5 1.5v1.2M20.5 17.8V19a1.5 1.5 0 0 1-1.5 1.5h-1.2M6.2 20.5H5A1.5 1.5 0 0 1 3.5 19v-1.2"/><path d="M10.5 3.5h3M10.5 20.5h3M3.5 10.5v3M20.5 10.5v3"/>',
     ungroup: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M14 6.5h3.5V10M10 17.5H6.5V14"/>',   // ungroup, take the pictures out of a frame
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',   // link things together (layers)
     view: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',   // look at it big (the viewer)
@@ -115,12 +173,15 @@
     orderBackward: '<path d="M12 5v13M7.5 13.5 12 18l4.5-4.5"/>',   // send backward
     orderBack: '<path d="M5 19.5h14"/><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/>',   // send to back
     copyProps: '<path d="M4 7h8M16 7h4M4 17h4M12 17h8"/><circle cx="14" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',   // copy the properties
+    clearProps: '<path d="M4 7h8M16 7h4M4 17h6"/><circle cx="14" cy="7" r="2"/><path d="m14 14 6 6M20 14l-6 6"/>',   // clear the properties: the sliders, a cross
     pasteProps: '<rect x="4.5" y="4.5" width="15" height="16" rx="2"/><path d="M9 3.5h6v2.5H9z"/><path d="M8 11h3.5M14.5 11H16M8 15.5h1.5M12.5 15.5H16"/><circle cx="13" cy="11" r="1.5"/><circle cx="11" cy="15.5" r="1.5"/>',   // paste the properties
     toPage: '<rect x="3.5" y="4.5" width="10" height="15" rx="2"/><path d="M10 12h10.5M17 8.5l3.5 3.5-3.5 3.5"/>',   // move to another page
     goTo: '<path d="M5 12h14M13 6l6 6-6 6"/>',   // go to the original of a copy
     goBack: '<path d="M19 12H5M11 6l-6 6 6 6"/>',   // back to the copy it came from
     tidyBlock: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2"/>',   // arrange as a square block
     tidyRow: '<path d="M3 4h18"/><rect x="4" y="7" width="4.5" height="10" rx="1"/><rect x="10" y="7" width="4.5" height="7" rx="1"/><rect x="16" y="7" width="4" height="12" rx="1"/>',   // arrange in one row, aligned at the top
+    gridMake: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 3.5v17M14.5 3.5v17"/>',   // make a grid (Arrange ›)
+    gridRemove: '<path d="M9.5 3.5v3M3.5 9.5h3M20.5 14.5h-3M14.5 20.5v-3M4 4l16 16"/><path d="M8 3.5h10.5a2 2 0 0 1 2 2V16M16 20.5H5.5a2 2 0 0 1-2-2V8"/>',   // remove a grid
     tidy: '<rect x="3" y="4" width="4" height="5" rx="1"/><rect x="9" y="4" width="4" height="5" rx="1"/><rect x="15" y="4" width="4" height="5" rx="1"/><rect x="3" y="15" width="4" height="5" rx="1"/><rect x="9" y="15" width="4" height="5" rx="1"/><path d="M21 9.5v5M19.5 11l1.5-1.5 1.5 1.5M19.5 13l1.5 1.5 1.5-1.5"/>',   // tidy: rows and blocks stay, the gaps become even
     opacity: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>',   // opacity (only that: never an adjustment)
     orientation: '<rect x="7" y="3.5" width="10" height="17" rx="2.6"/>',   // turn a frame or a ratio between portrait and landscape
@@ -269,27 +330,17 @@
     st.textContent = `:root { --hy-ic-info: ${hyIconURL("info", "black", 2)}; --hy-ic-check-on: ${hyIconURL("check", "white", 3.4)}; --hy-ic-search-sub: ${hyIconURL("search", "#a1a1aa", 2)}; }`;   // the last: the library's search field, an <input> takes no mask, so its magnifier is drawn in --sub's grey
     (document.head || document.documentElement).appendChild(st);
   }
-  // Raw Editor's icon (owner 2026-10-06, variant 2 «Круг» of Concepts/html/grade-icons): normal, the line of a colour wheel and its puck
-  // in currentColor; on (a picture with a working grade), the wheel filled with hues, a white centre, the puck white with a dark edge.
-  // SVG has no conic gradient: 60 wedges, each 0.8° longer than its share so no seam shows at 14 px in WebKit; the gradient's id is
-  // new for every icon, a page with many of them (cards, a hidden one first) still fills each.
-  //   hyGradeIcon(on, size, line, cls)   a whole <svg>; line: the wheel's stroke on the 24 grid (the bar 1.9, a card's mark 2.2)
-  IC.rawEditor = '<circle cx="12" cy="12" r="8.5"/><circle cx="14.6" cy="9.4" r="2.6" fill="currentColor" stroke="none"/>';   // Raw Editor: the colour grade, its layers in the image studio
-  const r3 = v => Math.round(v * 1000) / 1000, hue = h => {   // the lab's hsl → hex at s .92, l .58
-    const a = .92 * Math.min(.58, .42), f = n => { const k = (n + h / 30) % 12; return .58 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
-    return "#" + [f(0), f(8), f(4)].map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
-  };
-  const discs = {}, disc = r => discs[r] || (discs[r] = (() => {
-    let s = ""; const pt = d => { const a = (d - 90) * Math.PI / 180; return `${r3(12 + r * Math.cos(a))} ${r3(12 + r * Math.sin(a))}`; };
-    for (let i = 0; i < 60; i++) { const a0 = i * 6; s += `<path d="M12 12L${pt(a0)}A${r} ${r} 0 0 1 ${pt(a0 + 6.8)}z" fill="${hue(a0 + 3)}"/>`; }
-    return `<g stroke="none">${s}</g>`;
-  })());
-  let gid = 0;
+  // Raw Editor's icon (owner 2026-10-08, C1 «RGB» of Concepts/html/icons-redesign round 2: «вот этот берем для цветкора»; the colour
+  // wheel with its puck before it stood too close to the settings knob): three circles of light, red, green and blue. Normal, their lines
+  // in currentColor; on (a picture with a working grade), filled in their colours and added as light adds (screen, inside their own
+  // group): where two meet they mix, the middle is white, on a card's dark plate and on a light panel alike.
+  //   hyGradeIcon(on, size, line, cls)   a whole <svg>; line: the circles' stroke on the 24 grid (the bar 1.9, a card's mark 2.2)
+  IC.rawEditor = '<circle cx="12" cy="8.7" r="5.1"/><circle cx="8.95" cy="13.9" r="5.1"/><circle cx="15.05" cy="13.9" r="5.1"/>';   // Raw Editor: the colour grade
+  const RGB = [[12, 8.7, "#ff3b30"], [8.95, 13.9, "#34c759"], [15.05, 13.9, "#0a84ff"]];
   window.hyGradeIcon = (on, size = 15, line = 1.9, cls = "") => {
     const open = `<svg${cls ? ` class="${cls}"` : ""} viewBox="0 0 24 24" width="${size}" height="${size}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`;
     if (!on) return open + `<g fill="none" stroke="currentColor" stroke-width="${line}">${IC.rawEditor}</g></svg>`;
-    const r = 8.5 + line / 2, id = "hygr" + (++gid);
-    return open + disc(r) + `<defs><radialGradient id="${id}"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".72" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>`
-      + `<circle cx="12" cy="12" r="${r}" fill="url(#${id})"/><circle cx="14.6" cy="9.4" r="2.6" fill="#fff" stroke="#18181b" stroke-opacity=".7" stroke-width="1.1"/></svg>`;
+    const r = 5.1 + line / 2;   // filled, as wide as an outlined circle with its line
+    return open + '<g style="isolation:isolate">' + RGB.map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" style="mix-blend-mode:screen"/>`).join("") + "</g></svg>";
   };
 })();

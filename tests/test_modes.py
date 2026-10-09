@@ -196,3 +196,71 @@ def test_switch_is_icons_at_the_right_end_like_figmas(srv, theme, shape):
             assert not errors, errors
             page.close()
         br.close()
+
+
+# A board always comes in Board mode (owner 2026-10-07: «зашел на страницу, где мой wire, и там почему-то открылось 3D ... По дефолту он
+# должен всегда заходить в board режим»). The Mac app keeps a board's page while Home is in front and brings it back with hyimgPrep and
+# hyimgIntro (native/main.swift openSession): an editor left open closes then; a page loaded afresh opens none.
+def test_a_board_comes_back_in_board_mode(srv):
+    port, lib = srv
+    with sync_playwright() as p:
+        br = p.chromium.launch(); page = br.new_page(viewport={"width": 1400, "height": 900}, color_scheme="dark")
+        errors = []; page.on("pageerror", lambda e: errors.append(str(e)))
+        page.goto(f"http://127.0.0.1:{port}/canvas.html")
+        page.wait_for_function("() => typeof PLGST !== 'undefined' && PLGST.length === 1 && PLGST[0].ok", timeout=20000)
+        enter = "() => { sel = new Set(['f1']); render(); return MODES.enter('fake'); }"
+        assert page.evaluate(enter) and page.evaluate("MODES.open") == "fake" and page.is_visible("#dock .plgdock [data-a=done]")
+        page.evaluate("() => { hyimgPrep(); hyimgIntro(); }")   # back from Home, as the app does it
+        assert page.evaluate("MODES.open") == "board" and not page.is_visible("#dock .plgdock [data-a=done]")
+        assert page.evaluate("document.querySelector('#modes [aria-pressed=true]').dataset.mode") == "board"
+        assert page.evaluate(enter) and page.evaluate("MODES.open") == "fake"
+        page.reload()
+        page.wait_for_function("() => typeof PLGST !== 'undefined' && PLGST.length === 1 && PLGST[0].ok", timeout=20000); page.wait_for_timeout(300)
+        assert page.evaluate("MODES.open") == "board" and not page.is_visible("#dock .plgdock [data-a=done]")
+        assert not errors, errors
+        br.close()
+
+
+STUDIO3D = ROOT.parent / "hyimg-3d-studio"
+
+
+@pytest.mark.skipif(not (STUDIO3D / "manifest.json").exists(), reason="no hyimg-3d-studio beside this repository")
+def test_the_3d_studio_is_not_open_when_the_board_comes_back(tmp_path):
+    """the owner's case: 3D entered on a card, Home, the board again (and a reload): Board mode, none of the studio's panels"""
+    lib, state, plugins = tmp_path / "lib", tmp_path / "state", tmp_path / "plugins"
+    for d in (lib, state / "boards", plugins): d.mkdir(parents=True)
+    (plugins / "3d").symlink_to(STUDIO3D)
+    (state / "boards/main.json").write_text(json.dumps({"schema": 1, "revision": 1, "items": {}, "groups": {}, "removed": {}}))
+    (tmp_path / "settings.json").write_text(json.dumps({"cv.lang": "en"})); (tmp_path / "home").mkdir()
+    port = free_port()
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("HYIMG_", "REVIEW_"))}
+    env.update(HOME=str(tmp_path / "home"), HYIMG_LIBRARY_ROOT=str(lib), HYIMG_STATE_ROOT=str(state), HYIMG_PROJECT_ID=str(uuid.uuid4()), HYIMG_PLUGINS=str(plugins),
+               HYIMG_SETTINGS=str(tmp_path / "settings.json"), PYTHONDONTWRITEBYTECODE="1")
+    log = open(tmp_path / "server.log", "w+")
+    proc = subprocess.Popen([sys.executable, str(ROOT / "review/server.py"), str(port)], env=env, stdout=log, stderr=log)
+    try:
+        for _ in range(100):
+            try: urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=1); break
+            except OSError: time.sleep(0.1)
+        with sync_playwright() as p:
+            br = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+            page = br.new_page(viewport={"width": 1500, "height": 950}, color_scheme="dark")
+            errors = []; page.on("pageerror", lambda e: errors.append(str(e)))
+            ready = "() => typeof PLGST !== 'undefined' && PLGST.some(p => p.name === '3d' && p.ok)"
+            page.goto(f"http://127.0.0.1:{port}/canvas.html"); page.wait_for_function(ready, timeout=30000)
+            page.click("button[title^='3D scene']")   # the dock's «3D scene»
+            page.wait_for_function("() => Object.values(board.items).some(i => i.type === 'model3d' && i.scene)", timeout=30000)
+            cid = page.evaluate("() => Object.keys(board.items).find(k => board.items[k].type === 'model3d')")
+            live = "() => MODES.open === '3d' && !!document.querySelector('.plg-live') && !!document.querySelector('.m3ui')"
+            gone = "() => MODES.open === 'board' && !document.querySelector('.plg-live') && !document.querySelector('.m3ui')"
+            assert page.evaluate(f"() => MODES.enter('3d', ['{cid}'])"); page.wait_for_function(live, timeout=60000)
+            page.evaluate("() => { hyimgPrep(); hyimgIntro(); }")   # Home, then the board again: the app kept its page
+            page.wait_for_function(gone, timeout=20000)
+            assert page.evaluate("document.querySelector('#modes [aria-pressed=true]').dataset.mode") == "board"
+            assert page.evaluate(f"() => MODES.enter('3d', ['{cid}'])"); page.wait_for_function(live, timeout=60000)
+            page.reload(); page.wait_for_function(ready, timeout=30000); page.wait_for_timeout(1500)
+            assert page.evaluate(gone), "a reload opens the board in Board mode"
+            assert not errors, errors
+            br.close()
+    finally:
+        proc.terminate(); proc.wait(5); log.close()

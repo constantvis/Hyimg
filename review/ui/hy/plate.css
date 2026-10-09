@@ -3,7 +3,7 @@
    restyles it (scripts/validate.py «row-plate»). kind=capsule holds buttons (the window buttons, the crumb's steps): 4 px in, the buttons
    inside are 30 px (size=l); place=row-left or row-right stands it in the top row (ui/look.css, the row's tokens). */
 :is(.hy-plate, hy-plate) { box-sizing: border-box; height: var(--hy-plate-h); max-width: 360px; padding: 0 var(--hy-cap-pad, 10px); border: 1px solid var(--line); border-radius: var(--hy-plate-r);
-  background: color-mix(in srgb, var(--panel) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--plate-sh);
+  background: color-mix(in srgb, var(--panel) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: var(--hy-sh-row);
   color: var(--sub); font: 500 13px/calc(var(--hy-plate-h) - 2px) var(--sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 hy-plate { display: inline-block; vertical-align: middle; }
 hy-plate[kind=capsule] { display: inline-flex; align-items: center; gap: 2px; max-width: none; padding: 0 3px; overflow: visible; }

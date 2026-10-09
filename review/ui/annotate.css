@@ -1,0 +1,108 @@
+/* Annotations and comments on the board (ui/annotate.js, ui/comments.js; owner 2026-10-07): the drawings' layer and the pins in the
+   board's world (they move and zoom with it, the pins keep their size on screen by --z), the open thread beside its pin, the page's
+   comments list on the right like the bell's, the Annotate tools in the dock (HY.dock, the plugins' editors' look). */
+#annsvg { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; z-index: 4; pointer-events: none; }
+#annsvg.off, #cmpins.off { display: none; }
+#annsvg .ann-t { font-family: var(--sans); font-weight: 600; stroke: none; }
+#annsvg .ann-sel { fill: none; stroke: var(--sel); }
+#annsvg g { transition: opacity .2s ease; } #annsvg g.erasing { opacity: .2; }
+#stage.annot, #stage.annot #world { cursor: crosshair; }
+#stage.annot[data-ann-tool=select], #stage.annot[data-ann-tool=select] #world { cursor: default; }
+#stage.annot[data-ann-tool=text], #stage.annot[data-ann-tool=text] #world { cursor: text; }
+#stage.annot[data-ann-tool=comment], #stage.annot[data-ann-tool=comment] #world { cursor: cell; }
+#stage.annot .tidy, #stage.annot .h, #stage.annot .he { visibility: hidden; }   /* the board's handles and bar wait while drawing */
+#stage.annot iframe { pointer-events: none !important; }   /* a live page (an HTML card, an HTML frame, Dev mode) lets the tools draw over it */
+.ann-input { position: absolute; z-index: 33; min-width: 120px; height: 26px; padding: 0 4px; border: 0; border-bottom: 1.5px dashed var(--c, var(--sel));
+  background: transparent; color: var(--c, var(--ink)); font: 600 16px var(--sans); outline: none; }
+
+/* the dock while Annotate is on: the tools, the colours, the eye, the authors, the list with its count, Done */
+.ann-bar { display: contents; }
+.bar .ann-bar hy-swatches { display: inline-flex; flex-wrap: nowrap; gap: 4px; padding: 0 4px; }
+.bar .ann-bar button.ic { position: relative; }
+.bar .ann-bar button.off { color: var(--muted) !important; }
+.bar .ann-bar .ann-n { position: absolute; top: -2px; right: -2px; }   /* the open comments' count, the primitive's badge on the list button */
+#annwho { position: absolute; z-index: 60; width: 240px; padding: 6px; display: grid; gap: 2px; border: 1px solid var(--line); border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: var(--plate-sh);
+  --hy-av-ring: var(--panel); animation: hySubIn .2s cubic-bezier(.32,.72,0,1); }
+#annwho .nh0 { padding: 6px 8px 4px; color: var(--sub); font: 600 12px var(--sans); }
+#annwho .none { padding: 10px 8px; color: var(--sub); font-size: 12px; }
+#annwho button { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border: 0; border-radius: 9px; background: none; color: var(--ink);
+  font: 13px var(--sans); cursor: pointer; text-align: left; }
+#annwho button:hover { background: var(--raise); }
+#annwho button span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#annwho button .ck { color: var(--sel); opacity: 0; transition: opacity .2s ease; } #annwho button[aria-checked=true] .ck { opacity: 1; }
+#annwho button[aria-checked=false] hy-avatar { opacity: .45; }
+
+/* a pin: its author's face in a bubble with a sharp bottom left corner where it points, the replies counted */
+/* the layer itself, 1 px at the board's origin over the handles (z 3), lets the pointer through: a corner at 0,0 stayed unclickable (82f530d) */
+#cmpins { position: absolute; left: 0; top: 0; width: 1px; height: 1px; z-index: 5; pointer-events: none; }
+.cmpin { position: absolute; display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 0; border-radius: 999px 999px 999px 3px;
+  background: var(--panel); color: var(--ink); box-shadow: 0 0 0 1px var(--line), var(--hy-sh-ctl); cursor: pointer; --hy-av-ring: var(--panel);
+  transform: translate(0, -100%) scale(calc(1 / var(--z, 1))); transform-origin: 0 100%; transition: box-shadow .2s ease, opacity .2s ease; pointer-events: auto; }
+.cmpin:hover, .cmpin.on, .cmpin.lit { box-shadow: 0 0 0 2px var(--sel), var(--hy-sh-ctl); }
+.cmpin.lit { z-index: 1; }   /* lit from Dev Studio's tree: the row under the pointer has this thread */
+.cmpin.done { opacity: .55; }
+.cmpin .cmp-n { padding: 0 6px 0 3px; color: var(--sub); font: 600 11px/1 var(--sans); }
+
+/* a comment's area: a thin outline in its author's colour (--ac), lit while open or pointed at; under the pins */
+.cmarea { position: absolute; box-sizing: border-box; pointer-events: none; border: calc(1.5px / var(--z, 1)) solid var(--ac, var(--sel));
+  border-radius: calc(4px / var(--z, 1)); background: color-mix(in srgb, var(--ac, var(--sel)) 5%, transparent); transition: background .2s ease, border-width .2s ease; }
+.cmarea.on { border-width: calc(2px / var(--z, 1)); background: color-mix(in srgb, var(--ac, var(--sel)) 12%, transparent); }
+.cm-ra { color: var(--sub); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* the thread */
+.cm-pop { position: absolute; z-index: 33; width: 320px; max-height: min(520px, calc(100% - 80px)); display: none; flex-direction: column; box-sizing: border-box;
+  border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--panel) 94%, transparent); backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px); box-shadow: var(--plate-sh); color: var(--ink); font: 13px/1.4 var(--sans); --hy-av-ring: var(--panel); }
+.cm-pop.open { display: flex; animation: hySubIn .25s cubic-bezier(.32,.72,0,1); }
+.cm-h { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 8px 2px 14px; }
+.cm-h b { font-weight: 600; }
+.cm-w { min-width: 0; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
+.cm-sp { flex: 1; }
+.cm-rd { padding: 0 14px 6px; }
+.cm-msgs { overflow: auto; overscroll-behavior: contain; padding: 4px 14px 10px; display: grid; gap: 12px; }
+.cm-m { display: grid; grid-template-columns: 24px 1fr; gap: 8px; }
+.cm-b { min-width: 0; }
+.cm-mh { display: flex; align-items: center; gap: 6px; min-height: 20px; }
+.cm-mh b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 600; }
+.cm-mh time { flex: none; color: var(--muted); font-size: 11px; }
+.cm-own { margin-left: auto; display: inline-flex; gap: 2px; opacity: 0; transition: opacity .2s ease; }
+.cm-m:hover .cm-own, .cm-own:focus-within { opacity: 1; }
+.cm-tx { overflow-wrap: anywhere; }
+.cm-at { color: var(--sel); font-weight: 500; }
+.cm-c { position: relative; display: flex; align-items: flex-end; gap: 6px; padding: 8px; border-top: 1px solid var(--line); }
+.cm-c textarea { flex: 1; min-height: 32px; max-height: 140px; box-sizing: border-box; padding: 6px 10px; resize: none; border: 1px solid var(--line);
+  /* hy-allow: row-radius a reply box grows to several lines: a pill's round ends would eat its words */
+  border-radius: 10px; background: var(--raise); color: var(--ink); font: 13px/1.4 var(--sans); outline: none; }
+.cm-c textarea:focus { border-color: color-mix(in srgb, var(--ink) 35%, var(--line)); }
+#cmat { position: absolute; left: 8px; right: 8px; bottom: calc(100% - 6px); z-index: 1; display: grid; gap: 1px; padding: 4px; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--panel); box-shadow: var(--plate-sh); }
+.cm-pop > #cmat { bottom: 50px; }
+#cmat button { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: none; color: var(--ink);
+  font: 13px var(--sans); cursor: pointer; text-align: left; }
+#cmat button[aria-selected=true], #cmat button:hover { background: var(--hy-tint-bg); }
+#cmat button i { margin-left: auto; color: var(--muted); font: 11px var(--sans); font-style: normal; }
+
+/* the page's comments, on the right like the bell's list */
+#cmlist { position: absolute; top: 58px; right: 12px; z-index: 32; width: 340px; max-height: calc(100% - 80px); overflow: auto; display: none; padding: 6px 8px 8px;
+  box-sizing: border-box; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: var(--plate-sh); color: var(--ink); font: 13px/1.4 var(--sans); --hy-av-ring: var(--panel); }
+#cmlist.open { display: grid; gap: 4px; animation: hySubIn .25s cubic-bezier(.32,.72,0,1); }
+.cm-lh { display: flex; align-items: center; min-height: 34px; padding: 0 0 0 6px; }
+.cm-tabs { display: flex; gap: 4px; padding: 0 2px 4px; }
+.cm-tabs button { height: 28px; padding: 0 12px; border: 0; border-radius: var(--hy-row-r); background: none; color: var(--sub); font: 500 12px var(--sans); cursor: pointer; }
+.cm-tabs button[aria-pressed=true] { background: var(--hy-tint-bg); color: var(--hy-tint-ink); }
+.cm-ppl { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 2px 4px; }
+.cm-ppl button { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 999px; background: none; cursor: pointer; }
+.cm-ppl button[aria-pressed=true] { background: var(--hy-tint-bg); }
+.cm-row { display: grid; grid-template-columns: 24px 1fr; gap: 10px; width: 100%; padding: 10px 8px; border: 0; border-radius: 10px; background: none;
+  color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.cm-row:hover { background: var(--raise); }
+.cm-rb { display: grid; gap: 2px; min-width: 0; }
+.cm-rh { display: flex; gap: 6px; align-items: baseline; } .cm-rh b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 12.5px; }
+.cm-rh time { margin-left: auto; flex: none; color: var(--muted); font-size: 11px; }
+.cm-rt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--sub); }
+.cm-rr { color: var(--muted); font-size: 11px; }
+#cmlist .none { padding: 18px 10px; color: var(--sub); }
+#evList .ecm { margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: var(--raise); color: var(--ink); font-size: 12px; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .cm-pop.open, #cmlist.open, #annwho { animation: none; } }

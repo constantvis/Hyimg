@@ -1,0 +1,164 @@
+/* The settings (ui/settings-win.js), at the side of a board or as a window (owner 2026-10-08, round 11: settings-side.html and
+   settings-full.html, «В обеих вроде все нравится»). The panel is a step lighter than the paper, its groups a step lighter again, every
+   control a dark well, the chosen thing (a choice's option, a picture, the rail's section) on the same grey plate. #sets is the whole
+   layer; the page's own rule for #sets (where its old panel stood) is overridden here. */
+#sets.hy-setwin { --sw-r: 14px; --sw-card-r: 11px; --sw-card: color-mix(in srgb, var(--ink) 3%, transparent); --sw-veil: color-mix(in srgb, var(--paper) 50%, transparent);
+  --hy-row-r: var(--hy-well-r); --hy-btn-r: var(--hy-well-r);
+  position: fixed; inset: 0; top: 0; right: 0; z-index: 62; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; width: auto; max-height: none; margin: 0; padding: 0;
+  border: 0; border-radius: 0; background: none; box-shadow: none !important; overflow: hidden; color: var(--sub); font: 400 13px/1.3 var(--sans); }
+:root[data-shape=pro] #sets.hy-setwin { --sw-r: var(--hy-plate-r); --sw-card-r: 8px; }
+/* the veil: the dark paper dimmed (a wash of the paper would hardly show on it), the light one washed over */
+:root:not([data-theme=light]) #sets.hy-setwin { --sw-veil: rgba(0, 0, 0, .42); }
+/* closed, it stays laid out and is not drawn (DESIGN.md «Движение»: the first opening must not lay out the whole window in its first frames) */
+#sets.hy-setwin[data-sw-gone] { visibility: hidden; }
+#sets.hy-setwin:not([data-sw-shown]) { pointer-events: none; }
+/* the settings button stays over the veil: it closes the window as it opened it */
+:root.hy-sets-on #bset { z-index: 63 !important; }
+
+.sw-veil { position: absolute; inset: 0; background: var(--sw-veil); opacity: 0; transition: opacity .3s ease; }
+#sets[data-sw-shown] .sw-veil { opacity: 1; }
+/* the window: its size the viewer's (--sw-w, --sw-h from the script), never past the page's */
+.sw-box { position: relative; display: flex; box-sizing: border-box; width: var(--sw-w, min(1100px, 90vw)); height: var(--sw-h, min(760px, 85vh));
+  min-width: min(640px, 100%); min-height: min(420px, 100%); max-width: 100%; max-height: 100%; border: 1px solid var(--hy-pline); border-radius: var(--sw-r);
+  background: var(--hy-blk); box-shadow: var(--plate-sh); opacity: 0; transform: scale(.96) translateY(8px);
+  transition: opacity .3s ease, transform .5s var(--hy-ease), border-radius .3s var(--hy-ease), width .45s var(--hy-ease), height .45s var(--hy-ease); }
+#sets[data-sw-shown] .sw-box { opacity: 1; transform: none; }
+.sw-box.sw-sizing { transition: none; }
+.sw-box.sw-full { border-radius: 0; border-color: transparent; }
+/* the whole window: the title stands where the top row stood, the settings button at its end; the rail leaves the corner to the Mac
+   window's own buttons */
+.sw-box.sw-full .sw-hd { height: calc(var(--hy-row-top) * 2 + var(--hy-plate-h)); padding-right: calc(var(--hy-plate-h) + var(--hy-row-gut) * 2); }
+.sw-box.sw-full .sw-rail { padding-top: var(--hy-row-under); }
+
+/* the rail: search, the profile, the sections, the footnote at its foot; the section shown on the grey plate */
+.sw-rail { flex: none; width: 236px; box-sizing: border-box; display: flex; flex-direction: column; gap: 1px; padding: 12px 10px; overflow-y: auto; overscroll-behavior: contain;
+  border-right: 1px solid var(--hy-pline); border-radius: var(--sw-r) 0 0 var(--sw-r); background: var(--hy-blk-deep); scrollbar-width: thin; }
+.sw-box.sw-full .sw-rail { border-radius: 0; }
+.sw-rail .sw-q { flex: none; margin: 0 2px 10px; }
+.sw-nv { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 32px; flex: none; box-sizing: border-box; padding: 0 10px; border: 0;
+  border-radius: var(--hy-trow-r); background: none; color: var(--sub); font: 400 13px var(--sans); text-align: left; white-space: nowrap; cursor: pointer;
+  transition: background-color .2s ease, color .2s ease, opacity .25s ease; }
+.sw-nv > svg { flex: none; color: var(--muted); transition: color .2s ease; }
+.sw-nv:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+.sw-nv.on { background: var(--hy-thumb); box-shadow: var(--hy-thumb-sh); color: var(--ink); }
+.sw-nv.on > svg { color: var(--ink); }
+.sw-nv.dim { opacity: .35; }
+.sw-nt { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sw-n { margin-left: auto; font: 500 11.5px var(--sans); color: var(--hy-sel); font-variant-numeric: tabular-nums; }
+.sw-me { min-height: 46px; padding: 6px 8px; margin-bottom: 2px; }
+.sw-av { flex: none; display: grid; place-items: center; width: 32px; height: 32px; color: var(--muted); }
+.sw-mt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.sw-mt b { overflow: hidden; text-overflow: ellipsis; color: var(--ink); font-weight: 500; }
+.sw-mt span { color: var(--muted); font-size: 11px; }
+.sw-sep { flex: none; height: 1px; margin: 6px 8px; background: var(--hy-pline); }
+.sw-foot { margin-top: auto; padding: 12px 8px 2px; }
+.sw-foot b { color: var(--sub); font-weight: 500; }
+
+/* the search: a well, its count at the right end at the side (the window counts on its title and the rail) */
+#sets .sw-q > svg { left: 10px; width: 14px; height: 14px; }
+#sets .sw-q > input { height: 28px !important; padding: 0 34px 0 31px !important; border: 0 !important; border-radius: var(--hy-well-r) !important;
+  background: var(--hy-well); color: var(--ink); font: 400 12.5px var(--sans); transition: background-color .2s ease; }
+#sets .sw-q > input:hover { background: var(--hy-well-hov); }
+.sw-q > input::-webkit-search-cancel-button { display: none; }
+.sw-qn { position: absolute; right: 10px; color: var(--muted); font: 500 11px var(--sans); font-variant-numeric: tabular-nums; pointer-events: none; }
+#sets:not(.sw-side) .sw-qn { display: none; }
+
+/* the section: its title, its keys, then its groups; it scrolls inside itself, the page under it stays */
+.sw-pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sw-hd { flex: none; display: flex; align-items: center; gap: 6px; height: 52px; padding: 0 12px 0 22px; border-bottom: 1px solid var(--hy-pline); cursor: default;
+  user-select: none; -webkit-user-select: none; }
+.sw-hd h2 { display: flex; align-items: center; gap: 10px; min-width: 0; margin: 0 6px 0 0; color: var(--ink); font: 600 15px var(--sans); white-space: nowrap; }
+.sw-hd h2 > svg { flex: none; }
+.sw-hd > .sw-hb:first-of-type { margin-left: auto; }   /* its keys at the right end, whether or not the count shows */
+.sw-hb { flex: none; color: var(--muted); }
+.sw-hb:hover { color: var(--ink); }
+.sw-body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 16px; padding: 18px 22px 26px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.sw-body.sw-in > .sp > .sw-on, .sw-body.sw-in > .sw-on, .sw-body.sw-in > #hyPeopleSet > .sw-on { animation: swIn .35s var(--hy-ease); }
+@keyframes swIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* only the section chosen; while searching, the groups with a row found under their section's header */
+.sw-body [data-sec]:not(.sw-on), .sw-body > .sw-sl:not(.sw-on), #sets:not(.sw-qon, .sw-side) .sw-sl, .sw-body .sw-miss { display: none !important; }
+.sw-sl { display: flex; align-items: center; gap: 7px; margin: 6px 2px -8px; padding: 0; border: 0; background: none; color: var(--muted); font: 500 11px var(--sans);
+  letter-spacing: .06em; text-transform: uppercase; text-align: left; cursor: pointer; }
+.sw-sl > svg { flex: none; }
+.sw-sl .sw-cv, .sw-sl .sw-sum { display: none; }
+::highlight(hy-set-q) { background-color: var(--hy-tint-bg); color: var(--hy-tint-ink); }
+
+/* the modules' sections: their title is the section's, each a card of its rows in the window (ui/people.js, macnotif.js, plugins.js, storage.js) */
+#sets.hy-setwin #hyPeopleSet { display: contents; }
+#sets.hy-setwin :is(#hyPeopleSet, #hyMacNotif, #hyPlugSet) > .sh, #sets.hy-setwin #hyStore > .sh > .hs-t { display: none; }
+#sets.hy-setwin :is(.hp-prof, .hp-team, #hyMacNotif, #hyPlugSet, #hyStore) { display: grid; align-content: start; gap: 2px; margin: 0; padding: 8px 14px 12px;
+  border: 1px solid var(--hy-pline); border-radius: var(--sw-card-r); background: var(--sw-card); }
+#sets.hy-setwin #hyStore > .sh { margin: 0 0 4px; }
+#sets.hy-setwin #hyStore .hs-list { max-height: none; }
+/* the dots' slider and a name typed in Profile and Team: wells too */
+#sets.hy-setwin .hy-slider { --hy-sl-h: 28px; --hy-sl-bg: var(--hy-well); --hy-sl-accent: var(--ink); }
+#sets.hy-setwin .hy-slider:hover { background: var(--hy-well-hov); }
+#sets.hy-setwin .hp .hp-name { border: 0; border-radius: var(--hy-well-r); background: var(--hy-well); }
+/* this Mac's agents stand under no person: not stepped in */
+#sets.hy-setwin .hp .hp-mine { padding-left: 0; }
+
+/* the window's edges and corners: a resize grip on each, under the pointer's own cursor */
+.sw-rz { position: absolute; z-index: 2; }
+.sw-rz[data-rz=n], .sw-rz[data-rz=s] { left: 14px; right: 14px; height: 8px; cursor: ns-resize; }
+.sw-rz[data-rz=e], .sw-rz[data-rz=w] { top: 14px; bottom: 14px; width: 8px; cursor: ew-resize; }
+.sw-rz[data-rz=n] { top: -4px; } .sw-rz[data-rz=s] { bottom: -4px; } .sw-rz[data-rz=e] { right: -4px; } .sw-rz[data-rz=w] { left: -4px; }
+.sw-rz:is([data-rz=ne], [data-rz=nw], [data-rz=se], [data-rz=sw]) { width: 16px; height: 16px; }
+.sw-rz[data-rz=ne] { top: -4px; right: -4px; cursor: nesw-resize; } .sw-rz[data-rz=sw] { bottom: -4px; left: -4px; cursor: nesw-resize; }
+.sw-rz[data-rz=nw] { top: -4px; left: -4px; cursor: nwse-resize; } .sw-rz[data-rz=se] { bottom: -4px; right: -4px; cursor: nwse-resize; }
+
+/* ---------- At the side (round 11's settings-side.html): docked at the right edge under the top row, as the app's side panels stand; the
+   board beside it stays live and takes the pointer. Its header, the search, every section under its header, the footnote ---------- */
+#sets.hy-setwin.sw-side { display: block; pointer-events: none; }
+#sets.sw-side .sw-veil, #sets.sw-side .sw-rail, #sets.sw-side .sw-rz:not([data-rz=w]) { display: none; }
+#sets.sw-side .sw-box { position: absolute; top: var(--hy-row-under); right: var(--hy-row-gut); bottom: var(--hy-row-gut); width: var(--sw-sw, 412px); height: auto;
+  min-width: 0; min-height: 0; max-width: calc(100% - var(--hy-row-gut) * 2); transform: translateX(24px); transition: opacity .3s ease, transform .45s var(--hy-ease); }
+#sets.sw-side[data-sw-shown] .sw-box { pointer-events: auto; transform: none; }
+/* ⌘. hides the interface: the panel goes with it and takes no click while it is away */
+:root.hy-hideui #sets.sw-side .sw-box { pointer-events: none; }
+#sets.sw-side .sw-rz[data-rz=w] { top: 0; bottom: 0; left: -4px; width: 8px; }
+#sets.sw-side .sw-hd { height: 40px; padding: 0 6px 0 14px; gap: 2px; }
+#sets.sw-side .sw-hd h2 { gap: 8px; font: 500 13px var(--sans); }
+#sets.sw-side .sw-hd h2 > svg { color: var(--muted); }
+#sets.sw-side .sw-cnt { display: none; }
+#sets.sw-side .sw-q { flex: none; margin: 8px 10px 6px; }
+#sets.sw-side .sw-body { gap: 0; padding: 0 4px 10px; }
+/* a section's header: the one at the top sticks there while its rows scroll under it (settings-win.js heads), a hairline between
+   sections; its chevron folds it, the words at its right end say what is chosen in it */
+#sets.sw-side .sw-body { position: relative; }
+#sets.sw-side .sw-sl.sw-stuck { position: sticky; top: 0; z-index: 3; }
+#sets.sw-side .sw-sl { position: relative; z-index: 2; flex: none; height: 34px; margin: 0; padding: 0 8px 0 6px; gap: 7px; border-radius: 0;
+  background: var(--hy-blk); color: var(--sub); font: 500 12.5px var(--sans); letter-spacing: 0; text-transform: none; }
+#sets.sw-side .sw-sl:not(.sw-first) { border-top: 1px solid var(--hy-pline); margin-top: 6px; }
+#sets.sw-side .sw-sl > svg { color: var(--muted); }
+#sets.sw-side .sw-sl .sw-st { color: var(--ink); }
+#sets.sw-side .sw-sl.sw-shut .sw-st { color: var(--sub); }
+#sets.sw-side .sw-sl:hover .sw-st { color: var(--ink); }
+#sets.sw-side .sw-sl .sw-cv { display: grid; place-items: center; width: 14px; height: 14px; color: var(--muted); transform: rotate(90deg); transition: transform .25s var(--hy-ease); }
+#sets.sw-side .sw-sl.sw-shut .sw-cv { transform: none; }
+#sets.sw-side .sw-sl .sw-sum { display: block; flex: 1 1 auto; min-width: 0; margin-left: 8px; overflow: hidden; color: var(--muted); font: 400 11px var(--sans);
+  text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+#sets.sw-side.sw-qon .sw-sl .sw-cv { visibility: hidden; }
+/* the groups at the side: no cards, the rows lie on the panel; a group's quiet heading */
+#sets.sw-side .sw-body > .sp > [data-sec], #sets.sw-side .sw-body > [data-sec] { flex: none; }
+#sets.sw-side .sw-body > .sp > [data-sec] + [data-sec] { margin-top: 4px; }
+#sets.sw-side .sp .sp-card, #sets.sw-side :is(.hp-prof, .hp-team, #hyMacNotif, #hyPlugSet, #hyStore) { border: 0; border-radius: 0; background: none; }
+#sets.sw-side :is(.hp-prof, .hp-team, #hyMacNotif, #hyPlugSet, #hyStore) { padding: 2px 10px 8px; }
+#sets.sw-side .sp-card > .sp-row:not(.sw-miss, [hidden]) ~ .sp-row { border-top: 0; }
+#sets.sw-side .sh { margin: 6px 10px 0; font-size: 10px; font-weight: 600; }
+/* a row in a narrow panel: the name and the control on one line, what the choice does under both */
+#sets.sw-side .sp .sp-row { min-height: 38px; padding: 7px 10px; column-gap: 14px; }
+#sets.sw-side .sp .sp-row > .sp-c { grid-row: 1; }
+#sets.sw-side .sp .sp-lw > .sp-h { grid-column: 1 / -1; }
+#sets.sw-side .sp .sp-pvrow:not(.sp-stack) > .sp-c { grid-row: 1 / span 2; }
+#sets.sw-side .sp .sp-pvrow:not(.sp-stack) > .sp-lw > .sp-h { grid-column: 1; }
+#sets.sw-side .sp .sp-stack > .sp-c { grid-row: 3; margin-top: 5px; }
+#sets.sw-side { --sp-pvb: 104px; }
+#sets.sw-side .sp .sp-wide { padding: 6px 10px; min-height: 34px; }
+#sets.sw-side .sw-foot { flex: none; margin: 0; padding: 8px 14px 10px; border-top: 1px solid var(--hy-pline); }
+:root[data-shape=pro] #sets.sw-side .sw-box { border-radius: var(--hy-plate-r); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sw-veil, .sw-box, .sw-nv, #sets.sw-side .sw-box, #sets.sw-side .sw-sl .sw-cv { transition: none; }
+  .sw-box, #sets.sw-side .sw-box { transform: none; }
+  .sw-body.sw-in > *, .sw-body.sw-in > .sp > *, .sw-body.sw-in > #hyPeopleSet > * { animation: none !important; }
+}

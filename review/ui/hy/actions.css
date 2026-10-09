@@ -1,0 +1,10 @@
+/* <hy-studio-actions>: a Studio's session actions in the top row, at its right end (owner 2026-10-09: «кнопки Done у нас всегда
+   стандартизированы справа вверху»; DESIGN.md «Действия студии»). The row's line and height (--hy-row-top, --hy-plate-h), the row's gap
+   between the plates and before the round buttons; ui/hy/actions.js sets right= from where those stand. Each action is a plate of the
+   row (<hy-button size=plate>), the primary one the accent variant: the Studio's colour (--sel of its root), white words, a check.
+   ⌘. hides it with the row (data-hyui, upward as the crumb and the round buttons go). */
+hy-studio-actions { position: fixed; z-index: 31; top: var(--hy-row-top); right: var(--hy-row-gut); display: flex; align-items: center; gap: var(--hy-row-gap);
+  --hy-cap-pad: 14px; --hy: -16px; }
+hy-studio-actions:empty { display: none; }
+hy-studio-actions > hy-button { gap: 8px; }
+hy-studio-actions > hy-button > button > svg { flex: none; }

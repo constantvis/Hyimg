@@ -1,0 +1,28 @@
+/* Home's news (ui/homebell.js, owner 2026-10-08: «по левую сторону видеть не только сколько у меня досок, но и сколько обновлений ... вверху
+   справа, где настройки, тоже нотификации»). The list and its rows are the board's (ui/bell.css); here only what Home adds. Tokens only. */
+
+/* the bell: a plate key of the top row (<hy-icon-button size=plate>: the row's glass, edge, shadow and corner, as the settings' key) left
+   of the settings, the row's gap between them; it leaves with Home when a board opens (the board has its own bell elsewhere in its row) */
+#hbell { position: fixed; top: 12px; right: 58px; z-index: 30; color: var(--sub); transition: opacity .3s ease, color .15s ease; }
+#hbell:hover, #hbell[aria-expanded=true] { color: var(--ink); }
+body.leave #hbell { opacity: 0; pointer-events: none; }
+body:is(.leave, .enter) #hbell { -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* the list under it, over Home's cards and under its menus */
+body > #ntf { position: fixed; }
+
+/* a board in the list: its name (a click opens it) with its count, then its rows, then how many more */
+#ntf .hb-b { display: grid; gap: 2px; }
+#ntf .hb-b + .hb-b { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+#ntf .hb-h { display: flex; align-items: center; gap: 8px; width: 100%; height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: none;
+  color: var(--ink); font: 600 12px var(--sans); text-align: left; cursor: pointer; }
+#ntf .hb-h:hover { background: var(--raise); }
+#ntf .hb-h svg { flex: none; color: var(--muted); }
+#ntf .hb-bn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ntf .hb-more { justify-self: start; height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: none; color: var(--sub); font: 12px var(--sans); cursor: pointer; }
+#ntf .hb-more:hover { background: var(--raise); color: var(--ink); }
+
+/* the count of news: the card's red badge (home.html .nb), smaller; beside a project's count of boards, in the board's name in the list */
+.nb.hb-n { min-width: 16px; height: 16px; margin: 0; padding: 0 4px; font-size: 10px; cursor: inherit; }
+aside .nav .hb-n + .ct { margin-left: -4px; }
+@media (prefers-reduced-motion: reduce) { #hbell { transition: none; } }
+.nb-who > hy-avatar[hidden] { display: none; }   /* a face left out for the line's data (ui/homebell.js fit) */

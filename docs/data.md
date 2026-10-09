@@ -15,6 +15,8 @@
 | Перенаправления прежних путей | `<stateRoot>/_favs-moved.json` |
 | Правила библиотеки доски | `~/Library/Application Support/Hyimg/library-rules.json` |
 | События страниц (кто и что менял) | `<stateRoot>/boards/_events/<страница>.jsonl` |
+| Основы для слияния сохранений (последние 40 версий страницы) | `~/Library/Caches/Hyimg/<id доски>/bases/<страница>/<vid>.json.gz`, вне Dropbox (`review/merge.py`) |
+| Слитые конфликтные копии Dropbox | `<stateRoot>/boards/_history/<страница>/dropbox/` |
 | Когда владелец последний раз видел доску | `~/Library/Application Support/Hyimg/seen.json` |
 
 По умолчанию `stateRoot` равен `<libraryRoot>/_review`. Существующий проект можно подключить с его прежними данными. JSON досок сохраняет относительные пути, геометрию, группы и кропы. Файлы изображений в JSON не встраиваются.

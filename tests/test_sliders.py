@@ -82,7 +82,8 @@ def check_geometry(ctx, sel, label):
         g = ctx.evaluate(GEOM, sel)
         want = min(max(g["fill"], g["left"] + g["end"]), g["right"] - g["end"])
         assert abs(g["line"] - want) <= 1, (label, frac, g)
-        assert abs(g["fill"] - (g["left"] + (g["right"] - g["left"]) * frac)) <= 1, (label, "fill is where the value is", frac, g)
+        real = (ctx.evaluate("s => +document.querySelector(s + ' input[type=range]').value", sel) - lo) / (hi - lo)   # the value the step kept
+        assert abs(g["fill"] - (g["left"] + (g["right"] - g["left"]) * real)) <= 1, (label, "fill is where the value is", frac, g)
 
 
 def drag_and_keys(page, ctx, sel, origin=(0, 0), changed=None):
@@ -122,18 +123,18 @@ def test_board_selection_bar_opacity_and_settings_dots(server, engine, theme):
         page.goto(url)
         page.wait_for_function("() => typeof BOARD !== 'undefined' && Object.keys(board.items).length === 6 && document.querySelectorAll('#items .it').length >= 3")
         page.evaluate("t => { document.documentElement.dataset.theme = t; }", theme)
-        # opacity of the selection, the compact slider
+        # opacity of the selection, the standard slider with its label and number (owner 2026-10-07)
         page.mouse.click(*page.evaluate("() => { const r = EL.get('i1').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"))
-        page.wait_for_selector(".tidy .op .hy-slider.sm")
+        page.wait_for_selector(".tidy .op .hy-slider .hy-slider-l")
         assert page.evaluate("() => !!document.querySelector('.tidy .op input[data-op]') && document.querySelector('.tidy .op input[data-op]').closest('.hy-slider')._hy !== undefined")
         check_geometry(page, ".tidy .op .hy-slider", "opacity")
         shot(page, "opacity", theme, engine)
         def opacity_read(pg, v):
             assert abs(pg.evaluate("() => board.items.i1.opacity ?? 1") - round(v) / 100) < 0.011, (v, pg.evaluate("() => board.items.i1.opacity"))
-            assert pg.inner_text(".tidy .op b") == f"{round(v)}%"
+            assert pg.inner_text(".tidy .op .hy-slider-v").rstrip("%") == f"{round(v)}"
         drag_and_keys(page, page, ".tidy .op .hy-slider", changed=opacity_read)
         # the settings panel: dots visibility, the labelled slider (the number is the slider's own, in %)
-        page.click("#bset"); page.wait_for_selector("#sets.open")
+        page.click("#bset"); page.wait_for_selector("#sets.open"); page.evaluate("s => hySetPanel.go(s)", "board")   # Settings › Board
         assert page.evaluate("() => !!document.querySelector('#sets #dotsVis').closest('.hy-slider') && !document.querySelector('#dotsVal')")
         check_geometry(page, "#sets .hy-slider", "dots")
         page.evaluate("() => { const i = document.getElementById('dotsVis'); i.value = 150; i.dispatchEvent(new Event('input', { bubbles: true })); }")
@@ -141,9 +142,10 @@ def test_board_selection_bar_opacity_and_settings_dots(server, engine, theme):
         shot(page, "settings", theme, engine)
         drag_and_keys(page, page, "#sets .hy-slider", changed=lambda pg, v: None)
         assert page.evaluate("() => localStorage.getItem('cv.dotsv')") == str(int(page.evaluate("() => +document.getElementById('dotsVis').value")))
-        # one row radius (owner 2026-10-06: «одни круглые другие квадратные»): the slider and the rows beside it in the panel, round and pro
-        RAD = "() => ['#sets .hy-slider', '#sets .seg', '#sets .paper label', '#sets .paper button'].map(s => getComputedStyle(document.querySelector(s)).borderTopLeftRadius)"
-        assert set(page.evaluate(RAD)) == {"999px"}, page.evaluate(RAD)
+        # one row radius (owner 2026-10-06: «одни круглые другие квадратные»): the slider and the rows beside it in the panel; in the settings
+        # every control is a well of 8 px in both shapes (round 11, owner 2026-10-08)
+        RAD = "() => ['#sets .hy-slider', '#sets .seg', '#sets [data-paper-reset]'].map(s => getComputedStyle(document.querySelector(s)).borderTopLeftRadius)"
+        assert set(page.evaluate(RAD)) == {"8px"}, page.evaluate(RAD)
         # the line never crosses the words: over the label it fades out, past it it shows (owner 2026-10-06: «Power, W» crossed near 0)
         UNDER = """v => { const r = document.querySelector('#sets .hy-slider'); hySlider.mount(r).set(v); return new Promise(ok => requestAnimationFrame(() => requestAnimationFrame(() => {
           const t = r.querySelector('.hy-slider-t').getBoundingClientRect(), l = r.querySelector('.hy-slider-l').getBoundingClientRect(), x = (t.left + t.right) / 2;
@@ -211,6 +213,7 @@ def test_home_settings_dots(engine, theme):
         page.goto(HOME)
         page.evaluate("t => hyimgHome({ projects: [], settings: { 'cv.theme': t, 'cv.dotsv': '120' }, home: { folders: [] } })", theme)
         page.evaluate("() => document.getElementById('sets').classList.add('open')")
+        page.evaluate("s => hySetPanel.go(s)", "board"); page.wait_for_timeout(500)   # Settings › Board, the window grown in
         assert page.inner_text("#sets .hy-slider-v") == "120%"
         check_geometry(page, "#sets .hy-slider", "home dots")
         shot(page, "home-settings", theme, engine)

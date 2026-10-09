@@ -1,0 +1,11 @@
+/* Settings › Notifications (ui/macnotif.js): the master switch, then one row per event a step in, greyed while the master is off.
+   A row is the name on the left and a switch on the right, the whole row a label (a click anywhere on it turns the switch). */
+#sets .mn-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; cursor: pointer; }
+#sets .mn-main { min-height: var(--hy-h-row); }
+#sets .mn-l { min-width: 0; color: var(--ink); }
+#sets .mn-row hy-switch { flex: none; }
+#sets .mn-sub { display: grid; gap: 0; padding-left: 12px; transition: opacity .2s var(--hy-ease, ease); }
+#sets .mn-sub .mn-l { color: var(--sub); }
+#sets .mn-bg { margin-top: 4px; padding-top: 4px; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+#sets .mn-off { opacity: .45; }
+#sets .mn-off .mn-row { cursor: default; }

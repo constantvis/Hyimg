@@ -1,0 +1,75 @@
+/* The rows of the settings (ui/setpanel.js), the same on Home and on every board: a group under an optional small quiet heading, its rows
+   on a card with hairlines between them (in the window; at the side the rows lie on the panel); one row a setting, its name on the left
+   with the chosen option's words under it, its control on the right (or under the name: .sp-wide always, .sp-stack when they do not
+   fit). The side and the window around them: ui/settings-win.css. */
+#sets .sp { display: contents; }
+#sets .sp > .sp-g { display: flex; flex-direction: column; gap: 6px; }
+#sets .sh { margin: 2px 2px 0; font: 500 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+#sets .sp .sp-card { border: 1px solid var(--hy-pline); border-radius: var(--sw-card-r); background: var(--sw-card); }
+/* a row (round 11's settings): the name, under it what the chosen option does, the control at the right end beside both; a hairline above
+   every row shown after another one. The name and its words are grid cells of the row (.sp-lw is only their wrapper) */
+#sets .sp .sp-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; row-gap: 3px; align-items: center; align-content: center;
+  min-height: 46px; min-width: 0; box-sizing: border-box; padding: 9px 14px; }
+#sets .sp-card > .sp-row:not(.sw-miss, [hidden]) ~ .sp-row { border-top: 1px solid var(--hy-pline); }
+#sets .sp .sp-row[hidden] { display: none; }
+#sets .sp .sp-lw { display: contents; }
+#sets .sp .sp-l { grid-column: 1; grid-row: 1; justify-self: start; min-width: 0; max-width: 100%; white-space: nowrap; color: var(--ink); }
+#sets .sp .sp-h { grid-column: 1; grid-row: 2; min-width: 0; overflow-wrap: anywhere; text-wrap: pretty; }
+#sets .sp .sp-h:empty { display: none; }
+#sets .sp .sp-c { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
+#sets .sp .sp-row:not(:has(> .sp-lw > .sp-h:not(:empty))) { row-gap: 0; }
+#sets .sp .sp-row:not(.sp-stack):not(:has(> .sp-lw > .sp-h:not(:empty))) > .sp-lw > .sp-l { grid-row: 1 / span 2; align-self: center; }
+/* a tall control beside the name: the name and its words meet in the middle of it */
+#sets .sp .sp-pvrow:not(.sp-stack) > .sp-lw > .sp-l { align-self: end; } #sets .sp .sp-pvrow:not(.sp-stack) > .sp-lw > .sp-h { align-self: start; }
+/* the control under the name, across the row: always the slider (.sp-wide), any row whose name and control do not fit (.sp-stack) */
+#sets .sp .sp-wide { grid-template-columns: minmax(0, 1fr); padding: 10px 14px 12px; }
+#sets .sp .sp-wide > .hy-slider { grid-column: 1; }
+#sets .sp .sp-stack > .sp-c { grid-column: 1 / -1; grid-row: 3; justify-self: stretch; margin-top: 6px; }
+#sets .sp .sp-stack > .sp-lw > .sp-h { grid-column: 1 / -1; }
+/* a choice across the row: each option as wide as its words need, the rest shared (Russian «Очень тонкое» in a quarter was cut) */
+#sets .sp .sp-row hy-segmented[full] > button { flex: 1 1 auto; }
+#sets .sp .sp-swr { cursor: pointer; }
+/* the paper's two colours, round swatches of the target size, and Reset after them */
+#sets .sp .sp-paper { display: inline-flex; align-items: center; gap: 8px; }
+#sets .sp .sp-paper input[type=color] { width: 24px; height: 24px; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: none; cursor: pointer; }
+#sets .sp .sp-paper input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+#sets .sp .sp-paper input[type=color]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+#sets .sp .sp-paper hy-button { margin-left: 4px; }
+
+/* A visual choice (owner 2026-10-08, round 11: «big choices keep their pictures, in a well»): each option a small picture of the app in
+   that look with its words under it, laid in a dark well; the chosen one stands on the grey plate, the choice's thumb, which slides to
+   the next one chosen. The choice is still the app's <hy-segmented>: the keys, the value, hy-change. 132 px an option in the window,
+   shared across the row at the side */
+#sets { --sp-pvb: 132px; }
+#sets hy-segmented.sp-pvs { --hy-seg-pad: 3px; gap: 3px; flex-wrap: nowrap; align-items: stretch; height: auto; border-radius: 12px; }
+#sets hy-segmented.sp-pvs > .st { border-radius: 9px; }
+#sets hy-segmented.sp-pvs > button { flex: 0 0 var(--sp-pvb); flex-direction: column; justify-content: flex-start; gap: 5px; height: auto; min-width: 0;
+  padding: 5px 5px 6px; border-radius: 9px; background: transparent; color: var(--sub); font: 500 11.5px/1.2 var(--sans); }
+#sets hy-segmented.sp-pvs > button.on, #sets hy-segmented.sp-pvs > button:hover { color: var(--ink); }
+#sets hy-segmented[data-set=grain].sp-pvs { --sp-pvb: 100px; }
+#sets .sp-stack > hy-segmented.sp-pvs > button { flex: 1 1 0; }
+#sets .sp .sp-pvi { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 6px; box-shadow: 0 0 0 1px var(--hy-pline);
+  transition: box-shadow .25s ease; }
+#sets hy-segmented.sp-pvs > button.on .sp-pvi { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent); }
+#sets .sp .sp-pvl { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the little app: the top row's two plates, two pictures, a side panel, the dock; the paper and plates are the option's own tokens
+   (data-hy-theme, data-hy-shape on it), the pictures and the note are drawn in the colours below */
+.sp-mini { --sp-pic-a: #b48a5e; --sp-pic-b: #4b5568; --sp-note: #f4c430; --sp-note-ink: #1d1d1f; --sp-mini-sh: 0 5px 12px rgba(0, 0, 0, .9), 0 1px 3px rgba(0, 0, 0, .7);
+  --sp-pill: 999px; --sp-pan: 6px; position: absolute; inset: 0; display: block; background: var(--paper); }
+:root[data-shape=pro] .sp-mini:not([data-hy-shape=round]), .sp-mini[data-hy-shape=pro] { --sp-pill: 2px; --sp-pan: 2px; }
+:root[data-theme=light] .sp-mini { --sp-mini-sh: 0 4px 10px rgba(40, 30, 15, .32), 0 1px 3px rgba(40, 30, 15, .25); }
+.sp-mini > i { position: absolute; display: block; box-sizing: border-box; border: 1px solid var(--line); background: var(--panel); }
+.sp-mini .m-top { left: 7%; top: 11%; width: 46%; height: 17%; border-radius: var(--sp-pill); }
+.sp-mini .m-top2 { right: 7%; top: 11%; width: 22%; height: 17%; border-radius: var(--sp-pill); }
+.sp-mini .m-pic { left: 10%; top: 40%; width: 28%; height: 30%; border: 0; border-radius: 2px; background: var(--sp-pic-a); }
+.sp-mini .m-pic2 { left: 42%; top: 36%; width: 18%; height: 40%; border: 0; border-radius: 2px; background: var(--sp-pic-b); }
+.sp-mini .m-pan { right: 7%; top: 37%; width: 25%; height: 46%; border-radius: var(--sp-pan); }
+.sp-mini .m-dock { left: 30%; bottom: 7%; width: 40%; height: 13%; border-radius: var(--sp-pill); }
+.sp-mini.sh1 > i:not(.m-pic, .m-pic2), .sp-mini.shp > .m-pan { box-shadow: var(--sp-mini-sh); }
+.sp-mini.sp-half { clip-path: polygon(0 0, 100% 0, 0 100%); }
+/* the notes: one over a picture, glass (translucent, blurred under it) or solid */
+.sp-mini.sp-photo { background: linear-gradient(160deg, var(--sp-pic-a), var(--sp-pic-b)); }
+.sp-mini .m-note { left: 22%; top: 24%; width: 56%; height: 52%; border: 0; border-radius: 4px; background: var(--sp-note); }
+.sp-mini .m-note.glass { background: color-mix(in srgb, var(--sp-note) 62%, transparent); -webkit-backdrop-filter: blur(6px) saturate(1.6); backdrop-filter: blur(6px) saturate(1.6); }
+.sp-mini .m-note::after { content: ""; position: absolute; left: 12%; top: 22%; width: 60%; height: 10%; border-radius: 2px; background: var(--sp-note-ink); opacity: .55; }
+.sp-mini.sp-grain { position: absolute; }

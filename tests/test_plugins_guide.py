@@ -56,6 +56,7 @@ def test_agent_page_names_missing_plugins_once(tmp_path):
     assert "## Плагины" in page and "Плагинов нет." in page
     assert "Спроси человека" in page and "install_plugins.sh" in page
     assert page.count("https://github.com/constantvis/hyimg-frames") == 1 and page.count("https://github.com/constantvis/hyimg-3d-studio") == 1
+    assert page.count("https://github.com/constantvis/hyimg-dev-studio") == 1
     assert "LaMa" in page and "Blender" in page
 
 
@@ -68,10 +69,11 @@ def test_agent_page_lists_installed_plugins_and_only_the_missing_one(tmp_path):
     assert "https://github.com/constantvis/hyimg-3d-studio" in page
 
 
-def test_agent_page_says_nothing_is_missing_when_both_are_there(tmp_path):
+def test_agent_page_says_nothing_is_missing_when_all_are_there(tmp_path):
     root = tmp_path / "plugins"; root.mkdir()
     os.symlink(plugin(tmp_path / "src/f", "Фреймы"), root / "frames")
     os.symlink(plugin(tmp_path / "src/d", "3D-объекты"), root / "3d")
+    os.symlink(plugin(tmp_path / "src/v", "Дев-студия"), root / "dev")
     page = agent_text(tmp_path, [root])
     assert "Не установлены" not in page and "Подключен «3D-объекты» (`3d`)" in page
 

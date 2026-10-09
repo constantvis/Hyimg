@@ -20,6 +20,9 @@ const CSS = `
   color: var(--ink); font: 400 12.5px var(--sans, system-ui); cursor: pointer; white-space: nowrap; }
 #hyConfirm button:hover { background: var(--raise2, var(--raise)); } #hyConfirm button:active { transform: scale(.97); }
 #hyConfirm button.ok { background: var(--ink); color: var(--panel); box-shadow: none; font-weight: 600; } #hyConfirm button.ok:hover { opacity: .88; }
+/* asked inside a Studio, the action is in the Studio's colour, white words (ui/modes.js --hy-studio; owner 2026-10-09 on a white Discard:
+   «Она должна быть такого цвета, в каком режиме мы сейчас находимся»); Cancel stays as it is */
+:root[data-studio] #hyConfirm button.ok { background: var(--hy-studio); color: var(--hy-on-accent, #fff); }
 @media (prefers-reduced-motion: reduce) { #hyConfirm, #hyConfirm .hc-box { transition: none; } }`;
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 

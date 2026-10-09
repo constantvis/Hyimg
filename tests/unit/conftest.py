@@ -1,12 +1,23 @@
 """Fixtures of the unit tests; the throwaway library and the module imports are in unit_env.py (a module of its own name, so the
 tests import its paths without mixing it up with tests/conftest.py)."""
+import importlib.util
 import json
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
 
-from unit_env import BASE, LIB, MOUNT, OUTSIDE, PROJECT, SETTINGS, dedup, history, server
+# The guard of tests/procguard.py before anything is imported: pytest tests/unit does not load tests/conftest.py, and without it
+# config.py took ~/Library/Caches/Hyimg, the thumbnails of the throwaway board went there (2026-10-08)
+if "procguard" not in sys.modules:
+    _spec = importlib.util.spec_from_file_location("procguard", Path(__file__).resolve().parents[1] / "procguard.py")
+    sys.modules["procguard"] = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(sys.modules["procguard"])
+procguard = sys.modules["procguard"]
+procguard.install()
+
+from unit_env import BASE, LIB, MOUNT, OUTSIDE, PROJECT, SETTINGS, dedup, history, server  # noqa: E402
 
 
 def _empty(d):
@@ -64,3 +75,6 @@ def plugin_root(lib, tmp_path, monkeypatch):
     add.root = root
     return add
 
+
+def pytest_sessionfinish(session, exitstatus):   # once a session, with tests/conftest.py or without it
+    procguard.finish(session)

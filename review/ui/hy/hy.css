@@ -12,3 +12,9 @@
 @import url("button.css");
 @import url("plate.css");
 @import url("segmented.css");
+@import url("block.css");   /* a block, its header and tabs, its sections and its wells: round 12 «A · Line» (owner 2026-10-09) */
+@import url("keyhint.css");   /* <hy-keyhint>: the keys of what the person is doing now (owner 2026-10-08) */
+@import url("tip.css");   /* <hy-tip>: one line about one thing you can do here, for someone only looking (owner 2026-10-09) */
+@import url("actions.css");   /* <hy-studio-actions>: a Studio's Save, Cancel, Done … top right (owner 2026-10-09) */
+@import url("openin.css");   /* <hy-open-in>: «Open in <Browser>», a split button with the browsers of this Mac */
+@import url("avatar.css");   /* <hy-avatar>, defined by ui/avatar.js (a classic script: Home loads no modules) */

@@ -1,15 +1,15 @@
 // @ts-check
-// <hy-button variant="plain|solid|ghost|danger|reset" size="s|m|l|row|dock|plate" icon="name" kbd="⌘S" pressed toggle disabled>Words</hy-button>
+// <hy-button variant="plain|solid|ghost|danger|reset|accent" size="s|m|l|row|dock|plate" icon="name" kbd="⌘S" pressed toggle disabled>Words</hy-button>
 // and <hy-icon-button icon="close" label="Close" size="xs|s|m|l|dock|plate" variant="ghost|plain|solid|danger|reset" shape="round|square"
 // pressed toggle disabled> (ui/hy/button.css). Each keeps a real <button> inside that fills it: the keyboard, the focus, VoiceOver, a
 // page's click listener on the element, menu.js and keyhints.js (kbd= becomes the button's own <kbd>, shown under ⌘) all work through it.
 // toggle: a click turns pressed over and sends hy-toggle { pressed }. disabled: the button inside is disabled, no click comes out.
 import { HyElement, define, oneOf, icon } from "./base.js";
 
-/** @typedef {"plain" | "solid" | "ghost" | "danger" | "reset"} ButtonVariant */
+/** @typedef {"plain" | "solid" | "ghost" | "danger" | "reset" | "accent"} ButtonVariant */
 /** @typedef {"xs" | "s" | "m" | "l" | "row" | "dock" | "plate"} ButtonSize */
 /** @type {readonly ButtonVariant[]} */
-export const BUTTON_VARIANTS = ["plain", "solid", "ghost", "danger", "reset"];
+export const BUTTON_VARIANTS = ["plain", "solid", "ghost", "danger", "reset", "accent"];
 /** @type {readonly ButtonSize[]} */
 export const BUTTON_SIZES = ["xs", "s", "m", "l", "row", "dock", "plate"];
 /** The height of each size in px (ui/tokens.css --hy-h-*), and the icon drawn in it. */

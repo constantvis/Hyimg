@@ -13,13 +13,14 @@
 <script>hyPaper.fromStorage();   // the paper's colours (--paper, ui/look.css), before the first paint</script>
 <script>// the window is dragged by the empty part of its top band (ui/dragband.js): the library's bar is background when it fills the top
 window.HY_DRAG = { flat: "body:not(.cv-on) header.hy-dock, body:not(.cv-on) .filters" };</script>
-<script src="/ui/dragband.js"></script>
+<script src="/ui/dragband.js"></script><script src="/ui/applink.js"></script>   <!-- «Open in Hyimg» in a browser, the app's links reach the board (owner 2026-10-07) -->
 <script src="/ui/keyhints.js"></script>   <!-- key caps on buttons only while ⌘ is held (owner 2026-10-05) -->
 <script src="/ui/icons.js"></script>   <!-- the app's icons, one per meaning (owner 2026-10-07); before the menus, which draw theirs from it -->
 <script src="/ui/menu.js"></script>
+<script src="/ui/switcher.js"></script>   <!-- ⌃Tab's cards, the switch's motion, the crumb's list of boards, a board's sleep (owner 2026-10-08) -->
 <script src="/ui/spin.js"></script><script src="/ui/lib3d.js"></script>   <!-- the hover turn of a 3D file's preview (2026-10-06), a 3D file in the viewer -->
 <script src="/ui/video.js"></script>   <!-- the original video, or a WebM copy for an engine without H.264 (owner 2026-10-05) -->
-<script src="/ui/libvideo.js"></script>   <!-- a video card plays under the pointer (owner 2026-10-06) -->
+<script src="/ui/libvideo.js"></script><script src="/ui/libtips.js"></script>   <!-- a video card plays under the pointer; the tip -->
 <script src="/ui/libanchor.js" defer></script>   <!-- the picture in view stays in place when the library's width changes (owner 2026-10-06) -->
 <script>   // the theme before the first paint (owner 2026-10-04: a white flash before the page loaded); the page's own code keeps it after
 try { const t = localStorage.getItem("cv.theme") || "auto"; document.documentElement.dataset.theme = t === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : t; } catch {}
@@ -45,7 +46,7 @@ setTimeout(() => document.documentElement.classList.remove("cv-wait", "lib-wait"
 <link rel="help" href="/agent" title="Инструкция для ИИ-агента">
 <!-- the look the canvas settings chose (owner 2026-10-04): «Классика» or «Студия», set before the first paint -->
 <script>try { document.documentElement.dataset.ui = localStorage.getItem("cv.ui") || "classic"; } catch { document.documentElement.dataset.ui = "classic"; }
-try { const de = document.documentElement; de.dataset.shadow = localStorage.getItem("cv.shadow") || "1"; de.dataset.shape = localStorage.getItem("cv.shape") || "round"; } catch {}   // ui/look.css</script>
+try { const de = document.documentElement; de.dataset.shadow = localStorage.getItem("cv.shadow") || "0"; de.dataset.shape = localStorage.getItem("cv.shape") || "round"; } catch {}   // ui/look.css</script>
 <link rel="stylesheet" href="/ui/tokens.css">   <!-- the app's tokens, one source: the palette, heights, corners (ui/tokens.css) -->
 <link rel="stylesheet" href="/ui/ui.css"><link rel="stylesheet" href="/ui/slider.css"><link rel="stylesheet" href="/ui/studio.css"><link rel="stylesheet" href="/ui/studio-lib.css">
 <link rel="stylesheet" href="/ui/hy/hy.css"><link rel="stylesheet" href="/ui/look.css"><script type="module" src="/ui/hy/index.js"></script>   <!-- the primitives (ui/hy) -->
@@ -1013,7 +1014,7 @@ addEventListener("message", e => { if (e.origin === location.origin && e.data &&
 // the app's settings changed in another project (ui/settings.js): the library alone takes its look and theme again; beside the canvas the canvas sends them
 window.hyimgSettingsChanged = () => { if (T.changed()) return; const ui = localStorage.getItem("cv.ui"); if (ui) document.documentElement.dataset.ui = ui; hyPaper.fromStorage();
   try { const f = document.getElementById("cvFrame"); f && f.contentWindow && f.contentWindow.hyimgSettingsChanged && f.contentWindow.hyimgSettingsChanged(); } catch {}
-  try { const de = document.documentElement; de.dataset.shadow = localStorage.getItem("cv.shadow") || "1"; de.dataset.shape = localStorage.getItem("cv.shape") || "round"; } catch {}
+  try { const de = document.documentElement; de.dataset.shadow = localStorage.getItem("cv.shadow") || "0"; de.dataset.shape = localStorage.getItem("cv.shape") || "round"; } catch {}
   const t = localStorage.getItem("cv.theme") || "auto"; document.documentElement.dataset.theme = t === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : t; };
 addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.type === "ui") document.documentElement.dataset.ui = e.data.ui; });
 // the page itself never zooms (owner 2026-10-04: «the built-in zoom is never acceptable in our app»): a pinch or ⌘/⌃ + wheel over
@@ -1409,7 +1410,7 @@ function fcycle(id, alt) {
   const d = fdef(id); if (!d) return;
   const cur = fstate(d);
   fset(d, d.type === "rej" ? (!cur ? "with" : REJ === "with" ? "only" : "") : d.type === "all" ? "inc" : d.type === "radio" || d.type === "mode" ? (cur ? "" : "inc") : alt ? (cur === "exc" ? "" : "exc") : !cur ? "inc" : cur === "inc" ? "exc" : "");
-  render();
+  render(); if (window.hyTip && d.type === "tri") hyTip.way("library", "altx", alt ? true : cur === "inc" ? false : null);   // ⌥-click, the tip
 }
 const acrossOn = () => ACROSS.some(id => GF[id] === "inc");
 function gfPass(i) {

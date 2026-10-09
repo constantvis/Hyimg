@@ -5,13 +5,12 @@ import os
 
 os.environ["HY_TEST_ONLY_PLUGINS"] = "1"
 
-# No test leaves a server behind, and none writes into the person's ~/Library/Caches/Hyimg (tests/procguard.py, owner 2026-10-07)
+# No test leaves a server behind, and none writes into the person's ~/Library/Caches/Hyimg (tests/procguard.py, owner 2026-10-07);
+# tests/unit/conftest.py installs the same guard when pytest runs tests/unit alone
 import procguard  # noqa: E402
 
 procguard.install()
 
 
-def pytest_sessionfinish(session, exitstatus):   # also after ⌃C: the servers this session started and did not stop
-    left = procguard.sweep()
-    if left:
-        print(f"\nprocguard: stopped {len(left)} server(s) a test left running: {left}")
+def pytest_sessionfinish(session, exitstatus):   # also after ⌃C: the servers this session started and did not stop, then the cache check
+    procguard.finish(session)

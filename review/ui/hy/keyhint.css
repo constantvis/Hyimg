@@ -1,0 +1,30 @@
+/* <hy-keyhint>: the keys of what the person is doing now (owner 2026-10-08: «подсказка внизу справа ... полупрозрачная: Shift+Enter —
+   готово»). Written bare on the thing being done where it has a surface (a note, a field), a small glass capsule of caps and words where it
+   has none (a drag, a resize, the Hint bar); never in the way: no pointer events, fixed over the page, placed by ui/hy/keyhint.js. The
+   capsule reads on any picture and on both papers: the panel's ground at two thirds with a blur under it, the words in the quiet colour.
+   An item used a few times is quieter, then gone (the learning). */
+/* z 50: the contract's overlay layer, over the board and its chrome, under menus and dialogs; an anchor inside a menu, a dialog or the
+   settings window lifts its hint just over that layer (lift() in keyhint.js) */
+hy-keyhint { position: fixed; left: 0; top: 0; z-index: 50; display: flex; align-items: center; gap: 10px; box-sizing: border-box; height: 23px;
+  padding: 0 8px 0 4px; border-radius: var(--hy-row-r, 999px); pointer-events: none; user-select: none; white-space: nowrap;
+  font: 500 11px/1 var(--sans); letter-spacing: .01em; color: var(--sub);
+  background: color-mix(in srgb, var(--panel) 66%, transparent); -webkit-backdrop-filter: blur(12px) saturate(1.4); backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: inset 0 0 0 .5px color-mix(in srgb, var(--line) 80%, transparent);
+  opacity: 0; scale: .96; transition: opacity .22s cubic-bezier(.32,.72,0,1), scale .26s cubic-bezier(.32,.72,0,1); }
+hy-keyhint[shown] { opacity: .9; scale: 1; }
+hy-keyhint .kh-i { display: inline-flex; align-items: center; gap: 4px; transition: opacity .2s ease; }
+hy-keyhint .kh-i[quiet] { opacity: .5; }
+hy-keyhint .kh-or { color: var(--muted); font-weight: 400; margin: 0 -1px; }
+hy-keyhint hy-kbd { margin: 0; vertical-align: 0; background: color-mix(in srgb, var(--raise) 80%, transparent); }
+/* bare: written on the thing itself, a note or a field (owner 2026-10-09: «просто Enter символа достаточно, даже без подложки»): its ink,
+   quieter; the keys are glyphs in that ink, no cap plate, no glass, no border */
+hy-keyhint[bare] { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; padding: 0; gap: 8px; }
+hy-keyhint[bare][shown] { opacity: .55; }
+hy-keyhint[bare] .kh-t { color: inherit; }
+hy-keyhint[bare] hy-kbd { min-width: 0; height: auto; padding: 0; border: 0; background: none; box-shadow: none; color: inherit; font: 500 12px/1 var(--sans); }
+/* the words reached a field's hint (yield), or a toast stands where the Hint bar does (hush): it steps back until there is room again */
+hy-keyhint[shown]:is([yield], [hush]) { opacity: 0; }
+/* the Hint bar (place "top"): the keys of a Studio or a tool just opened, top centre on the line under the top row; a hair between items */
+hy-keyhint[place=top] { top: var(--hy-row-under, 58px); height: 26px; padding: 0 10px; gap: 8px; }
+hy-keyhint[place=top] .kh-i + .kh-i::before { content: ""; width: 1px; height: 12px; margin-right: 4px; background: var(--line); }
+@media (prefers-reduced-motion: reduce) { hy-keyhint { transition: opacity .1s ease; scale: 1; } }

@@ -151,6 +151,7 @@ static unsigned int gGround = 0x17171a;   // the board's paper (ui/paper.js BOAR
   NSString *_cachePath;
   NSString *_pending;        // a URL asked for before the browser exists
   NSString *_pendingHTML;
+  NSString *_createdWith;    // the address the browser is being made with: a URL asked for meanwhile still loads once it is there
   BOOL _creating;
   BOOL _enteredFS;           // the window went full screen because the page asked: it goes back when the page leaves
 }
@@ -189,6 +190,7 @@ static unsigned int gGround = 0x17171a;   // the board's paper (ui/paper.js BOAR
   CefRefPtr<CefRequestContext> context = CefRequestContext::CreateContext(rs, nullptr);
   _client = new HYClient(self);
   std::string url = _pending ? _pending.UTF8String : "about:blank";
+  _createdWith = _pending;
   CefBrowserHost::CreateBrowser(info, _client, url, settings, nullptr, context);
 }
 - (void)browserCreated:(CefRefPtr<CefBrowser>)browser {
@@ -197,7 +199,10 @@ static unsigned int gGround = 0x17171a;   // the board's paper (ui/paper.js BOAR
   v.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
   v.frame = self.bounds;
   if (_pendingHTML) { NSString *h = _pendingHTML; _pendingHTML = nil; [self loadHTML:h]; }
-  _pending = nil;
+  // the board's address asked for while the browser was being made with the waiting page (a board waking: its server answers at once,
+  // 2026-10-08): it was dropped here and the page stayed on «Opening the board…»
+  else if (_pending && !(_createdWith && [_pending isEqualToString:_createdWith])) { NSString *u = _pending; _pending = nil; [self loadURL:u]; }
+  _pending = nil; _createdWith = nil;
   if (!self.isHiddenOrHasHiddenAncestor && self.superview.subviews.lastObject == self) [self focusPage];   // a page loading under Home does not take the keys
 }
 - (void)browserClosed { _browser = nullptr; _client = nullptr; }

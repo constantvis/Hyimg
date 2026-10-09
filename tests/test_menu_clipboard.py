@@ -14,7 +14,7 @@ import pytest
 from test_shortcuts import run_server
 
 playwright = pytest.importorskip("playwright.sync_api")
-ENGINES = ["chromium", "webkit"]
+ENGINES = ["chromium"]   # the board's tests run in Chromium, dark (owner 2026-10-07)
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ ROWS = """() => [...document.querySelectorAll('#ctx > [role=menuitem]')].map(b =
 
 def menu(page, at):
     page.mouse.click(at[0], at[1], button="right")
-    page.wait_for_selector("#ctx.open [data-act=view]")
+    page.wait_for_selector("#ctx.open [role=menuitem]")
     return {r[0]: r[1:] for r in page.evaluate(ROWS)}
 
 
@@ -44,7 +44,7 @@ def test_clipboard_and_delete_on_the_menu(server, engine):
     with playwright.sync_playwright() as p:
         try: browser = getattr(p, engine).launch()
         except Exception as error: pytest.skip(f"no {engine} for Playwright: {error}")
-        page = browser.new_page(viewport={"width": 1400, "height": 900})
+        page = browser.new_page(viewport={"width": 1400, "height": 900}, color_scheme="dark")
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
         url = f"http://127.0.0.1:{server}/canvas.html"
@@ -53,7 +53,7 @@ def test_clipboard_and_delete_on_the_menu(server, engine):
         page.goto(url)
         page.wait_for_function("() => typeof BOARD !== 'undefined' && Object.keys(board.items).length === 6 && EL.get('i0')", timeout=20000)
         errors.clear()
-        on = lambda id: page.evaluate(SCREEN, page.evaluate(f"() => {{ const it = board.items['{id}']; return [it.x + 100, it.y + 100]; }}"))
+        on = lambda id: page.evaluate(SCREEN, page.evaluate(f"() => {{ const it = board.items['{id}']; return [it.x + 100, it.y + 300]; }}"))   # under the toasts
         n = lambda: page.evaluate("() => Object.keys(board.items).length")
         # a card's menu: the four after «Open…», the shortcuts shown, Paste grey while the clipboard is empty, «Remove from the board» last and red
         r = menu(page, on("i1"))
@@ -67,7 +67,7 @@ def test_clipboard_and_delete_on_the_menu(server, engine):
         menu(page, on("i1")); act(page, "copy")
         spot = [1150, 700]
         r = menu(page, spot)
-        assert list(r) == ["Paste here", "Copy link to this view"] and r["Paste here"][0] == ""
+        assert list(r) == ["Paste here", "Hide annotations", "Copy app link to this view", "Copy browser link to this view"] and r["Paste here"][0] == ""
         at = page.evaluate(WORLD, spot)
         act(page, "paste"); assert n() == 7
         new = page.evaluate("() => [...sel].map(id => board.items[id]).filter(Boolean).map(it => [it.x + it.w / 2, it.y + itemH(it) / 2])")
@@ -82,10 +82,10 @@ def test_clipboard_and_delete_on_the_menu(server, engine):
         menu(page, on("i3")); act(page, "del")
         assert n() == 5 and page.evaluate("() => 'a/3.png' in board.removed")
         page.keyboard.press("Control+z"); assert n() == 6 and not page.evaluate("() => 'a/3.png' in board.removed")
-        # a group alone: Duplicate grey with why
+        # a group alone: no Duplicate (a group is duplicated by its cards; the menu by kind, owner 2026-10-07)
         page.evaluate("() => { board.groups.G = { title: 'G', x: 1650, y: -60, w: 400, h: 800, members: ['i5'] }; sel = new Set(); render(); }")
         r = menu(page, page.evaluate(SCREEN, [1680, 650]))   # the group's empty inside, under the toasts
-        assert r["Duplicate"][0] == "A group is duplicated by its cards: select them", r
+        assert "Duplicate" not in r and "Ungroup" in r, r
         page.keyboard.press("Escape")
         assert not errors, errors
         browser.close()

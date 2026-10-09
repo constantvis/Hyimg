@@ -19,9 +19,9 @@ playwright = pytest.importorskip("playwright.sync_api")
 ROOT = Path(__file__).resolve().parents[1]
 ENGINES = ["chromium", "webkit"]
 SHOTS = os.environ.get("HYIMG_TEST_SHOTS", "")
-FAMILIES = ["buttons", "choices", "marks"]
+FAMILIES = ["buttons", "choices", "marks", "hints"]
 TAGS = ["hy-switch", "hy-check", "hy-kbd", "hy-badge", "hy-chip", "hy-hint", "hy-info", "hy-swatch", "hy-swatches", "hy-button",
-        "hy-icon-button", "hy-plate", "hy-segmented"]
+        "hy-icon-button", "hy-plate", "hy-segmented", "hy-keyhint", "hy-tip", "hy-studio-actions", "hy-open-in"]
 LOOK = '.sc-look[data-hy-theme="{}"][data-hy-shape="{}"]'
 DR = LOOK.format("dark", "round")
 
@@ -95,8 +95,8 @@ def test_the_showcase_loads_every_primitive_live_from_the_core(browser, server):
     page = open_page(browser, server)
     assert page.evaluate("tags => tags.filter(t => !customElements.get(t))", TAGS) == []
     assert page.evaluate("() => document.documentElement.dataset.hyFrom") == "core"   # the live files of the core, not the snapshot
-    assert page.evaluate("() => document.querySelectorAll('.sc-look').length") == 12   # 3 families × 4 looks
-    assert "13 live · ui/hy" in page.inner_text(".sc-head")
+    assert page.evaluate("() => document.querySelectorAll('.sc-look').length") == 16   # 4 families × 4 looks
+    assert "17 live · ui/hy" in page.inner_text(".sc-head")
     assert page.evaluate("() => window.__tMiss || []") == []
     assert page.errors == [], page.errors
     for fam in FAMILIES:
@@ -104,6 +104,31 @@ def test_the_showcase_loads_every_primitive_live_from_the_core(browser, server):
         assert p.errors == [], p.errors
         shot(p, f"primitives-{fam}-{browser.engine}-en")
         p.close()
+    page.close()
+
+
+HINTS = """look => {
+  const L = document.querySelector(look), r = e => e.getBoundingClientRect(), kh = L.querySelector(".sc-fixed > hy-keyhint:not([bare])"), host = kh.parentElement;
+  const bare = L.querySelector("hy-keyhint[bare]"), cap = bare.querySelector("hy-kbd"), cs = getComputedStyle(cap), off = L.querySelector("hy-tip[off]");
+  return { inside: r(kh).left >= r(host).left - 1 && r(kh).top >= r(host).top - 1 && r(kh).bottom <= r(host).bottom + 1,
+    shown: +getComputedStyle(kh).opacity > .5, bar: Math.round(r(L.querySelector("hy-keyhint[place=top]")).height),
+    spec: [...L.querySelectorAll(".sc-sec.spec h4 code")].map(c => c.textContent), bulb: !!L.querySelector("hy-tip > svg path"),
+    glass: Math.round(r(L.querySelector("hy-tip[glass]")).height),
+    bareCap: [cap.textContent, cs.backgroundColor, cs.borderTopWidth, getComputedStyle(bare).backgroundColor],
+    closed: [getComputedStyle(off.querySelector(".tip-t")).display, +getComputedStyle(off.querySelector("svg")).opacity] };
+}"""
+
+
+def test_the_hints_family_draws_all_three_built(browser, server):
+    """owner 2026-10-09 on round 12: all three built. A key hint on a surface is the glyph alone in its ink, no cap plate («просто Enter
+    символа достаточно, даже без подложки»); the capsule keeps its caps; the Hint bar is the key hint at place «top»; the tip (version 9)
+    is <hy-tip>, its bulb, its glass over pictures, and closed: the bulb alone at half strength. Nothing is a static picture any more."""
+    page = open_page(browser, server, "hints")
+    for th, sh in (("dark", "round"), ("light", "pro")):
+        m = page.evaluate(HINTS, LOOK.format(th, sh))
+        assert m == {"inside": True, "shown": True, "bar": 26, "spec": [], "bulb": True, "glass": 23,
+                     "bareCap": ["↵", "rgba(0, 0, 0, 0)", "0px", "rgba(0, 0, 0, 0)"], "closed": ["none", 0.5]}, (th, sh, m)
+    assert page.errors == [], page.errors
     page.close()
 
 
@@ -222,6 +247,16 @@ def test_segmented_chooses_by_arrow_keys_and_moves_its_thumb(browser, server):
     assert page.evaluate("q => document.querySelector(q).getAttribute('role')", tabs) == "tablist"
     page.click(tabs + " button[value=ver]")
     assert page.evaluate("q => [...document.querySelector(q).children].filter(c => c.localName === 'button').map(b => b.getAttribute('aria-selected'))", tabs) == ["false", "true"]
+    # variant=tint (owner 2026-10-07, the settings): no track, the chosen option a soft tint of the selection's blue, its words in that blue
+    tint = DR + " hy-segmented[variant=tint]"
+    page.click(tint + " button[value=light]"); page.wait_for_timeout(450)
+    look = page.evaluate("""q => { const s = document.querySelector(q), on = s.querySelector('button.on'), off = s.querySelector('button:not(.on)'), t = s.querySelector('.st'),
+      a = on.getBoundingClientRect(), b = t.getBoundingClientRect();
+      return { role: s.getAttribute('role'), value: s.value, track: getComputedStyle(s).backgroundColor, thumb: getComputedStyle(t).backgroundColor, ink: getComputedStyle(on).color,
+               other: getComputedStyle(off).color, under: Math.abs(a.left - b.left) < 1.5 && Math.abs(a.width - b.width) < 1.5 }; }""", tint)
+    assert look["role"] == "radiogroup" and look["value"] == "light" and look["under"], look
+    assert look["track"] == "rgba(0, 0, 0, 0)" and look["ink"] == "rgb(59, 130, 246)" and look["other"] != look["ink"], look   # the dark look's --sel
+    assert "0.16" in look["thumb"] and look["thumb"] != look["track"], look   # a 16 % tint of it, not the panel's grey
     page.close()
 
 
@@ -274,7 +309,7 @@ def test_the_showcase_speaks_russian(browser, tmp_path):
     proc, log, port = serve(tmp_path, "ru")
     try:
         page = open_page(browser, port)
-        assert "Hyimg UI · примитивы" in page.inner_text(".sc-head") and "13 живых" in page.inner_text(".sc-head") and "Темная · Круглые" in page.text_content(".sc-look h3")
+        assert "Hyimg UI · примитивы" in page.inner_text(".sc-head") and "17 живых" in page.inner_text(".sc-head") and "Темная · Круглые" in page.text_content(".sc-look h3")
         assert page.evaluate("() => window.__tMiss") == []
         for fam in FAMILIES:
             p = open_page(browser, port, fam); shot(p, f"primitives-{fam}-{browser.engine}-ru"); p.close()

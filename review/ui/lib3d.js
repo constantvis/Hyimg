@@ -44,7 +44,7 @@
     const bar = document.createElement("div"); bar.className = "v3d-bar";
     bar.innerHTML = `<span></span><button type="button"></button>`;
     bar.firstChild.textContent = T_("Drag to turn · scroll to zoom");
-    bar.lastChild.textContent = T_("Put on the board"); bar.lastChild.title = T_("A 3D card of this file on the board: turn it, light it, render it in the 3D studio");
+    bar.lastChild.textContent = T_("Put on the board"); bar.lastChild.title = T_("A 3D card of this file on the board: turn it, light it, render it in 3D Studio");
     bar.lastChild.onclick = () => { const it = cur; if (typeof closeV === "function") closeV(); if (it && typeof pick3d === "function") pick3d(it); };
     box.appendChild(bar);
     const mod = typeof spritesMod === "function" ? spritesMod() : Promise.resolve(null);

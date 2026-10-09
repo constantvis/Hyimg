@@ -3,7 +3,7 @@
 // another, the top one does not leave at once»): the newest stands in front, the older ones tuck in behind it a little lower and smaller,
 // the pointer on the stack fans it out into a list and holds every timer; each leaves after its own time, the oldest first.
 // Glass with blur like the panels; the colour says what it is: error red, news or a note blue, success green; light and dark themes.
-// hyToast(text, kind?, {sticky}?) — kind "error" | "info" | "success"; without it the words decide. A sticky one (something to act on,
+// hyToast(text, kind?, {sticky}?) — kind "error" | "info" | "success" | "warn" (amber: a clash of two edits, ui/merge.js); without it the words decide. A sticky one (something to act on,
 // owner 2026-10-04: «key notes that matter in the moment can stay, with a × on the right to close») stays until its × is pressed. The canvas inside the library page sends its
 // notes up here, so one stack shows everything. They stand in the window's middle, an open library or not (owner 2026-10-04); --toast-x on <html> can move them, 50% by default.
 // They stand under the top row in every mode, on its --hy-row-under line (ui/look.css, 58 px): a note never covers the crumb, a title plate or
@@ -28,15 +28,15 @@
 #hyToasts .ht.behind:not(.fan) > * { opacity: 0; }   /* a card tucked behind shows only its edge, its words come back when the stack fans out */
 #hyToasts .ht i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--k); box-shadow: 0 0 0 3px color-mix(in srgb, var(--k) 14%, transparent); }
 :root[data-shape="pro"] #hyToasts .ht { --ht-r: 14px; }   /* rounded like the rest: a capsule, the pro shape's plate corner */
-#hyToasts .ht.error { --k: var(--ht-error); } #hyToasts .ht.success { --k: var(--ht-success); }
+#hyToasts .ht.error { --k: var(--ht-error); } #hyToasts .ht.success { --k: var(--ht-success); } #hyToasts .ht.warn { --k: var(--ht-warn); }
 #hyToasts .ht .x { flex: none; width: 22px; height: 22px; margin: -3px -6px -3px 2px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: inherit; opacity: .6;
   display: grid; place-items: center; cursor: pointer; font: inherit; } #hyToasts .ht .x:hover { opacity: 1; background: color-mix(in srgb, currentColor 12%, transparent); }
 #hyToasts .ht.act > span { flex: 1; min-width: 0; }
 #hyToasts .ht .ab { flex: none; height: 24px; margin: -3px -4px -3px 0; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: var(--k); font: 600 12.5px var(--sans, -apple-system, system-ui, sans-serif);
   cursor: pointer; white-space: nowrap; transition: background .15s cubic-bezier(.32,.72,0,1); } #hyToasts .ht .ab:hover { background: color-mix(in srgb, var(--k) 16%, transparent); }
-:root { --ht-info: #0a84ff; --ht-success: #30d158; --ht-error: #ff453a; }
-:root[data-theme="light"] { --ht-info: #007aff; --ht-success: #248a3d; --ht-error: #d70015; }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --ht-info: #007aff; --ht-success: #248a3d; --ht-error: #d70015; } }
+:root { --ht-info: #0a84ff; --ht-success: #30d158; --ht-error: #ff453a; --ht-warn: #fbbf24; }
+:root[data-theme="light"] { --ht-info: #007aff; --ht-success: #248a3d; --ht-error: #d70015; --ht-warn: #b25000; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --ht-info: #007aff; --ht-success: #248a3d; --ht-error: #d70015; --ht-warn: #b25000; } }
 @media (prefers-reduced-motion: reduce) { #hyToasts .ht { transition: opacity .15s; } }`;
   // the kind by the words when a caller gives none, in either language (owner 2026-10-06: two languages); callers pass it mostly
   const ERR = /не получилось|не удалось|не сохранил|не сохранен|не загрузил|не записан|не ответил|не удалить|сбросила|ошибк|нельзя|couldn't|could not|can't|cannot|failed|not saved|didn't save|wasn't saved|not loaded|didn't load|not written|didn't answer|not responding|no answer|connection (was )?(reset|dropped)|error|not allowed|⚠/i;

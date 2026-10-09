@@ -1,0 +1,26 @@
+/* <hy-tip>: one short line about one thing you can do here (DESIGN.md «Семья подсказок»; round 12's version 9, owner 2026-10-09: «9
+   версия идеальна — делай»). A bulb in front, the key words in <b>; still, a click shows the next, the old line fades and lifts 4 px.
+   × on hover closes the place's tips, the bulb stays at half strength and brings them back. Bare on a block or in a field, on the key
+   hint's quiet glass over pictures (glass). Its place gives it only the free part: the line ends in an ellipsis, the title has it whole. */
+:root, [data-hy-theme=dark] { --hy-tip-ic: #e6c13b; --hy-tip-key: var(--sub); }
+:root[data-theme=light], [data-hy-theme=light] { --hy-tip-ic: #a87a06; --hy-tip-key: var(--ink); }
+hy-tip { position: relative; display: inline-flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; box-sizing: border-box; white-space: nowrap;
+  font: 400 11px/1.2 var(--sans); color: var(--hy-hint); cursor: pointer; user-select: none; pointer-events: auto; }
+hy-tip > svg { width: 11px; height: 11px; flex: none; color: var(--hy-tip-ic); }
+hy-tip .tip-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; transition: opacity .3s var(--hy-ease), translate .3s var(--hy-ease); }
+hy-tip b { font-weight: 500; color: var(--hy-tip-key); }
+hy-tip[out] .tip-t { opacity: 0; translate: 0 -4px; }
+hy-tip .tip-x { display: none; position: absolute; left: 100%; top: 50%; translate: 0 -50%;
+  width: 16px; height: 16px; margin: 0; padding: 0; place-items: center; border: 0; border-radius: 4px;
+  background: none; color: var(--muted); cursor: pointer; }
+hy-tip .tip-x svg { width: 9px; height: 9px; }
+hy-tip .tip-x:hover { color: var(--ink); background: var(--hy-hov); }
+hy-tip:hover:not([off]) .tip-x { display: grid; }
+/* × stands just past the line's end, so the line never moves when it shows; closed: the bulb alone, at half strength, the way back */
+hy-tip[off] .tip-t, hy-tip[off] .tip-x { display: none; }
+hy-tip[off] { cursor: default; }
+hy-tip[off] > svg { opacity: .5; cursor: pointer; }
+hy-tip[glass] { height: 23px; padding: 0 9px 0 7px; border-radius: var(--hy-row-r, 999px); color: var(--sub);
+  background: color-mix(in srgb, var(--panel) 66%, transparent); -webkit-backdrop-filter: blur(12px) saturate(1.4); backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: inset 0 0 0 .5px color-mix(in srgb, var(--line) 80%, transparent); }
+@media (prefers-reduced-motion: reduce) { hy-tip .tip-t { transition: opacity .1s ease; } hy-tip[out] .tip-t { translate: none; } }

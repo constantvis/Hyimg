@@ -443,3 +443,15 @@ def test_agents_tell_the_owner_what_they_put_on_a_board(hyimg):
     assert json.loads(urllib.request.urlopen(req).read())["unread"] == 0
     assert json.loads(get(port, "/api/notifications"))["unread"] == 0
 
+
+
+def test_an_html_card_joins_a_theme_group_and_its_frame_grows(hyimg):
+    """2026-10-08: the icons' round 4 sheet beside round 3 inside «Icons · redesign»; html into= grows the frame as block into= does"""
+    _, hy, board, state = hyimg
+    (state.parent / "site").mkdir()
+    (state.parent / "site/index.html").write_text("<!doctype html><title>t</title>")
+    old = board()["groups"]["g1"]
+    out = hy("do", "html site/index.html x=@o5.right+80 y=@o5.top w=400 into=Старые force=1")
+    b = board(); g = b["groups"]["g1"]; card = next(i for i, it in b["items"].items() if it.get("type") == "html")
+    assert "подгруппой в «Старые»" in out and card in g["members"] and len(b["groups"]) == 1, out
+    assert g["x"] + g["w"] == 5 * 344 + 320 + 80 + 400 + 480 > old["x"] + old["w"]   # the frame reaches past the card by the group's air

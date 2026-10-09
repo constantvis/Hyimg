@@ -1,0 +1,44 @@
+/* Settings › Plugins (ui/plugins.js): a section of the settings panel after its shared rows, Home's and a board's. A row a plugin: its
+   name and version, what it does in one quiet line, its folder as a small ghost button, «…» and the switch at the right end; the rows'
+   words, colours and the hairline between groups are the panel's (ui/setpanel.css). Colours by tokens only. */
+#sets .hpl { display: grid; gap: 2px; padding: 8px 0 10px; border-top: 1px solid var(--line); }
+#sets .hpl-row { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; min-width: 0; }
+#sets .hpl-row + .hpl-row { border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+#sets .hpl-txt { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+#sets .hpl-top { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+#sets .hpl-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-weight: 500; }
+#sets .hpl-ver { flex: none; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+#sets .hpl-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sub); font-size: 12px; }
+#sets .hpl-err { color: var(--hy-red); }
+#sets .hpl-off :is(.hpl-name, .hpl-desc) { color: var(--muted); }
+#sets .hpl-dir { display: flex; min-width: 0; margin-left: -8px; }
+#sets .hpl-dir hy-button { max-width: 100%; min-width: 0; color: var(--muted); font-weight: 400; }
+#sets .hpl-dir hy-button > button, #sets .hpl-dir hy-button:not(:defined) { gap: 5px; overflow: hidden; text-overflow: ellipsis; }
+#sets .hpl-dir hy-button svg { flex: none; }
+#sets .hpl-pend { margin-top: 2px; }
+#sets .hpl-ctl { flex: none; display: inline-flex; align-items: center; gap: 6px; height: var(--hy-h-s); }
+#sets .hpl-none { min-height: var(--hy-h-row); display: flex; align-items: center; color: var(--muted); }
+#sets .hpl-add { justify-content: flex-start; }
+#sets .hpl-add hy-button svg { flex: none; }
+#sets .hpl > .hy-hint { margin-top: 2px; }
+
+/* «…»: the app's menu items (ui/menu.js hyMenuItem) on a small panel of the menus' look, over the settings panel */
+.hpl-menu { position: fixed; z-index: 70; min-width: 200px; box-sizing: border-box; padding: 5px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--panel); box-shadow: var(--hy-sh-pop); color: var(--ink); font: 400 13px var(--sans); opacity: 0; transform: translateY(-4px);
+  transition: opacity .16s ease, transform .22s cubic-bezier(.32,.72,0,1); }
+.hpl-menu.on { opacity: 1; transform: none; }
+:root[data-shape=pro] .hpl-menu { border-radius: var(--hy-bar-r); }
+.hpl-menu button { display: flex; align-items: center; gap: 9px; width: 100%; height: var(--hy-h-row); padding: 0 10px; border: 0; border-radius: var(--hy-trow-r, 8px);
+  background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.hpl-menu button:hover { background: var(--raise); }
+.hpl-menu button > svg { flex: none; opacity: .75; }
+.hpl-menu .ml { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hpl-menu button.danger { color: var(--hy-red); }
+.hpl-menu button.danger:hover { background: color-mix(in srgb, var(--hy-red) 14%, transparent); }
+@media (prefers-reduced-motion: reduce) { .hpl-menu { transition: none; } }
+
+/* a card whose plugin is off or gone (ui/plugins-board.js): its still picture, the board's kind mark «Plugin off» in its corner */
+.plg.plo { background: var(--raise); }
+.plg.plo > img.plo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
+.plg.plo.plo-none > img.plo { display: none; }
+.plg.plo .mk.mk-kind .kp svg { stroke: currentColor; fill: none; }

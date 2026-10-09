@@ -199,7 +199,8 @@ def sweep_orphans(board=None):
     lost, total = [], 0
     for e in os.scandir(THUMBS):
         n = e.name
-        if not e.is_file(follow_symlinks=False) or ".sprite" in n or n.endswith(".tmp"):
+        # feed.*: the bell's crops and board regions (feedthumbs.py), of no one file; the ceiling ages them out
+        if not e.is_file(follow_symlinks=False) or ".sprite" in n or n.endswith(".tmp") or n.startswith("feed."):
             continue
         total += 1
         if not any(n[:i] in stems for i, c in enumerate(n) if c == "."):

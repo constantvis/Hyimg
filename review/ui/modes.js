@@ -10,16 +10,28 @@
 // shared row radius (--hy-row-r) in «pro».
 //
 // A plugin says, through HY.mode(key, def):
-//   label, icon        the segment's name (tooltip, aria-label) and its 16 px line icon (svg markup)
+//   label, icon        the segment's short name (Image, 3D, Dev) and its 16 px line icon (svg markup)
+//   name               its full name in the tooltip and for a screen reader (owner 2026-10-08: Image Studio, 3D Studio, Dev Studio;
+//                      working inside an object is a Studio, on the canvas the Board); the label when not given
 //   order              its place after Board (Image 10, Dev 20, 3D 30)
 //   title, hint        what it does when it can be entered (aria-description), and when it cannot: what enables it (the tooltip says it)
 //   isOpen()           its editor is open now (the switch shows it chosen)
 //   target(ids)        the card the mode would open for this selection, or null: the segment is enabled when there is one
 //   enter(id), leave() open its editor for that card; close it the way its own Done does
+//   card()             optional: the card its open editor works on (else the live card .plg-live, the card it was entered with, the
+//                      one selected card)
+//   color              optional: the Studio's colour (a CSS colour or var(), Image Studio's purple var(--frame)); its segment, chosen,
+//                      wears it instead of the selection's blue (owner 2026-10-09: «вроде же бы в цвет режима должно быть?»). Board and
+//                      a Studio without one keep the blue. While that Studio is open the colour is the whole window's: <html> gets
+//                      data-studio="<key>" and --hy-studio, and --sel, --hy-sel and the notes' info colour are it, so every chosen,
+//                      picked or primary thing of the app inherits it, a dialog's action button too (ui/confirm.js; owner 2026-10-09:
+//                      «опять мы что-то выделяем, у нас это синего цвета вместо зеленого ... чтобы у нас все режимы соответствовали»)
 // The switch follows what happens anyway (a double click, Esc, Done): the board calls sync() after each render and when a plugin's editor
 // takes the dock or gives it back (HY.dock), and a plugin may call HY.modeChanged(). Board leaves the open editor. A disabled mode stays
 // in its place, dimmed. A dock too narrow for all its buttons keeps only the modes that can be entered now.
-//   const M = hyModes({ dock, sel: () => [...ids], toast, t })   M.add(key, def)   M.sync()   M.enter(key, ids?)   M.el
+// While a mode is open the card it edits is lifted (ui/editlift.js, owner 2026-10-08): the board's selection around it hidden, a shadow
+// under it, the rest of the board a little dimmer; every plugin's mode gets it from here.
+//   const M = hyModes({ dock, sel: () => [...ids], toast, t, rect: id => {x, y, w, h} })   M.add(key, def)   M.sync()   M.enter(key, ids?)   M.el
 (() => {
   if (window.hyModes) return;
   const EASE = "cubic-bezier(.32,.72,0,1)";
@@ -41,7 +53,9 @@
   transition: color .2s ${EASE}, opacity .2s ${EASE}; }
 :root[data-ui="studio"] #dock #modes > button { width: calc(32px - 2 * var(--hy-seg-pad, 3px)); }
 #dock #modes > button:hover { color: var(--ink) !important; }
-#dock #modes > button[aria-pressed=true] { color: var(--sel) !important; }
+#dock #modes > button[aria-pressed=true] { color: var(--hy-mode-c, var(--sel)) !important; }
+/* the open Studio's colour on the whole window (see color above); :not(#_) outranks the theme's :root[data-theme] of ui/tokens.css */
+:root[data-studio]:not(#_) { --sel: var(--hy-studio); --hy-sel: var(--hy-studio); --ht-info: var(--hy-studio); }
 #dock #modes > button[aria-disabled=true] { opacity: .38; cursor: default; }
 #dock #modes > button[aria-disabled=true]:hover { color: var(--sub) !important; }
 #dock #modes > button svg { flex: none; display: block; }
@@ -58,8 +72,10 @@
 #modetip .mth { color: var(--sub); font-weight: 400; }
 :root[data-shape=pro] #modetip { border-radius: 11px; }
 @media (prefers-reduced-motion: reduce) { #dock #modes > button, #modetip { transition: none; } }`;
-  window.hyModes = function ({ dock, sel, t = k => k }) {
+  window.hyModes = function ({ dock, sel, t = k => k, rect = null }) {
     const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
+    const LIFT = rect && window.hyEditLift ? window.hyEditLift({ rect }) : null;
+    let liftK = "board", entered = { k: "", id: null };
     const M = new Map([["board", { label: t("Board"), icon: BOARD_IC(), order: 0, title: t("Board: every card, the canvas itself"), board: true }]]);
     const wrap = document.createElement("div"), el = document.createElement("div");
     wrap.id = "modesw"; wrap.innerHTML = `<span class="msep" aria-hidden="true"></span>`;
@@ -75,7 +91,8 @@
       for (const [k, d] of defs()) {
         const b = document.createElement("button"); b.type = "button"; b.dataset.mode = k;
         b.innerHTML = d.icon || "";   // the icon alone: the name is the tooltip's and the screen reader's
-        b.setAttribute("aria-label", d.label || k); b.dataset.name = d.label || k; el.appendChild(b);
+        const nm = d.name || d.label || k; b.setAttribute("aria-label", nm); b.dataset.name = nm; el.appendChild(b);
+        if (d.color) b.style.setProperty("--hy-mode-c", d.color);   // the Studio's colour when chosen
       }
       if (window.hySeg) window.hySeg(el);
       sync(true); fit();
@@ -96,6 +113,30 @@
         if (tipFor === b) showTip(b, true);
       }
       if (moved && el.classList.contains("few")) fit();
+      paint(open);
+      lift(open, ids);
+    }
+    // the open Studio's colour on <html> (data-studio, --hy-studio), gone on the board or in a Studio that brings none
+    function paint(open) {
+      const d = open !== "board" && M.get(open), c = d && d.color ? String(d.color) : "", r = document.documentElement;
+      if ((r.dataset.studio || "") === (c ? open : "") && r.style.getPropertyValue("--hy-studio") === c) return;
+      if (c) { r.dataset.studio = open; r.style.setProperty("--hy-studio", c); } else { delete r.dataset.studio; r.style.removeProperty("--hy-studio"); }
+    }
+    // the card the open mode edits: its own word, the live card, the card it was entered with, the one selected card
+    function cardOf(k, ids) {
+      const d = M.get(k), own = safe(() => d && d.card ? d.card() : null, null); if (own) return own;
+      const live = document.querySelector("#items .plg-live[data-id]"); if (live) return live.dataset.id;
+      if (entered.k === k && entered.id) return entered.id;
+      return ids.length === 1 ? ids[0] : null;
+    }
+    // that card lifted while the mode is open, set down when it closes; the card is the one found when it opened, unless the mode names
+    // another (its frame turned into a new card)
+    function lift(open, ids) {
+      if (!LIFT) return;
+      if (open !== liftK) { liftK = open; return LIFT.set(open === "board" ? null : cardOf(open, ids), open); }
+      if (open === "board") return;
+      const d = M.get(open), own = safe(() => d && d.card ? d.card() : null, null);
+      if (own && own !== LIFT.id) LIFT.set(own, open); else if (!LIFT.id) LIFT.set(cardOf(open, ids), open); else LIFT.place();
     }
     // a dock too narrow for all its buttons (a narrow window, the library open beside the board): the modes that cannot be entered now
     // step out (Board and the chosen one stay)
@@ -131,7 +172,7 @@
       const d = M.get(k), open = openKey(); if (!d || k === open) return false;
       const ids = given || safe(sel, []), id = d.board ? null : safe(() => d.target(ids), null);
       if (!d.board && !id) return false;
-      clearInterval(waiting);
+      clearInterval(waiting); entered = { k, id };
       const go = () => { if (!d.board) safe(() => d.enter(id)); sync(); };
       if (open === "board") { go(); return true; }
       // another editor is open: it closes as its own Done does (it may ask first, the frame editor about unsaved changes), then this one opens
@@ -146,7 +187,9 @@
       if (b.getAttribute("aria-disabled") !== "true") enter(b.dataset.mode);
     });
     new MutationObserver(() => { sync(); fit(); }).observe(dock, { attributes: true, attributeFilter: ["class"] });
-    new MutationObserver(() => fit()).observe(dock, { childList: true, subtree: true, characterData: true });
+    // not for the zoom's percent (#zl), rewritten on every frame of a zoom: each fit there forced the board's whole layout (2026-10-08)
+    new MutationObserver(ms => { if (ms.some(m => !(m.target.closest ? m.target : m.target.parentElement)?.closest("#zl"))) fit(); })
+      .observe(dock, { childList: true, subtree: true, characterData: true });
     const ro = new ResizeObserver(() => fit()); ro.observe(dock.parentElement || dock); ro.observe(dock);   // the window, and the library's edge (--inset) narrowing the dock
     addEventListener("resize", () => fit());
     build();

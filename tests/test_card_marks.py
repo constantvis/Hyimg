@@ -122,7 +122,8 @@ def cam(page, z, x=-40, y=-40):
 MARKS = """id => { const el = EL.get(id), c = el.getBoundingClientRect();
   return [...el.querySelectorAll('.mk')].filter(m => getComputedStyle(m).display !== 'none').map(m => { const r = m.getBoundingClientRect(), s = getComputedStyle(m);
     return { cls: m.className, n: [...m.classList].find(c => /^mk-/.test(c) && !/^mk-(tl|tr|bl|br|on)$/.test(c)), l: r.left - c.left, t: r.top - c.top, r: c.right - r.right, b: c.bottom - r.bottom,
-      w: r.width, h: r.height, rad: s.borderTopLeftRadius, font: s.fontSize, weight: s.fontWeight, bg: s.backgroundColor, ring: s.boxShadow, scale: s.scale,
+      w: r.width, h: r.height, rad: s.borderTopLeftRadius, font: s.fontSize, weight: s.fontWeight, bg: s.backgroundColor, scale: s.scale,
+      ring: getComputedStyle(m.querySelector('.mk-note > i') || m).boxShadow,   // a note's dots are its children (2026-10-08), the first one ringed
       icon: (() => { const i = m.querySelector('.kp svg, :scope > svg'); if (!i) return 0; const b = i.getBoundingClientRect(); return Math.round(b.height * 100) / 100; })() }; }); }"""
 
 # a stand-in for the frames plugin's colour grade mark (hyimg-frames grade.js: the same class and the same rule that shows it), so the

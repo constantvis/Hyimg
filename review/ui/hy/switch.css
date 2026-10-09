@@ -11,4 +11,12 @@ hy-switch[checked]::after { transform: translateX(12px); }
 hy-switch[disabled] { opacity: .45; cursor: default; }
 hy-switch[static] { cursor: inherit; }
 hy-switch > .hy-in { position: absolute; left: -3px; top: -3px; width: calc(100% + 6px); height: calc(100% + 6px); margin: 0; padding: 0; opacity: 0; cursor: inherit; z-index: 1; }
+/* variant=well (owner 2026-10-08, round 11 of Settings): on and off in the wells' look, a 44 × 26 well and a 20 px knob with 6 px corners;
+   off the knob is grey (a white plate in light), on it stands light at the right end (the well darkens under it in light) */
+hy-switch[variant=well] { width: 44px; height: 26px; border-radius: var(--hy-well-r); background: var(--hy-well); }
+hy-switch[variant=well]::after { left: 3px; top: 3px; width: 20px; height: 20px; border-radius: var(--hy-well-in-r); background: var(--hy-knob-off);
+  transition: transform .3s var(--hy-ease), background-color .2s ease; }
+hy-switch[variant=well]:not([checked], [disabled]):hover { background: var(--hy-well-hov); }
+hy-switch[variant=well][checked] { background: var(--hy-well-on); }
+hy-switch[variant=well][checked]::after { transform: translateX(18px); background: var(--hy-knob-on); }
 @media (prefers-reduced-motion: reduce) { hy-switch, hy-switch::after { transition: none; } }

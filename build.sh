@@ -6,6 +6,12 @@ if [[ $# -gt 0 && ( $# -ne 2 || "$1" != "--icon-only" ) ]]; then
   exit 1
 fi
 SOURCE_ROOT="${HYIMG_SOURCE_ROOT:-$ROOT}"
+# the app reads its pages from SOURCE_ROOT for good: a build from a temporary copy (a worktree under /tmp) would point the installed app at a
+# folder that is deleted soon after, and Home came up without its styles (2026-10-07); such a build names the real folder in HYIMG_SOURCE_ROOT
+if [[ -z "${HYIMG_SOURCE_ROOT:-}" && "$ROOT" == /private/tmp/* ]]; then
+  printf 'build.sh in a temporary folder (%s): set HYIMG_SOURCE_ROOT to the repository the app should read\n' "$ROOT" >&2
+  exit 1
+fi
 APP="$ROOT/dist/Hyimg.app"
 TMP="$(mktemp -d /private/tmp/hyimg-build.XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
@@ -38,7 +44,10 @@ fi
 "$SWIFTC" -module-cache-path "$TMP/modules" -swift-version 5 -sdk "$SDK" -target "$TARGET" -O \
   -import-objc-header "$ROOT/native/cef/HyimgCEF.h" \
   "$ROOT/native/ProjectRegistry.swift" "$ROOT/native/ServerSession.swift" "$ROOT/native/SaveBarrier.swift" "$ROOT/native/Chrome.swift" "$ROOT/native/main.swift" \
-  "$ROOT/native/Storage.swift" "$ROOT/native/StorageBridge.swift" \
+  "$ROOT/native/Storage.swift" "$ROOT/native/StorageBridge.swift" "$ROOT/native/People.swift" "$ROOT/native/Plugins.swift" \
+  "$ROOT/native/Links.swift" "$ROOT/native/LinkRouting.swift" "$ROOT/native/BoardIdentity.swift" "$ROOT/native/DropboxBoards.swift" \
+  "$ROOT/native/MacNotifications.swift" "$ROOT/native/Browsers.swift" \
+  "$ROOT/native/BoardSleep.swift" "$ROOT/native/Switcher.swift" "$ROOT/native/HomeArchive.swift" \
   "$TMP/cef.o" ${CEF_LINK[@]+"${CEF_LINK[@]}"} -framework AppKit -framework WebKit -o "$APP/Contents/MacOS/Hyimg"
 "$TMP/icon" "$ROOT/native/assets/hyimg.svg" "$TMP/png"
 cp "$TMP/png/Hyimg.icns" "$APP/Contents/Resources/Hyimg.icns"
@@ -58,6 +67,9 @@ cp "$ROOT/native/assets/hyimg.svg" "$APP/Contents/Resources/hyimg.svg"
 /usr/bin/plutil -insert HYIMGSourceRoot -string "$SOURCE_ROOT" "$APP/Contents/Info.plist"
 /usr/bin/plutil -insert NSAppTransportSecurity -dictionary "$APP/Contents/Info.plist"
 /usr/bin/plutil -insert NSAppTransportSecurity.NSAllowsLocalNetworking -bool YES "$APP/Contents/Info.plist"
+# hyimg:// links open the app (owner 2026-10-07, native/Links.swift); scripts/install.sh leaves the scheme to the installed copy only
+/usr/bin/plutil -insert CFBundleURLTypes -json '[{"CFBundleURLName":"app.hyimg.desktop.link","CFBundleURLSchemes":["hyimg"],"CFBundleTypeRole":"Viewer"}]' \
+  "$APP/Contents/Info.plist"
 mkdir -p "$APP/Contents/Resources/review"
 for source in "$ROOT"/review/*.py "$ROOT"/review/*.html; do
   cp "$source" "$APP/Contents/Resources/review/"

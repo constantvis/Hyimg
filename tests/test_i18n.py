@@ -110,6 +110,10 @@ def board_states(page, frame):
     yield "first screen"
     for button, name in (("#bset", "settings"), ("#bkeys", "keys"), ("#bntf", "notifications"), ("#bhist", "history")):
         frame.click(button); frame.wait_for_timeout(250); yield name
+        if button == "#bset":   # the settings' window lies over the page: its button closes it before the next one
+            for sec in ("team", "board", "notifications", "plugins", "storage", "interface", "performance", "profile"):
+                frame.evaluate("s => hySetPanel.go(s)", sec); frame.wait_for_timeout(120); yield f"settings: {sec}"
+            frame.evaluate("s => hySetPanel.go(s)", "appearance"); frame.click("#bset"); frame.wait_for_timeout(450)
     frame.click('#hist [data-tab="ev"]'); frame.wait_for_timeout(300); yield "history: activity"
     frame.click('#hist [data-tab="ver"]'); frame.wait_for_timeout(300); yield "history: versions"
     frame.fill("#histLabel", "v one"); frame.click("#histSave"); frame.wait_for_timeout(500); yield "version saved toast"
@@ -199,10 +203,10 @@ def test_switching_language_reloads_open_pages(tmp_path, browser):
         other.goto(f"http://127.0.0.1:{port}/canvas.html")
         other.wait_for_function("() => typeof board !== 'undefined' && Object.keys(board.items).length >= 8", timeout=20000)
         assert other.evaluate("T.lang") == "en"
-        frame.click("#bset")
-        assert frame.inner_text("#sets .sh") == "LANGUAGE" or frame.inner_text("#sets .sh").lower() == "language"
+        frame.click("#bset"); frame.evaluate("s => hySetPanel.go(s)", "appearance")
+        assert frame.inner_text("#sets .sp .sp-l") == "Language"   # the first row (ui/setpanel.js)
         with page.expect_navigation():
-            frame.click('#langOpts [data-lang="ru"]')
+            frame.click('#sets [data-set=lang] [data-v="ru"]')
         page.wait_for_function("() => document.documentElement.lang === 'ru'")
         for _ in range(50):
             if json.loads(settings.read_text()).get("cv.lang") == "ru": break
@@ -210,7 +214,7 @@ def test_switching_language_reloads_open_pages(tmp_path, browser):
         assert json.loads(settings.read_text())["cv.lang"] == "ru"
         frame = page.frames[-1]
         frame.wait_for_function("() => typeof board !== 'undefined' && document.querySelector('#sets').classList.contains('open')", timeout=20000)
-        assert frame.evaluate("document.querySelector('#langOpts [data-lang=ru]').getAttribute('aria-pressed')") == "true"
+        assert frame.evaluate("document.querySelector('#sets [data-set=lang] [data-v=ru]').getAttribute('aria-checked')") == "true"
         assert re.search(r"[Ѐ-ӿ]", frame.inner_text("#tlib"))
         # the other page: its settings sync (on focus, or the app's call) brings the change and it reloads in Russian
         with other.expect_navigation():
@@ -219,7 +223,7 @@ def test_switching_language_reloads_open_pages(tmp_path, browser):
         # and back to English
         frame.click("#bset") if not frame.evaluate("document.querySelector('#sets').classList.contains('open')") else None
         with page.expect_navigation():
-            frame.click('#langOpts [data-lang="en"]')
+            frame.click('#sets [data-set=lang] [data-v="en"]')
         page.wait_for_function("() => document.documentElement.lang === 'en'")
     finally:
         process.terminate(); process.wait(5); log.close()

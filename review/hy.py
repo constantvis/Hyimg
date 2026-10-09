@@ -8,6 +8,7 @@ sees (a heading, a group title, a note's first line, a timeline dot's label) or 
                                 plus near-misses in alignment
   hy.py map Стили               what lies around one thing, pictures counted
   hy.py find бабушка            ids and boxes of everything whose name has the text (also a picture inside an image frame)
+  hy.py md [страница]           the page as Markdown, read only: headings, groups with their notes, grids as tables, the rest in order
   hy.py do 'point Canon x=@Стили; move "Style cards" y=@Стили.bottom+400' --label "выровнял фазы"
   hy.py check [название]        overlaps, crooked rows, pictures sticking out of a group frame
   hy.py hist                    the last versions;  hy.py restore <id>
@@ -16,11 +17,13 @@ sees (a heading, a group title, a note's first line, a timeline dot's label) or 
                                 has (same bytes, any name or folder) and repeats among FILE; names without an extension get one
   hy.py dupes                   byte-identical copies in the library: which file the library shows, which it folds into it
   hy.py undocumented [folder]   frames whose json says nothing about them (no prompt, no model), by folder
-  hy.py notify "что сделано" [--text "подробнее"] [--ids a,b]   a notification for the owner (the bell on the canvas, red dot)
+  hy.py notify "что сделано" [--text "подробнее"] [--ids a,b]   a notification for the owner (the bell on the canvas, red dot);
+                                without --ids it names what you put on the page since your last one; notify --place ID repairs an old one
   hy.py layout plan             «Разложить по папкам как на доске»: what would move where, read only (counts and examples)
   hy.py layout apply|undo --owner-said-yes   moves the files / puts the last run back. NEVER on the owner's projects without his word
   hy.py features [слово]        what Hyimg can do and how an agent does each thing (review/features.json); a word shows those in full
-  hy.py pages | page new "Имя"  the pages with their picture counts | a new page (its id printed, for --page)
+  hy.py perf [--last N]         the board's performance log: the worst frame drops and what was on screen (review/perflog.py)
+  hy.py pages | page new "Имя" | link REF...   the pages, picture counts | a new page (its id, for --page) | links: hyimg:// (the app), http://
   hy.py presets | preset save "Имя" REF [only=grade,crop] | preset delete "Имя"   the project's presets of properties
 
 Commands inside do (separated by ;):
@@ -29,16 +32,17 @@ Commands inside do (separated by ;):
   set REF key=V ...                   any field: text, title, w, fs, color
   point TL "Label" x=V                a timeline dot by its label: moved, or added if new (TL: the timeline, or any label on it)
   note "text" x=V y=V [w=N] [color=blue]
-  text "Heading" x=V y=V [fs=N]
+  text "Title\\nbody" x=V y=V [size=0-4|fs=N] [w=N]   a heading; with lines after the title a document, its body Markdown (textdocs.py)
   model FILE x=V y=V | near=REF [w=360]   a 3D card (plugin 3d) from a library glb or STEP/IGES (FreeCAD converts it): a new scene
                                       3d/scenes/<stamp>-<name>/scene.json with the file on the floor, two lights and a camera
-  html FILE.html x=V y=V | near=REF [w=480] [vw=1280] [vh=800]   Dev studio's HTML card (plugin dev); refuses without the plugin
+  html FILE.html x=V y=V | near=REF [into=GROUP] [w=480] [vw=1280] [vh=800]   Dev Studio's HTML card (plugin dev); refuses without the
+                                      plugin; into= puts it in that group, whose frame grows as for block into=
   crop REF... box=x0,y0,x1,y1 | trim REF... in=S out=S | opacity REF... value=0.5 | pdfpage REF... n=2    a card's look, by the
                                       canvas's rules (what does not apply is skipped and counted); clear=1 takes it off
   grade REF... exposure=0.3 saturation=-20 temp=15 hue=30 sat=10 light=0 | json='{...}'   the colour grade (plugin frames) of pictures
                                       and image frames; hue/sat/light: Hue/Saturation's Master; clear=1 takes it off
   mask REF... alpha=1 | file=PATH.png | clear=1   the master mask (plugin frames): from the picture's own alpha, or a png
-  link NOTE REF...                    arrows from a note to pictures, cards or groups (clear=1 takes them off)
+  link NOTE REF...                    arrows from a note to pictures, cards, groups or a note: a reply to it (clear=1 takes them off)
   block PATTERN... into=GROUP | near=REF [side=right|below|left|above] | x=V y=V   [cols=8] [w=N] [gap=24] [note="текст"] [group="Название"]
                                       into= the usual way: a sub-group (note + rows) under the last block of that theme group, the frame
                                       grows and what stands below moves down; group= only for a genuinely new theme
@@ -52,6 +56,7 @@ Commands inside do (separated by ;):
                                       of its content; arrows to what stays are dropped; versions before and after on both pages
   props from=REF to=REF,REF... [only=grade,crop]   the canvas's «Paste properties»: crop, trim, size, opacity, PDF page, colour grade
   props preset=NAME to=REF...         (a plugin's kind, the mask, as the item's field of its name); preset= one saved on the canvas
+  clearprops REF... [grade mask crop trim opacity page]   what is applied set back, as «Clear properties ›» (⇧⌥⌘⌫): all kinds or these
   front REF... | forward | backward | back   the draw order, as «Order ›» on the canvas (⌥⌘] ⌘] ⌘[ ⌥⌘[): among the siblings in the
                                       same group (or the page's top level) and layer only; several keep their order among themselves
   remove REF... | remove "glob"       take things off this page: pictures by id or path glob, notes, headings; a group goes with
@@ -67,10 +72,10 @@ A value V is a number or @REF[.left|.right|.top|.bottom|.cx|.cy][+N|-N]; x defau
 Every do saves a version before and after (who: ai), retries if the owner saved in between and reports new problems (check).
 Every do that adds something writes a notification for the owner by itself (owner 2026-10-03): how many pictures, notes, groups, the
 first pictures as previews, the place to jump to. --say "Собрал 3x3 по направлению «процедуры»" gives it the words, --quiet skips it
-(only for rearranging what is there). HYIMG_AGENT=Codex names the agent in it.
+(only for rearranging what is there). The server sees by itself which agent runs hy.py (agents.py); HYIMG_AGENT is only a fallback.
 Without --page the page is the one the owner has open on the canvas; every command names it in its first line.
 """
-import json, os, random, re, shlex, string, sys, time, urllib.error, urllib.parse, urllib.request
+import json, os, random, re, shlex, string, sys, time, urllib.error, urllib.parse, urllib.request, notelinks, hylink, notifplace   # notes; links; bell
 
 BASE = f"http://localhost:{os.environ.get('HYIMG_PORT', '4180')}"
 NSIZE = [1 / 32, 1 / 24, 1 / 18, 1 / 13, 1 / 9]   # note font size per size step, as in canvas.html
@@ -83,7 +88,7 @@ def api(path, body=None):
     if body is not None and path.startswith("/api/board?"):   # saves made from here are the AI's in the page's event timeline
         path += "&who=ai" + ("&label=" + urllib.parse.quote(LABEL) if LABEL else "") + ("&agent=" + urllib.parse.quote(os.environ["HYIMG_AGENT"]) if os.environ.get("HYIMG_AGENT") else "")   # Home names the agent in a board's news
     req = urllib.request.Request(BASE + path, data=None if body is None else json.dumps(body).encode(),
-                                 headers={"Content-Type": "application/json"}, method="GET" if body is None else "POST")
+                                 headers={"Content-Type": "application/json", "X-Hyimg-Agent": os.environ.get("HYIMG_AGENT") or "agent"}, method="GET" if body is None else "POST")   # who: people.py
     try:
         with urllib.request.urlopen(req, timeout=240 if path.startswith("/api/items") else 60) as r:   # the library list is 15 MB and takes 30-120 s on a big project (2026-10-02)
             return r.status, json.load(r)
@@ -317,7 +322,7 @@ def lay_out(b, rows, kv, what, moving=()):
         b.get("removed", {}).pop(it["path"], None)
     members = list(ids)
     for n in extra: nid = uid("n"); b["items"][nid] = n; members.append(nid); msg += f" · заметка {nid}"
-    msg += f" x {round(bx['x'] + dx)} y {round(bx['y'] + dy)}, {round(bx['w'])}×{round(bx['h'])}"
+    msg += f" x {round(bx['x'] + dx)} y {round(bx['y'] + dy)}, {round(bx['w'])}×{round(bx['h'])}" + grids.made_rows(b, rows, cols, gap)   # grids.py
     if "near" in kv and spot["side"] != kv.get("side", "right"):
         msg += f" · {dict(right='справа', left='слева', below='снизу', above='сверху')[kv.get('side', 'right')]} от «{kv['near']}» места не было, встало {dict(right='справа', left='слева', below='снизу', above='сверху')[spot['side']]}"
     if group and not into:
@@ -424,7 +429,7 @@ def append_block(b, gid, nid, new, kv):
             b["items"][m]["y"] += dh; pushed.append(rect(b, m))
             if b["items"][m].get("reach"): pushed.append(zone_rect(b["items"][m]))
     msg = grow_into(b, gid, ids, zone_rect(n), pad, pushed if dh else ())
-    return f"+{len(ids)} кадров в «{first_line(n.get('text'))}»" + msg
+    return f"+{len(ids)} кадров в «{first_line(n.get('text'))}»" + msg + grids.extend(b, have, ids)
 
 
 def pics_of(b, ref):
@@ -543,7 +548,7 @@ def op_group(b, args, kv):
 # ---- image frames (Hyimg-frames, owner 2026-10-05): an agent makes, takes apart, renames and reads frames as the owner does with ⌥⌘G
 # and ⌥⇧⌘G on the canvas; the files are the same (frames/<stamp>/frame.<n>.json, render.<n>.png), the pictures are only read
 def post_bytes(path, data):
-    req = urllib.request.Request(BASE + path, data=data, headers={"Content-Type": "application/octet-stream"}, method="POST")
+    req = urllib.request.Request(BASE + path, data=data, headers={"Content-Type": "application/octet-stream", "X-Hyimg-Agent": os.environ.get("HYIMG_AGENT") or "agent"}, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=120) as r: return r.status, json.load(r)
     except urllib.error.HTTPError as e: raise SystemExit(f"сервер не записал {path}: {e.code} {e.read()[:200]!r}")
@@ -585,7 +590,8 @@ def regroup_one(b, id):
 
 def build_frame(b, ids, name):
     """one frame of these pictures, as imgframe.js buildFrame: the document is their box in the largest picture's own pixels (at most
-    8000 a side), the render the pictures with their crops on white; returns the card"""
+    8000 a side), the render the pictures with their crops on a transparent background (owner 2026-10-09: «по дефолту прозрачный должен
+    быть»); returns the card"""
     import io
     from PIL import Image, ImageOps
     R = {i: rect(b, i) for i in ids}
@@ -604,7 +610,7 @@ def build_frame(b, ids, name):
     if capped: s = 8000 / max(bb["w"], bb["h"])
     W, H = max(16, min(8000, round(bb["w"] * s))), max(16, min(8000, round(bb["h"] * s))); sx, sy = W / bb["w"], H / bb["h"]
     d = "frames/" + time.strftime("%y%m%d-%H%M%S") + "-" + "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(3))
-    layers, canvas = [], Image.new("RGBA", (W, H), (255, 255, 255, 255))
+    layers, canvas = [], Image.new("RGBA", (W, H), (0, 0, 0, 0))
     for n, i in enumerate(ids, 1):
         it, r = b["items"][i], R[i]; c = it.get("crop") or [0, 0, 1, 1]; im = ims[it["path"]]
         l = {"id": f"p{n}_" + "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(4)), "kind": "pic", "name": os.path.splitext(os.path.basename(it["path"]))[0],
@@ -615,13 +621,14 @@ def build_frame(b, ids, name):
         part = im.crop((round(c[0] * im.width), round(c[1] * im.height), round(c[2] * im.width), round(c[3] * im.height))).resize((max(1, round(l["w"])), max(1, round(l["h"]))), Image.LANCZOS)
         if l["opacity"] < 100: part.putalpha(part.getchannel("A").point(lambda v: v * l["opacity"] // 100))
         canvas.alpha_composite(part, (round(l["x"]), round(l["y"])))
-    buf = io.BytesIO(); canvas.convert("RGB").save(buf, "PNG")
-    doc = {"version": 1, "v": 1, "name": name, "size": [W, H], "background": "#ffffff", "order": "bottom-to-top", "layers": layers, "render": f"{d}/render.1.png",
+    buf = io.BytesIO(); canvas.save(buf, "PNG")
+    doc = {"version": 1, "v": 1, "name": name, "size": [W, H], "background": None, "order": "bottom-to-top", "layers": layers, "render": f"{d}/render.1.png",
            "created": time.strftime("%Y-%m-%dT%H:%M:%S"), "by": "hy.py"}
     _, rr = post_bytes(f"/api/file?p={urllib.parse.quote(d + '/render.1.png')}", buf.getvalue())
     post_bytes(f"/api/file?p={urllib.parse.quote(d + '/frame.1.json')}", json.dumps(doc, ensure_ascii=False, indent=1).encode())
     card = {"type": "imgframe", "x": round(bb["x"]), "y": round(bb["y"]), "w": round(bb["w"]), "h": round(bb["h"]), "name": name, "doc": f"{d}/frame.1.json",
-            "render": f"{d}/render.1.png", "v": 1, "rv": round(rr["mtime"] / 1e6), "size": [W, H], "pics": list(dict.fromkeys(l["path"] for l in layers))}
+            "render": f"{d}/render.1.png", "v": 1, "rv": round(rr["mtime"] / 1e6), "size": [W, H], "pics": list(dict.fromkeys(l["path"] for l in layers)),
+            "alpha": True}
     return card, capped
 
 
@@ -853,7 +860,7 @@ def frame_line(b, id, nm, size, pics, it):
             + f"  {fmt(rect(b, id))}  {it.get('doc', '')}  [{id}]")
 
 
-CARD_TYPES = {"htmlframe": "HTML-фрейм", "html": "HTML-карточка", "model3d": "3D-карточка"}
+CARD_TYPES = {"htmlframe": "HTML-фрейм", "html": "HTML-карточка", "model3d": "3D-карточка"}   # a plugin not named here: its type
 
 
 def cmd_map(b, ref, tol, groups):
@@ -864,43 +871,46 @@ def cmd_map(b, ref, tol, groups):
         L = [n for n in L if inter({**n[3], "w": max(n[3]["w"], 1), "h": max(n[3]["h"], 1)}, area)]
         print(f"область вокруг «{ref}»: {fmt(area)}")
     tag = {"heading": "H", "group": "G", "note": "N", "timeline": "L", "dot": " ·"}
-    tls = {}
+    tls, shown = {}, {n[1] for n in L}
     for k, id, nm, r in L:
         if k == "dot": tls.setdefault(id.split("/")[0], []).append(f"{nm} {round(r['x'])}"); continue
     for k, id, nm, r in sorted(L, key=lambda n: (n[0] != "timeline", n[0] != "heading", round(n[3]["x"] / 500), n[3]["y"])):
-        if k == "dot" or (k == "note" and not ref): continue   # the overview leaves notes out: map <name> shows them
+        if k == "dot" or (k == "note" and (not ref or notelinks.reply_of(b["items"], id) in shown)): continue   # replies: under their note
         extra = f" · {len(b['groups'][id]['members'])} кадров" if k == "group" else ""
         if k == "timeline": extra = " · " + " · ".join(tls.get(id, []))
-        if k == "note" and b["items"][id].get("color") == "blue": extra = " · моя"
-        print(f"{tag[k]} {nm[:40]}  {fmt(r)}{extra}  [{id}]")
+        if k == "note": extra = (" · моя" if b["items"][id].get("color") == "blue" else "") + notelinks.about(b, id)   # → кадр 3, HTML 1
+        print(f"{tag[k]} {nm[:40]}  {fmt(r)}{extra}  [{id}]" + (notelinks.thread(b, id) if k == "note" else notelinks.tail(b, id)))   # ↳ replies
+        if k == "group": grids.show(b, id, "  ", area)   # its grids as tables (grids.py)
+    grids.show(b, None, "", area)   # the grids outside groups
     for f in img_frames(b):   # an image frame and the pictures inside it (they count as lying on the page)
         if not area or inter(rect(b, f[0]), area): print(frame_line(b, *f))
     pics = [id for id, it in b["items"].items() if is_pic(it) and (not area or inter(rect(b, id), area))]
-    cards = {}   # the plugins' cards: how many of each, find shows them by their file
+    cards = {}   # the plugins' cards: how many of each, find shows them by their file, with their notes
     for id, it in b["items"].items():
-        if it.get("type") in CARD_TYPES and (not area or inter(rect(b, id), area)): cards[it["type"]] = cards.get(it["type"], 0) + 1
-    if cards: print("карточки плагинов: " + ", ".join(f"{CARD_TYPES[k]} {n}" for k, n in cards.items()) + " (hy.py find <файл> дает их id)")
+        if notelinks.card(it) and (not area or inter(rect(b, id), area)): cards[it["type"]] = cards.get(it["type"], 0) + 1
+    if cards: print("карточки плагинов: " + ", ".join(f"{CARD_TYPES.get(k, k)} {n}" for k, n in cards.items()) + " (hy.py find <файл> дает их id и заметки)")
     grouped = {m for g in b["groups"].values() for m in g["members"]}
     if not ref: print(f"заметок {sum(1 for n in L if n[0] == 'note')}: видны в map <название>")
-    print(f"кадров: {len(pics)}, вне групп {sum(1 for p in pics if p not in grouped)} · ревизия {b.get('revision')}")
+    print(f"кадров: {len(pics)}, вне групп {sum(1 for p in pics if p not in grouped)} · ревизия {b.get('revision')}" + notelinks.marks(b, area))   # ✎
     nm = near_misses(b, tol, groups) if not ref else []
     if nm: print(f"почти на одной вертикали (до {tol}):"); print("\n".join(nm[:30]))
 
 
 def cmd_find(b, q):
     for k, id, nm, r in names(b):
-        if norm(q) in norm(nm) or q == id: print(f"{k} «{nm[:50]}» {fmt(r)} [{id}]")
+        if norm(q) in norm(nm) or q == id: print(f"{k} «{nm[:50]}» {fmt(r)} [{id}]" + (notelinks.about(b, id, True) if k == "note" else notelinks.tail(b, id)))
     grouped = {m: first_line(g.get("title")) for g in b["groups"].values() for m in g["members"]}
-    for id, it in b["items"].items():   # pictures by a part of their path
+    for id, it in b["items"].items():   # pictures by a part of their path, each with the notes linked to it (2026-10-07: every kind)
         if is_pic(it) and (norm(q) in norm(it["path"]) or q == id):
-            print(f"pic {it['path']} {fmt(rect(b, id))}" + (f" в «{grouped[id]}»" if id in grouped else " вне групп") + f" [{id}]")
+            print(f"pic {it['path']} {fmt(rect(b, id))}" + (f" в «{grouped[id]}»" if id in grouped else " вне групп") + f" [{id}]" + notelinks.tail(b, id))
     for id, it in b["items"].items():   # plugins' cards by their file or name: an HTML frame or card, a 3D card's scene (2026-10-06)
-        if it.get("type") in CARD_TYPES and (q == id or any(norm(q) in norm(it.get(k) or "") for k in ("src", "scene", "name"))):
-            print(f"{it['type']} {it.get('src') or it.get('scene') or ''}" + (f" «{it['name']}»" if it.get("name") else "") + f" {fmt(rect(b, id))} [{id}]")
+        if notelinks.card(it) and (q == id or any(norm(q) in norm(it.get(k) or "") for k in ("src", "scene", "name"))):
+            print(f"{it['type']} {it.get('src') or it.get('scene') or ''}" + (f" «{it['name']}»" if it.get("name") else "") + f" {fmt(rect(b, id))} [{id}]" + notelinks.tail(b, id))
     for id, nm, size, pics, it in img_frames(b):   # an image frame by its name, or a picture inside it by a part of its path
         inside = [p for p in pics if norm(q) in norm(p)]
-        if norm(q) in norm(nm) or q == id: print(frame_line(b, id, nm, size, pics, it))
+        if norm(q) in norm(nm) or q == id: print(frame_line(b, id, nm, size, pics, it) + notelinks.tail(b, id))
         for p in inside: print(f"pic {p} во фрейме «{nm[:40]}» {fmt(rect(b, id))} [{id}]")
+    grids.show_find(b, q)   # a grid by its id, a thing's row and column in its grid
 
 
 IMG_EXT = ((b"\x89PNG", ".png"), (b"\xff\xd8", ".jpg"), (b"RIFF", ".webp"))   # by the first bytes: downloads often come as bare UUIDs
@@ -1084,17 +1094,20 @@ def api_head(path):
 
 
 def op_html(b, args, kv):
-    """Dev studio's HTML card: an .html file of the library as a card (its first screen drawn by Chromium, the live page when big on
-    screen, Dev mode on a double click), as the plugin's placeAs makes it"""
-    if not args: raise SystemExit("html ФАЙЛ.html x= y= | near=ЧТО [w=480] [vw=1280] [vh=800]")
+    """Dev Studio's HTML card: an .html file of the library as a card (its first screen drawn by Chromium, the live page when big on
+    screen, Dev Studio on a double click), as the plugin's placeAs makes it"""
+    if not args: raise SystemExit("html ФАЙЛ.html x= y= | near=ЧТО [into=ГРУППА] [w=480] [vw=1280] [vh=800]")
     if not plugin_name("dev") and not kv.get("force"):
-        raise SystemExit("плагин «Dev studio» не установлен: карточка не нарисуется. Поставить: scripts/install_plugins.sh --dev --yes, потом ⇧⌘R"
+        raise SystemExit("плагин «Dev Studio» не установлен: карточка не нарисуется. Поставить: scripts/install_plugins.sh --dev --yes, потом ⇧⌘R"
                          " (force=1 положит ее все равно)")
     if api_head(args[0]) != 200: raise SystemExit(f"нет файла {args[0]}")
     vw, vh = int(kv.get("vw", 1280)), int(kv.get("vh", 800)); w = round(kv.get("w", 480)); h = round(w * vh / vw)
     x, y = place_at(b, kv, (w, h), "html"); id = uid("d")
     b["items"][id] = {"type": "html", "src": args[0], "vw": vw, "ar": round(vw / vh, 4), "pics": [args[0]], "x": x, "y": y, "w": w, "h": h}
-    return f"html {id} «{args[0]}» {vw}×{vh} x {x} y {y}"
+    msg = f"html {id} «{args[0]}» {vw}×{vh} x {x} y {y}"
+    if kv.get("into"):   # a card in a theme group, its frame grows to hold it (2026-10-08: icons round 4 beside round 3 in «Icons · redesign»)
+        msg += grow_into(b, resolve(b, str(kv["into"]), {"group"})[1], [id], {"x": x, "y": y, "w": w, "h": h}, round(kv.get("pad", 480)))
+    return msg
 
 
 GRADE_KEYS = ("temp", "tint", "exposure", "contrast", "highlights", "shadows", "whites", "blacks", "texture", "clarity", "dehaze", "vibrance", "saturation", "sharpening")
@@ -1187,7 +1200,10 @@ def op_link(b, args, kv):
     for r in args[1:]:
         if r in b["items"] or r in b["groups"]: tg.append(r)
         else: tg.append(resolve(b, r)[1])
-    n["to"] = list(dict.fromkeys((n.get("to") or []) + [t for t in tg if t != nid]))
+    for t in [t for t in tg if t != nid and notelinks.is_note(b["items"].get(t))][-1:]:   # a note: a reply to it, one per note (2026-10-08)
+        why = notelinks.set_reply(b["items"], nid, t)
+        if why: raise SystemExit(f"link «{nm[:30]}» → {t}: {why}")
+    n["to"] = list(dict.fromkeys((n.get("to") or []) + [t for t in tg if t != nid and not notelinks.is_note(b["items"].get(t))]))
     return f"link «{nm[:30]}» → {len(n['to'])}: {', '.join(n['to'][:8])}"
 
 
@@ -1261,10 +1277,6 @@ def cmd_preset(args, page):
 # ---- notifications (owner 2026-10-03): the owner sees what an agent put on a board with a red dot on the bell, a few words, previews
 # and a jump to the place. «do» writes one by itself whenever it adds something (--say gives the words, --quiet skips it for a pure
 # rearrangement); «notify» writes one for anything else worth knowing.
-def plural(n, one, few, many):
-    return one if n % 10 == 1 and n % 100 != 11 else few if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14 else many
-
-
 def send_notification(title, text, page, ids=(), previews=(), area=None, who=None):
     body = {"action": "add", "title": title, "text": text, "page": page, "ids": list(ids), "previews": list(previews), "who": who or os.environ.get("HYIMG_AGENT") or "агент"}
     if area: body["area"] = area
@@ -1299,22 +1311,13 @@ def notify_added(before, after, page, say, label):
     new_groups = [g for g in after["groups"] if g not in before["groups"]]
     if not new and not new_groups: return
     pics = [i for i in new if is_pic(after["items"][i])]
-    notes = [i for i in new if after["items"][i].get("type") == "note"]
     cards = [i for i in new if after["items"][i].get("type") == "model3d"]
-    heads = [i for i in new if after["items"][i].get("type") == "text"]
-    other = [i for i in new if i not in pics and i not in notes and i not in cards and i not in heads]
-    parts = []
-    if pics: parts.append(f"{len(pics)} {plural(len(pics), 'кадр', 'кадра', 'кадров')}")
-    if notes: parts.append(f"{len(notes)} {plural(len(notes), 'заметка', 'заметки', 'заметок')}")
-    if cards: parts.append(f"{len(cards)} {plural(len(cards), '3D-карточка', '3D-карточки', '3D-карточек')}")   # 2026-10-04: they were not counted
-    if heads: parts.append(f"{len(heads)} {plural(len(heads), 'заголовок', 'заголовка', 'заголовков')}")
-    if other: parts.append(f"{len(other)} {plural(len(other), 'объект', 'объекта', 'объектов')}")
-    if new_groups: parts.append(f"{len(new_groups)} {plural(len(new_groups), 'группа', 'группы', 'групп')}")
+    parts = notifplace.parts(after, new + new_groups)   # pictures, notes, 3D cards (2026-10-04: they were not counted), headings, groups
     rs = [rect(after, i) for i in new] + [after["groups"][g] for g in new_groups]
     x0, y0 = min(r["x"] for r in rs), min(r["y"] for r in rs)
     area = {"x": x0, "y": y0, "w": max(r["x"] + r["w"] for r in rs) - x0, "h": max(r["y"] + r["h"] for r in rs) - y0}
-    title = say or ("На доске новое: " + ", ".join(parts))
-    text = ("На доске новое: " + ", ".join(parts) + ". ") if say else ""
+    title = say or ("На доске новое: " + parts)
+    text = ("На доске новое: " + parts + ". ") if say else ""
     previews = [after["items"][i]["path"] for i in pics] + [p for p in (still_of(after["items"][i], i) for i in cards) if p]   # a 3D card shows its still
     send_notification(title, text + (label if label != "правка ИИ" else ""), page, new + new_groups, previews[:6], area)
 
@@ -1557,6 +1560,35 @@ def op_props(b, args, kv):
 OPS["props"] = op_props
 
 
+# clearprops REF... [KIND...] (owner 2026-10-07, the canvas's «Clear properties ›», ⇧⌥⌘⌫): everything applied to the cards set back, as
+# canvas.html clearProps: the colour grade (Raw Editor) and the mask off, no crop, the whole video, full opacity, a PDF's first page; the size
+# stays (it is not applied, it is the card); a plugin's other kind is the item's field of its name, taken off. Kinds by their ids, or all
+PROP_NONE = {"crop": None, "trim": None, "opacity": None, "page": None, "grade": None, "mask": None}
+
+
+def op_clearprops(b, args, kv):
+    kinds = [a for a in args if a in PROP_NONE] + [x.strip() for x in str(kv.get("only", "")).split(",") if x.strip()]
+    refs = [a for a in args if a not in PROP_NONE]
+    if not refs: raise SystemExit("clearprops ЧТО... [grade mask crop trim opacity page]: id, имя, группа или маска путей")
+    tg = list(dict.fromkeys(i for r in refs for i in _prop_items(b, r[1:] if r.startswith("@") else r)))
+    done, n = set(), 0
+    for i in tg:
+        it, hit = b["items"][i], False
+        for k in (kinds or PROP_ORDER):
+            if k == "size": continue
+            on = (it.get("page") or 1) > 1 if k == "page" else (it.get("opacity") is not None and it["opacity"] < 1) if k == "opacity" else bool(it.get(k))
+            if not on: continue
+            if k == "crop": it["crop"] = None
+            else: it.pop(k, None)
+            hit = True; done.add(k)
+        n += hit
+    if not n: return f"clearprops: на {len(tg)} ничего не применено"
+    return f"clearprops на {n} из {len(tg)}: " + ", ".join(PROP_RU.get(k, k) for k in PROP_ORDER + sorted(done - set(PROP_ORDER)) if k in done)
+
+
+OPS["clearprops"] = op_clearprops
+
+
 def op_cards3d(b, args, kv):
     """3D cards of one scene as a block, a card per camera (owner 2026-10-06: «put my 3D previews to the right of this group», 18 angles of
     one Blender studio scene beside the pictures they came from): cameras=ID,ID… picks and orders them (default: all, in the scene's
@@ -1683,6 +1715,10 @@ def _order_op(how):
 for _how in ("front", "forward", "backward", "back"): OPS[_how] = _order_op(_how)
 
 
+import textdocs; textdocs.register(OPS, uid, resolve)   # text: a title, or a title and a Markdown body (textdocs.py)
+import grids; grids.register(OPS, resolve, pics_of)   # every do keeps the grids right; grid, put, ungrid (grids.py)
+
+
 def main(argv):
     page, label, dry, tol, groups, to, move = None, "правка ИИ", False, 1000, False, None, False
     say, quiet, text, ids = None, False, "", []
@@ -1702,7 +1738,7 @@ def main(argv):
         elif x == "--text": text = next(it)
         elif x == "--ids": ids = [v for v in next(it).split(",") if v]
         else: a.append(x)
-    if not a: print(__doc__ + hy3d.HELP); return
+    if not a: print(__doc__ + hy3d.HELP + grids.HELP); return
     c = a[0]
     if c == "guide":
         code, txt = api_text("/agent"); print(txt); return
@@ -1713,9 +1749,12 @@ def main(argv):
     if c == "layout": return cmd_layout(a[1:])
     if c == "undocumented": return cmd_undocumented(a[1] if len(a) > 1 else "")
     if c == "features": return cmd_features(" ".join(a[1:]))
-    if c == "pages": return cmd_pages()
+    if c == "perf": import perflog; return perflog.cli(a[1:], api)   # frame drops the board logged (Settings › Diagnostics)
+    if c == "pages" or c == "link": return cmd_pages() if c == "pages" else hylink.main(a[1:], page, api, resolve, BASE)
     if c == "page": return cmd_page(a[1:])
     if c == "presets": return cmd_presets()
+    if c == "md": import hymd; return hymd.main(a[1:], page, api, sys.modules[__name__])   # the page as Markdown, md apply (hymd.py, mdapply.py)
+    if c in ("comments", "annotations", "look"): import hycomments; return hycomments.main([c] + a[1:], page, api, resolve, rect)   # hycomments.py
     if page is None:   # the page the owner is looking at
         try: page = (api("/api/live")[1].get("canvas") or {}).get("page") or "main"
         except Exception: page = "main"
@@ -1730,17 +1769,15 @@ def main(argv):
         if not dry and not quiet:
             _, b1 = api(f"/api/board?name={page}"); notify_added(b0, b1, page, say, label)
         return
-    if c == "notify":
-        if len(a) < 2: raise SystemExit('hy.py notify "что сделано" [--text "подробнее"] [--ids a,b] [--page p]')
+    if c == "notify":   # without --ids: what this agent put on the page since its last notification (notifplace.py); --place ID repairs
+        if len(a) < 2: raise SystemExit('hy.py notify "что сделано" [--text "подробнее"] [--ids a,b] [--page p] | notify --place ID')
+        if a[1] == "--place": return notifplace.repair(api, a[2] if len(a) > 2 else "")
         _, b = api(f"/api/board?name={page}")
-        have = [i for i in ids if i in b["items"] or i in b["groups"]]
-        rs = [rect(b, i) if i in b["items"] else b["groups"][i] for i in have]
-        area = None
-        if rs:
-            x0, y0 = min(r["x"] for r in rs), min(r["y"] for r in rs)
-            area = {"x": x0, "y": y0, "w": max(r["x"] + r["w"] for r in rs) - x0, "h": max(r["y"] + r["h"] for r in rs) - y0}
-        prev = [b["items"][i]["path"] for i in have if i in b["items"] and is_pic(b["items"][i])][:6]
-        return send_notification(" ".join(a[1:]), text, page, have, prev, area)
+        have = [i for i in ids if i in b["items"] or i in b["groups"]] or ([] if ids else notifplace.ask(api, page, b))
+        if have and not ids: text = f"На доске новое: {notifplace.parts(b, have)}. {text}".strip()
+        if not have: print("ВНИМАНИЕ: уведомление без места: назови, что положил (--ids или группу), иначе клик в колокольчике не ведет никуда")
+        got = notifplace.of_ids(b, have) or {}   # the box and the first pictures, a group's own among them
+        return send_notification(" ".join(a[1:]), text, page, have, got.get("previews", []), got.get("area"))
     if c == "hist":
         _, L = api(f"/api/history?name={page}")
         for e in L[-int(a[1] if len(a) > 1 else 8):]: print(e.get("id"), e.get("who"), e.get("label"), "rev", e.get("revision"))
@@ -1752,8 +1789,9 @@ def main(argv):
     if c == "find": return cmd_find(b, " ".join(a[1:]))
     if c == "check": return cmd_check(b, " ".join(a[1:]) or None)
     if c == "preset": return cmd_preset(a[1:], page)
-    raise SystemExit(f"не знаю {c}: map, find, check, do, notify, hist, restore, guide, features, pages, page, presets, preset, save, dupes, layout, undocumented")
+    raise SystemExit(f"не знаю {c}: map, find, md, check, do, notify, hist, restore, guide, features, pages, page, link, presets, preset, save, dupes, layout, undocumented")
 
 
+import connectors; connectors.hook(globals())   # arrows between anything, layout patterns, Mermaid in and out (connectors.py, patterns.py)
 if __name__ == "__main__":
     main(sys.argv[1:])

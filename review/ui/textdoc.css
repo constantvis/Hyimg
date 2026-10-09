@@ -1,0 +1,47 @@
+/* A text as a document (ui/textdoc.js, owner 2026-10-09): the title at the item's size, bold; the body half of it, regular, wrapping at
+   the document's width. A text with no body is a heading and none of this applies to it. Sizes are in em of the item, so a document
+   scales with its corner and reads the same at any zoom. Colours are the board's tokens: light and dark come with them. */
+.tx.doc { white-space: normal; box-sizing: border-box; }
+.tx.doc .td-t { white-space: pre-wrap; overflow-wrap: break-word; font-weight: 700; }
+.tx .td-b, .tx .td-w { font-size: .5em; font-weight: 400; line-height: 1.45; letter-spacing: -.005em; margin-top: .4em; }
+.tx .td-b > * { white-space: pre-wrap; overflow-wrap: break-word; }
+.tx .td-b .td-bl { height: .7em; }
+.tx .td-b .td-h { font-weight: 700; letter-spacing: -.015em; line-height: 1.25; margin: .55em 0 .15em; }
+.tx .td-b .td-h1 { font-size: 1.6em; } .tx .td-b .td-h2 { font-size: 1.3em; } .tx .td-b .td-h3 { font-size: 1.1em; }   /* not .h: the resize handle's class */
+.tx .td-b > .td-h:first-child { margin-top: 0; }
+.tx .td-b b { font-weight: 700; } .tx .td-b i { font-style: italic; } .tx .td-b s { color: var(--sub); }
+.tx .td-b code { font-family: "Geist Mono", ui-monospace, monospace; font-size: .88em; padding: .08em .32em; border-radius: .35em;
+  background: color-mix(in srgb, var(--ink) 9%, transparent); }
+.tx .td-b a { color: var(--sel); text-decoration: underline; text-decoration-thickness: .06em; text-underline-offset: .15em; cursor: pointer; }
+.tx .td-b hr { height: 0; margin: .7em 0; border: 0; border-top: .08em solid color-mix(in srgb, var(--muted) 45%, transparent); }
+.tx .td-b .td-q { padding-left: .8em; border-left: .2em solid color-mix(in srgb, var(--muted) 55%, transparent); color: var(--sub); }
+.tx .td-b .td-li { display: flex; gap: .45em; align-items: baseline; padding-left: calc(var(--ind, 0) * 1.3em); margin: .12em 0; }
+.tx .td-b .td-li .td-lt { flex: 1; min-width: 0; }
+.tx .td-b .td-bu { flex: none; width: .36em; height: .36em; margin: 0 .2em; border-radius: 50%; background: currentColor; transform: translateY(-.12em); }
+.tx .td-b .td-nu { flex: none; min-width: .8em; color: var(--sub); font-variant-numeric: tabular-nums; }
+/* a checklist's box: round in the round shape, as Apple Notes' circles; a rounded square in pro (--hy-row-r is 999px or 8px) */
+.tx .td-b .td-box { flex: none; position: relative; width: .95em; height: .95em; box-sizing: border-box; align-self: center; border: .09em solid var(--muted);
+  border-radius: 50%; cursor: pointer; }
+:root[data-shape=pro] .tx .td-b .td-box { border-radius: .25em; }
+.tx .td-b .td-ck.td-on .td-box { background: var(--sel); border-color: var(--sel); }
+.tx .td-b .td-ck.td-on .td-box::after { content: ""; position: absolute; left: 30%; top: 14%; width: 26%; height: 48%; border: solid var(--hy-on-accent); border-width: 0 .11em .11em 0;
+  transform: rotate(45deg); }
+.tx .td-b .td-ck.td-on .td-lt { color: var(--sub); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--sub) 60%, transparent); }
+
+/* writing: the title field, and under it the body: a clear field over a mirror of the same metrics that lights the Markdown */
+.tx .td-ed { display: block; }
+.tx.editing, .tx.editing .td-ed, .tx.editing textarea { cursor: text; }
+.tx.doc .td-ed textarea.td-t { white-space: pre-wrap; overflow-wrap: break-word; font-weight: 700; }
+.tx .td-w { position: relative; }
+.tx .td-w .td-m, .tx .td-w textarea { display: block; box-sizing: border-box; width: 100%; margin: 0; padding: 0; border: 0; font: inherit; line-height: inherit;
+  letter-spacing: inherit; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; tab-size: 4; }
+.tx .td-w .td-m { color: var(--ink); pointer-events: none; min-height: 1.45em; }
+.tx .td-w textarea { position: absolute; inset: 0; height: 100%; color: transparent; caret-color: var(--ink); background: transparent; outline: none;
+  resize: none; overflow: hidden; }
+.tx .td-w textarea::selection { background: color-mix(in srgb, var(--sel) 38%, transparent); }
+.tx .td-m .td-k { color: var(--muted); }
+.tx .td-m .td-hh, .tx .td-m .td-bd { -webkit-text-stroke: .035em currentColor; }   /* bold drawn by a stroke: the letters keep their width, the field's caret stays on them */
+.tx .td-m .td-it { font-style: italic; } .tx .td-m .td-s { color: var(--sub); text-decoration: line-through; }
+.tx .td-m .td-cd { background: color-mix(in srgb, var(--ink) 9%, transparent); border-radius: .25em; }
+.tx .td-m .td-ln { color: var(--sel); text-decoration: underline; text-decoration-thickness: .06em; }
+.tx .td-m .td-cb { color: var(--sel); } .tx .td-m .td-dn { color: var(--sub); text-decoration: line-through; } .tx .td-m .td-qq { color: var(--sub); }

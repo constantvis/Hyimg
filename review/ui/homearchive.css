@@ -1,0 +1,19 @@
+/* Home's standard Archive (ui/homearchive.js, owner 2026-10-08: «туда будем пихать все, что не должно светиться нигде»). Its row at the
+   bottom of Projects, as quiet as «No project»; its boards a little dimmed, with an «Archived» label at the cover's bottom left (the
+   list says it in its Project column), no heart and no server key; «In Archive» under a search. Tokens only. */
+aside .nav.ar-nav { color: var(--muted); }
+aside .nav.ar-nav:hover, aside .nav.ar-nav[aria-current=true] { color: var(--ink); }
+.card.archived .cover .mos, .card.archived .cover .dots { opacity: .72; filter: saturate(.6); }
+.card.archived .meta .n, .list .card.archived .n { color: var(--sub); }
+.card.archived .fav, .card.archived .hs-key { display: none; }
+/* the label on the cover's dark glass, as the «Open» chip and the heart wear it (dark in both themes) */
+.ar-chip { --ar-glass: rgba(9, 9, 11, .72); --ar-on-glass: #fafafa; position: absolute; left: 8px; bottom: 8px; display: inline-flex; align-items: center;
+  gap: 5px; height: 22px; padding: 0 9px 0 7px; border-radius: 99px; background: var(--ar-glass); color: var(--ar-on-glass);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); font: 500 11px var(--sans); pointer-events: none; }
+.ar-chip svg { flex: none; }
+.ar-found { margin: 34px 0 24px; }
+.ar-found h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font: 500 13px var(--sans); color: var(--ink); }
+.ar-found h2 > span:last-child { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.ar-found h2 .pji { color: var(--muted); }
+/* the Archive's head icon is not a button: no picker for it */
+.head .hic[data-ficon="archive"], .head .hic[data-ficon="archive"]:hover { cursor: default; background: none; }

@@ -1,7 +1,10 @@
 /* <hy-segmented>: one choice of a few, the app's one choice component (owner 2026-10-06: «why isn't this a switch like ours»). It is the
    .seg capsule of ui/look.css with the thumb ui/seg.js slides under the chosen option; the element takes the class seg when the script
    upgrades it, this file gives it its size before that and its variants. Options are <button value> children, 28 px (size=s 24, l 30);
-   full stretches it to its row, each option an equal share; variant=tabs is the same look with tab roles (a panel's sections). */
+   full stretches it to its row, each option an equal share; variant=tabs has tab roles and the look of a block header's tabs (block.css,
+   round 12 «A · Line», owner 2026-10-09): no track, 24 px tabs, the chosen one on the plate of ink at 8 % the thumb slides as;
+   variant=tint has no track, its chosen option a soft tint of the selection's blue with words in that blue (owner 2026-10-07, the Controls
+   sheet of «Figma · раунд 2»: Tint for choices; first in the settings panel). */
 hy-segmented { --hy-so: var(--hy-h-m); display: inline-flex; align-items: center; gap: 2px; box-sizing: border-box; vertical-align: middle; }
 hy-segmented:not(.seg) { padding: var(--hy-seg-pad); border-radius: var(--hy-seg-r); background: var(--raise); }
 /* the corners from the tokens, so a part of a page in the other shape (data-hy-shape) gets its own: the track, its thumb, its options */
@@ -18,3 +21,29 @@ hy-segmented > button:has(> svg:only-child) { padding: 0; }
 hy-segmented > button:disabled { opacity: .45; cursor: default; }
 hy-segmented > button > svg { flex: none; display: block; }
 hy-segmented:not(.has-st) > button.on { background: var(--panel); color: var(--ink); }
+/* variant=tint: the tokens --hy-tint-bg and --hy-tint-ink (ui/tokens.css); the thumb still slides (ui/seg.js), it is the tint */
+hy-segmented[variant=tint], hy-segmented[variant=tint].seg { background: transparent; }
+hy-segmented[variant=tint].seg > .st { background: var(--hy-tint-bg); box-shadow: none; }
+:is(hy-segmented[variant=tint].seg.has-st, hy-segmented[variant=tint]) > button.on { color: var(--hy-tint-ink); }
+hy-segmented[variant=tint]:not(.has-st) > button.on { background: var(--hy-tint-bg); }
+/* variant=well (owner 2026-10-08, round 11 of Settings): a dark well, the chosen option on a grey plate a step lighter (--hy-well,
+   --hy-thumb, ui/tokens.css); 24 px options (the contract's smallest target; the concept drew 22) in a 28 px well, 8 px corners in both
+   shapes, its words a touch smaller */
+hy-segmented[variant=well] { --hy-so: var(--hy-h-s); --hy-seg-pad: 2px; }
+hy-segmented[variant=well], hy-segmented[variant=well].seg { border-radius: var(--hy-well-r); background: var(--hy-well); }
+hy-segmented[variant=well].seg > .st { border-radius: var(--hy-well-in-r); background: var(--hy-thumb); box-shadow: var(--hy-thumb-sh); }
+:is(hy-segmented[variant=well], hy-segmented[variant=well].seg) > button { padding: 0 8px; border-radius: var(--hy-well-in-r); font-size: 11.5px; transition: color .2s ease; }
+hy-segmented[variant=well] > button.on, hy-segmented[variant=well] > button:hover { color: var(--ink); }
+hy-segmented[variant=well]:not(.has-st) > button.on { background: var(--hy-thumb); }
+/* variant=tabs: a block header's tabs (ui/hy/block.css .hy-bh-tab, round 12 «A · Line»): no track, quiet words, the chosen one on the
+   plate of ink at 8 % (the thumb), 7 px corners in both shapes; an icon before the words takes 14 px */
+hy-segmented[variant=tabs] { --hy-so: var(--hy-h-s); --hy-seg-pad: 0px; gap: 2px; }
+hy-segmented[variant=tabs], hy-segmented[variant=tabs].seg { padding: 0; border-radius: var(--hy-tab-r); background: transparent; }
+hy-segmented[variant=tabs].seg > .st { background: var(--hy-tab-on); box-shadow: none; }
+:root[data-shape] hy-segmented[variant=tabs] > :is(.st, button) { border-radius: var(--hy-tab-r) !important; }   /* look.css squares a .seg's to 8 in «pro» */
+:is(hy-segmented[variant=tabs], hy-segmented[variant=tabs].seg) > button { gap: 6px; padding: 0 8px 0 6px; border-radius: var(--hy-tab-r); color: var(--muted);
+  font: 500 12.5px var(--sans); transition: color .18s ease; }
+:is(hy-segmented[variant=tabs], hy-segmented[variant=tabs].seg) > button:not(:has(> svg)) { padding: 0 8px; }
+hy-segmented[variant=tabs] > button > svg { width: 14px; height: 14px; }
+hy-segmented[variant=tabs] > button:hover, hy-segmented[variant=tabs] > button.on { color: var(--ink); }
+hy-segmented[variant=tabs]:not(.has-st) > button.on { background: var(--hy-tab-on); }

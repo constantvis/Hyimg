@@ -135,7 +135,7 @@ def test_home_in_english_has_no_russian_words():
         check("loading")
         _crawl(page, check)
         page.evaluate(f"hyimgHome({json.dumps({'projects': PE, 'settings': {}, 'home': {'folders': []}})})")
-        assert "1,234 frames on the canvas" in page.inner_text(".card[data-id=a]") and "Never opened" in page.inner_text(".card[data-id=b]")
+        assert "1,234 frames" in page.inner_text(".card[data-id=a]") and "on the canvas" not in page.inner_text(".grid") and "Never opened" in page.inner_text(".card[data-id=b]")
         assert page.locator("#plist h4").first.text_content() == "Projects" and page.locator(".head h1").inner_text() in ("Recent", "All boards", "No project")
         assert not errors, errors
         browser.close()
@@ -148,10 +148,10 @@ def test_home_language_switch():
         browser, page, errors, sent = _home(p)
         page.evaluate(f"hyimgHome({json.dumps({'projects': PE, 'settings': {}, 'home': {'folders': []}})})")
         page.locator("#bset").click()
-        assert page.locator("#sets .sh").first.inner_text().lower() == "language"
-        assert page.locator("#sets [data-set='cv.lang'] button").all_inner_texts() == ["English", "Русский"]
-        assert page.get_attribute("#sets [data-set='cv.lang'] [data-v=en]", "aria-pressed") == "true"
-        page.locator("#sets [data-set='cv.lang'] [data-v=ru]").click()
+        assert page.locator("#sets .sp .sp-l").first.inner_text() == "Language"   # the first row (owner 2026-10-06), under «Appearance»
+        assert page.locator("#sets [data-set=lang] button").all_inner_texts() == ["English", "Русский"]
+        assert page.get_attribute("#sets [data-set=lang] [data-v=en]", "aria-checked") == "true"
+        page.locator("#sets [data-set=lang] [data-v=ru]").click()
         page.wait_for_function("document.documentElement.lang === 'ru'", timeout=5000)
         assert {"action": "settings", "change": {"cv.lang": "ru"}} in sent
         page.wait_for_selector("aside [data-tab=recent]")
@@ -160,7 +160,7 @@ def test_home_language_switch():
         _crawl(page, lambda where: None)
         assert page.evaluate("window.__tMiss") == [], page.evaluate("window.__tMiss")
         page.evaluate(f"hyimgHome({json.dumps({'projects': PE, 'settings': {'cv.lang': 'ru'}, 'home': {'folders': []}})})")
-        assert "1 234 кадра на холсте" in page.inner_text(".card[data-id=a]").replace("\u00a0", " ") and page.locator("#plist h4").first.text_content() == "Проекты"
+        assert "1 234 кадра" in page.inner_text(".card[data-id=a]").replace("\u00a0", " ") and page.locator("#plist h4").first.text_content() == "Проекты"
         # the app's settings say English (none): Home goes back to it
         page.evaluate(f"setTimeout(() => hyimgHome({json.dumps({'projects': PE, 'settings': {}, 'home': {'folders': []}})}))")
         page.wait_for_function("document.documentElement.lang === 'en'", timeout=5000)
@@ -177,8 +177,8 @@ def test_home_in_the_app_waits_for_the_app():
         page.evaluate(f"hyimgHome({json.dumps({'projects': PE, 'settings': {}, 'home': {'folders': []}})})")
         assert page.evaluate("T.lang") == "ru" and page.locator("aside [data-tab=recent]").inner_text() == "Недавние"
         page.locator("#bset").click()
-        assert page.get_attribute("#sets [data-set='cv.lang'] [data-v=ru]", "aria-pressed") == "true"
-        page.locator("#sets [data-set='cv.lang'] [data-v=en]").click(); page.wait_for_timeout(600)
+        assert page.get_attribute("#sets [data-set=lang] [data-v=ru]", "aria-checked") == "true"
+        page.locator("#sets [data-set=lang] [data-v=en]").click(); page.wait_for_timeout(600)
         assert {"action": "settings", "change": {"cv.lang": "en"}} in sent and page.evaluate("T.lang") == "ru"
         assert not errors, errors
         browser.close()
@@ -192,7 +192,8 @@ def test_home_choices_are_the_one_segmented_control():
         page.evaluate(f"hyimgHome({json.dumps({'projects': PE, 'settings': {}, 'home': {'folders': []}})})")
         vt = page.locator(".head .seg.vt")
         assert vt.count() == 1 and vt.locator("> .st").count() == 1 and vt.locator("button").count() == 2
-        thumb = lambda root: root.evaluate("seg => { const t = seg.querySelector(':scope > .st'), b = seg.querySelector(':scope > [aria-pressed=true]'); return { x: t.offsetLeft + new DOMMatrix(getComputedStyle(t).transform).m41, bx: b.offsetLeft, w: parseFloat(t.style.width), bw: b.offsetWidth }; }")
+        thumb = lambda root: root.evaluate("seg => { const t = seg.querySelector(':scope > .st'), b = seg.querySelector(':scope > :is([aria-pressed=true], .on)');"
+                                           " return { x: t.offsetLeft + new DOMMatrix(getComputedStyle(t).transform).m41, bx: b.offsetLeft, w: parseFloat(t.style.width), bw: b.offsetWidth }; }")
         page.wait_for_timeout(400)
         a = thumb(vt); assert abs(a["x"] - a["bx"]) < 1.5 and abs(a["w"] - a["bw"]) < 1.5, a   # under the chosen card view
         assert page.evaluate("() => parseFloat(getComputedStyle(document.querySelector('.head .seg.vt > .st')).transitionDuration) > 0")   # eased
@@ -213,9 +214,11 @@ def test_home_choices_are_the_one_segmented_control():
         for i in range(n):
             if not segs.nth(i).is_visible(): continue
             assert segs.nth(i).locator("> .st").count() == 1, i
-        theme = page.locator("#sets .seg[data-set='cv.theme']"); x0 = thumb(theme)
-        theme.locator("[data-v=dark]").click(); page.wait_for_timeout(500)
-        x1 = thumb(theme); assert x1["bx"] != x0["bx"] and abs(x1["x"] - x1["bx"]) < 1.5, (x0, x1)
+        # (a visual choice, Theme, is pictures on the same grey plate: Settings › Interface has a plain one)
+        page.evaluate("s => hySetPanel.go(s)", "interface"); page.wait_for_timeout(400)
+        hide = page.locator("#sets .seg[data-set=hideui]"); x0 = thumb(hide)
+        hide.locator("[data-v=slide]").click(); page.wait_for_timeout(500)
+        x1 = thumb(hide); assert x1["bx"] != x0["bx"] and abs(x1["x"] - x1["bx"]) < 1.5, (x0, x1)
         assert not errors, errors
         browser.close()
 
@@ -296,19 +299,20 @@ def test_home_shows_news_on_boards(engine):
         page.evaluate(f"hyimgHome({data({'folders': [], 'view': 'list'})})")
         # Recent: the boards with news first, in their own order, then the rest
         assert page.locator(".list .card").evaluate_all("cs => cs.map(c => c.dataset.id)") == ["b", "c", "a"]
-        # the red capsule after «изменена …», 99+ above 99, none at 0
+        # the red capsule after the time (data only since 2026-10-08, no «изменена»), 99+ above 99, none at 0
         nb = page.locator(".card[data-id=b] .c3 .nb")
         assert nb.inner_text() == "12" and page.locator(".card[data-id=c] .c3 .nb").inner_text() == "99+" and page.locator(".card[data-id=a] .nb").count() == 0
-        assert page.locator(".card[data-id=b] .c3 > span").first.inner_text().startswith("изменена")
+        assert not page.locator(".card[data-id=b] .c3 > span").first.inner_text().startswith("изменена")
         look = nb.evaluate("el => { const s = getComputedStyle(el), r = el.getBoundingClientRect(); return { bg: s.backgroundColor, fg: s.color, rad: parseFloat(s.borderRadius), h: r.height, w: r.width }; }")
         assert look["bg"] == "rgb(255, 59, 48)" and look["fg"] == "rgb(255, 255, 255)" and look["rad"] >= look["h"] / 2 and look["w"] >= look["h"], look
         # its words: the usual tooltip (title), one line by page and kind, then who
-        assert nb.get_attribute("title") == "12 новых: +24 картинки, 2 заметки на Renderings; 7 перемещений на Страница 1 · Codex, ИИ"
-        assert page.locator(".card[data-id=c] .nb").get_attribute("title") == "150 новых: +151 картинка на Main · claude"
+        assert nb.get_attribute("title") == "12 новых · Renderings: +24 картинки, 2 заметки; Страница 1: 7 перемещений · Codex, ИИ"
+        # an agent name of any spelling shows as its kind's label (people.js newsWho, agents.py, 2026-10-07)
+        assert page.locator(".card[data-id=c] .nb").get_attribute("title") == "150 новых · Main: +151 картинка · Claude"
         # the cards: the same capsule beside the edited line
         page.locator(".head [data-view=grid]").click()
         g = page.locator(".grid .card[data-id=b] .meta .s .nb")
-        assert g.inner_text() == "12" and g.get_attribute("title").startswith("12 новых: +24 картинки")
+        assert g.inner_text() == "12" and g.get_attribute("title").startswith("12 новых · Renderings: +24 картинки")
         line, cap = page.locator(".grid .card[data-id=b] .meta .s > span").first.bounding_box(), g.bounding_box()
         assert abs((line["y"] + line["height"] / 2) - (cap["y"] + cap["height"] / 2)) < 2 and cap["x"] >= line["x"] + line["width"]
         # dark: the iPhone's dark red
@@ -349,7 +353,7 @@ def test_home_news_in_english():
         browser, page, errors, _ = _home(p)
         page.evaluate(f"hyimgHome({json.dumps({'projects': PN, 'settings': {}, 'home': {'folders': [], 'view': 'list'}})})")
         assert page.locator(".card[data-id=b] .nb").get_attribute("title") == "12 new: +24 images, 2 notes on Renderings; 7 moves on Page 1 · Codex, AI"
-        assert page.locator(".card[data-id=c] .nb").get_attribute("title") == "150 new: +151 images on Main · claude"
+        assert page.locator(".card[data-id=c] .nb").get_attribute("title") == "150 new: +151 images on Main · Claude"
         assert page.locator(".head .nf [data-onlynew]").inner_text() == "Only new"
         assert not page.evaluate(CYR), page.evaluate(CYR)
         assert not errors, errors

@@ -1,0 +1,5 @@
+/* «Open in Hyimg» · «Stay in browser» (ui/applink.js, owner 2026-10-07): a board opened in a normal browser offers the app. A plate of the
+   top row (ui/hy/plate.css, its look untouched) placed in the middle of the row, over the board's frame (chrome layer). It stands under
+   the system's own notes (toasts at 1000) and goes when the person stays in the browser. */
+hy-plate.hy-applink { position: fixed; z-index: 32; top: var(--hy-row-top); left: 50%; transform: translateX(-50%); }
+hy-plate.hy-applink .hy-applink-logo { width: 20px; height: 20px; flex: none; border-radius: 5px; }   /* the app's mark where the link arrow was */

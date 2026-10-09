@@ -1,0 +1,16 @@
+/* Home: boards in Dropbox not on this Mac, and the offer of a link's board (ui/dropbox.js, owner 2026-10-08). Tokens only. */
+.dbx-offer { display: flex; align-items: center; gap: 12px; margin: 0 0 18px; padding: 10px 10px 10px 14px; border: 1px solid var(--line);
+  border-radius: var(--hy-plate-r, 14px); background: color-mix(in srgb, var(--panel) 90%, transparent); box-shadow: var(--hy-sh-pop); }
+.dbx-offer .dbx-t { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.dbx-offer .dbx-t b { font: 500 13px var(--sans); color: var(--ink); }
+.dbx-offer .dbx-t span { color: var(--sub); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbx-ic { flex: none; display: grid; place-items: center; color: var(--muted); }
+.dbx { margin: 34px 0 24px; }
+.dbx h2 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 10px; font: 500 13px var(--sans); color: var(--ink); }
+.dbx h2 span { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.dbx-list { display: grid; gap: 2px; }
+.dbx-row { display: flex; align-items: center; gap: 10px; min-height: var(--hy-h-row, 32px); padding: 0 6px 0 10px; border-radius: var(--hy-trow-r, 8px); }
+.dbx-row:hover { background: var(--raise); }
+.dbx-row .dbx-n { flex: 0 1 auto; min-width: 0; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbx-row .dbx-p { flex: 1; min-width: 0; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbx .hy-hint { margin-top: 8px; }

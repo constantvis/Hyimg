@@ -33,7 +33,8 @@ def counts(board):
             "titles": sum(1 for v in it.values() if v.get("type") == "text"), "groups": len(board.get("groups", {}))}
 
 
-def snapshot(page, who="owner", label="", board=None):
+def snapshot(page, who="owner", label="", board=None, by=None, extra=None):
+    """extra: more fields of the entry (merge.py: how many conflicts a merged save lost, which Dropbox copy)"""
     if board is None:
         board = json.load(open(os.path.join(BOARDS, page + ".json"), encoding="utf-8"))
     t = time.time(); sid = time.strftime("%y%m%d-%H%M%S", time.localtime(t)) + "-" + who
@@ -42,6 +43,8 @@ def snapshot(page, who="owner", label="", board=None):
     with gzip.open(os.path.join(_dir(page), sid + ".json.gz"), "wt", encoding="utf-8") as f:
         json.dump(board, f, ensure_ascii=False)
     e = {"id": sid, "t": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t)), "who": who, "label": label, "revision": board.get("revision"), **counts(board)}
+    if by: e["by"] = by   # who: {"person": profile id, "via": "app" | agent} (people.py, owner 2026-10-07)
+    if extra: e.update({k: v for k, v in extra.items() if k not in e})
     with open(os.path.join(_dir(page), "index.jsonl"), "a", encoding="utf-8") as f:
         f.write(json.dumps(e, ensure_ascii=False) + "\n")
     return e
@@ -53,12 +56,12 @@ def load(page, sid):
         return json.load(f)
 
 
-def auto(page, board):
+def auto(page, board, by=None):
     """called by the server after a save from the canvas: one snapshot per 10 minutes of work"""
     last = [e for e in entries(page)]
     if last and time.time() - time.mktime(time.strptime(last[-1]["t"], "%Y-%m-%d %H:%M:%S")) < AUTO_EVERY:
         return None
-    return snapshot(page, "auto", tr("auto snapshot", "автоснимок"), board)
+    return snapshot(page, "auto", tr("auto snapshot", "автоснимок"), board, by)
 
 
 _MISS = {}
@@ -72,12 +75,12 @@ def missing(page, sid, exists):
     return _MISS[(page, sid)]
 
 
-def restore(page, sid, write):
+def restore(page, sid, write, by=None):
     """snapshot the current board, then put the old one back as the newest revision; write(board) saves it"""
     cur = json.load(open(os.path.join(BOARDS, page + ".json"), encoding="utf-8"))
     old = load(page, sid)
     when = next((e["t"] for e in entries(page) if e["id"] == sid), sid)
-    snapshot(page, "auto", tr("before restoring the version {}", "до возврата к версии {}").format(f"{when[8:10]}.{when[5:7]} {when[11:16]}"), cur)
+    snapshot(page, "auto", tr("before restoring the version {}", "до возврата к версии {}").format(f"{when[8:10]}.{when[5:7]} {when[11:16]}"), cur, by)
     old["revision"] = cur.get("revision", 0)   # the save below bumps it, so open pages see the change
     return write(old)
 
@@ -94,7 +97,7 @@ if __name__ == "__main__":
         print(snapshot(page, opt("--who", "ai"), opt("--label")))
     elif cmd == "restore":
         def write(b):
-            b["revision"] = b.get("revision", 0) + 1; b["saved"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            b["revision"] = b.get("revision", 0) + 1; b["saved"] = time.strftime("%Y-%m-%d %H:%M:%S"); b.pop("vid", None)   # not the old one's
             p = os.path.join(BOARDS, page + ".json"); json.dump(b, open(p + ".tmp", "w", encoding="utf-8"), ensure_ascii=False, indent=1); os.replace(p + ".tmp", p)
             return b["revision"]
         print("restored, revision", restore(page, pos[2], write))

@@ -25,7 +25,6 @@
 :root[data-ui="studio"] :is(#bset, #bhist, #bkeys, #bntf):hover { background: var(--raise); }
 :root[data-ui="studio"] :is(#bset, #bhist, #bkeys, #bntf)[aria-expanded=true] { background: var(--raise2); color: var(--ink); }
 :root[data-ui="studio"] :is(#bset, #bhist, #bkeys, #bntf) svg { width: 16px; height: 16px; }
-:root[data-ui="studio"] #bntf.dot::after { top: 5px; right: 5px; width: 8px; height: 8px; }
 
 /* the plate «⌂ › project › page» top left: a card like the keys on the right */
 :root[data-ui="studio"] #crumb { height: 34px; border-radius: var(--st-rb); background: var(--panel); border-color: var(--line); -webkit-backdrop-filter: none; backdrop-filter: none;

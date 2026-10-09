@@ -1,17 +1,20 @@
 /* The look of the controls over the board, the library and Home, in two settings of the whole app (owner 2026-10-04: «make a
    setting with shadows or without, I decide later; and one where every element is round, or a more pro direction: a little square
    with a moderate radius»).
-     cv.shadow  "1" the plates float with a shadow (the default), "0" they lie flat
+     cv.shadow  "1" everything floats with a shadow, "panels" the panels do and the top row and the docks lie flat, "0" nothing has
+                one (the default since 2026-10-08); the tokens and what each choice does: ui/tokens.css
      cv.shape   "round" pills and circles (the default), "pro" squarer, a moderate radius
    Each page puts both on its root before its first paint (data-shadow, data-shape). Loaded by canvas.html, v2.html and home.html;
    the !important wins over each page's own radius and shadow, so a control keeps one look whichever page draws it. */
 /* The tokens these rules read (--plate-sh, --hy-row-*, --hy-row-r, --pl-r, --hy-sel, --hy-trow-*, --paper, --hy-seg-pad, --hy-cap-pad,
    --hy-hint) live in ui/tokens.css, which every page links before this file. */
 
-/* the plates: the board's crumb, its round buttons and dock and menus; the window buttons' capsule, the library button and the
-   floating library; Home's sidebar, search, buttons and loading crumb */
-:is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #sets, #pages, #ctx, #wl, #tlibR, aside, .top #q, .btn.primary, #load .crumb, .menu, .tfpanel, #jump button),
-body.cv-on :is(header.hy-dock, main#list) { box-shadow: var(--plate-sh) !important; }
+/* the plates: the board's panels and menus, the floating library, Home's sidebar and buttons, their depth --plate-sh; then the top row
+   (the board's crumb and round buttons, the window buttons' capsule, the library button, «To the original», Home's search, «New board»
+   and loading crumb) and the docks (the board's, the library's), their depth --hy-sh-row, flat with «Тени: только панели» (ui/tokens.css).
+   The row's rule comes second: a plate both lists name (Home's «New board» in its top row) is a plate of the row */
+:is(#sets, #pages, #ctx, aside, .btn.primary, .menu, .tfpanel), body.cv-on main#list { box-shadow: var(--plate-sh) !important; }
+:is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #wl, #tlibR, .top #q, .top .btn, #load .crumb, #jump button, body.cv-on header.hy-dock) { box-shadow: var(--hy-sh-row) !important; }
 
 /* The top row, one rule in every mode (owner 2026-10-07: «breadcrumb area тоже разношерстная»): the window buttons' capsule, the library
    button, the crumb, a title plate after it (a long group's stuck title, the 3D scene's path), «To the original» and the round buttons on
@@ -39,7 +42,7 @@ body.cv-on :is(header.hy-dock, main#list) { box-shadow: var(--plate-sh) !importa
 :root[data-shape=pro] :is(#load .lb) { border-radius: 11px !important; }
 /* the library's filter window and what is in it (owner 2026-10-06): the window 14 px like a bar, a filter 8 px like a button in a plate; the dock's capsule (#vf) is covered by the rules above */
 :root[data-shape=pro] .tfpanel { border-radius: 14px !important; } :root[data-shape=pro] .fchip { border-radius: 8px !important; }
-#load .lb { box-shadow: var(--plate-sh) !important; }
+#load .lb { box-shadow: var(--hy-sh-row) !important; }
 
 /* How the top line comes in (owner 2026-10-04: «the crumb and this button must grow out of scale 0, not just drop in; the crumb
    from 1:1 widens, and its parts fade in one after another, home › board › page»): the library button pops out of its centre, the
@@ -103,14 +106,7 @@ body.cv-on :is(header.hy-dock, main#list) { box-shadow: var(--plate-sh) !importa
   color: var(--muted); background: none; cursor: default; }
 :is(#ctx, #lctx, .menu, [data-hymenu]) :is(button:disabled, button[aria-disabled=true]) > :is(svg, img, .mk, .msub) { opacity: .45; }
 
-/* The settings panel: the same on Home and on the board (owner 2026-10-04: «the settings differ, and so do they look») */
-#sets { width: 360px !important; padding: 12px !important; gap: 10px !important; box-sizing: border-box; }
-#sets .sh { font: 500 11px var(--sans) !important; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-#sets .sh span { float: right; letter-spacing: 0; color: var(--sub); font-variant-numeric: tabular-nums; }
-#sets .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-#sets .opts button { height: 32px !important; border: 1px solid var(--line) !important; border-radius: var(--hy-row-r) !important; background: var(--raise); color: var(--sub);
-  font: 500 12px var(--sans) !important; cursor: pointer; }
-#sets .opts button[aria-pressed=true] { background: var(--ink) !important; color: var(--panel) !important; border-color: var(--ink) !important; }
+/* The settings panel, the same on Home and on the board: ui/setpanel.js and setpanel.css (owner 2026-10-07) */
 .ml .mh { color: var(--muted); margin-left: 4px; }   /* a quiet note after a label («доски останутся») */
 /* the library over the whole window: the picture's panel fills its frame (owner 2026-10-04: «the icon does not move when it widens») */
 body.lwide #tlibR[aria-pressed=true] > .lbi .pane { transform: scaleX(2.17); }
@@ -118,12 +114,7 @@ body.lwide #tlibR[aria-pressed=true] > .lbi .pane { transform: scaleX(2.17); }
 /* The paper (owner 2026-10-04: «why is the library black and not the board's colour; a variable for the standard colour, and the
    colour for the light and the dark theme changeable in the settings»): one colour for the board, Home, the loading screen, the
    library's panel and the window under them. --paper-d / --paper-l are the settings cv.paperDark / cv.paperLight, put on the root
-   by each page; --paper is the one of the theme in use. */
-#sets .paper { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
-#sets .paper label { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 10px; border: 1px solid var(--line); border-radius: var(--hy-row-r); background: var(--raise); color: var(--sub); font: 500 12px var(--sans); cursor: pointer; }   /* hy-allow: capsule-pad its right end is a round swatch, as far from the end as from the top */
-#sets .paper input[type=color] { margin-left: auto; width: 22px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: none; cursor: pointer; }
-#sets .paper input[type=color]::-webkit-color-swatch-wrapper { padding: 0; } #sets .paper input[type=color]::-webkit-color-swatch { border: 0; border-radius: 50%; }
-#sets .paper button { height: 32px !important; padding: 0 10px; border-radius: var(--hy-row-r) !important; }   /* «Reset» beside the colours: the row's radius, not the board's 9 px */
+   by each page; --paper is the one of the theme in use. Its two colours are in the settings panel (ui/setpanel.js). */
 
 /* No focus rings anywhere (owner 2026-10-05: «убери эти уебищные focus выделения»): a clicked or tabbed-to control shows no outline;
    menus keep their row highlight for the arrow keys, text fields their border colour while typing */

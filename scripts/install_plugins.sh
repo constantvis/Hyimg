@@ -1,5 +1,5 @@
 #!/bin/bash
-# Installs the Hyimg canvas plugins: Frames (image frames editor and HTML frames) and 3D objects. Each plugin is its own Git
+# Installs the Hyimg canvas plugins: Frames (Image Studio and HTML frames), 3D objects (3D Studio) and Dev Studio. Each plugin is its own Git
 # repository; an existing checkout beside this repository is used, otherwise it is cloned there, and a symlink to it goes into
 # ~/Library/Application Support/Hyimg/plugins/<name>. Nothing is downloaded beyond the chosen repositories: the LaMa model for
 # content-aware fill (about 208 MB) comes only with --lama.
@@ -17,12 +17,12 @@ usage() {
 
 Без флагов в терминале скрипт спрашивает про каждый плагин.
 
-  --frames   Фреймы: редактор картинок на доске (слои, маски, Color Grading, заливка) и HTML-фреймы
+  --frames   Фреймы: Image Studio на доске (слои, маски, Color Grading, заливка) и HTML-фреймы
              https://github.com/constantvis/hyimg-frames, папка плагина frames
-  --3d       3D-объекты: 3D-сцена карточкой на доске, перенос в Blender (Blender не обязателен)
+  --3d       3D-объекты: 3D-сцена карточкой на доске, 3D Studio, перенос в Blender (Blender не обязателен)
              https://github.com/constantvis/hyimg-3d-studio, папка плагина 3d
-  --dev      Dev studio: HTML-страницы карточками на доске, дерево HTML и свойства элемента (пока только просмотр)
-             локальный репозиторий ../hyimg-dev-studio, папка плагина dev
+  --dev      Dev Studio: HTML-страницы карточками на доске, дерево элементов и инспектор, правки пишутся в сам файл
+             https://github.com/constantvis/hyimg-dev-studio, папка плагина dev
   --lama     скачать модель LaMa для заливки (около 208 МБ) в ~/Library/Caches/Hyimg/models/lama
   --yes      не задавать вопросов: ставить только то, что названо флагами
   --remove   убрать наши ссылки на плагины (репозитории и модель остаются)
@@ -31,7 +31,7 @@ usage() {
 и запускай с флагами только того, на что он ответил «да». Модель LaMa спрашивай отдельно.
 Флаги не заменяют согласие человека.
 
-Копии плагинов берутся рядом с этим репозиторием (../hyimg-frames, ../hyimg-3d-studio)
+Копии плагинов берутся рядом с этим репозиторием (../hyimg-frames, ../hyimg-3d-studio, ../hyimg-dev-studio)
 или клонируются туда. Ссылки ставятся в ~/Library/Application Support/Hyimg/plugins
 (другая папка: HYIMG_PLUGINS_DIR). После установки перезапусти сервер Hyimg (⇧⌘R).
 EOF
@@ -53,9 +53,9 @@ done
 
 # name|folder beside hyimg|repository|what it gives
 PLUGIN_LIST=(
-  "frames|hyimg-frames|https://github.com/constantvis/hyimg-frames.git|Фреймы: редактор картинок на доске (слои, маски, Color Grading, заливка) и HTML-фреймы"
-  "3d|hyimg-3d-studio|https://github.com/constantvis/hyimg-3d-studio.git|3D-объекты: 3D-сцена карточкой на доске, свой редактор, перенос в Blender"
-  "dev|hyimg-dev-studio||Dev studio: HTML-страницы карточками на доске, дерево HTML и свойства элемента (пока только просмотр)"
+  "frames|hyimg-frames|https://github.com/constantvis/hyimg-frames.git|Фреймы: Image Studio на доске (слои, маски, Color Grading, заливка) и HTML-фреймы"
+  "3d|hyimg-3d-studio|https://github.com/constantvis/hyimg-3d-studio.git|3D-объекты: 3D-сцена карточкой на доске, 3D Studio, перенос в Blender"
+  "dev|hyimg-dev-studio|https://github.com/constantvis/hyimg-dev-studio.git|Dev Studio: HTML-страницы карточками на доске, дерево элементов и инспектор, правки пишутся в сам файл"
 )
 
 ask() {   # ask "question" -> 0 on yes; only in an interactive terminal
@@ -88,6 +88,7 @@ for entry in "${PLUGIN_LIST[@]}"; do
     if [ -n "$repo" ]; then echo "  источник: ${repo%.git}"; else echo "  источник: локальный репозиторий $src"; fi
     [ "$name" = "frames" ] && echo "  нужно: macOS Vision (встроен), по желанию модель LaMa около 208 МБ"
     [ "$name" = "3d" ] && echo "  нужно: по желанию Blender для переноса сцен"
+    [ "$name" = "dev" ] && echo "  нужно: по желанию Playwright с Chromium для картинок страниц"
     ask "Поставить плагин «${about%%:*}»?" || { echo "пропускаю $name"; continue; }
   fi
   if [ ! -d "$src" ] && [ -z "$repo" ]; then echo "нет $src, а репозитория в сети у плагина пока нет: пропускаю $name"; continue; fi

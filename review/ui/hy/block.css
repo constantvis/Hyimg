@@ -1,0 +1,77 @@
+/* A block, its header, its sections and the controls in it: round 12 «A · Line», the one look of every panel beside the work (owner
+   2026-10-09 on «Figma · раунд 12», r12/image-headers.html: «А сейчас пока реализуй уже A Line версию на весь интерфейс»; on
+   r12/image-effects.html and image-raw.html: «реализуй этот дизайн»). docs/glossary.md: a Block is a panel beside your work, its Tabs sit in
+   its header, a Section is part of one tool inside it. The board's panels (History, Notifications, the library's path bar, Info's
+   sections), Home's sidebar and the three Studios take these classes; a page keeps only where its block stands and what is its own.
+
+   .hy-blk        a block: a step lighter than the paper (--hy-blk), a hairline (--hy-pline), 14 px corners; inside it every control is a
+                  dark well without a border (r4-board/b3), 24 px with 6 px corners in both shapes (r8/scale)
+   .hy-bh         its header, 34 px, words 12.5 / 500
+   .hy-bh-tab     a tab in it (or the block's one title): 24 px, a 14 px icon, words; the chosen one (.on, aria-selected) on a plate of
+                  ink at 8 %, the others quiet. <hy-segmented variant=tabs> wears the same (segmented.css)
+   .hy-bh-n       a tab's count, small and quiet        .hy-bh-sp  the room before the header's buttons
+   .hy-bh-btn     a header's button: 24 px, a 14 px icon, quiet until pointed at
+   .hy-sec        a section; Line: a hairline between two (.hy-sec + .hy-sec)
+   .hy-sh         a section's head, 28 px, words 12 / 500 in --sub, never capitals; .hy-sh-cv its chevron's 16 px box, .hy-sh-n its count
+                  at the right end, .hy-sh-act a 20 px button on it
+   .hy-sub        a label inside a section (White balance, Location): 10 px capitals, the only capitals left
+   .hy-well       a field, a select, a number made by a page: the well
+   .hy-wbtn       a button lying on the block (not a well): a hair lighter than it
+   The room between things (r11/image-spacing): rows 2 (--hy-gap-row), controls 4, sections 6, blocks 8. The tokens: ui/tokens.css. */
+
+/* ---------- the block ---------- */
+.hy-blk { --hy-row-r: var(--hy-ctl-r); --hy-btn-r: var(--hy-ctl-r);
+  box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--hy-pline); border-radius: var(--hy-blk-r);
+  background: var(--hy-blk); color: var(--ink); }
+
+/* ---------- the header and its tabs ---------- */
+.hy-bh { box-sizing: border-box; display: flex; align-items: center; gap: 2px; height: var(--hy-bh-h); flex: none; padding: 0 6px 0 8px; min-width: 0;
+  color: var(--sub); font: 500 12.5px var(--sans); user-select: none; -webkit-user-select: none; }
+.hy-bh-tab { box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; height: var(--hy-h-s); min-width: 0; flex: none; padding: 0 8px 0 6px;
+  border: 0; border-radius: var(--hy-tab-r); background: transparent; color: var(--muted); font: 500 12.5px var(--sans); letter-spacing: 0; text-transform: none;
+  white-space: nowrap; cursor: pointer; transition: background-color .18s ease, color .18s ease; }
+.hy-bh-tab > svg, .hy-bh-tab .hy-bh-i > svg { width: 14px; height: 14px; flex: none; display: block; }
+.hy-bh-tab:hover { color: var(--ink); }
+.hy-bh-tab:is(.on, [aria-selected="true"]) { background: var(--hy-tab-on); color: var(--ink); }
+.hy-bh-tab.hy-bh-title { cursor: default; }   /* a block's one title: the chosen tab of a block that has one */
+.hy-bh-n, .hy-bh-tab em { font: 400 11.5px var(--sans); font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hy-bh-sp { flex: 1 1 auto; min-width: 0; }
+.hy-bh-btn { box-sizing: border-box; display: grid; place-items: center; width: var(--hy-h-s); height: var(--hy-h-s); flex: none; padding: 0; border: 0;
+  border-radius: var(--hy-ctl-r); background: transparent; color: var(--muted); cursor: pointer; transition: background-color .18s ease, color .18s ease; }
+.hy-bh-btn:hover, .hy-bh-btn[aria-expanded="true"] { background: var(--hy-hov); color: var(--ink); }
+.hy-bh-btn > svg { width: 14px; height: 14px; display: block; }
+
+/* ---------- sections: Line, a hairline between two ---------- */
+.hy-sec + .hy-sec { border-top: 1px solid var(--hy-pline); }
+.hy-sh { box-sizing: border-box; display: flex; align-items: center; gap: 6px; height: var(--hy-sec-h); flex: none; padding: 0 6px 0 4px; border-radius: 8px;
+  color: var(--sub); font: 500 12px var(--sans); letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.hy-sh-cv { display: grid; place-items: center; width: 16px; height: 16px; flex: none; color: var(--muted); }
+.hy-sh-cv > svg { width: 11px; height: 11px; }
+.hy-sh-n { margin-left: auto; color: var(--muted); font: 400 11px var(--sans); letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.hy-sh-act { display: grid; place-items: center; width: 20px; height: 20px; flex: none; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--muted); cursor: pointer; }
+.hy-sh-act:hover { background: var(--hy-hov); color: var(--ink); }
+.hy-sub { margin: 8px 0 2px; color: var(--muted); font: 600 10px var(--sans); letter-spacing: .06em; text-transform: uppercase; }
+
+/* ---------- the controls inside a block: dark wells, 24 px, 6 px corners (r11.css «controls inside panels») ---------- */
+.hy-blk .hy-slider:not(.sm) { --hy-sl-h: var(--hy-ctl-h); --hy-sl-r: var(--hy-ctl-r); --hy-sl-bg: var(--hy-well); --hy-sl-accent: var(--hy-acc);
+  --hy-sl-fill: var(--hy-val); --hy-sl-line: var(--ink); font-size: 12px; }
+.hy-blk .hy-slider:not(.sm):hover { background: var(--hy-well-hov); }
+.hy-blk .hy-slider:not(.sm).drag { --hy-sl-fill: var(--hy-val-drag); }
+.hy-blk .hy-slider .hy-slider-l, .hy-blk .hy-slider .hy-slider-v { z-index: 1; }   /* the words over the fill, which slider.js may append after them */
+.hy-blk .hy-slider .hy-slider-l { left: 9px; color: var(--sub); }
+.hy-blk .hy-slider .hy-slider-v { right: 9px; font-size: 11.5px; }
+.hy-blk .hy-slider .hy-slider-ed { right: 8px; }
+.hy-well { box-sizing: border-box; height: var(--hy-ctl-h); border: 0; border-radius: var(--hy-row-r); background: var(--hy-well); box-shadow: none; color: var(--ink);
+  font: 400 12px var(--sans); transition: background-color .2s ease; }
+.hy-well:hover { background: var(--hy-well-hov); }
+/* the search over a block's list (ui/look.css .hy-search): a well 28 px tall, as the concepts' «Search layers»; look.css says its own
+   size with !important, so the block's does too */
+.hy-blk .hy-search > svg { left: 10px; width: 14px; height: 14px; }
+.hy-blk .hy-search > input { height: var(--hy-h-m) !important; padding: 0 10px 0 30px !important; border: 0 !important; border-radius: var(--hy-row-r) !important;
+  background: var(--hy-well) !important; color: var(--ink); font: 400 12.5px var(--sans); transition: background-color .2s ease; }
+.hy-blk .hy-search > input:hover { background: var(--hy-well-hov) !important; }
+:root[data-shape] .hy-blk .hy-search > input { border-radius: var(--hy-row-r) !important; }   /* over look.css's 8 px in «pro» */
+.hy-wbtn { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: var(--hy-ctl-h); padding: 0 9px;
+  border: 0; border-radius: var(--hy-ctl-r); background: var(--hy-wbtn); box-shadow: none; color: var(--ink); font: 500 12px var(--sans); white-space: nowrap; cursor: pointer; }
+.hy-wbtn:hover { background: var(--hy-wbtn-hov); }
+.hy-wbtn > svg { color: var(--sub); }

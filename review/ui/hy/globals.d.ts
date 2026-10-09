@@ -10,6 +10,9 @@ import type { HySwatch, HySwatches } from "./swatch.js";
 import type { HyButton, HyIconButton } from "./button.js";
 import type { HyPlate } from "./plate.js";
 import type { HySegmented } from "./segmented.js";
+import type { HyKeyHint } from "./keyhint.js";
+import type { HyStudioActions } from "./actions.js";
+import type { HyOpenIn } from "./openin.js";
 
 declare global {
   interface HyT {
@@ -41,6 +44,9 @@ declare global {
     "hy-icon-button": HyIconButton;
     "hy-plate": HyPlate;
     "hy-segmented": HySegmented;
+    "hy-keyhint": HyKeyHint;
+    "hy-studio-actions": HyStudioActions;
+    "hy-open-in": HyOpenIn;
   }
 }
 export {};

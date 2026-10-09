@@ -158,21 +158,28 @@ def test_in_the_app_window(world, mode):
 
 
 def test_the_image_studio_rulers_leave_the_row_alone(world):
-    """the vertical ruler starts under the tool's hint, not under the top row (it ran from the window's top: the library button and the hint
-    lay on it, «cut off by the window's edge»); the audit's edge band is where the ruler is drawn, and it finds a plate laid on it"""
+    """the rulers are off until turned on, and the vertical one runs from the window's very top (owner 2026-10-09: «опять проблема с тем,
+    что до самого верху должна идти линейка, и по дефолту выключена быть»; hyimg-frames had started it under the row): the row's plates
+    float over its top. The tool's options ride over the dock on the board since round 11 D3 (hyimg-frames editor/dockwork.js) and lie on
+    no ruler; the audit's edge band starts under the row's 58 px line, and it finds a hint plate laid on it"""
     if not (REPOS / "hyimg-frames/manifest.json").is_file(): pytest.skip("no hyimg-frames beside hyimg")
     page, frame = studio(world, "dark", "round", "en", "p2", "image", "() => window.__frames && __frames.ED && __frames.ED.win")
     ed = next(f for f in page.frames if "/editor/" in f.url)
     ed.wait_for_function("() => document.body.classList.contains('in')", timeout=10000); ed.wait_for_timeout(800)
+    assert ed.evaluate("() => __ed.S.rulers || localStorage.getItem('hy-ed-rulers') === '1'") is False, "the rulers are off by default"
+    ed.evaluate("() => __ed.toggleRulers()"); ed.wait_for_timeout(400)
     px = ed.evaluate("""() => { const c = document.getElementById('view'), g = c.getContext('2d'), k = c.width / innerWidth;
       const a = (x, y) => g.getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data[3];
-      const ob = document.getElementById('obar').getBoundingClientRect(), e = hyEdges()[0];
-      return { row: a(6, 31), hint: a(6, ob.top + ob.height / 2), ruler: a(6, innerHeight - 120), edgeTop: e.top, hintBottom: ob.bottom }; }""")
+      const ob = document.getElementById('obar').getBoundingClientRect(), e = hyEdges();
+      return { row: a(6, 31), ruler: a(6, innerHeight - 120), edgeTop: e[0].top, hTop: e[1].top, docked: document.getElementById('obar').classList.contains('indock'),
+        hintLeft: ob.left, hintBottom: ob.bottom }; }""")
     assert px["ruler"] > 0, f"the ruler is drawn down the left edge: {px}"
-    assert px["row"] == 0 and px["hint"] == 0, f"nothing of the ruler beside the row or the hint: {px}"
-    assert px["edgeTop"] >= px["hintBottom"], px
-    # a plate moved onto the ruler is found
-    ed.evaluate("() => Object.assign(document.getElementById('obar').style, { transition: 'none', left: '4px', top: '200px' })")
+    assert px["row"] > 0, f"the ruler runs on beside the row, to the window's top: {px}"
+    assert px["docked"] and px["edgeTop"] == 58, px
+    assert px["hintLeft"] > 18 and px["hintBottom"] <= px["hTop"], f"the options over the dock lie on neither ruler: {px}"
+    # a hint plate moved onto the ruler is found (a copy of the options bar as it stands off the dock)
+    ed.evaluate("""() => { const o = document.getElementById('obar'), c = o.cloneNode(true); c.classList.remove('indock');
+      Object.assign(c.style, { transition: 'none', translate: 'none', opacity: '1', left: '4px', top: '200px', bottom: 'auto' }); o.after(c); }""")
     found = top_row(page)
     assert any(v["key"].startswith("hint edge") for v in found), found
     page.close()

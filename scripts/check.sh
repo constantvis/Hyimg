@@ -60,7 +60,8 @@ fi
 for r in "${REPOS[@]}"; do
   d="$REPOS_DIR/$r"
   [ -d "$d/tests/unit" ] && run "$r unit (pytest)" "$PY" -m pytest -q -p no:cacheprovider "$d/tests/unit"
-  [ -d "$d/tests/unit/js" ] && command -v node >/dev/null && run "$r unit (node)" node --test "$d/tests/unit/js/"
+  # pytest takes its cache folder from tests/procguard.py; node gets one of the run's own, never ~/Library/Caches/Hyimg
+  [ -d "$d/tests/unit/js" ] && command -v node >/dev/null && run "$r unit (node)" env HYIMG_CACHE_ROOT="$LOG/cache" node --test "$d/tests/unit/js/"
   [ "$r" = hyimg ] && [ -f "$d/tests/test_validate.py" ] && run "hyimg validator tests" "$PY" -m pytest -q -p no:cacheprovider "$d/tests/test_validate.py" "$d/tests/test_validate_icons.py"
   [ "$r" = hyimg ] && [ -f "$d/tests/test_validate_size.py" ] && run "hyimg file-size tests" "$PY" -m pytest -q -p no:cacheprovider "$d/tests/test_validate_size.py"
   # the primitives' types (review/ui/hy, JSDoc checked by tsc --noEmit --checkJs): the TypeScript on this Mac, nothing is downloaded

@@ -238,11 +238,11 @@ class TestDefaultApp:
 
 
 class TestBoards:
-    def test_a_save_with_a_stale_revision_is_refused_with_the_current_board(self, lib):
-        code, res = server.save_board("main", {"revision": 0, "items": {}})
+    def test_a_save_with_a_stale_revision_is_merged_with_the_current_board(self, lib):   # merge.py, 2026-10-08 (was a 409)
+        code, res = server.save_board("main", {"revision": 0, "items": {"a": {"x": 1}}})
         assert code == 200 and res["revision"] == 1
-        code, cur = server.save_board("main", {"revision": 0, "items": {"x": {}}})
-        assert code == 409 and cur["revision"] == 1 and cur["items"] == {}
+        code, res = server.save_board("main", {"revision": 0, "items": {"x": {}}})
+        assert code == 200 and res["revision"] == 2 and res["board"]["items"] == {"a": {"x": 1}, "x": {}}
 
     def test_a_board_with_no_pages_has_its_first_page(self, lib):
         assert server.load_pages() == [{"id": "main", "title": "Page 1"}]

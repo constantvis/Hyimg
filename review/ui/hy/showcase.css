@@ -1,5 +1,6 @@
 /* The primitives' showcase (ui/hy/showcase.js): four looks side by side, each a column on its paper, every specimen captioned with its
-   tag and attributes. Layout only; the specimens are the primitives as ui/hy draws them. */
+   tag and attributes. Layout, the specimens are the primitives as ui/hy draws them; the one exception is the block spec:hints at the end,
+   the look of two members that are specified but not built yet. */
 html, body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
 body { padding: 20px 20px 28px; box-sizing: border-box; min-height: 100vh; }
 .sc-head { display: flex; align-items: baseline; gap: 14px; margin: 0 0 14px; }
@@ -27,3 +28,10 @@ body { padding: 20px 20px 28px; box-sizing: border-box; min-height: 100vh; }
 .sc-ev span { font: 500 10px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .sc-ev output { font: 400 11px/1.35 "Geist Mono", ui-monospace, monospace; color: var(--sub); overflow-wrap: anywhere; min-height: 15px; }
 .sc-fail { padding: 14px 16px; border-radius: 12px; background: color-mix(in srgb, var(--hy-red) 14%, transparent); color: var(--hy-red); font: 500 13px var(--sans); }
+.sc-sec.spec > .sc-row { border-style: dashed; }   /* specified, not built: a static picture of it */
+.sc-fixed { contain: layout; width: 100%; min-height: 38px; }   /* a fixed element (the key hint) drawn in place: its box is the containing block */
+.sc-fixed > hy-keyhint { top: 50%; translate: 0 -50%; }
+
+/* the Hint bar drawn in its row, as the key hint is (its own top is the line under the top row); its look and the tip's are the
+   primitives' own: ui/hy/keyhint.css and ui/hy/tip.css (built 2026-10-09; the spec block round 11 copied is gone) */
+.sc-fixed > hy-keyhint[place=top] { top: 50%; }

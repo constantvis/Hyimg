@@ -92,6 +92,18 @@ import Foundation
         try require(!ServerHealth(app: "Hyimg", projectId: a.id.uuidString, libraryRoot: a.libraryRoot, pid: 0, port: a.port).matches(a), "health rejects invalid PID")
         try require(!ServerHealth(app: "Hyimg", projectId: a.id.uuidString, libraryRoot: a.libraryRoot, pid: 123, port: 9999).matches(a), "health rejects wrong port")
         try require(!ServerHealth(app: "Hyimg", projectId: a.id.uuidString, libraryRoot: second.path, pid: 123, port: a.port).matches(a), "health rejects wrong library")
+        // a board's folder moved into the shared or the private folder (People.swift): the catalog follows, an overlap is refused first
+        let away = root.appendingPathComponent("shared/moved")
+        try fm.createDirectory(at: away.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let before = registry.projects.first { $0.id == a.id }!
+        try registry.checkRelocate(id: a.id, libraryRoot: away.path, stateRoot: away.appendingPathComponent("_review").path)
+        try registry.relocate(id: a.id, libraryRoot: away.path, stateRoot: away.appendingPathComponent("_review").path)
+        let back = try ProjectRegistry(file: file).projects.first { $0.id == a.id }
+        try require(back?.libraryRoot == away.path && back?.port == before.port && back?.name == before.name, "relocate keeps the board, its port and name, with its new folder")
+        rejected = false
+        do { try registry.checkRelocate(id: a.id, libraryRoot: b.libraryRoot + "/inner", stateRoot: b.libraryRoot + "/inner/_review") } catch { rejected = true }
+        try require(rejected && registry.projects.first { $0.id == a.id }?.libraryRoot == away.path, "a place inside another board is refused before anything moves")
+        try registry.relocate(id: a.id, libraryRoot: before.libraryRoot, stateRoot: before.stateRoot)
         let savedCatalog = try Data(contentsOf: file)
         let overlapping = Project(id: UUID(), name: "Bad parent", libraryRoot: root.path, stateRoot: root.appendingPathComponent("_review").path, styleRefs: nil, port: 62000)
         let badCatalog = try JSONEncoder().encode(registry.projects + [overlapping])

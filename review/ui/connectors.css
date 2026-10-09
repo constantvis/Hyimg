@@ -1,0 +1,36 @@
+/* Arrows between anything (ui/connectors.js, owner 2026-10-09 «Agent layouts» › 4 Structures). Their markup is in board units, their
+   sizes on screen here by --z, as the notes' arrows (ui/notelink.css gives .arw its line, hit band, head and ×). Grey by default, the
+   selection's blue for «picked»; dashed «like», dotted «maybe». */
+#links .cnx { --cnc: var(--sub); }
+#links .cnx.blue { --cnc: var(--sel); }
+#links .cnx .ln { stroke: var(--cnc); }
+#links .cnx:not(.on) .ln { stroke-opacity: .8; }
+#links .cnx .hh, #links .cnx .c0 { fill: var(--cnc); }
+#links .cnx .c0 { r: min(calc(3.5px / var(--z)), var(--rmax)); }
+#links .cnx .del { color: var(--cnc); }
+#links .cnx .arw.ds .ln { stroke-dasharray: calc(8px / var(--z)) calc(6px / var(--z)); }
+#links .cnx .arw.dt .ln { stroke-dasharray: calc(.5px / var(--z)) calc(6px / var(--z)); stroke-linecap: round; }
+/* the words: a pill of constant size on screen on the curve's middle; with no words, «+ Label» while an end is selected */
+#links .clab { pointer-events: all; cursor: pointer; }
+#links .clab .cls { transform-box: fill-box; transform-origin: center; transform: scale(min(calc(1 / var(--z)), var(--lmax))); }
+#links .clab rect { fill: var(--panel); stroke: color-mix(in srgb, var(--cnc) 55%, var(--line)); stroke-width: 1px; }   /* hy-allow: icon-stroke the pill's hairline, not an icon */
+#links .clab text { fill: var(--ink); font: 500 12px var(--sans); }
+#links .clab:hover rect { stroke: var(--cnc); }
+#links .clab.empty { display: none; }
+#links .cnx.on .clab.empty { display: inline; }
+#links .clab.empty text { fill: var(--sub); }
+#links .lkd.cnd { stroke: var(--sel); }
+/* the handle on one selected thing: drag it to anything (a note's own handle, .cn, makes the note's link) */
+#stage .cn.cc { background: var(--sel); }
+#stage.glass .cn.cc { background: color-mix(in srgb, var(--sel) 55%, transparent); }
+/* the editor of one arrow: its words, its line, its colour */
+.cned { position: fixed; z-index: 60; display: flex; align-items: center; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: var(--hy-bar-r);
+  background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--hy-sh-pop); }
+.cned .cnin { width: 180px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--hy-row-r); background: var(--raise); color: var(--ink);
+  font: 13px var(--sans); outline: none; }
+.cned .cnin:focus { border-color: var(--sel); }
+/* a choice grid's numbers (ui/gridnum.js): the marks' plate in the top left corner, under the note dots when the card has them */
+:is(.it, .plg):not(.mkoff) > .mk.mk-num { display: flex; scale: 1; opacity: 1; padding: 0 calc(7px / var(--z)); }
+@starting-style { :is(.it, .plg):not(.mkoff) > .mk.mk-num { scale: 0; opacity: 0; } }
+:is(.it, .plg).noted > .mk.mk-num { top: calc(var(--mki) * 2 + min(calc(12px / var(--z)), 35%)); }
+#items.zooming :is(.it, .plg) > .mk.mk-num { scale: 0 !important; opacity: 0 !important; }

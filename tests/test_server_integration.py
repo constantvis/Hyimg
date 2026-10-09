@@ -73,7 +73,9 @@ def servers(tmp_path):
             try:
                 health = get(port, '/api/health')
                 (tmp_path / f'{name}-health.json').write_text(json.dumps(health, indent=2))
-                assert health == {'app': 'Hyimg', 'projectId': project, 'libraryRoot': str(library.resolve()), 'pid': process.pid, 'port': port}
+                # boardId and dir since 0e72371 (a board's id lives in its folder): a fresh temp board has no board.json and is not in Dropbox
+                assert health == {'app': 'Hyimg', 'projectId': project, 'libraryRoot': str(library.resolve()), 'pid': process.pid, 'port': port,
+                                  'boardId': '', 'dir': ''}
                 return process, port, library, log
             except (OSError, urllib.error.URLError):
                 time.sleep(.05)

@@ -98,15 +98,52 @@ test("a page dictionary never gives a word another Russian than the shared one",
 const asked = f => [...new Set([...src(f).matchAll(/\b[tT]\(\s*"((?:[^"\\]|\\.)*)"/g)].map(m => JSON.parse('"' + m[1] + '"')))];
 
 test("every key the shared modules ask for has its Russian in lang-common.js", () => {
-  // menu.js is being edited by another session right now; modes.js translates with the board's t (its words are in lang-board.js)
-  const skip = new Set(["menu.js", "modes.js", "i18n.js"]);
+  // menu.js is being edited by another session right now; modes.js, notelink.js, annotate.js and comments.js live on the board only (their words
+  // are in lang-board.js); homebell.js is Home's own (lang-home.js); cardfav.js, the ♥ on HTML cards, is the board's too, and so are textdoc.js
+  // and connectors.js (the arrows between anything)
+  const skip = new Set(["menu.js", "modes.js", "notelink.js", "annotate.js", "comments.js", "grid.js", "i18n.js", "homebell.js", "cardfav.js", "textdoc.js",
+    "connectors.js"]);
   const common = dict["lang-common.js"].ru, missing = [];
   for (const f of fs.readdirSync(UI).filter(f => f.endsWith(".js") && !f.startsWith("lang-") && !skip.has(f)))
     for (const k of asked(f)) if (!(k in common)) missing.push(`${f}: «${k}»`);
   assert.deepEqual(missing, []);
 });
 
+test("Home's news and bell (homebell.js, Home only) have their words in Home's dictionary", () => {
+  const home = dict["lang-home.js"].ru;
+  for (const k of asked("homebell.js")) assert.ok(k in home, `homebell.js: «${k}»`);
+});
+
+test("Arrange's grids (grid.js) have their words in the board's dictionary", () => {
+  const board = dict["lang-board.js"].ru;
+  for (const k of asked("grid.js")) assert.ok(k in board, `grid.js: «${k}»`);
+});
+
+test("the ♥ on HTML cards (cardfav.js) has its words in the board's dictionary", () => {
+  const board = dict["lang-board.js"].ru;
+  for (const k of asked("cardfav.js")) assert.ok(k in board, `cardfav.js: «${k}»`);
+});
+
+test("the arrows between anything (connectors.js) have their words in the board's dictionary", () => {
+  const board = { ...dict["lang-common.js"].ru, ...dict["lang-board.js"].ru };
+  for (const k of asked("connectors.js")) assert.ok(k in board, `connectors.js: «${k}»`);
+});
+
+test("a text document (textdoc.js) has its words in the board's dictionary", () => {
+  const board = dict["lang-board.js"].ru;
+  for (const k of asked("textdoc.js")) assert.ok(k in board, `textdoc.js: «${k}»`);
+});
+
 test("the dock's mode switch has its words in the board's dictionary", () => {
   const board = dict["lang-board.js"].ru;
   for (const k of asked("modes.js")) assert.ok(k in board, `modes.js: «${k}»`);
+});
+
+test("what a note links (notelink.js) names every kind in the board's dictionary", () => {
+  const board = dict["lang-board.js"].ru, en = dict["lang-board.js"].en;
+  for (const k of asked("notelink.js")) assert.ok(k in board, `notelink.js: «${k}»`);
+  // the kinds' words are asked through a table, not a literal T("…"): each a plural in both languages
+  const kinds = [...src("notelink.js").matchAll(/"(\{n\} [^"]+)"/g)].map(m => m[1]);
+  assert.ok(kinds.length >= 9);
+  for (const k of kinds) assert.ok(Array.isArray(board[k]) && board[k].length === 3 && Array.isArray(en[k]), `notelink.js: «${k}»`);
 });

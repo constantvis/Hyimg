@@ -1,0 +1,41 @@
+/* Home: the server's key on a board (ui/homeserver.js; owner 2026-10-08: «Кнопки остановить и плей должны находиться в правом нижнем углу.
+   И они должны быть тоже прозрачные. И кнопка сама не должна быть зеленой или красной, только сам символ ... остановить — красным»).
+   A round <hy-icon-button>, the key itself neutral: the play glyph in ink, the stop glyph in the app's red (--hy-red). On the cover at the
+   bottom right, 30 px as the heart, on the same dark glass as the heart and the «Open» chip (dark in both themes, so the key wears the dark
+   tokens: data-hy-theme); in the list right of the name, 28 px, no ground until the pointer, as the row's heart. Shown on hover or keyboard
+   focus, and while it waits for the app; while the board's steps run (opening, saving) it stands aside, its room kept. Tokens only. */
+.hs-key { color: var(--ink); }
+.hs-key[data-open="1"], .hs-key[data-open="1"]:hover { color: var(--hy-red); }
+.hs-key[data-busy]:not([data-wait]) { visibility: hidden; }
+.hs-key[data-wait] { cursor: progress; }
+/* the wait: a ring turning in the glyph's place */
+.hs-spin { width: 12px; height: 12px; box-sizing: border-box; border-radius: 50%; border: 1.75px solid currentColor; border-right-color: transparent;
+  animation: hsSpin .7s linear infinite; }
+@keyframes hsSpin { to { transform: rotate(360deg); } }
+
+/* on the cover: bottom right, 8 px in as the heart is at the top right, coming in as the heart does */
+.cover > .hs-key { --hs-glass: rgba(9, 9, 11, .55); --hs-glass-on: rgba(9, 9, 11, .75); position: absolute; right: 8px; bottom: 8px; z-index: 2;
+  background: var(--hs-glass); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); opacity: 0; transform: scale(.8);
+  transition: opacity .18s ease, transform .25s cubic-bezier(.2, .9, .3, 1.15), background-color .15s ease; }
+.cover > .hs-key:hover { background: var(--hs-glass-on); }
+.card:is(:hover, :focus-visible, :has(:focus-visible)) .cover > .hs-key, .cover > .hs-key[data-wait] { opacity: 1; transform: none; }
+
+/* in the list: right of the name, and the name never moves for it (2026-10-08: a long name read «Hyimg Site with a ra…» and on the row's
+   hover «Hyimg Site wi…», cut again as the pointer crossed). The element is only a slot after the name, the key and 10 px before it,
+   that gives way before the name does (its shrink weight is a million times the name's), so it takes nothing from a name: a short name
+   has the key 10 px after it, a name the column cuts keeps its … where it was and the key lies over its end, on the row's own ground
+   (--hs-row, the row's background now) that comes in over 10 px. The round key itself has no ground until the pointer, as the heart */
+.list .card { --hs-row: var(--board); }
+.list .card:is(:hover, :focus-visible) { --hs-row: var(--raise); }
+.list .card .hs-r { flex: 0 1000000 calc(var(--hy-bh) + 10px); width: auto; min-width: 0; margin-left: -12px; background: none; opacity: 0;
+  transition: opacity .15s ease; }
+.list .card .hs-r::before { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: calc(var(--hy-bh) + 10px); pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--hs-row) 10px); }
+.list .card .hs-r > button { position: absolute; top: 0; right: 0; width: var(--hy-bh); transition: background-color .15s ease; }
+.list .card .hs-r > button:is(:hover, :focus-visible) { background: var(--raise2); }
+.list .card:is(:hover, :focus-visible, :has(:focus-visible)) .hs-r, .list .card .hs-r[data-wait] { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cover > .hs-key, .list .card .hs-r, .list .card .hs-r > button { transition: none; transform: none; }
+  .hs-spin { animation: none; }
+}

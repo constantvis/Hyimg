@@ -654,10 +654,9 @@ def _rewrite_frames(docs, mp, undo, done):
 
 
 def write_board(name, b):
-    p = os.path.join(BOARDS, name + ".json")
-    b["revision"] = int(b.get("revision", 0)) + 1
-    b["saved"] = time.strftime("%Y-%m-%d %H:%M:%S")
-    _write_text(p, json.dumps(b, ensure_ascii=False, indent=1))
+    import merge   # the next revision with a new vid: an open page's save from the old one is merged, not taken for this (2026-10-08)
+    merge.stamp(name, b, dict(b), b.get("by"))
+    _write_text(os.path.join(BOARDS, name + ".json"), json.dumps(b, ensure_ascii=False, indent=1))
 
 
 def _boards_rewrite(mp, undo):

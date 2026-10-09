@@ -469,7 +469,8 @@ def http(handler, method):
     import storage_clean
     path = handler.path.split("?", 1)[0]
     if method == "GET" and path == "/api/storage":
-        body = {**summary(), "server": server_memory()}
+        import perflog   # Settings › Storage › Performance log, its size beside the cache (perflog.py)
+        body = {**summary(), "server": server_memory(), "perflog": perflog.size()}
     elif method == "POST" and path == "/api/storage/caps":   # {"board", "total"} in GB: the thumbnail cache's ceiling (thumbcache.py)
         n = int(handler.headers.get("Content-Length", 0) or 0)
         try:
@@ -508,8 +509,9 @@ if __name__ == "__main__":
         os.nice(15)   # behind everything the person does
         res = scan()
         print(json.dumps({"ok": res is not None, "seconds": res and res["seconds"]}))
-    elif cmd == "summary":
-        print(json.dumps(summary(float(opt("--max-age", MAX_AGE))), ensure_ascii=False))
+    elif cmd == "summary":   # the app's answer to Home: the performance log is the app's (its cache), so Home shows its size too
+        import perflog
+        print(json.dumps({**summary(float(opt("--max-age", MAX_AGE))), "perflog": perflog.size()}, ensure_ascii=False))
     elif cmd == "caps":   # storage.py caps [--board GB] [--total GB]
         try:
             print(json.dumps({"caps": caps_write(opt("--board", None), opt("--total", None)) if len(a) > 1 else caps_read()}))

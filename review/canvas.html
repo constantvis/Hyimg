@@ -8,25 +8,36 @@
 <script src="/ui/lang-common.js"></script>
 <script src="/ui/lang-board.js"></script>
 <script src="/ui/paper.js"></script>
-<script src="/ui/stars.js"></script>
+<script src="/ui/stars.js"></script><script src="/ui/switchin.js"></script>   <!-- the loading stars; coming in through ⌃Tab (2026-10-08) -->
 <script src="/ui/dragband.js"></script>
 <script src="/ui/keyhints.js"></script>   <!-- key caps on buttons only while ⌘ is held (owner 2026-10-05) -->
 <script src="/ui/menu.js"></script>
 <script src="/ui/video.js"></script>   <!-- which address a video plays from: the original, or a WebM copy for an engine without H.264 (owner 2026-10-05) -->
-<script src="/ui/projicon.js"></script><script src="/ui/storage.js"></script>   <!-- Settings › Storage: disk, cache, memory (2026-10-07) -->
-<script src="/ui/dotsgl.js"></script>
+<script src="/ui/projicon.js"></script><script src="/ui/storage.js"></script><script src="/ui/people.js"></script><script src="/ui/avatar.js"></script>   <!-- who: faces -->
+<script src="/ui/dotsgl.js"></script><script src="/ui/applink.js"></script>   <!-- hyimg:// links that open the app, and the browser's (owner 2026-10-07) -->
 <script src="/ui/seg.js"></script><script src="/ui/bars.js"></script><script src="/ui/entrance.js"></script>   <!-- switch, bars, entrance -->
 <script src="/ui/slider.js"></script>   <!-- the app's one slider, the 3D editor's look (owner 2026-10-06: «why are the sliders everywhere not the same as in 3D») -->
-<script src="/ui/modes.js"></script>   <!-- the dock's mode switch: Board and the plugins' modes, Image, Dev, 3D (owner 2026-10-06) -->
+<script src="/ui/settings-win.js"></script>   <!-- the settings' window over the page: a rail of sections, resizable (owner 2026-10-08, E1 «Rail popover») -->
+<script src="/ui/setpanel.js"></script>   <!-- the settings panel, Home's too (owner 2026-10-07: «настройки на доске отличаются от настроек тут») -->
+<script src="/ui/editlift.js"></script><script src="/ui/modes.js"></script><script src="/ui/framezoom.js"></script>   <!-- modes, the lift, zoom over a page -->
 <script src="/ui/icons.js"></script>   <!-- the app's one icon family: the editors' tools and Raw Editor's icon on the bar and the cards -->
 <script src="/ui/eyedrag.js"></script>   <!-- Photoshop's eye drag: the 3D studio's outliner and Raw Editor's section eyes (owner 2026-10-07) -->
+<script src="/ui/newsize.js"></script><script src="/ui/multiscale.js"></script><script src="/ui/notelink.js"></script><script src="/ui/connectors.js"></script>
+<script src="/ui/gridnum.js"></script>   <!-- new notes by the zoom, scaling several, a note's links (2026-10-07); arrows between anything, a grid's numbers -->
+<script src="/ui/plugins.js"></script><script src="/ui/plugins-board.js"></script><script src="/ui/annotate.js"></script><script src="/ui/comments.js"></script>
+<script src="/ui/merge.js"></script><script src="/ui/grid.js"></script>   <!-- saves merged object by object (review/merge.py); Arrange's grids (2026-10-08) -->
+<script src="/ui/pagesleep.js"></script><link rel="stylesheet" href="/ui/noteglass.css">   <!-- pages asleep; glass notes (2026-10-09) -->
+<script src="/ui/bellrow.js"></script><script src="/ui/bellthumbs.js"></script><link rel="stylesheet" href="/ui/bell.css">   <!-- the bell: rows, pictures, look -->
+<script src="/ui/perflog.js"></script><script src="/ui/undonew.js"></script>   <!-- the log of frame drops (Settings › Diagnostics); ⌘Z in a field -->
+<script src="/ui/boardhints.js"></script><script src="/ui/cardfav.js"></script>   <!-- the keys of what you are doing (ui/hy/keyhint.js); ♥ on HTML cards -->
+<script src="/ui/textdoc.js"></script><link rel="stylesheet" href="/ui/textdoc.css">   <!-- a text: a title and a Markdown body (2026-10-09) -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hyimg canvas</title>
 <!-- ИИ-агенту: инструкция к этому проекту по адресу /agent на этом же сервере (например http://localhost:4180/agent). -->
 <link rel="help" href="/agent" title="Инструкция для ИИ-агента">
 <!-- two looks for the whole interface (owner 2026-10-04): «Классика» as it was, «Студия» as the 3D editor (Spline + DialKit); set before the first paint -->
 <script>try { document.documentElement.dataset.ui = localStorage.getItem("cv.ui") || "classic"; } catch { document.documentElement.dataset.ui = "classic"; }
-try { const de = document.documentElement; de.dataset.shadow = localStorage.getItem("cv.shadow") || "1"; de.dataset.shape = localStorage.getItem("cv.shape") || "round"; } catch {}   // ui/look.css
+try { const de = document.documentElement; de.dataset.shadow = localStorage.getItem("cv.shadow") || "0"; de.dataset.shape = localStorage.getItem("cv.shape") || "round"; } catch {}   // ui/look.css
 if (window.hyPaper) hyPaper.fromStorage();   // the paper's colours (--paper)
 // until the entrance starts only the plain paper shows, so the board never flashes at full size first (it waits 6 s at most)
 // the theme before the first paint (owner 2026-10-04: «a white background flashes before the page loads»: the page painted in the
@@ -51,6 +62,7 @@ addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) e.preventDefault();
 <link rel="stylesheet" href="/ui/tokens.css">   <!-- the app's tokens, one source: the palette, heights, corners (ui/tokens.css) -->
 <link rel="stylesheet" href="/ui/ui.css"><link rel="stylesheet" href="/ui/studio.css"><link rel="stylesheet" href="/ui/hy/hy.css"><link rel="stylesheet" href="/ui/look.css">
 <link rel="stylesheet" href="/ui/slider.css"><script type="module" src="/ui/hy/index.js"></script>   <!-- the primitives: hy-button, hy-switch ... (ui/hy) -->
+<link rel="stylesheet" href="/ui/notelink.css">   <!-- the notes' arrows and zones: their sizes on screen by --z -->
 <style>
 /* Canvas (2026-09-29): Figma-like board next to the frame library. Layout only: frames, groups, crops.
    A crop never cuts the file: the item shows a rectangle of the source image (normalized [x0, y0, x1, y1]). */
@@ -114,10 +126,7 @@ button { cursor: pointer; }
   border: 1px solid var(--line); color: var(--sub); background: color-mix(in srgb, var(--panel) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 #bset:hover, #bset[aria-expanded=true] { color: var(--ink); }
 :root.in-app:not(.inset) { --wl: 84px; }   /* the Mac app's window buttons (close, minimise, zoom) take the top left corner */   /* the review page puts its view switch in the corner */
-#sets { position: absolute; top: 58px; right: 12px; z-index: 31; width: 360px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; display: none;
-  background: color-mix(in srgb, var(--panel) 90%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 12px 40px rgba(0,0,0,.35); font-size: 13px; }
-
-#sets.open { display: grid; gap: 10px; }
+#sets { position: absolute; top: 58px; right: 12px; z-index: 31; display: none; }   /* its look and rows: ui/setpanel.js, .css */
 /* version history (owner 2026-09-30, like Figma): the clock next to the settings wheel */
 #bhist { position: absolute; top: 12px; right: 58px; z-index: 31; width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; cursor: pointer;
   border: 1px solid var(--line); color: var(--sub); background: color-mix(in srgb, var(--panel) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
@@ -130,16 +139,7 @@ button { cursor: pointer; }
 #bntf { position: absolute; top: 12px; right: 150px; z-index: 31; width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; cursor: pointer;
   border: 1px solid var(--line); color: var(--sub); background: color-mix(in srgb, var(--panel) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 #bntf:hover, #bntf[aria-expanded=true] { color: var(--ink); }
-#bntf.dot::after { content: ""; position: absolute; top: 7px; right: 8px; width: 9px; height: 9px; border-radius: 999px; background: #ff3b30; box-shadow: 0 0 0 2px var(--panel); }
-#ntf { position: absolute; top: 58px; right: 12px; z-index: 32; width: 380px; max-height: calc(100% - 80px); overflow: auto; display: none; padding: 8px;
-  border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 12px 40px rgba(0,0,0,.35); font-size: 13px; }
-#ntf.open { display: grid; gap: 4px; }
-#ntf .nh0 { padding: 6px 8px 4px; color: var(--sub); font-weight: 600; font-size: 12px; }
-#ntf .none { padding: 18px 10px; color: var(--sub); }
-#ntf .nt { display: grid; gap: 4px; text-align: left; width: 100%; padding: 10px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; cursor: pointer; }
-#ntf .nt:hover { background: var(--raise); } #ntf .nt.new { background: color-mix(in srgb, var(--sel) 12%, transparent); }
-#ntf .nt b { font-weight: 600; } #ntf .nt .who { color: var(--sub); font-size: 11px; } #ntf .nt p { margin: 0; color: var(--sub); line-height: 1.45; }
-#ntf .nt .pv { display: flex; gap: 4px; margin-top: 2px; } #ntf .nt .pv img { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; background: var(--raise); }
+/* its dot, the list and its rows: ui/bell.css, Home's bell too (ui/homebell.js) */
 /* version history (owner 2026-09-30: closer to Figma, in our look): a glass panel like the dock, the versions as a timeline by day,
    long runs of autosaves folded, the one on the board lit in blue, the restore button only where you point */
 #hist { position: absolute; top: 58px; bottom: 12px; right: 12px; z-index: 31; width: 340px; display: none; flex-direction: column; overflow: hidden;
@@ -147,10 +147,7 @@ button { cursor: pointer; }
   background: color-mix(in srgb, var(--panel) 97%, transparent); backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4); box-shadow: 0 16px 48px rgba(0,0,0,.4); }
 #hist.open { display: flex; }
 #stage.side-open #info { display: none !important; }
-#hist .hh { display: flex; align-items: center; justify-content: space-between; padding: 14px 12px 6px 18px; }
-#hist .hh b { font: 600 13px var(--sans); letter-spacing: -.01em; color: var(--ink); }
-#hist .hclose { width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--sub); display: grid; place-items: center; cursor: pointer; }
-#hist .hclose:hover { background: var(--raise); color: var(--ink); }
+#hist .hh { justify-content: space-between; }   /* its header is a block's (ui/hy/block.css .hy-bh, round 12 «A · Line», owner 2026-10-09) */
 #hist .save { display: flex; gap: 6px; padding: 6px 12px 12px; border-bottom: 1px solid var(--line); }
 #hist input { flex: 1; min-width: 0; height: 32px; border: 1px solid var(--line); border-radius: 9px; background: color-mix(in srgb, var(--raise) 80%, transparent); padding: 0 10px; color: var(--ink); font: 13px var(--sans); outline: none; }
 #hist input:focus { border-color: color-mix(in srgb, #0a84ff 70%, var(--line)); }
@@ -238,14 +235,6 @@ button { cursor: pointer; }
 .it.missing { background: repeating-linear-gradient(135deg, #3a1f1f 0 calc(12px / var(--z)), #2a1717 0 calc(24px / var(--z))); }
 .it.missing img { display: none; }
 .it.missing::before { content: var(--t-nofile, "file missing"); position: absolute; inset: 0; display: grid; place-items: center; color: #f0a0a0; font: 600 calc(13px / var(--z)) var(--sans); }
-#sets .sh { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-/* the settings' choices are the app's one switch (ui/look.css .seg, owner 2026-10-06), as wide as the panel */
-#sets .seg { display: flex; width: 100%; box-sizing: border-box; }
-#sets button { height: 32px; border: 1px solid var(--line); border-radius: 9px; background: var(--raise); color: var(--sub); font: 500 12px var(--sans); cursor: pointer; }
-#sets .sh span { float: right; letter-spacing: 0; color: var(--sub); font-variant-numeric: tabular-nums; }
-#sets button[aria-pressed=true] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-#sets .seg > button { flex: 1 1 auto; min-width: 0; height: 28px; padding: 0 6px; border: 0; border-radius: 999px; background: transparent; white-space: nowrap; }
-#sets .seg > button[aria-pressed=true] { color: var(--ink); }
 #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 #groups, #items, #handles, #crop { position: absolute; left: 0; top: 0; }
 #items > [hidden] { display: none !important; }
@@ -308,6 +297,7 @@ html[data-bench~="nogrp"] #groups { display: none; }
    (.it img will-change) over the picture's outline, so with the corner squares hidden on small frames nothing showed (owner 2026-09-30) */
 .selbox { position: absolute; pointer-events: none; box-sizing: border-box; outline: calc(2px / var(--z)) solid var(--sel); outline-offset: calc(1px / var(--z));
   box-shadow: 0 0 0 calc(4px / var(--z)) rgba(0,0,0,.35); }
+.mbox { position: absolute; pointer-events: none; box-sizing: border-box; outline: calc(1px / var(--z)) solid var(--sel); }   /* several selected: one box (ui/multiscale.js) */
 /* sticky notes (owner 2026-09-30): a note touches the pictures it overlaps, its dashed zone and the things its arrows point at */
 .note { position: absolute; padding: .7em .8em; background: var(--note); color: var(--note-ink); font-family: var(--sans); font-weight: 500; line-height: 1.3;
   white-space: pre-wrap; overflow-wrap: anywhere; cursor: default; border-radius: calc(3px / var(--z)); box-shadow: 0 calc(6px / var(--z)) calc(18px / var(--z)) rgba(0,0,0,.4); }
@@ -320,26 +310,12 @@ html[data-bench~="nogrp"] #groups { display: none; }
 .note.editing, .note.editing * { cursor: text; }   /* typing is on: the text cursor over the whole note (owner 2026-10-01) */
 .note textarea { display: block; width: 100%; font: inherit; line-height: inherit; color: inherit; background: transparent; border: 0; outline: none; padding: 0; margin: 0; resize: none; overflow: hidden; white-space: pre-wrap; }
 .note textarea::placeholder { color: color-mix(in srgb, var(--note-ink) 50%, transparent); }
-.it.linked { outline: calc(3px / var(--z)) solid var(--note); outline-offset: calc(2px / var(--z)); }
-.linktarget { outline: calc(3px / var(--z)) dashed var(--note) !important; outline-offset: calc(2px / var(--z)); }
+/* what the selected note links, every kind, in that note's colour: --lk (lkCol); before 2026-10-08 a card, a heading and a time line had no
+   --note of their own and showed the theme's yellow (owner: «эти штуки желтым обведены» under a blue note). The arrow's target: --lt */
+:is(.it, .plg, .tx, .tl).linked { outline: calc(3px / var(--z)) solid var(--lk, var(--note)); outline-offset: calc(2px / var(--z)); }
+.linktarget, .note.ndhot { outline: calc(3px / var(--z)) dashed var(--lt, var(--note)) !important; outline-offset: calc(2px / var(--z)); }
 .cn { position: absolute; width: calc(26px / var(--z)); height: calc(26px / var(--z)); transform: translate(50%, -50%); border-radius: 999px; background: var(--note); border: calc(2px / var(--z)) solid #fff; transition: scale .12s; box-shadow: 0 calc(2px / var(--z)) calc(8px / var(--z)) rgba(0,0,0,.45); cursor: crosshair; z-index: 6; }
 .cn:hover { scale: 1.15; }
-/* glass (owner 2026-10-02, on by default, gear › Заметки): notes and their arrow handle let what lies under them show through a strong
-   blur. Not far out (#world.lod): hundreds of tiny notes would each blur, and at that size nobody sees it */
-#stage.glass #world:not(.lod) .note { background: color-mix(in srgb, var(--note) 64%, transparent);
-  -webkit-backdrop-filter: blur(calc(24px / var(--z))) saturate(1.8) brightness(1.1); backdrop-filter: blur(calc(24px / var(--z))) saturate(1.8) brightness(1.1);
-  box-shadow: 0 calc(6px / var(--z)) calc(18px / var(--z)) rgba(0,0,0,.35), inset 0 0 0 calc(1px / var(--z)) rgba(255,255,255,.28); }
-#stage.glass .cn { background: color-mix(in srgb, var(--note) 55%, transparent); border-color: rgba(255,255,255,.85);
-  -webkit-backdrop-filter: blur(calc(8px / var(--z))) saturate(1.6); backdrop-filter: blur(calc(8px / var(--z))) saturate(1.6); }
-#links { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; z-index: 3; pointer-events: none; }
-/* the dashed zones of notes lie under the pictures (owner 2026-10-03: a selected note's zone tinted the frames yellow) */
-#zones { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; z-index: 1; pointer-events: none; }
-#links .hit { pointer-events: stroke; cursor: pointer; }
-/* hovering an arrow shows a round − at its middle: one click takes the arrow off (owner 2026-10-02: no select-then-Delete) */
-#links .arw .del { opacity: 0; pointer-events: none; cursor: pointer; transition: opacity .12s; }
-#links .arw:hover .del, #links .arw .del:hover { opacity: 1; pointer-events: all; }
-#links .del circle { fill: #1c1c1f; stroke: #fff; }
-#links .del:hover circle { fill: #e5484d; }
 .he { position: absolute; z-index: 4; }
 #stage[data-zc=n], #stage[data-zc=n] *, #stage[data-zc=s], #stage[data-zc=s] * { cursor: ns-resize !important; }
 #stage[data-zc=w], #stage[data-zc=w] *, #stage[data-zc=e], #stage[data-zc=e] * { cursor: ew-resize !important; }
@@ -366,7 +342,7 @@ html[data-bench~="nogrp"] #groups { display: none; }
 .tidy.tsz .hx.on { background: var(--ink); color: var(--panel); }
 .tidy.tsz .tsl { padding: 0 10px 0 6px; font: 500 12px var(--sans); color: var(--muted); }
 .tidy .op { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px 0 10px; color: var(--ink); font: 500 12px var(--sans); cursor: default; }
-.tidy .op .hy-slider { width: 110px; } .tidy .op b { min-width: 34px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.tidy .op .hy-slider { width: 200px; --hy-sl-h: 28px; }
 .tidy .fz { width: 34px; padding: 0; justify-content: center; font-weight: 700; gap: 0; }
 .tidy .fz:disabled { opacity: .3; cursor: default; }
 .tidy .fz:disabled:hover { background: transparent; }
@@ -460,7 +436,8 @@ html[data-bench~="nogrp"] #groups { display: none; }
      display:none (transition-behavior allow-discrete); one that comes scales up from 0 (@starting-style). The far view's canvas draws the
      same marks by the same law (lodDots) */
 :is(.it, .plg) { --mk: calc(26px / var(--z)); --mki: calc(8.5px * var(--vbs, 1) / var(--z)); --mkp: calc(6px / var(--z)); --mkic: calc(26px * .66 / var(--z));
-  --mkf: calc(11px / var(--z)); --mkgap: calc(3.5px / var(--z)); --mkg: rgba(20,20,22,.72); --mkgh: rgba(20,20,22,.88); --mkr: 999px; --mke: cubic-bezier(.32,.72,0,1); --mkt: .32s; }
+  --mkf: calc(11px / var(--z)); --mkgap: calc(3.5px / var(--z)); --mkg: rgba(20,20,22,.72); --mkgh: rgba(20,20,22,.88); --mkr: 999px; --mke: cubic-bezier(.32,.72,0,1); --mkt: .32s;
+  --mkring: rgba(0,0,0,.6); }   /* the note dot's dark ring */
 :root[data-shape=pro] :is(.it, .plg) { --mkr: calc(5px / var(--z)); }
 :is(.it, .plg).mkh { --mki: calc(16px * var(--vbs, 1) / var(--z)); }
 :is(.it, .plg) .mk { position: absolute; z-index: 3; box-sizing: border-box; display: none; align-items: center; justify-content: center; gap: 0; min-width: var(--mk); height: var(--mk);
@@ -475,36 +452,39 @@ html[data-bench~="nogrp"] #groups { display: none; }
 .mk.mk-br { right: var(--mki); bottom: var(--mki); transform-origin: 100% 100%; }
 .mk.mk-bl { left: calc(var(--mki) + var(--mks, 0) * (var(--mk) * var(--vbs, 1) + var(--mkgap))); bottom: var(--mki); transform-origin: 0 100%; }
 .mk svg { width: var(--mkic); height: var(--mkic); flex: none; display: block; }
-/* the top right row, from the corner: ♥ (slot 0, on a picture always kept), the colour grade, crop; a plugin card has no ♥ */
+/* the top right row, from the corner: ♥ (slot 0, always kept on a picture and an HTML card, ui/cardfav.js), the colour grade, crop */
 .it .mk.mk-grade { --mks: 1; }
 .it .mk.mk-crop { --mks: 1; } .it.graded:not([data-mkx~=grade]) .mk.mk-crop { --mks: 2; }
 /* the bottom left row: a picture's copy mark in the corner; a frame card's # there and its copy mark beside it (hyimg-frames) */
 .plg .mk.mk-bl.mk-dup { --mks: 1; }
 /* shown: what the card has, while the law leaves it room */
 .it.cropped:not(.mkoff):not([data-mkx~=crop]) .mk.mk-crop, .it.dup:not(.mkoff):not([data-mkx~=dup]) .mk.mk-dup,
-.it:is(.faved, :hover):not(.mkoff):not([data-mkx~=fav]) .mk.mk-fav, .it.noted:not(.mkoff):not([data-mkx~=note]) .mk.mk-note,
+:is(.it, .plg:not(.plg-live)):is(.faved, :hover):not(.mkoff):not([data-mkx~=fav]) .mk.mk-fav, :is(.it, .plg).noted:not(.mkoff):not([data-mkx~=note]) .mk.mk-note,
 :is(.it, .plg):not(.mkoff):not([data-mkx~=kind]) .mk.mk-kind:not(:empty),
 .plg:not(.mkoff):not([data-mkx~=frame]) .mk.mk-frame.mk-on, .plg:not(.mkoff):not([data-mkx~=dup]) .mk.mk-dup.mk-on { display: flex; scale: 1; opacity: 1; }
 @starting-style {
   .it.cropped:not(.mkoff):not([data-mkx~=crop]) .mk.mk-crop, .it.dup:not(.mkoff):not([data-mkx~=dup]) .mk.mk-dup,
-  .it:is(.faved, :hover):not(.mkoff):not([data-mkx~=fav]) .mk.mk-fav, .it.noted:not(.mkoff):not([data-mkx~=note]) .mk.mk-note,
+  :is(.it, .plg:not(.plg-live)):is(.faved, :hover):not(.mkoff):not([data-mkx~=fav]) .mk.mk-fav, :is(.it, .plg).noted:not(.mkoff):not([data-mkx~=note]) .mk.mk-note,
   :is(.it, .plg):not(.mkoff):not([data-mkx~=kind]) .mk.mk-kind:not(:empty),
   .plg:not(.mkoff):not([data-mkx~=frame]) .mk.mk-frame.mk-on, .plg:not(.mkoff):not([data-mkx~=dup]) .mk.mk-dup.mk-on { scale: 0; opacity: 0; }
 }
 /* a card coming back from the far view: its marks were just drawn on the canvas at full size, they are there at once, not grown again */
 #items.mkinst .mk { transition: none !important; }
-/* while a zoom moves in Chromium (ZLIVE: --z follows the gesture) the size and the inset follow it at once: a transition on them would
-   start again on every frame on every mark (measured 2026-10-06 on 1200 cards: no layer per mark either, will-change cost frames) */
+/* a zoom in Chromium (ZLIVE): what follows --z follows at once, a transition on it restarts on every step (marks 2026-10-06; comment areas, arrows 2026-10-08) */
 #items.zlive .mk { transition: scale var(--mkt) var(--mke), opacity var(--mkt) var(--mke), display var(--mkt) allow-discrete; }
+#items.zlive ~ :is(#cmpins, #links) * { transition: none; }
 /* the ones a click goes to: ♥, copy (to the original), the video's and the PDF's pill */
-.it .mk:is(.mk-fav, .mk-dup), .it:is(.vid, .pdf) .mk.mk-kind { pointer-events: auto; cursor: pointer; }
-.it .mk:is(.mk-fav, .mk-dup):hover, .it:is(.vid, .pdf) .mk.mk-kind:hover { background: var(--mkgh); }
-.it.faved .mk.mk-fav { color: #fb7185; } .it.faved .mk.mk-fav svg path { fill: currentColor; }
+.it .mk:is(.mk-fav, .mk-dup), .plg > .mk.mk-fav, .it:is(.vid, .pdf) .mk.mk-kind { pointer-events: auto; cursor: pointer; }
+.it .mk:is(.mk-fav, .mk-dup):hover, .plg > .mk.mk-fav:hover, .it:is(.vid, .pdf) .mk.mk-kind:hover { background: var(--mkgh); }
+:is(.it, .plg).faved > .mk.mk-fav { color: var(--hy-heart); } :is(.it, .plg).faved > .mk.mk-fav svg path { fill: currentColor; }
 /* the note is the plain dot it always was (owner 2026-10-06: «before, like the blue dot, it worked perfectly»): 12 px on screen, at most
    35% of the card's width, a dark ring of 1.5 px; no plate and not scaled by k (only its inset is), it comes and goes the same way */
-.it .mk.mk-note { min-width: 0; width: min(calc(12px / var(--z)), 35%); height: auto; aspect-ratio: 1; padding: 0; background: var(--note);
-  box-shadow: 0 0 0 calc(1.5px / var(--z)) rgba(0,0,0,.6); transform: none; }
-.it .mk.mk-note i { display: none; }
+/* several notes (owner 2026-10-08): a dot each in its note's colour (ui/notelink.js paintDots), 60 % of a dot apart, the board's colour between */
+:is(.it, .plg) .mk.mk-note { min-width: 0; width: min(calc(12px / var(--z)), 35%); height: auto; aspect-ratio: 1; padding: 0; background: none; transform: none; }
+:is(.it, .plg) .mk.mk-note i { position: absolute; top: 0; left: calc(var(--k) * 60%); width: 100%; height: 100%; border-radius: 50%; background: var(--c); z-index: var(--k);
+  box-shadow: 0 0 0 calc(1.5px / var(--z)) var(--board); pointer-events: auto; cursor: pointer; }
+:is(.it, .plg) .mk.mk-note i:first-child { box-shadow: 0 0 0 calc(1.5px / var(--z)) var(--mkring); }
+:is(.it, .plg) .mk.mk-note i.more { display: grid; place-items: center; background: var(--board); color: var(--sub); font: 600 calc(7px / var(--z))/1 var(--sans); }
 /* WebKit, while a zoom moves (see ZLIVE): the marks are out at once (a transition on every card cost frames there), and come back by
    the law's scale-up when the zoom settles; the time line steps out too */
 #items.zooming .it .mk, #items.zooming .plg .mk { scale: 0 !important; opacity: 0 !important; transition: none !important; }
@@ -588,7 +568,7 @@ html[data-bench~="nogrp"] #groups { display: none; }
   color: #fff; font: 600 calc(11px / var(--z)) var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
 :root[data-shape=pro] #crop .vtin .tl { border-radius: calc(5px / var(--z)); }
 /* the interface hidden, ⌘. (owner 2026-10-06, as Figma's «hide UI»): everything around the canvas fades and slides off its own edge, and comes back
-   the same way; animations, so the elements' own transitions stay as they are. Notifications (the toasts) stay. */
+   the same way; animations, so the elements' own transitions stay as they are. The toasts stay, and so does the right-click menu (uiHide). */
 /* how they leave is a setting (owner 2026-10-06: «when items get back we don't need the full animation; maybe all the UI just zooms and
    goes out of the screen; two options in the settings, zoom or slide»): Home's gear, cv.hideui, «zoom» by default. Coming back is only
    a short fade, no slide or zoom (owner: «we don't need additional animation when they slide back in») */
@@ -596,10 +576,10 @@ html[data-bench~="nogrp"] #groups { display: none; }
 @keyframes hyUiZoom { to { opacity: 0; scale: 1.18; } }   /* around the window's centre (uiOrigins): the whole interface grows away as one, not each part on its own */
 @keyframes hyUiBack { from { opacity: 0; } }
 #crumb, #bset, #bhist, #bkeys, #bntf { --hy: -16px; } #dock { --hy: 16px; } #info, #sets, #keys, #hist, #ntf { --hx: 18px; } #pages { --hy: -10px; }
-:root.hy-hideui :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #ctx, #gsticky, [data-hyui]) { animation: hyUiOut .36s cubic-bezier(.32,.72,0,1) both; pointer-events: none !important; }
-:root.hy-hideui[data-hideui=zoom] :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #ctx, #gsticky, [data-hyui]) { animation-name: hyUiZoom; }
+:root.hy-hideui :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #gsticky, [data-hyui]) { animation: hyUiOut .36s cubic-bezier(.32,.72,0,1) both; pointer-events: none !important; }
+:root.hy-hideui[data-hideui=zoom] :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #gsticky, [data-hyui]) { animation-name: hyUiZoom; }
 :root.hy-ui-in:not(.hy-hideui) :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #gsticky, [data-hyui]) { animation: hyUiBack .2s cubic-bezier(.32,.72,0,1); }
-@media (prefers-reduced-motion: reduce) { :root.hy-hideui :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #ctx, #gsticky, [data-hyui]) { animation-duration: .01s; } }
+@media (prefers-reduced-motion: reduce) { :root.hy-hideui :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #gsticky, [data-hyui]) { animation-duration: .01s; } }
 #hint .hv { display: none; } #hint.vid .hp { display: none; } #hint.vid .hv { display: inline; }
 /* proportions over the crop frame (owner 2026-10-02): Свободно by default, a ratio locks the frame to it, ⇄ turns it */
 .cratio button { padding: 0 10px; gap: 0; font-variant-numeric: tabular-nums; }
@@ -726,7 +706,7 @@ body.embed #tlib { display: none !important; }
 #iNotes:empty { display: none; }
 #iNotes { --good: #4ade80; --idea: #fbbf24; --bad: #fb7185; margin-top: 4px; display: grid; }
 #iNotes .isec { display: grid; gap: 8px; padding: 14px 0 0; margin-top: 14px; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
-#iNotes .sh { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: color-mix(in srgb, var(--ink) 45%, transparent); }
+#iNotes .sh { display: flex; justify-content: space-between; margin: 0; }   /* a section's label: the blocks' one (ui/hy/block.css .hy-sub, owner 2026-10-09) */
 #iNotes .sh .hint { letter-spacing: 0; font-weight: 500; }
 #iNotes .txt { margin: 0; font-size: 12.5px; line-height: 1.5; color: color-mix(in srgb, var(--ink) 85%, transparent); overflow-wrap: anywhere; white-space: pre-wrap; }
 #iNotes .txt a { color: inherit; text-decoration: underline; text-underline-offset: 2px; -webkit-user-select: text; user-select: text; }
@@ -912,42 +892,18 @@ body.embed #tlib { display: none !important; }
     <div id="pages" role="menu" aria-label="Pages"></div>
     <nav id="crumb" aria-label="Where I am"><button id="cHome" title="Home: all boards · ⌘⇧H" aria-label="Home"><svg data-ic="home" width="16" height="16" stroke-width="1.9"></svg></button><span class="cs"><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><button id="cFolder" hidden title="Project on Home"><i id="cFolderIc"></i><span id="cFolderName"></span></button><span class="cs" id="cFolderSep" hidden><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><button id="cProj" aria-haspopup="menu" aria-expanded="false"><span id="cProjName"></span><span class="cs"><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span></button><button id="cPage" aria-expanded="false" title="Pages · double-click to rename"><span id="cPageName"></span><svg data-ic="chevron" class="hy-chev dn" stroke-width="2.4"></svg></button></nav>
     <div id="ctx" role="menu" aria-label="Actions"></div>
-    <button id="bset" class="hy-pop" title="Canvas settings" aria-label="Canvas settings" aria-expanded="false"><svg data-ic="settings" width="18" height="18" stroke-width="1.8"></svg></button>
+    <button id="bset" class="hy-pop" title="App settings" aria-label="App settings" aria-expanded="false"><svg data-ic="settings" width="18" height="18" stroke-width="1.8"></svg></button>
     <button id="bkeys" title="Shortcuts" aria-label="Shortcuts" aria-expanded="false">?</button>
-    <button id="bntf" title="Notifications: what agents put on the boards" aria-label="Notifications" aria-expanded="false"><svg data-ic="notifications" width="18" height="18" stroke-width="1.8"></svg></button>
+    <button id="bntf" class="hy-bell" title="Notifications: what agents put on the boards" aria-label="Notifications" aria-expanded="false"><svg data-ic="notifications" width="18" height="18" stroke-width="1.8"></svg></button>
     <div id="ntf" role="dialog" aria-label="Notifications"></div>
     <button id="bhist" title="Version history" aria-label="Version history" aria-expanded="false"><svg data-ic="history" width="18" height="18" stroke-width="1.8"></svg></button>
     <div id="hist" role="dialog" aria-label="Version history">
-      <div class="hh"><hy-segmented class="htabs" variant="tabs" size="s" value="ev"><button value="ev" data-tab="ev">Activity</button><button value="ver" data-tab="ver">Versions</button></hy-segmented><button id="histClose" class="hclose" aria-label="Close history" title="Close · Esc"><svg data-ic="close" width="14" height="14" stroke-width="2.2"></svg></button></div>
+      <div class="hh hy-bh"><hy-segmented class="htabs" variant="tabs" value="ev"><button value="ev" data-tab="ev">Activity</button><button value="ver" data-tab="ver">Versions</button></hy-segmented><button id="histClose" class="hclose hy-bh-btn" aria-label="Close history" title="Close · Esc"><svg data-ic="close" width="14" height="14" stroke-width="2.2"></svg></button></div>
       <div class="save"><input id="histLabel" placeholder="Name the current version…" aria-label="Version name"><button id="histSave" title="Save the current state as a separate version · Enter">Save</button></div>
       <div id="histList"></div>
       <div id="evList"></div>
     </div>
-    <div id="sets" role="dialog" aria-label="Canvas settings">
-      <!-- first, so the owner finds it at once after the interface became English (owner 2026-10-06); each language by its own name -->
-      <div class="sh">Language</div>
-      <div class="seg" id="langOpts"><button data-lang="en" lang="en">English</button><button data-lang="ru" lang="ru" data-not>Русский</button></div>
-      <div class="sh">Theme</div>
-      <div class="seg" data-set="theme"><button data-v="auto" title="Like macOS: light by day, dark in the evening, if the system is set that way">Auto</button><button data-v="dark" title="Dark theme, graphite paper">Dark</button><button data-v="light" title="Light theme, light paper">Light</button></div>
-      <div class="sh">Paper grain</div>
-      <div class="seg" data-set="grain"><button data-v="0">Very fine</button><button data-v="1">Fine</button><button data-v="2">Visible</button><button data-v="3">Strong</button></div>
-      <div id="engineSet" hidden><div class="sh">Engine</div>
-      <div class="seg" id="engineOpts"><button data-engine="webkit" title="The macOS engine, like Safari: draws on the CPU">WebKit</button><button data-engine="chromium" title="Chrome's engine inside Hyimg: the GPU draws the board and it stays smooth">Chromium</button></div></div>
-      <div class="sh">Rendering</div>
-      <div class="seg" data-set="lod"><button data-v="0" title="Each image as its own element">Standard</button><button data-v="1" title="From afar the images are drawn as one canvas (canvas 2D)">Canvas</button><button data-v="2" title="From afar the GPU draws the images (WebGL), like Figma">WebGL</button></div>
-      <div class="sh">Notes</div>
-      <div class="seg" data-set="glass"><button data-v="1" title="Translucent, with a strong blur under them">Glass</button><button data-v="0" title="Solid, no blur">Solid</button></div>
-      <div class="sh">Dots</div>
-      <div class="seg" data-set="dotsgl"><button data-v="0" title="A grid of CSS layers, as always">Classic</button><button data-v="1" title="One WebGL layer: alive, waves run through them when you drop images">WebGL</button></div>
-      <div class="sh">Shadows</div>
-      <div class="seg" data-set="shadow"><button data-v="1" title="Panels and buttons float above the board">With shadows</button><button data-v="0" title="Panels lie flat">No shadows</button></div>
-      <div class="sh">Corners</div>
-      <div class="seg" data-set="shape"><button data-v="round" title="Round buttons and panels">Round</button><button data-v="pro" title="Stricter: almost square, with a moderate radius">Pro</button></div>
-      <div class="sh">Paper color</div>
-      <div class="paper"><label>Dark<input type="color" data-paper="paperDark" aria-label="Paper color in the dark theme"></label><label>Light<input type="color" data-paper="paperLight" aria-label="Paper color in the light theme"></label><button data-paper-reset title="Restore the default colors">Reset</button></div>
-      <div class="hy-slider" data-unit="%"><input id="dotsVis" type="range" min="0" max="300" step="5" aria-label="Dots visibility, percent"><span class="hy-slider-l">Dots visibility</span><output class="hy-slider-v"></output></div>
-      <div class="hy-hint" data-th="For <b>the whole app</b>: Home and every board">For <b>the whole app</b>: Home and every board</div>
-    </div>
+    <div id="sets" role="dialog" aria-label="App settings"></div>
     <div id="keys">
       <div><span class="k">drag</span> a frame from the library onto the canvas</div>
       <div><span class="k">scroll wheel, trackpad</span> move the canvas</div>
@@ -958,12 +914,12 @@ body.embed #tlib { display: none !important; }
       <div><span class="k"><kbd>N</kbd>, the note button</span> sticky note: under the pointer, type right away</div>
       <div><span class="k">a note over frames</span> is linked to every frame under it</div>
       <div><span class="k">a note inside a group, linked to nothing</span> belongs to the whole group</div>
-      <div><span class="k">the note's yellow dot</span> drag it to a frame or group: an arrow (to remove: click the arrow, <kbd>⌫</kbd>)</div>
+      <div><span class="k">the note's yellow dot</span> drag it to a frame, a card or a group: an arrow (to remove: click the arrow, <kbd>⌫</kbd>)</div>
       <div><span class="k">small and big <b>A</b> above a note</span> type size, five steps (for all selected notes)</div>
       <div><span class="k">colored dots above a note</span> note color (for all selected), remembered for new ones</div>
       <div><span class="k">“Area” above a note</span> a dashed zone: every frame inside is linked, the edges stretch</div>
       <div><span class="k">in a note <kbd>⌘</kbd><kbd>B</kbd> <kbd>⌘</kbd><kbd>I</kbd></span> bold, italic; <kbd>-</kbd> or <kbd>1.</kbd> at the start of a line: a list, <kbd>#</kbd> heading</div>
-      <div><span class="k">in a note <kbd>Esc</kbd> <kbd>⌘</kbd><kbd>↵</kbd></span> apply (Enter: new line)</div>
+      <div><span class="k">in a note <kbd>↵</kbd> <kbd>Esc</kbd></span> apply (⇧↵: new line)</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>M</kbd></span> the media library: open, close</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>.</kbd></span> hide all the interface, again: bring it back</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>G</kbd></span> group</div>
@@ -971,7 +927,7 @@ body.embed #tlib { display: none !important; }
       <div><span class="k"><kbd>⌘</kbd><kbd>]</kbd> <kbd>⌘</kbd><kbd>[</kbd></span> bring forward, send backward</div>
       <div><span class="k"><kbd>⌥</kbd><kbd>⌘</kbd><kbd>]</kbd> <kbd>⌥</kbd><kbd>⌘</kbd><kbd>[</kbd></span> to the front, to the back</div>
       <div><span class="k"><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></span> move the selection a little, with <kbd>⇧</kbd> more</div>
-      <div><span class="k">double-click</span> an image: the Image mode; a video: crop and trim</div>
+      <div><span class="k">double-click</span> an image: Image Studio; a video: crop and trim</div>
       <div><span class="k"><kbd>C</kbd></span> crop; a video: crop and trim</div>
       <div><span class="k">⤢ in a video's pill</span> full screen, <kbd>Esc</kbd> leaves it</div>
       <div><span class="k">pointer over a video</span> plays muted; pointer away: the still again</div>
@@ -1171,6 +1127,8 @@ function mkApply(el, sw, sh, f) {
 // the corner squares on one selected object: from 62 px wide on screen (owner's lab, 2026-10-06; it was 84), and as tall as one square
 const HANDLE_PX = 30, HANDLE_FROM = 62;
 const handlesOn = (sw, sh) => sw >= HANDLE_FROM && sh >= HANDLE_PX;
+hyMultiScale.init({ board: () => board, rectOf, bbox, reachRect, tlSize, handlesOn, z: () => cam.z,
+  kind: it => isNote(it) ? "note" : isText(it) ? "text" : isTl(it) ? "tl" : it.type ? "card" : "pic" });   // several selected scale together
 // the app's curve, cubic-bezier(.32,.72,0,1), for the far view's marks that animate on the canvas
 function mkEase(p) {
   if (p <= 0) return 0; if (p >= 1) return 1;
@@ -1194,7 +1152,7 @@ const TSIZE = [{ fs: 24, wt: 400, name: "Small" }, { fs: 40, wt: 400, name: "Reg
 function setTextSize(to) {
   const ids = [...sel].filter(id => isText(board.items[id])); if (!ids.length) return;
   const before = snap();
-  ids.forEach(id => { const t = board.items[id]; t.size = to; t.fs = TSIZE[to].fs; });
+  ids.forEach(id => { const t = board.items[id]; t.size = to; if (t.tw) t.tw *= TSIZE[to].fs / t.fs; t.fs = TSIZE[to].fs; });   // a document: its width too
   commit(before);
 }
 // each selected text one step smaller or bigger from its own size (a size made by the corner steps from the nearest of the five)
@@ -1204,7 +1162,7 @@ function stepTextSize(d) {
   ids.forEach(id => { const t = board.items[id], c = TSIZE.findIndex(z => Math.abs(z.fs - t.fs) < .5);
     const at = c >= 0 ? c : TSIZE.reduce((b, z, i) => Math.abs(Math.log(t.fs / z.fs)) < Math.abs(Math.log(t.fs / TSIZE[b].fs)) ? i : b, 0);
     const to = Math.max(0, Math.min(TSIZE.length - 1, c >= 0 ? at + d : (d < 0 ? (TSIZE[at].fs < t.fs ? at : at - 1) : (TSIZE[at].fs > t.fs ? at : at + 1))));
-    t.size = Math.max(0, to); t.fs = TSIZE[t.size].fs; });
+    t.size = Math.max(0, to); if (t.tw) t.tw *= TSIZE[t.size].fs / t.fs; t.fs = TSIZE[t.size].fs; });
   commit(before);
 }
 function noteSize(n) { if (Number.isInteger(n.size) && NSIZE[n.size]) return n.size; let b = 2, d = 9; NSIZE.forEach((r, i) => { const x = Math.abs(n.fs / n.w - r); if (x < d) { d = x; b = i; } }); return b; }
@@ -1230,7 +1188,7 @@ function isPic(it) { return !!it && !it.type; }   // a picture; titles and stick
 // resize "keep" keeps the proportions; frame(id) -> true while the card's own editor is open: then its frame changes like a picture in
 // crop (edges, corners, the ratio bar) and resized(id) follows each change; frameBar: false keeps the ratio bar off the board, the plugin
 // shows the frame in its own panel (the 3D studio's Scene panel, owner 2026-10-07: «вот это в рендере я бы убрал, оно мешает, лучше это
-// добавить где-то справа в настройках»). Cards of a type whose plugin is missing are not drawn.
+// добавить где-то справа в настройках»). A card whose plugin is off or gone shows its still, marked «Plugin off» (ui/plugins-board.js).
 // HY.ctx(fn) adds a plugin's items to the right-click menu: fn(ids, id) -> [{icon, label, keys?, fn}] for what was clicked (ids: the
 // selection, id: the object under the pointer). A card may hold pictures of the library (an image frame): it.pics lists their paths, and
 // they count as lying on this page (the library's marks, «removed from the canvas», the copies on the page).
@@ -1321,18 +1279,19 @@ const HY = {
   placeAs(fn) { PLACE.push(fn); },
 };
 var PLACE = [];   // var: HY's methods and render() may run before this line
-var MODES = window.hyModes ? hyModes({ dock: $("#dock"), sel: () => [...sel].filter(id => board.items[id]), t: T }) : null;
+var MODES = window.hyModes ? hyModes({ dock: $("#dock"), sel: () => [...sel].filter(id => board.items[id]), t: T, rect: rectOf }) : null;
 // the card a plugin makes of a dropped library file (HY.placeAs), else null: a picture
 function ownCard(p) { for (const f of PLACE) { try { const c = f(p, byPath.get(p)); if (c && c.type) return c; } catch (e) { console.error(e); } } return null; }
 function libCard(p, ar, x, y, w) { const c = ownCard(p); if (!c) return { path: p, x, y, w, ar, crop: null }; const { ar: _a, ...card } = c; return { ...card, x: Math.round(x), y: Math.round(y), w, h: Math.round(w / ar) }; }
 let PLGST = [];   // what loaded, for live.json: an agent sees a plugin that failed in the app
 async function loadPlugins() {
-  let list = []; try { list = await (await fetch("/api/plugins")).json(); } catch (e) { PLGST = [{ error: "list: " + String(e.message || e) }]; reportLive(); return; }
-  for (const p of list) if (p.canvas) {
-    try { const m = await import(p.canvas); if (m.register) await m.register(HY, p); PLGST.push({ name: p.name, ok: true }); }
+  const PB = window.hyPlugBoard; if (PB) PB.init(HY, PLG, { t: T, toast, save: () => save(), saved: () => !(dirty || saveT) });   // ui/plugins-board.js
+  let list = []; try { list = await (await fetch("/api/plugins")).json(); } catch (e) { PLGST = [{ error: "list: " + String(e.message || e) }]; }   // none: ready() all the same, cards as plates
+  for (const p of Array.isArray(list) ? list : []) if (p.canvas) {
+    try { const H = PB ? PB.wrap(p) : HY, m = await import(p.canvas); if (m.register) await m.register(H, p); PLGST.push({ name: p.name, ok: true }); }
     catch (e) { console.error("plugin", p.name, e); PLGST.push({ name: p.name, error: String(e.message || e).slice(0, 200) }); toast(T("Plugin “{name}” did not load: {why}", { name: p.title, why: String(e.message || e).slice(0, 80) }), "error"); }
   }
-  liveK = ""; reportLive();
+  liveK = ""; reportLive(); if (PB) PB.ready();
 }
 function itemH(it) { if (it.type) return it.h || it.fs * 1.2; const c = cropOf(it); return it.w * ((c[3] - c[1]) / it.ar) / (c[2] - c[0]); }   // ar = natural width / height
 function rectOf(id) { const it = board.items[id]; return it ? { x: it.x, y: it.y, w: it.w, h: itemH(it) } : board.groups[id]; }
@@ -1358,35 +1317,11 @@ function regroup(ids) {
 function hitR(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 // a note is at least a square (min-height = width); its measured height can be short while the editor is open, which cut the zone off (2026-09-30)
 function reachRect(n) { const m = n.reach; return m ? { x: n.x - m.l, y: n.y - m.t, w: n.w + m.l + m.r, h: Math.max(itemH(n), n.w) + m.t + m.b } : null; }
-// the pictures a note touches: Map picture id -> Set(overlap | zone | arrow). The server works the same out from the board file (server.py note_links).
-// Pictures by cells of the board, for the passes that ask linksOf about every note (owner 2026-10-02: dragging or resizing a note
-// lagged; with 520 notes and 3600 frames each redraw tested every note against every frame, 340 ms). Built once per such pass.
-function picIndex() {
-  const C = 2048, cells = new Map(), key = (i, j) => i * 1e6 + j;
-  for (const id in board.items) {
-    if (!isPic(board.items[id])) continue; const q = rectOf(id), e = { id, q };
-    for (let i = Math.floor(q.x / C); i <= Math.floor((q.x + q.w) / C); i++) for (let j = Math.floor(q.y / C); j <= Math.floor((q.y + q.h) / C); j++) {
-      const k = key(i, j); let c = cells.get(k); if (!c) cells.set(k, c = []); c.push(e);
-    }
-  }
-  return r => {   // the pictures whose box may touch r
-    const seen = new Set(), out = [];
-    for (let i = Math.floor(r.x / C); i <= Math.floor((r.x + r.w) / C); i++) for (let j = Math.floor(r.y / C); j <= Math.floor((r.y + r.h) / C); j++)
-      for (const e of cells.get(key(i, j)) || []) if (!seen.has(e)) { seen.add(e); out.push(e); }
-    return out;
-  };
-}
-function linksOf(nid, near) {   // near: picIndex() of this pass, else every picture is looked at
-  const n = board.items[nid], out = new Map(), add = (id, v) => { if (!out.has(id)) out.set(id, new Set()); out.get(id).add(v); };
-  const r = rectOf(nid), z = reachRect(n);
-  const pool = near ? near(z ? { x: Math.min(r.x, z.x), y: Math.min(r.y, z.y), w: Math.max(r.x + r.w, z.x + z.w) - Math.min(r.x, z.x), h: Math.max(r.y + r.h, z.y + z.h) - Math.min(r.y, z.y) } : r) : null;
-  for (const { id, q } of pool || Object.keys(board.items).filter(id => isPic(board.items[id])).map(id => ({ id, q: rectOf(id) }))) { if (hitR(r, q)) add(id, "overlap"); if (z && inside({ x: q.x + q.w / 2, y: q.y + q.h / 2 }, z)) add(id, "zone"); }   // zone: by the picture's centre, as server.py note_index
-  (n.to || []).forEach(t => { if (isPic(board.items[t])) add(t, "arrow"); else if (board.groups[t]) board.groups[t].members.forEach(m => { if (isPic(board.items[m])) add(m, "arrow"); }); });
-  // a note that sits inside a group frame and touches nothing by itself speaks for the whole group (owner 2026-09-30)
-  // only a note with no zone and no arrows speaks for its group: a zone, even an empty one, means "these pictures" (2026-10-01)
-  if (!out.size && !n.reach && !(n.to || []).length) { const gid = noteGroup(nid); if (gid) { board.groups[gid].members.forEach(m => { if (isPic(board.items[m])) add(m, "group"); }); if (out.size) out.group = gid; } }
-  return out;
-}
+// the things a note touches, every kind (owner 2026-10-07: pictures, videos, PDFs, any plugin's card; headings and timelines by an arrow):
+// Map id -> Set(overlap | zone | arrow | group), .group when it speaks for a whole group. ui/notelink.js, the rule of review/notelinks.py.
+// picIndex: things by cells of the board, built once per pass that asks about every note (owner 2026-10-02: 520 notes, 3600 frames)
+function picIndex() { return hyNoteLink.index(board, rectOf); }
+function linksOf(nid, near) { return hyNoteLink.links(board, nid, near, rectOf, reachRect, noteGroup); }   // near: picIndex() of this pass
 function noteGroup(nid) {   // the smallest group frame that holds the centre of the note, the same rule as regroup()
   const n = board.items[nid], c = { x: n.x + n.w / 2, y: n.y + itemH(n) / 2 };
   const hit = Object.entries(board.groups).filter(([, g]) => inside(c, g)).sort((a, b) => a[1].w * a[1].h - b[1].w * b[1].h)[0];
@@ -1410,34 +1345,24 @@ function zoneEdgeAt(p) {
   return best;
 }
 // hy-allow-begin: icon-inline the board's own drawing, not icons: a note's group outline and zone, the notes' arrows with their remove dot
+// Everything here is in board units, its sizes on screen are CSS by --z (#links, #zones below): the same board gives the same markup
+// at any zoom, so a zoom moves the lines as the compositor scales the layer, and the markup is written only when it changed
+// (2026-10-08: written on every camera update, and redrawn with a jump when a zoom stopped)
 function renderLinks() {
-  const svg = $("#links"); if (!svg) return; const s = 1 / cam.z; let h = "", hz = "";
+  const svg = $("#links"); if (!svg) return; let h = "", hz = ""; const ends = hyNoteLink.anchors(board, rectOf);
   Object.entries(board.items).forEach(([nid, n]) => {
     if (!isNote(n)) return;
     const on = sel.has(nid), z = reachRect(n), nr = rectOf(nid), nCol = noteCol(n)[0];
-    if (on && n.text && linksOf(nid).group) { const g = board.groups[linksOf(nid).group]; h += `<rect x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="${14 * s}" fill="none" stroke="${nCol}" stroke-width="${2.5 * s}" stroke-dasharray="${9 * s} ${6 * s}"/>`; }
-    if (z) hz += `<rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="${6 * s}" fill="${nCol}" fill-opacity="${on ? .1 : .04}" stroke="${nCol}" stroke-opacity="${on ? 1 : .5}" stroke-width="${1.5 * s}" stroke-dasharray="${7 * s} ${5 * s}"/>`;
-    (n.to || []).forEach(t => {
-      const tr = rectOf(t); if (!tr) return;
-      const nc = { x: nr.x + nr.w / 2, y: nr.y + nr.h / 2 }, tc = { x: tr.x + tr.w / 2, y: tr.y + tr.h / 2 };
-      let b;
-      if (inside(nc, tr)) {   // the note sits inside the frame it points at (a group): the arrow ends on the nearest side of that frame
-        const c = [{ x: tr.x, y: nc.y }, { x: tr.x + tr.w, y: nc.y }, { x: nc.x, y: tr.y }, { x: nc.x, y: tr.y + tr.h }].sort((u, v) => Math.hypot(u.x - nc.x, u.y - nc.y) - Math.hypot(v.x - nc.x, v.y - nc.y));
-        b = c[0];
-      } else b = edgePt(tr, nc);
-      const a = edgePt(nr, b);
-      const key = nid + "|" + t, pick = selArrow === key, ang = Math.atan2(b.y - a.y, b.x - a.x), L = 16 * s, W = 6.5 * s, col = pick ? "#ffffff" : nCol;
-      const bx = b.x - Math.cos(ang) * L, by = b.y - Math.sin(ang) * L, nx = -Math.sin(ang) * W, ny = Math.cos(ang) * W;
-      const mx = (a.x + bx) / 2, my = (a.y + by) / 2;
-      h += `<g class="arw"><line data-arrow="${key}" class="hit" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="transparent" stroke-width="${18 * s}"/>`
-        + `<line x1="${a.x}" y1="${a.y}" x2="${bx}" y2="${by}" stroke="${col}" stroke-opacity="${on || pick ? 1 : .8}" stroke-width="${(pick ? 3.5 : 2) * s}"/>`
-        + `<polygon points="${b.x},${b.y} ${bx + nx},${by + ny} ${bx - nx},${by - ny}" fill="${col}" fill-opacity="${on || pick ? 1 : .8}"/>`
-        + `<g class="del" data-arrowdel="${key}" transform="translate(${mx} ${my})"><title>${T("Remove arrow")}</title><circle r="${11 * s}" stroke-width="${2 * s}"/>`
-        + `<path d="M${-5 * s} 0H${5 * s}" stroke="#fff" stroke-width="${2.2 * s}" stroke-linecap="round"/></g></g>`;
-    });
+    if (on) h += hyNoteLink.chainSvg(board, nid, rectOf, nCol);   // its thread of replies (2026-10-08)
+    if (on && n.text && linksOf(nid).group) {
+      const g = board.groups[linksOf(nid).group]; h += `<rect class="lkg" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" fill="none" stroke="${nCol}"/>`;
+    }
+    if (z) hz += `<rect x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" fill="${nCol}" fill-opacity="${on ? .1 : .04}" stroke="${nCol}" stroke-opacity="${on ? 1 : .5}"/>`;
+    (n.to || []).forEach(t => { const tr = rectOf(t), key = nid + "|" + t;   // its arrows (ui/notelink.js arrowSvg: the curve, the end dot, ×)
+      if (tr) h += hyNoteLink.arrowSvg({ key, on, pick: selArrow === key, col: nCol, nr, tr, ends }); });
   });
-  if (drag && drag.mode === "connect" && drag.cur) { const a = edgePt(rectOf(drag.id), drag.cur); h += `<line x1="${a.x}" y1="${a.y}" x2="${drag.cur.x}" y2="${drag.cur.y}" stroke="${noteCol(board.items[drag.id])[0]}" stroke-width="${2 * s}" stroke-dasharray="${6 * s} ${4 * s}"/>`; }
-  svg.innerHTML = h; $("#zones").innerHTML = hz;
+  h += hyConn.svg(ends, drag);   // the arrows between anything, the one being pulled (a note's too), a choice grid's numbers (ui/connectors.js)
+  if (svg._h !== h) { svg.innerHTML = h; svg._h = h; } const zs = $("#zones"); if (zs._h !== hz) { zs.innerHTML = hz; zs._h = hz; }
 }
 // hy-allow-end
 // a new timeline (owner 2026-10-01): L or the dock button; a start dot and three more at equal steps, the start heading opens for typing
@@ -1445,7 +1370,7 @@ function newTimeline(atPointer) {
   const before = snap(), vr = stage.getBoundingClientRect();
   const c = atPointer && lastPt ? lastPt : toWorld(vr.left + INSET + (vr.width - INSET) / 2, vr.top + vr.height / 2);
   let size = 2; while (size < TSIZE.length - 1 && TSIZE[size].fs * cam.z < 12) size++;
-  const fs = TSIZE[size].fs, len = Math.round(fs * 36), id = uid("l");
+  const fs = TSIZE[size].fs * hyNewSize.text(cam.z), len = Math.round(fs * 36), id = uid("l");   // zoomed in: as on screen at 100 %
   const it = { type: "timeline", dir: "h", fs, len, x: Math.round(c.x - len / 2), y: 0, w: 0, h: 0, points: [0, 1, 2, 3].map(k => ({ id: uid("p"), t: Math.round(len * k / 3), text: "" })) };
   tlSize(it); it.y = Math.round(c.y - it.h / 2); board.items[id] = it; sel = new Set([id]); render();
   editTlLabel(id, it.points[0].id, before);
@@ -1464,10 +1389,10 @@ function editTlLabel(id, pid, before0) {
   const before = before0 || snap(), ta = document.createElement("textarea"); ta.rows = 1; ta.value = pt.text; ta.placeholder = pt.t === 0 ? T("Start") : T("Label");
   el.textContent = ""; el.appendChild(ta); el.classList.add("editing");
   const fit = () => { ta.style.width = "0"; ta.style.height = "0"; ta.style.width = Math.max(ta.scrollWidth, it.fs * 3) + 4 + "px"; ta.style.height = ta.scrollHeight + "px"; };
-  fit(); ta.focus(); ta.select(); sel = new Set([id]);
+  fit(); ta.focus(); ta.select(); sel = new Set([id]); const kh = hyHint("heading", el);
   let closed = false;
   const done = () => {
-    if (closed) return; closed = true; openEditor = null;
+    if (closed) return; closed = true; openEditor = null; kh.hide();
     const v = ta.value.replace(/\s+$/, ""); ta.remove(); el.classList.remove("editing");
     if (!v.trim() && pt.t !== 0 && before0 && pt.added) { it.points = it.points.filter(q => q.id !== pid); render(); return; }   // a dot just added and left empty goes away
     pt.text = v; delete pt.added; el._k = null; render(); commit(before);
@@ -1475,7 +1400,7 @@ function editTlLabel(id, pid, before0) {
   ta.addEventListener("input", fit);
   ta.addEventListener("keydown", e => { e.stopPropagation(); if ((e.key === "Enter" && !e.shiftKey) || e.key === "Escape") { e.preventDefault(); done(); } });   // Esc applies, as everywhere on the board
   ta.addEventListener("blur", done, { once: true });
-  openEditor = done;
+  openEditor = done; hyUndoNew.watch(ta, !!before0, done);   // ⌘Z: a line or a dot just made goes, an old label undoes its typing first
 }
 function setTlDir(dir) {
   const ids = [...sel].filter(id => isTl(board.items[id])); if (!ids.length) return;
@@ -1488,14 +1413,17 @@ function setTlSize(to) {
 function newNote(atPointer) {
   const before = snap(), vr = stage.getBoundingClientRect();
   const c = atPointer && lastPt ? lastPt : toWorld(vr.left + INSET + (vr.width - INSET) / 2, vr.top + vr.height / 2);
-  // square like a sticker and exactly as big as a picture on this board (owner 2026-09-30: "the size of the pictures and no bigger"), whatever the zoom
-  const pw = Object.values(board.items).filter(isPic).map(it => it.w).sort((a, b) => a - b), w = Math.round(pw.length ? pw[Math.floor(pw.length / 2)] : 320), size = Math.min(4, Math.max(0, +pref("notesize", 2) || 0)), fs = w * NSIZE[size], id = uid("n");
+  // square like a sticker, as big as a picture on this board at most (owner 2026-09-30: "the size of the pictures and no bigger"), and a
+  // quarter of the visible height on screen at this zoom (owner 2026-10-07, ui/newsize.js); the type is a share of the width
+  const pw = Object.values(board.items).filter(isPic).map(it => it.w).sort((a, b) => a - b), w = hyNewSize.note(Math.round(pw.length ? pw[Math.floor(pw.length / 2)] : 320), cam.z, vr.height), size = Math.min(4, Math.max(0, +pref("notesize", 2) || 0)), fs = w * NSIZE[size], id = uid("n");
   board.items[id] = { type: "note", text: "", x: Math.round(c.x - w / 2), y: Math.round(c.y - w / 2), w, fs, size, h: 0, color: pref("notecolor", "yellow"), reach: null, to: [] };
   // with several things selected (owner 2026-09-30): the note stands to the left of the selection and its dashed zone wraps both,
   // so the selected frames become the note's sub-group right away
-  const picked = [...new Set([...sel].flatMap(s => board.groups[s] ? board.groups[s].members : [s]))].filter(s => board.items[s] && s !== id);
-  if (picked.length === 1 && sel.size === 1 && isPic(board.items[picked[0]])) {
-    // one picture (owner 2026-10-02): no zone, the note stands above it with an arrow to it; a gap so the arrow shows
+  // a selected note is not linked by a zone: the new note answers it (owner 2026-10-08: N on one note made an area over the whole group)
+  const sn = [...sel].filter(s => isNote(board.items[s]));
+  const picked = [...new Set([...sel].flatMap(s => board.groups[s] ? board.groups[s].members : [s]))].filter(s => board.items[s] && s !== id && !sn.includes(s));
+  if (picked.length === 1 && sel.size - sn.length === 1 && hyNoteLink.target(board.items[picked[0]])) {
+    // one picture or card (owner 2026-10-02, any kind 2026-10-07): no zone, the note stands above it with an arrow to it; a gap so the arrow shows
     const r = rectOf(picked[0]), n = board.items[id];
     n.x = Math.round(r.x + r.w / 2 - w / 2); n.y = Math.round(r.y - Math.round(w * .4) - w); n.to = [picked[0]];
   } else if (picked.length) {
@@ -1504,6 +1432,7 @@ function newNote(atPointer) {
     n.x = Math.round(b.x - GAP - w); n.y = Math.round(b.y);   // top in line with the top of the selected block
     n.reach = { l: PAD, t: PAD, r: Math.round(b.x + b.w - (n.x + w) + PAD), b: Math.round(Math.max(0, b.y + b.h - (n.y + w)) + PAD) };   // the note is a square as wide as a picture
   }
+  if (sn.length && (!picked.length || sn.length === 1)) hyNoteLink.placeReply(board, id, sn[sn.length - 1], rectOf, !picked.length);   // beside it, unless placed by things
   sel = new Set([id]); render(); editNote(id, before);
 }
 function toggleZone(id) {
@@ -1524,6 +1453,7 @@ function setNoteColor(name) {
 function removeArrow() {
   if (!selArrow) return; const [nid, t] = selArrow.split("|"), n = board.items[nid]; selArrow = null; if (!n) return;
   const before = snap(); n.to = (n.to || []).filter(x => x !== t); commit(before);
+  toast(T("Arrow removed"), "info", { actions: [{ label: T("Undo"), fn: () => { if (past[past.length - 1] === before) undo(); } }] });
 }
 
 /* ---------- board background ---------- */
@@ -1532,7 +1462,7 @@ function removeArrow() {
 // his numbers in PAPER. Grain: specks of 1.5 px, sharp; fibres: 26 per 256 px tile, 8 px long, a quarter of the grain's strength.
 const { PAPER, TILE, GRAINS, DOTC, grainTile } = window.hyPaper;   // ui/paper.js: the same paper on the canvas and on Home
 const FASTMODE = () => true;   // the background layers and light far thumbnails are standard since 2026-09-30 (were the "Ускорение" test)
-const SETS = { dotsgl: "0", ui: "classic", bg: "graphite", grain: "2", dotsv: "100", lod: /Chrome\//.test(navigator.userAgent) ? "2" : "1", glass: "1", shadow: "1", shape: "round" };   // lod: WebGL in Chromium, measured smoother (2026-10-04)   // lod: Холст is the default since 2026-09-30 (owner: works best of the three)   // dotsv: one visibility slider for all dots, in % of the owner's tuned alpha (owner 2026-09-30: no dot variants)
+const SETS = { dotsgl: "0", ui: "classic", bg: "graphite", grain: "0", dotsv: "100", lod: /Chrome\//.test(navigator.userAgent) ? "2" : "1", glass: "1", shadow: "0", shape: "round" };   // lod: WebGL in Chromium, measured smoother (2026-10-04)   // lod: Холст is the default since 2026-09-30 (owner: works best of the three)   // dotsv: one visibility slider for all dots, in % of the owner's tuned alpha (owner 2026-09-30: no dot variants)
 // one-time switch to the tuned paper: choices made before it (e.g. "strong grain") would hide the owner's numbers
 if (pref("paperv", "") !== "2") { ["bg", "grain"].forEach(k => { try { localStorage.removeItem("cv." + k); } catch {} }); setPref("paperv", "2"); }
 // Тема (owner 2026-10-01: "auto or by hand"): Авто follows macOS, Темная, Светлая; the paper goes with it (dark = graphite,
@@ -1605,12 +1535,7 @@ function renderBg() {
   st.setProperty("--dots", layers.slice(0, -1).join(", ") || "none"); st.setProperty("--grain", grain);
   st.setProperty("--bg-size", sizes.join(", ")); st.setProperty("--bg-pos", pos.join(", "));
 }
-function renderSets() {
-  LODSET = null; LODGC = null; DOTSET = null;
-  document.querySelectorAll("#sets [data-set]").forEach(g => g.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === setOf(g.dataset.set))));
-  hySlider.mount($("#dotsVis").closest(".hy-slider")).set(setOf("dotsv"));
-  const [d, l] = hyPaper.fromStorage(); document.querySelectorAll("#sets [data-paper]").forEach(i => { i.value = i.dataset.paper === "paperDark" ? d : l; });
-}
+function renderSets() { LODSET = null; LODGC = null; DOTSET = null; if (SP) SP.refresh(); }
 // «Цвет бумаги» (owner 2026-10-04): the colour of the paper in each theme, the whole app's; the library page around and the app's own
 // ground (the window under the pages) take it too
 function paperChanged() {
@@ -1618,8 +1543,6 @@ function paperChanged() {
   try { parent !== window && parent.postMessage({ type: "paper" }, location.origin); } catch {}
   clearTimeout(paperChanged.t); paperChanged.t = setTimeout(() => toApp({ action: "ground" }), 400);
 }
-$("#sets").addEventListener("input", e => { const i = e.target.closest("[data-paper]"); if (i) { setPref(i.dataset.paper, i.value); paperChanged(); } });
-$("#sets").addEventListener("click", e => { if (e.target.closest("[data-paper-reset]")) { ["paperDark", "paperLight"].forEach(k => { try { localStorage.removeItem("cv." + k); } catch {} }); renderSets(); paperChanged(); } });
 /* ---------- version history ---------- */
 const WHO = { owner: T("You"), ai: T("AI"), auto: T("auto") };
 // the labels the server gives its own versions (history.py, in the language of the day they were made): shown in today's language
@@ -1640,7 +1563,7 @@ async function previewVersion(e) {
   if (!PREV) return;
   PREV.id = e.id; board = b; board.items = board.items || {}; board.groups = board.groups || {}; board.removed = board.removed || {};
   sel.clear(); stage.classList.add("previewing");
-  $("#pvT").textContent = `${T("Viewing version")} · ${whenOf(e.t)} · ${WHO[e.who] || e.who}${e.label ? " · " + verLabel(e.label) : ""}`;
+  $("#pvT").innerHTML = `${T("Viewing version")} · ${whenOf(e.t)} · ${window.hyWho?.(e, "w") || escH(WHO[e.who] || e.who)}${e.label ? " · " + escH(verLabel(e.label)) : ""}`;
   render(); markHist();
 }
 function exitPreview() {
@@ -1679,7 +1602,7 @@ async function renderHist() {
   const row = (e, cls = "") => `<div class="hv who-${e.who} ${named(e) ? "named" : ""} ${PREV && PREV.id === e.id ? "viewing" : ""} ${cls}" data-id="${e.id}">
       <span class="dot"></span><div class="hb">
         <div class="hl"><b>${esc(title(e))}</b><time>${e.t.slice(11, 16)}</time></div>
-        <div class="hm">${e.who === "auto" && !named(e) ? "" : `<span class="who ${e.who}"><i></i>${WHON[e.who] || esc(e.who)}</span>`}<span>${T("{n} frames", { n: e.pictures || 0 })}</span>${e.notes ? `<span>${T("{n} notes", { n: e.notes })}</span>` : ""}${e.groups ? `<span>${T("{n} groups", { n: e.groups })}</span>` : ""}</div>
+        <div class="hm">${e.who === "auto" && !named(e) && !e.by ? "" : window.hyWho?.(e) || `<span class="who ${e.who}"><i></i>${WHON[e.who] || esc(e.who)}</span>`}<span>${T("{n} frames", { n: e.pictures || 0 })}</span>${e.notes ? `<span>${T("{n} notes", { n: e.notes })}</span>` : ""}${e.groups ? `<span>${T("{n} groups", { n: e.groups })}</span>` : ""}</div>
         ${e.missing ? `<div class="hx">${hyIcon("warn", 13, 2.2, "", { attrs: "style=\"flex:0 0 auto;margin-top:1px\"" })}<span>${T("{n} frames of this version are no longer on disk", { n: e.missing })}</span></div>` : ""}
       </div></div>`;
   let html = `<div class="hday">${T("Now")}</div><div class="hv now ${PREV ? "" : "viewing"} first last" data-id=""><span class="dot"></span><div class="hb"><div class="hl"><b>${T("Current version")}</b>${board.saved ? `<time>${board.saved.slice(11, 16)}</time>` : ""}</div><div class="hm">${T("what you're working with")}</div></div></div>`;
@@ -1712,12 +1635,12 @@ function closeSide(except) {
 }
 // a click anywhere else closes the open panel (owner 2026-10-04), and so does a click in the library around it (it sends «outside»). Not while a
 // saved version is looked at: the history stays open with it, a click on the board must not drop the version being compared.
-const SIDE_UI = "#ntf, #bntf, #keys, #bkeys, #hist, #bhist, #sets, #bset, #pv";
+const SIDE_UI = "#ntf, #bntf, #keys, #bkeys, #hist, #bhist, #sets, #bset, #pv, #hyCrop";   // #hyCrop: a picture placed for Settings › Profile (ui/crop.js)
 document.addEventListener("pointerdown", e => {
-  if (PREV || !Object.values(SIDE).some(([, open]) => open()) || (e.target.closest && e.target.closest(SIDE_UI))) return;
+  if (PREV || !anySide() || (e.target.closest && e.target.closest(SIDE_UI))) return;
   closeSide(); side();
-}, true);
-addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.type === "outside" && !PREV && Object.values(SIDE).some(([, open]) => open())) { closeSide(); side(); } });
+}, true); const anySide = () => !$("html").classList.contains("hy-sets-dock") && Object.values(SIDE).some(([, open]) => open());   // settings at the side stay
+addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.type === "outside" && !PREV && anySide()) { closeSide(); side(); } });
 function side() {
   let any = false; for (const [b, open] of Object.values(SIDE)) { const o = open(); any = any || o; $(b).setAttribute("aria-expanded", o); }
   stage.classList.toggle("side-open", any);
@@ -1726,21 +1649,35 @@ function side() {
 // first, a few words, previews; a click goes to the page and the place. The red dot shows while there is news; opening the list reads it.
 const NTF = { items: [], unread: 0 };
 const escH = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-function agoRu(t) { const m = Math.round((Date.now() - new Date(t.replace(" ", "T")).getTime()) / 60000); return m < 1 ? T("just now") : m < 60 ? T("{n} min ago", { n: m }) : m < 1440 ? T("{n} h ago", { n: Math.round(m / 60) }) : t.slice(5, 16).replace("-", "."); }
 async function pollNtf() {
   try { const r = await fetch("/api/notifications?limit=60"); if (!r.ok) return; const d = await r.json(); NTF.items = d.items || []; NTF.unread = d.unread || 0;
     $("#bntf").classList.toggle("dot", NTF.unread > 0); if ($("#ntf").classList.contains("open")) drawNtf(); } catch {}
 }
-function drawNtf() {
-  $("#ntf").innerHTML = `<div class="nh0">${T("Notifications")}</div>` + (NTF.items.length ? NTF.items.map(n => `<button class="nt${n.read ? "" : " new"}" data-n="${escH(n.id)}"><b>${escH(n.title)}</b><span class="who">${escH(n.who)} · ${agoRu(n.t)}</span>${n.text ? `<p>${escH(n.text)}</p>` : ""}${(n.previews || []).length ? `<span class="pv">${n.previews.slice(0, 6).map(p => `<img alt="" loading="lazy" src="/thumb?p=${enc(p)}&s=320" onerror="this.remove()">`).join("")}</span>` : ""}</button>`).join("") : `<div class="none">${T("Nothing yet")}</div>`);
+function drawNtf() {   // written again only when a row changed: every poll (8 s) rewrote the list and loaded and decoded its pictures again
+  const el = $("#ntf"), h = hyBellHead() + (NTF.items.length ? NTF.items.map(n => hyBellRow(n)).join("") : `<div class="none">${T("Nothing yet")}</div>`); if (el._h !== h) el.innerHTML = el._h = h;
 }
+// A click never does nothing (owner 2026-10-08): another board's notification opens that board; one that named nothing asks the server
+// for its author's things around its time (server.py notif_place, notifplace.py); with none found, its page and a toast.
 async function goNtf(n) {
   $("#ntf").classList.remove("open"); side();
+  const other = /^[0-9a-f-]{36}$/i.test(n.board || "") && window.hyLink?.project && n.board.toLowerCase() !== hyLink.project;
+  if (other) {
+    const u = `hyimg://board/${n.board}?` + new URLSearchParams({ page: n.page || "", obj: (n.ids || []).join(",") });
+    (window.hyAppOpenHook || (x => { location.href = x; }))(u); return;
+  }
   if (n.page && n.page !== BOARD) await switchPage(n.page);
-  const ids = (n.ids || []).filter(id => board.items[id] || board.groups[id]);
+  const on = id => board.items[id] || board.groups[id];
+  let ids = (n.ids || []).filter(on), a = n.area;
+  if (!ids.length && !a && !String(n.id).startsWith("c:")) try {
+    const r = await fetch("/api/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "place", id: n.id }) });
+    if (r.ok) { const p = await r.json(); ids = (p.ids || []).filter(on); a = p.area; }
+  } catch {}
   if (ids.length) { sel = new Set(ids.filter(id => board.items[id])); fit(ids); return; }
-  if (n.area) { const a = n.area, r = stage.getBoundingClientRect(), pad = 80, W = r.width - INSET;   // the things went since: the place they were put
-    cam.z = Math.min(2, (W - pad * 2) / a.w, (r.height - pad * 2 - 60) / a.h); cam.x = a.x - INSET / cam.z - (W / cam.z - a.w) / 2; cam.y = a.y - (r.height / cam.z - a.h) / 2; saveCam(); render(); }
+  if (a && a.w > 0 && a.h > 0) { const r = stage.getBoundingClientRect(), pad = 80, W = r.width - INSET;   // the things went since: the place they were put
+    cam.z = Math.min(2, (W - pad * 2) / a.w, (r.height - pad * 2 - 60) / a.h);
+    cam.x = a.x - INSET / cam.z - (W / cam.z - a.w) / 2; cam.y = a.y - (r.height / cam.z - a.h) / 2; saveCam(); render(); return;
+  }
+  toast(T("This notification has no place on the board"));
 }
 $("#bntf").onclick = async () => {
   const o = !$("#ntf").classList.contains("open"); closeSide("ntf"); $("#ntf").classList.toggle("open", o); side();
@@ -1779,13 +1716,14 @@ async function renderEvents(more) {
     if (k === "note") return [T("New note"), note(e)];
     if (k === "note-edit") return [T("Note changed"), note(e)];
     if (k === "note-remove") return [T("Note deleted"), note(e)];
+    if (k === "note-reply") return [T("Reply to a note"), note(e) + `<div class="em">${Q(esc(e.to))}</div>`];
     if (k === "text") return [T("New heading"), `<div class="etext">${esc(e.text)}</div>`];
     if (k === "text-edit") return [T("Heading changed"), `<div class="etext">${esc(e.text)}</div>`];
     if (k === "text-remove") return [T("Heading deleted"), `<div class="etext" style="opacity:.45">${esc(e.text)}</div>`];
     if (k === "timeline") return [T("New timeline"), ""];
     if (k === "move") return [`${T("Moved")}${e.count ? " " + T("{n} frames", { n: e.count }) : ""}${e.groups ? (e.count ? " " + T("and") + " " : " ") + T("{n} groups", { n: e.groups }) : ""}`,
       (e.titles && e.titles.length ? `<div class="em">${e.titles.map(t => Q(esc(t))).join(", ")}</div>` : "") + thumbs(e.paths, e.count)];
-    return [esc(k), ""];
+    return window.hyEvView?.(e, esc) || [esc(k), ""];   // a comment, a drawing on the board (ui/comments.js, ui/annotate.js)
   };
   const on = id => board.items[id] || board.groups[id];
   let html = "", day = "";
@@ -1794,7 +1732,7 @@ async function renderEvents(more) {
     const [title, body] = view(e), live = (e.ids || []).some(on) && !/remove$/.test(e.kind);
     html += `<div class="ev who-${e.who} kind-${e.kind} ${live ? "" : "gone"}" data-n="${n}"><span class="dot"></span><div>
       <div class="el"><b>${title}</b><time>${e.since && e.since.slice(0, 10) === e.t.slice(0, 10) ? e.since.slice(11, 16) + "–" : ""}${e.t.slice(11, 16)}</time></div>
-      <div class="em"><span class="w">${e.who === "ai" ? T("AI") : T("You")}</span>${e.label ? " · " + esc(/^(возврат к версии|restored a version)$/.test(e.label) ? T("restored a version") : e.label) : ""}</div>${body}</div></div>`;
+      <div class="em">${window.hyWho?.(e, "w") || `<span class="w">${e.who === "ai" ? T("AI") : T("You")}</span>`}${e.label ? " · " + esc(/^(возврат к версии|restored a version)$/.test(e.label) ? T("restored a version") : e.label) : ""}</div>${body}</div></div>`;
   });
   if (!EVS.length) html = `<div class="empty">${T("No changes yet")}</div>`;
   else if (evMore) html += `<button class="more-ev">${T("Show earlier")}</button>`;
@@ -1826,10 +1764,6 @@ $("#histList").addEventListener("click", async e => {
 ["#bhist", "#hist"].forEach(q => $(q).addEventListener("pointerdown", e => e.stopPropagation()));
 $("#bset").onclick = () => { const o = !$("#sets").classList.contains("open"); closeSide("sets"); $("#sets").classList.toggle("open", o); side(); renderSets(); };
 // the interface's language (owner 2026-10-06): the page reloads in it, the settings panel opens again where it was; the app hears of it
-// (its menus, Home, the other boards)
-$("#langOpts").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === T.lang));
-$("#langOpts").addEventListener("click", e => { const b = e.target.closest("[data-lang]"); if (!b || b.dataset.lang === T.lang) return;
-  $("#langOpts").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); T.set(b.dataset.lang); });
 window.hyLangChanged = v => { try { sessionStorage.setItem("hy.setsOpen", "1"); } catch {} toApp({ action: "lang", lang: v }); };
 try { if (sessionStorage.getItem("hy.setsOpen")) { sessionStorage.removeItem("hy.setsOpen"); setTimeout(() => { if (!$("#sets").classList.contains("open")) $("#bset").click(); }, 400); } } catch {}
 function applyGlass() { stage.classList.toggle("glass", setOf("glass") === "1"); }
@@ -1841,26 +1775,29 @@ function applyLook() {
   Object.assign(de.dataset, { shadow, shape }); try { parent !== window && parent.postMessage({ type: "look", shadow, shape }, location.origin); } catch {}
 }
 applyGlass();
-$("#sets").addEventListener("click", e => { const b = e.target.closest("button"), g = b && b.closest("[data-set]"); if (!g) return; setPref(g.dataset.set, b.dataset.v); renderSets(); renderBg(); applyGlass(); applyLook();
-  if (g.dataset.set === "lod") lodDraw();
-  });
-// Движок (owner 2026-10-01): inside the Mac app the gear switches the engine of the projects, WebKit (as Safari) or Chromium
-// (GPU drawing, smooth with hundreds of pictures). The app hears it through its WebKit bridge or, in Chromium, a console line.
-{
+// the settings panel (ui/setpanel.js), Home's rows: the board reads and writes them as the app's settings in localStorage (ui/settings.js
+// sends them to the app's file). Движок (owner 2026-10-01): inside the Mac app WebKit (as Safari) or Chromium (GPU drawing, smooth with
+// hundreds of pictures); the app hears it through its WebKit bridge or, in Chromium, a console line, and opens the board again in it.
+SETS.hideui = "zoom";
+var SP = (() => {
   const wk = (() => { try { return window.top.webkit && window.top.webkit.messageHandlers && window.top.webkit.messageHandlers.hyimg; } catch { return null; } })();
   const cef = /HyimgCEF/.test(navigator.userAgent);
-  if (wk || cef) {
-    $("#engineSet").hidden = false;
-    $("#engineOpts").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.engine === (cef ? "chromium" : "webkit")));
-    $("#engineOpts").addEventListener("click", e => {
-      const b = e.target.closest("[data-engine]"); if (!b || b.getAttribute("aria-pressed") === "true") return;
-      const m = { action: "engine", engine: b.dataset.engine };
-      if (wk) wk.postMessage(m); else console.log("HYIMG_MSG:" + JSON.stringify(m));
-      toast(b.dataset.engine === "chromium" ? T("Saving and opening the board in Chromium…") : T("Saving and opening the board in WebKit…"));
-    });
-  }
-}
-$("#dotsVis").addEventListener("input", e => { setPref("dotsv", e.target.value); renderBg(); });
+  return hySetPanel.mount($("#sets"), {
+    get: k => k === "lang" ? T.lang : k === "engine" ? (cef ? "chromium" : "webkit") : k === "paperDark" || k === "paperLight" ? hyPaper.fromStorage()[k === "paperDark" ? 0 : 1] : setOf(k),
+    engine: () => !!(wk || cef),
+    set(ch) {
+      if ("lang" in ch) { T.set(ch.lang); return; }
+      if ("engine" in ch) {
+        const m = { action: "engine", engine: ch.engine }; if (wk) wk.postMessage(m); else console.log("HYIMG_MSG:" + JSON.stringify(m));
+        toast(ch.engine === "chromium" ? T("Saving and opening the board in Chromium…") : T("Saving and opening the board in WebKit…")); return;
+      }
+      for (const [k, v] of Object.entries(ch)) { if (v == null) { try { localStorage.removeItem("cv." + k); } catch {} } else setPref(k, v); }
+      if ("dotsv" in ch) { renderBg(); return; }
+      if ("paperDark" in ch || "paperLight" in ch) { paperChanged(); return; }
+      renderSets(); renderBg(); applyGlass(); applyLook(); if ("lod" in ch) lodDraw();
+    },
+  });
+})();
 ["#bset", "#sets"].forEach(q => $(q).addEventListener("pointerdown", e => e.stopPropagation()));
 
 /* ---------- render ---------- */
@@ -1887,26 +1824,37 @@ function place(el, it) {
 // because each frame looked its element up by querySelector (n²) and titles forced a layout. Now: elements sit in maps, styles are
 // written only when something changed, pan and zoom move just the world layer (renderCam), and frames off screen are hidden (cull).
 const EL = new Map(), GEL = new Map();
-let NOTEDOT = new Map();   // pictures with a note attached -> dot colour, for the far view (lodDots)
+let NOTEDOT = new Map();   // things with notes attached -> those notes, a dot each, for the far view (lodDots)
+// the outline of a thing the selected note links (.linked), in that note's colour, on every kind of element (render: HL)
+function lkCol(el, c) { c = c || ""; if (el._lk === c) return; el._lk = c; if (c) el.style.setProperty("--lk", c); else el.style.removeProperty("--lk"); }
 let JST = 0, LODT = 0;   // milliseconds spent in camera updates and in drawing the far canvas (read by the speed test)
 function renderCam() { const t0 = performance.now(); renderCam0(); if (sel.size) clampBars(); const d = performance.now() - t0; JST += d; if (perfRun) perfRun.acc += d; }
 // The marks on the cards (note dots, the video pill, ♥, copy and crop marks) keep their screen size by --z, which used to change only
 // when a zoom settled: during the gesture they grew with the pictures and jumped back at the end (owner 2026-10-06). Measured on 400
 // cards: in Chromium (the app's engine) --z set on the cards' layer every frame costs nothing visible (slow frames 9→13 of 176), so
-// there it follows the zoom live; in WebKit it cost 2→21 slow frames, so there the marks fade out while the zoom moves and come back
-// at their size, which costs one class change.
-const ZLIVE = /HyimgCEF|Chrome\//.test(navigator.userAgent);
+// there it follows the zoom live, on steps of 5 % (zStep, ±2.5 % of a mark's size: on every frame 46 % of the «UI» board's zoom frames took over 50 ms
+// with the CPU 4× slower, on steps 17 %, 2026-10-08); in WebKit it cost 2→21 slow frames, so there the marks fade out while the zoom moves.
+const ZLIVE = /HyimgCEF|Chrome\//.test(navigator.userAgent), zStep = z => Math.exp(Math.round(Math.log(z) / .05) * .05);
+// The live --z goes on the board's layers and on the cards on screen, not on the board layer around them (2026-10-08, «Renderings»,
+// 3127 things): there each step restyled every card, the 3107 hidden ones too, 34 ms a step (130 ms with the CPU 4× slower), and
+// the zoom from 5 to 70 % crosses 53 steps. A card that comes on screen mid-zoom takes it in cull; 0 takes it off everything.
+const ZSET = new Set();   // the cards that have it
+function zLive(q) {
+  const itl = $("#items");
+  for (const c of $("#world").children) if (c !== itl) { if (q) c.style.setProperty("--z", q); else c.style.removeProperty("--z"); }
+  if (!q) { for (const el of ZSET) el.style.removeProperty("--z"); ZSET.clear(); return; }
+  for (const el of itl.querySelectorAll(":scope > :not([hidden])")) { el.style.setProperty("--z", q); ZSET.add(el); }
+}
 function renderCam0() {
   $("#world").style.transform = `translate(${-cam.x * cam.z}px, ${-cam.y * cam.z}px) scale(${cam.z})`;
-  if (renderCam.z !== cam.z) {
+  if (renderCam.z !== cam.z || (!gesture && renderCam.zq)) {   // a zoom back to where it began settles too: its live --z comes off
     $("#zl").textContent = Math.round(cam.z * 100) + "%";
     // --z restyles every frame (handles, labels, outlines keep their screen size): only when the zoom settles, not per gesture frame
     const itl = $("#items");
     // in Chromium (the app's engine) the whole board layer follows live: the cards' marks, the selection's corner squares, its bar, the
     // group frames and titles keep their screen size through the zoom instead of growing with it and jumping back (owner 2026-10-06)
-    const wl = $("#world");
-    if (gesture) { if (ZLIVE) { wl.style.setProperty("--z", cam.z); itl.classList.add("zlive"); } else itl.classList.add("zooming"); }
-    else { wl.style.removeProperty("--z"); itl.classList.remove("zlive"); if (itl.classList.contains("zooming")) { itl.classList.remove("zooming"); itl.classList.add("zoomed"); clearTimeout(renderCam.mk); renderCam.mk = setTimeout(() => itl.classList.remove("zoomed"), 220); } }
+    if (gesture) { if (ZLIVE) { const q = zStep(cam.z); if (renderCam.zq !== q) zLive(renderCam.zq = q); itl.classList.add("zlive"); } else itl.classList.add("zooming"); }
+    else { if (renderCam.zq) zLive(0); renderCam.zq = 0; itl.classList.remove("zlive"); if (itl.classList.contains("zooming")) { itl.classList.remove("zooming"); itl.classList.add("zoomed"); clearTimeout(renderCam.mk); renderCam.mk = setTimeout(() => itl.classList.remove("zoomed"), 220); } }
     if (!gesture) { document.documentElement.style.setProperty("--z", cam.z); renderCam.z = cam.z; if (sel.size === 1 && !drag) renderHandles(); }   // handles appear or hide with the size on screen
   }
   if (!INTRO_DOTS) renderBg(); lodDraw(); stickTitles(); if (!gesture) { renderLinks(); markPaused(); } scheduleCull(); reportLive();
@@ -2173,7 +2121,8 @@ function lodDots() {
       if (!isPic(it)) continue;
       const m = byPath.get(it.path) || {}, el = EL.get(id);
       const kt = el && el.querySelector(".kd .kt");
-      const f = { faved: !!(m.feedback || {}).fav, note: NOTEDOT.get(id) || "", crop: !!it.crop, dup: !!(el && el.classList.contains("dup")), kind: kindIcon(m),
+      const nd = NOTEDOT.get(id), cols = nd ? nd.map(n => noteCol(board.items[n])[0]) : "";   // a dot per note (2026-10-08)
+      const f = { faved: !!(m.feedback || {}).fav, note: cols, crop: !!it.crop, dup: !!(el && el.classList.contains("dup")), kind: kindIcon(m),
         grade: !!(el && el.classList.contains("graded")), gradeOff: !!(el && el.querySelector(":scope > .mk-grade.idle")), kindW: el && kindIcon(m) ? mkPillW(el) : 0,
         txt: kt ? kt.textContent : "", pdf: m.kind === "pdf", arrows: !!(el && el.querySelector(".kd .kb")) };   // the pill's words, for an unfolded pill
       if (f.faved || f.note || f.crop || f.dup || f.kind || f.grade) LOD.mks.push([id, it, f]);
@@ -2233,9 +2182,7 @@ function lodDots() {
       const [cx, cy, d] = plate(q, a); paint(cx, cy, d);
     };
     if (Q.note) { const q = Q.note, a = amt(id + ":note", q.on); if (a > 0.001) {   // the note's plain dot, as the element (.mk-note): no plate, its ring 1.5 px
-      const r = q.d / 2 * a, cx = q.ax + r, cy = q.ay + r;
-      g.globalAlpha = a; g.beginPath(); g.arc(cx * dpr, cy * dpr, (r + MK.ring * a) * dpr, 0, 7); g.fillStyle = "rgba(0,0,0,.6)"; g.fill();
-      g.beginPath(); g.arc(cx * dpr, cy * dpr, r * dpr, 0, 7); g.fillStyle = f.note; g.fill(); g.globalAlpha = 1; } }
+      const r = q.d / 2 * a; g.globalAlpha = a; hyNoteLink.lodDots(g, q.ax + r, q.ay + r, r, MK.ring * a, dpr, f.note); g.globalAlpha = 1; } }   // a dot per note
     draw("fav", f.faved, (cx, cy, d) => icon(cx, cy, d, "heart", "#fb7185", true));
     draw("grade", f.grade, (cx, cy, d) => {   // the card's icon, as its element shows it (66% of the plate, half strength when off)
       const im = mkGradeImg(!f.gradeOff), s = d * MK.icon; if (!im) return;
@@ -2312,10 +2259,10 @@ function renamePlate(b) {
   inp.value = lines[0]; inp.spellcheck = false; inp.setAttribute("aria-label", T("Group name"));
   b._edit = true; b.textContent = ""; b.appendChild(inp); b.classList.add("edit");
   const fit = () => { inp.style.width = "0"; inp.style.width = Math.max(40, inp.scrollWidth + 2) + "px"; b._w = 0; stickTitles(); };
-  fit(); inp.focus(); inp.select();
+  fit(); inp.focus(); inp.select(); const kh = hyHint("rename", b);
   let closed = false;
   const done = () => {
-    if (closed) return; closed = true; openEditor = null;
+    if (closed) return; closed = true; openEditor = null; kh.hide();
     const v = inp.value.trim(), next = [v, ...lines.slice(1)].join("\n");
     b._edit = false; b.classList.remove("edit"); inp.remove(); b.textContent = ""; b._w = 0;
     if (v && next !== g.title) { const before = snap(); g.title = next; commit(before); } else render();
@@ -2370,7 +2317,7 @@ function cull0() {   // frames outside the view (plus half a screen around it) a
     if (LOD.on && !it.type && !sel.has(id)) continue;   // far out the pictures are drawn into one canvas, their elements stay hidden (lodDraw culls again when it ends)
     const h = it.type ? (it.h || 1) : (it.w * ((it.crop ? it.crop[3] - it.crop[1] : 1) / it.ar) / (it.crop ? it.crop[2] - it.crop[0] : 1));
     const on = (it.x < v.x + v.w && it.x + (it.w || 1) > v.x && it.y < v.y + v.h && it.y + h > v.y) || sel.has(id);
-    if (el.hidden === on) el.hidden = !on;
+    if (el.hidden === on) { el.hidden = !on; if (on && renderCam.zq) { el.style.setProperty("--z", renderCam.zq); ZSET.add(el); } }   // the live zoom's --z (zLive)
     if (it.type) { const P = PLG[it.type]; if (P && P.view) P.view(id, el, on ? it.w * cam.z : 0, !!gesture); }   // a plugin card's size on screen (0: off it), e.g. a live page only when big
     // the marks' law (mkFit): on every card on screen, a selected one in the far view too; a pill folds under 104 px on screen
     if (on && (!it.type || el.classList.contains("plg"))) {
@@ -2415,10 +2362,9 @@ function render() {
   const ids = Object.keys(board.items), WRITE = 1e6;
   { const ws = ids.map(id => board.items[id]).filter(it => !it.type && it.path).map(it => it.w).sort((a, b) => a - b); LOD.medW = ws.length ? ws[ws.length >> 1] : 0; }
   for (const [id, el] of EL) if (!board.items[id]) { el.remove(); EL.delete(id); }
-  const NL = new Map(), HL = new Map();   // pictures that carry a note, and those the selected note touches: id -> colour of that note
-  const near = picIndex();
-  ids.forEach(nid => { const nn = board.items[nid]; if (!isNote(nn)) return; const c = noteCol(nn)[0]; linksOf(nid, near).forEach((_, pid) => { if (!NL.has(pid) || sel.has(nid)) NL.set(pid, c); if (sel.has(nid)) HL.set(pid, c); }); });
-  NOTEDOT = NL;
+  // things that carry a note: NL id -> a colour, ND id -> the notes, a dot each (2026-10-08); HL: what the selected note touches
+  const near = picIndex(), { NL, HL, ND } = hyNoteLink.marks(board, sel, near, linksOf, noteCol);
+  NOTEDOT = ND;
   const firstOf = {}; ids.forEach(id => { const p = board.items[id].path; if (p && !(p in firstOf)) firstOf[p] = id; });   // later instances of a picture are copies
   ids.forEach((id, n) => {
     const it = board.items[id]; let el = EL.get(id);
@@ -2433,22 +2379,24 @@ function render() {
       if (P.opacity || P.surface) { const o = it.opacity != null && it.opacity < 1 ? String(it.opacity) : ""; if (el.style.opacity !== o) el.style.opacity = o; }   // def.opacity: as on a picture
       // a card that is a picture (def.surface): the picture layers too (HY.pic), again when its picture is in another element now
       if (P.surface) { const sf = HY.surface(el); for (const h of PICP) { const pk = h.key(it); if (el[h.k] !== pk || el._pkS !== sf) { el[h.k] = pk; try { h.fn(el, it, id); } catch (e) { console.error("plugin picture layer", e); } } } el._pkS = sf; }
-      el.classList.toggle("sel", sel.has(id));
+      el.classList.toggle("sel", sel.has(id)); el.classList.toggle("linked", HL.has(id)); lkCol(el, HL.get(id));   // linked: the selected note touches it (2026-10-07)
+      el.classList.toggle("noted", ND.has(id)); if (ND.has(id) || el._nd) { hyNoteLink.paintDots(el, ND.get(id)); el._nd = ND.has(id); }   // its notes' dots
       // which of the board's marks the plugin put on its card, for the marks' law in cull: a kind pill (the 3D card's «3D»), a frame's #
-      // and its copy mark while it is on (.mk-on), all in the bottom row; the colour grade's mark is read in cull (.graded)
-      el._mkf = { kind: !!el.querySelector(".mk-kind"), frame: !!el.querySelector(".mk-frame.mk-on"), dup: !!el.querySelector(".mk-dup.mk-on") };
+      // and its copy mark while it is on (.mk-on), all in the bottom row; the colour grade's mark is read in cull (.graded); the notes'
+      // dots in the top row (2026-10-08: without it a card with no other mark, an HTML frame, was «no marks at all», .mkoff, dots hidden)
+      el._mkf = { kind: !!el.querySelector(".mk-kind"), frame: !!el.querySelector(".mk-frame.mk-on"), dup: !!el.querySelector(".mk-dup.mk-on"), note: ND.has(id), fav: hyCardFav.paint(el, it) };
       return;
     }
-    if (it.type && !isText(it) && !isTl(it) && !isNote(it)) return;   // a plugin's card while its plugin is not loaded
+    if (it.type && !isText(it) && !isTl(it) && !isNote(it)) { if (window.hyPlugBoard) hyPlugBoard.missing(it.type); return; }   // its plugin off or gone: a still
     if (isText(it)) {   // big titles written on the board (owner 2026-09-29)
       if (!el) { el = document.createElement("div"); el.className = "tx"; el.dataset.id = id; iEl.appendChild(el); EL.set(id, el); }
-      const k = `${it.x},${it.y},${it.fs},${it.size},${n}|${it.text}`, editing = !!el.querySelector("textarea");
+      const k = `${it.x},${it.y},${it.fs},${it.size},${it.tw},${n}|${it.text}`, editing = !!el.querySelector("textarea");
       if (el._k !== k || (!editing && !el.firstChild)) {
         Object.assign(el.style, { left: it.x + "px", top: it.y + "px", fontSize: it.fs + "px", zIndex: WRITE + n + 1, fontWeight: Number.isInteger(it.size) && TSIZE[it.size] ? TSIZE[it.size].wt : "" });   // titles made before the sizes stay bold
-        if (!editing) { el.textContent = it.text; el._k = k; }
+        if (!editing) { hyTextDoc.paint(el, it); el._k = k; }   // a heading as before, or a document: title and Markdown body (ui/textdoc.js)
         it.w = el.offsetWidth; it.h = el.offsetHeight;   // measured in board units (the world transform does not change offset sizes), only when it changed
       }
-      el.classList.toggle("sel", sel.has(id));
+      el.classList.toggle("sel", sel.has(id)); el.classList.toggle("linked", HL.has(id)); lkCol(el, HL.get(id));
       return;
     }
     if (isTl(it)) {   // timeline (owner 2026-10-01)
@@ -2468,7 +2416,7 @@ function render() {
           + `<div class="end" style="${at(it.len + g.d * .9)}" title="${T("Drag: line length")}"></div><div class="plus">+</div>`;
         el._k = k;
       }
-      el.classList.toggle("sel", on);
+      el.classList.toggle("sel", on); el.classList.toggle("linked", HL.has(id)); lkCol(el, HL.get(id));
       return;
     }
     if (isNote(it)) {   // sticky notes (owner 2026-09-30)
@@ -2508,6 +2456,8 @@ function render() {
       if (vid) { el.querySelector(".kd").innerHTML = ""; el.querySelector(".kd")._k = null; vidLabel(id, el); } else if (pdf) { el.querySelector(".kd")._k = null; pdfLabel(id, el); } else kindLabel(el, byPath.get(it.path));
       el._st = st;
     }
+    if (ND.has(id) || el._nd) { hyNoteLink.paintDots(el, ND.get(id)); el._nd = ND.has(id); }   // a dot for each of its notes (2026-10-08)
+    lkCol(el, HL.get(id));   // the selected note's colour round it, not the colour of whichever note gave the old single dot (2026-10-08)
     for (const h of PICP) { const pk = h.key(it); if (el[h.k] !== pk) { el[h.k] = pk; try { h.fn(el, it, id); } catch (e) { console.error("plugin picture layer", e); } } }   // HY.pic
   });
   renderHandles(); renderInfo(); infoFresh(); renderJump(); cull(); if (MODES) MODES.sync();
@@ -2515,7 +2465,8 @@ function render() {
   $("#bundo").disabled = !past.length; $("#bredo").disabled = !future.length;
 }
 // the opacity plate of the bar over the selection: a picture's, and a plugin card's that has def.opacity (an image frame, owner 2026-10-06)
-const opPlate = op => `<label class="op" title="${T("Opacity · keys 1…9 and 0")}">${hyIcon("opacity", 15, 2)}<span class="hy-slider sm"><input type="range" min="5" max="100" step="1" value="${op}" data-op aria-label="${T("Opacity")}"></span><b>${op}%</b></label>`;
+// the app's standard slider, label and number inside, as in the 3D editor and the settings (owner 2026-10-07: «почему слайдер узкий, он должен быть как стандартные»)
+const opPlate = op => `<label class="op" title="${T("Opacity · keys 1…9 and 0")}"><span class="hy-slider" data-unit="%"><input type="range" min="5" max="100" step="1" value="${op}" data-op aria-label="${T("Opacity")}"><span class="hy-slider-l">${T("Opacity")}</span><output class="hy-slider-v">${op}</output></span></label>`;
 // «Arrange» (⌥A as a block, ⌥S a row, ⌥D tidy) for every card with a box (owner 2026-10-07: «оно должно быть у всех items на канвасе: 3d,
 // image, dev, video»): pictures, videos, PDFs and the plugins' cards (3D, HTML, Dev, image frames), mixed too; notes, headings and timelines
 // keep their own ways
@@ -2548,7 +2499,7 @@ function renderHandles() {
     const splitB = !one || !splitable(one) ? "" : `<button data-split title="${T("Split into pages · ⌥P")}">${IC_SPLIT}${T("Split into pages ({n})", { n: pdfPages(one.path) })}<kbd>⌥P</kbd></button><span class="sep"></span>`;
     if (!several) t.innerHTML = cropB + splitB + (pbHtml ? pbHtml + `<span class="sep"></span>` : "") + opHtml; else t.innerHTML = tidyBtns() + (pbHtml ? `<span class="sep"></span>` + pbHtml : "")
       // ♥ for the whole selection right here (owner 2026-10-01): pink when every selected frame is already liked, a click then takes it off
-      + (() => { const on = many.every(id => ((byPath.get(board.items[id].path) || {}).feedback || {}).fav);
+      + (() => { const on = hyCardFav.allOn([...sel]);   // the pictures and HTML pages selected (ui/cardfav.js)
         return `<span class="sep"></span><button data-fav class="fv${on ? " on" : ""}" title="${on ? T("Remove ♥ from the selected") : T("♥ on all selected")} · F" aria-label="${T("Like")}">${hyIcon("heart", 15, 2.2)}<kbd>F</kbd></button>`; })() + `<span class="sep"></span>` + opHtml;
     const below = (b.y - cam.y) * cam.z < 56;   // selection touches the top edge: show the button under it
     Object.assign(t.style, { left: b.x + b.w / 2 + "px", top: (below ? b.y + b.h : b.y) + "px" });
@@ -2578,8 +2529,9 @@ function renderHandles() {
     if (below) t.style.transform = "scale(calc(1 / var(--z))) translate(-50%, 12px)";
     h.appendChild(t);
   }
+  if (!cropState && sel.size > 1) hyMultiScale.draw(h, sel, drag); if (window.hyGrid) hyGrid.draw(h, sel, drag);   // the box of several, «Grid 4 × 3»
   if (cropState || sel.size !== 1) { clampBars(); return; }   // a bar over several cards is kept inside the board's visible part too (it went under the library until the camera moved)
-  const id = [...sel][0], r = rectOf(id); if (!r || bigOnScreen(board.groups[id])) return;   // a paused group: no handles
+  const id = [...sel][0], r = rectOf(id); if (!r || bigOnScreen(board.groups[id])) return; hyConn.handle(h, id, r);   // a paused group: none; else the arrow handle (ui/connectors.js)
   // resize from every side (owner 2026-09-30, as in Figma): four corners on anything, plus four edge strips on a group frame or a note zone.
   // Text and pictures scale from the corner you grab, the opposite corner stays put; a group frame moves only the edges you drag.
   const box = (rc, edges, zone, col) => {
@@ -2613,7 +2565,7 @@ function renderHandles() {
     const nCol = noteCol(n)[0];
     if (n.reach) box(reachRect(n), true, true, nCol);   // the zone first, so the card's own corners stay on top where they meet
     box(r, false, false, nCol);
-    const cn = document.createElement("div"); cn.className = "cn"; cn.dataset.connect = id; cn.title = T("Drag to a frame or group: an arrow"); Object.assign(cn.style, { left: r.x + r.w + "px", top: r.y + r.h / 2 + "px", background: nCol }); h.appendChild(cn);
+    const cn = document.createElement("div"); cn.className = "cn"; cn.dataset.connect = id; cn.title = T("Drag to a frame, a card or a group: an arrow"); Object.assign(cn.style, { left: r.x + r.w + "px", top: r.y + r.h / 2 + "px", background: nCol }); h.appendChild(cn);
     const t = document.createElement("div"); t.className = "tidy";
     t.innerHTML = `<button data-nzone="${id}" title="${T("A dashed zone: the frames inside are linked to the note")}">${n.reach ? T("Remove area") : T("Area")}</button><span class="sep"></span>`
       + `<button class="fz" data-nsize="-1" title="${T("Smaller type")}" ${noteSize(n) === 0 ? "disabled" : ""}><span style="font-size:11px">A</span></button><button class="fz" data-nsize="1" title="${T("Bigger type")}" ${noteSize(n) === 4 ? "disabled" : ""}><span style="font-size:18px">A</span></button><span class="sep"></span><span class="sws">`
@@ -2627,6 +2579,7 @@ function renderHandles() {
     return;
   }
   if (isText(n)) {   // the five text sizes above the selected text; the active one is the size it has (a text scaled by its corner has none lit)
+    hyTextDoc.edges(h, id, r, n, handlesOn(r.w * cam.z, r.h * cam.z));   // a document's side strips: its width (ui/textdoc.js)
     const t = document.createElement("div"), cur = TSIZE.findIndex(z => Math.abs(z.fs - n.fs) < .5); t.className = "tidy tsz";
     // H1 and H2 jump to the two headlines, the small and big A step one size down or up through all five, as on a note (owner 2026-09-30)
     const at = cur >= 0 ? cur : TSIZE.reduce((b, z, i) => Math.abs(Math.log(n.fs / z.fs)) < Math.abs(Math.log(n.fs / TSIZE[b].fs)) ? i : b, 0);
@@ -2687,15 +2640,17 @@ function renderInfo() {
   if (isText(it) || isTl(it)) { box.style.display = "none"; return; }
   if (it && it.type && !isNote(it)) {   // a plugin's card: it says what to show
     const inf = (PLG[it.type] && PLG[it.type].info && PLG[it.type].info(id, it)) || { name: it.type };
-    box.style.display = "block"; $("#iR").innerHTML = ""; $("#iOpen").style.display = $("#iFav").style.display = "none";
-    $("#iN").textContent = inf.name || it.type; $("#iM").textContent = inf.meta || ""; $("#iP").textContent = inf.text || ""; $("#iP").classList.add("hy-hint"); return;
+    box.style.display = "block"; $("#iR").innerHTML = ""; $("#iOpen").style.display = "none"; hyCardFav.info($("#iFav"), it); window.hyEdited?.($("#iM"), BOARD, id, Object.values(it));
+    $("#iN").textContent = inf.name || it.type; $("#iM").textContent = inf.meta || ""; $("#iP").textContent = inf.text || ""; $("#iP").classList.add("hy-hint");
+    hyNoteLink.cardNotes($("#iNotes"), id); return;   // its notes, as a picture's (2026-10-07)
   }
   if (isNote(it)) {
-    const L = [...linksOf(id).keys()].map(k => { const p = board.items[k].path, m = byPath.get(p) || {}; return m.name || p; });
+    const lk = linksOf(id), K = [...lk.keys()], L = K.map(k => hyNoteLink.label(board, k));   // every kind of thing, named by its kind (2026-10-07)
     box.style.display = "block"; $("#iR").innerHTML = ""; $("#iOpen").style.display = $("#iFav").style.display = "none"; $("#iN").textContent = T("Sticky note");
-    const gg = linksOf(id).group;
-    $("#iM").textContent = gg ? T("belongs to the whole group “{name}”: {frames} · goes into these frames' json", { name: (board.groups[gg].title || "").split("\n")[0], frames: frames(L.length) }) : L.length ? T("linked: {frames} · goes into these frames' json", { frames: frames(L.length) }) : null;
-    if (!gg && !L.length) $("#iM").innerHTML = `${escH(T("not linked"))} <button type="button" class="hy-info" title="${escH(T("To link it: lay it on a frame, draw an arrow from its yellow dot, turn on “Area” or put it inside a group"))}" aria-label="${escH(T("How to link"))}"></button>`;
+    const gg = lk.group;
+    $("#iM").textContent = hyNoteLink.meta(board, K, gg ? (board.groups[gg].title || "").split("\n")[0] : null);
+    hyNoteLink.replyInfo($("#iNotes"), id);   // the note it answers, its replies (2026-10-08)
+    if (!gg && !L.length && !hyNoteLink.replyOf(board, id)) $("#iM").innerHTML = `${escH(T("not linked"))} <button type="button" class="hy-info" title="${escH(T("To link it: lay it on a frame, draw an arrow from its yellow dot, turn on “Area” or put it inside a group"))}" aria-label="${escH(T("How to link"))}"></button>`;
     $("#iP").textContent = L.slice(0, 14).join("\n") + (L.length > 14 ? "\n…" : ""); return;
   }
   if (!it) { const g = board.groups[id]; if (!g) { box.style.display = "none"; return; } box.style.display = "block"; $("#iR").innerHTML = ""; $("#iOpen").style.display = $("#iFav").style.display = "none"; $("#iN").textContent = g.title || T("Group"); $("#iM").textContent = T("{n} frames · double-click the name to rename", { n: g.members.length }); $("#iP").textContent = ""; return; }
@@ -2703,7 +2658,7 @@ function renderInfo() {
   box.style.display = "block"; $("#iOpen").style.display = $("#iFav").style.display = ""; $("#iOpen").dataset.path = it.path;
   $("#iFav").classList.toggle("on", !!f.fav); $("#iFav").title = f.fav ? T("Remove ♥ · F") : T("♥ Like · F");
   $("#iN").textContent = m.name || it.path;
-  $("#iM").textContent = [m.model, m.title && m.title !== m.folder ? m.title : m.folder].filter(Boolean).join(" · ");
+  $("#iM").textContent = [m.model, m.title && m.title !== m.folder ? m.title : m.folder].filter(Boolean).join(" · "); window.hyEdited?.($("#iM"), BOARD, id, [it.path]);
   $("#iP").textContent = ""; $("#iR").innerHTML = "";
   infoCard($("#iNotes"), id, it, m, f);
 }
@@ -2730,7 +2685,7 @@ const ENGINE_TAG = { "3D и перекраска": "3D and recolor", "Движо
 function infoCard(root, id, it, m, f) {
   root.textContent = "";
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const sec = (title, hint) => { const s = el("section", "isec"), h = el("div", "sh", title); if (hint) h.appendChild(el("span", "hint", hint)); s.appendChild(h); root.appendChild(s); return s; };
+  const sec = (title, hint) => { const s = el("section", "isec"), h = el("div", "sh hy-sub", title); if (hint) h.appendChild(el("span", "hint", hint)); s.appendChild(h); root.appendChild(s); return s; };
   const chips = (list, cls) => { const w = el("div", "chips"); list.forEach(t => w.appendChild(el("span", "chip" + (cls ? " " + cls : ""), t))); return w; };
   // the owner's review
   const sc = f.scores || {}, keys = Object.keys(sc).filter(k => CRIT_RU[k]), use = (f.use || []).map(u => USE_RU[u] ? T(USE_RU[u]) : u), marks = (f.notes || []).length;
@@ -2757,8 +2712,25 @@ function infoCard(root, id, it, m, f) {
     linkify(p, m.prompt); s.appendChild(p);
     if (m.prompt.length > 260) { const more = el("button", "more", T("Show in full")); more.onclick = () => { const o = p.classList.toggle("clamp"); more.textContent = o ? T("Show in full") : T("Collapse"); }; s.appendChild(more); }
   }
+  // where it came from when the library has no prompt for it (refs/ and other frames outside the library, owner 2026-10-01:
+  // "the description must have a link I can click"): source page, video with its timestamp, image address, Gemini chat
+  if (!m.prompt) {
+    const s = sec(T("Source")), box = el("div", "txt"); s.appendChild(box); box.textContent = "…";
+    fetch("/api/meta?p=" + enc(it.path)).then(r => r.json()).then(d => {
+      const lines = [], yt = d.source_url && d.timestamp && /youtube\.com|youtu\.be/.test(d.source_url);
+      const secs = yt ? String(d.timestamp).split(":").reduce((a, v) => a * 60 + +v, 0) : 0;
+      const vid = yt ? d.source_url + (d.source_url.includes("?") ? "&" : "?") + "t=" + secs : "";
+      [vid || d.source_url, d.link, d.url, d.chat, d.image_url].filter(Boolean).forEach(u => lines.push(u));
+      const head = [d.site || d.channel, d.timestamp ? T("frame {t}", { t: d.timestamp }) : "", d.colour, d.model].filter(Boolean).join(" · ");
+      box.textContent = "";
+      if (head) box.appendChild(el("div", "muted", head));
+      const t = el("div", "txt"); box.appendChild(t);
+      linkify(t, [...new Set(lines)].join("\n") + (d.what ? "\n" + d.what : "") + (d.caption ? "\n" + d.caption : ""));
+      if (!lines.length && !d.what && !d.caption) box.textContent = T("The frame's json has no link to its source");
+    }).catch(() => { box.textContent = T("Couldn't read the frame's json"); });
+  }
   // board notes about it
-  const VIA = { zone: T("in the area"), arrow: T("by an arrow"), overlap: T("lies on the frame"), group: T("through the group") }, NN = [];
+  const VIA = { zone: T("in the area"), arrow: T("by an arrow"), overlap: T("lies on the frame"), group: T("through the group"), reply: T("as a reply") }, NN = [];
   const near = picIndex();
   for (const nid in board.items) { const n = board.items[nid]; if (!isNote(n) || !(n.text || "").trim()) continue; const v = linksOf(nid, near).get(id); if (v) NN.push([nid, n, v]); }
   if (NN.length) {
@@ -2996,7 +2968,11 @@ function drawn() {
   requestAnimationFrame(() => requestAnimationFrame(go)); setTimeout(go, 250);
 }
 const EMBED_INTRO_SKIP = () => !!new URLSearchParams(location.search).get("board");   // a fixed board in a page of its own, no entrance
-window.hyimgIntro = o => intro(o);
+// A board comes in front in Board mode, always (owner 2026-10-07: «зашел на страницу, где мой wire, и там почему-то открылось 3D ... По
+// дефолту он должен всегда заходить в board режим»): the app keeps a board's page while Home is in front, so an editor left open (3D,
+// Image, Dev) was still open when the board came back. It closes now the way its own Done does; a page loaded afresh opens none.
+const boardMode = () => { if (MODES && MODES.open !== "board") MODES.enter("board"); };
+window.hyimgIntro = o => { boardMode(); intro(o); };
 // The loading stars on this page (ui/stars.js): from its load, behind the plate, while the board loads (a reload, a board opened
 // without Home); when the app brings it from Home the field is Home's (its seed and start), so the stars go on where they were
 var STARS = null;
@@ -3039,7 +3015,8 @@ function introLand(run) {
   requestAnimationFrame(step);
 }
 // the app is about to bring this board in front from Home: hidden until its entrance, and its grid goes to Home for the stars
-window.hyimgPrep = () => { document.documentElement.classList.add("preintro"); const spec = starSpec(); if (spec) toApp({ action: "dotspec", spec }); };   // its grid goes to Home's stars
+// its grid goes to Home's stars
+window.hyimgPrep = () => { boardMode(); document.documentElement.classList.add("preintro"); const spec = starSpec(); if (spec) toApp({ action: "dotspec", spec }); };
 window.hyimgStarsNow = () => { if (document.documentElement.classList.contains("preintro")) startStars(); };   // loading in front (a reload): this page's own stars
 addEventListener("message", async e => {
   if (e.origin !== location.origin || !e.data || e.data.type !== "showPath") return;
@@ -3088,12 +3065,17 @@ stage.addEventListener("contextmenu", e => {
   const ids = id && sel.has(id) && sel.size > 1 ? [...sel] : id ? [id] : [];
   if (id && !sel.has(id)) { sel = new Set([id]); render(); }
   const it = id && board.items[id], kind = !id ? "" : ids.length > 1 ? T("Copy link to the selection ({n})", { n: ids.length }) : board.groups[id] ? T("Copy link to the group") : isNote(it) ? T("Copy link to the note") : isText(it) ? T("Copy link to the text") : it && it.type === "model3d" ? T("Copy link to the 3D scene") : it && it.type ? T("Copy link to the object") : T("Copy link to the frame");
-  // One fixed list for a selection, whatever it is (owner 2026-10-06: «if some options are not available in the right-click menu, they must
-  // simply be grey — I want users to know what functions exist»): what does not apply keeps its place, grey, its reason in the tooltip
-  // (a.off); the empty board has only its own. A plugin's item says its reason in off (HY.menuOff tells it this board greys)
+  // The menu of what was clicked (owner 2026-10-07: «show only items that relate to the KIND of thing clicked; within those, unavailable-right-now
+  // items stay grey with their reason; items that make no sense for that kind are hidden»; it refines 2026-10-06's «grey, never hide»):
+  // the kinds of the selection (a picture, a video, a PDF, a plugin's card, a note, a heading, a timeline, a group), every item says which
+  // kinds it is for and shows when one selected thing is of them; in a fixed order. The empty board has only its own. A plugin gives its
+  // items for the kinds it knows (HY.menuOff: its grey ones keep their reason)
   const acts = [], pacts = [], openP = ids.length === 1 && it && it.path ? it.path : "", off = (a, why) => (why ? Object.assign(a, { off: why }) : a);
-  const files = [...new Set(ids.flatMap(i => { const x = board.items[i]; return !x ? [] : x.path ? [x.path] : picsOf(x); }))];   // a frame's pictures too (owner 2026-10-05)
-  const oneFile = !ids.length ? "" : ids.length > 1 ? T("Select one file") : !(it && it.path) ? T("Only for a file") : "";
+  const K = new Set(ids.flatMap(i => { const x = board.items[i]; return board.groups[i] ? ["group"] : !x ? [] : isNote(x) ? ["note"] : isText(x) ? ["text"] : isTl(x) ? ["timeline"]
+    : isPic(x) ? [isPdf(x) ? "pdf" : isVid(x) ? "video" : "image", "file"] : ["card", ...(fileOf(x) || picsOf(x).length ? ["file"] : [])]; }));
+  const has = (...ks) => ks.some(k => K.has(k)), pics = has("image", "pdf", "video"), items = [...K].some(k => k !== "group");
+  const files = [...new Set(ids.flatMap(i => { const x = board.items[i]; return !x ? [] : fileOf(x) ? [fileOf(x)] : picsOf(x); }))];   // a frame's pictures too (owner 2026-10-05)
+  const oneFile = ids.length > 1 ? T("Select one file") : !fileOf(it) ? T("Only for a file") : "";
   CTXP.forEach(f => { try { (f(ids, id) || []).forEach(a => pacts.push(a)); } catch (er) { console.error("plugin menu", er); } });
   // the clipboard, as Figma's (owner 2026-10-07: «по правой кнопке отсутствует удаление или вырезать/вставить»): the board's own ⌘X ⌘C ⌘V ⌘D and
   // ⌫, the same functions; a paste from the menu lands at the click. The board's clipboard is cv.clip (any page and board of this project);
@@ -3101,30 +3083,33 @@ stage.addEventListener("contextmenu", e => {
   let hasClip = false; try { hasClip = ((JSON.parse(localStorage.getItem("cv.clip") || "null") || {}).items || []).length > 0; } catch {}
   const pasteHere = Object.assign(["paste", "paste", ids.length ? T("Paste") : T("Paste here"), ["⌘", "V"]], hasClip ? {} : { off: T("The clipboard is empty") });
   const bigSel = ids.length && pausedSel() ? T("Zoom out: the group is bigger than the screen") : "", cards = clipIds().items.length;
+  const block = (...xs) => { const ok = xs.filter(Boolean); if (ok.length) acts.push(...ok, null); };
   if (ids.length) {
     // the file in its own app first, the menu's default action (owner 2026-10-06): «Open in Preview», named as soon as the server knows (ui/menu.js)
-    acts.push(off(["open", "open", T("Open in default app")], oneFile), null);
-    acts.push(off(["cut", "cut", T("Cut"), ["⌘", "X"]], bigSel || (cards ? "" : T("Nothing to copy"))), off(["copy", "copy", T("verb::Copy"), ["⌘", "C"]], cards ? "" : T("Nothing to copy")), pasteHere,
-      off(["dup", "dup", T("Duplicate"), ["⌘", "D"]], ids.some(i => board.items[i]) ? "" : T("A group is duplicated by its cards: select them")), null);
-    pacts.forEach((a, i) => acts.push(off(["plg" + i, a.icon || "", a.label, a.keys], a.off)));
-    if (pacts.length) acts.push(null);
-    // grouping lives here and on its keys, not in the dock (owner 2026-10-04)
-    acts.push(off(["group", "group", T("verb::Group"), ["⌘", "G"]], ids.some(i => board.items[i]) ? "" : T("Groups are not grouped: select the objects")));
-    acts.push(off(["ungroup", "ungroup", T("Ungroup"), ["⇧", "⌘", "G"]], ids.some(i => board.groups[i]) ? "" : T("No group selected")));
-    acts.push(off(Object.assign(["topage", "topage", T("Move to page")], { sub: pagesSub }), FIXED ? T("This board has no pages") : ""));   // its pages in a submenu (owner 2026-10-06)
-    // «Order ›»: front, forward, backward, back among the siblings (owner 2026-10-06); a submenu keeps the menu inside a laptop's window
-    { const ws = ORDER.map(([how]) => orderPlan(ids, how).why); acts.push(off(Object.assign(["order", "order", T("Order")], { sub: orderSub(ids) }), ws.every(Boolean) ? ws[0] : ""), null); }
-    acts.push(...propsMenu(ids, id), null);   // «Copy properties ›», «Paste properties ›»: a block of their own (owner 2026-10-06)
-    acts.push(["link", "link", kind]);
-    const pdf = ids.length === 1 && it && isPdf(it);
-    acts.push(off(["split", "split", pdf && splitable(it) ? T("Split into pages ({n})", { n: pdfPages(it.path) }) : T("Split into pages"), ["⌥", "P"]],
-      ids.length > 1 ? T("Select one PDF") : !pdf ? T("Only for a PDF") : it.pageFixed ? T("This is already one page of a PDF") : !pdfPages(it.path) ? (pdfAsk(it.path), T("Counting the PDF's pages")) : !splitable(it) ? T("This PDF has one page") : ""));
-    acts.push(off(["image", "image", T("Copy image"), ["⇧", "⌘", "C"]], oneFile), off(["path", "file", T("Copy file path")], oneFile));
-    acts.push(off(["reveal", "finder", T("Show in Finder")], files.length ? "" : T("No file in the selection")), null);
-  } else { acts.push(pasteHere, null); if (pacts.length) { pacts.forEach((a, i) => acts.push(off(["plg" + i, a.icon || "", a.label, a.keys], a.off))); acts.push(null); } }
-  acts.push(["view", "view", T("Copy link to this view")]);
-  // last, red: off the board (the file stays; a picture on no page any more is the archive, owner 2026-09-29)
-  if (ids.length) acts.push(null, Object.assign(off(["del", "del", T("Remove from the board"), ["⌫"]], bigSel), bigSel ? {} : { danger: true }));
+    block(pics && off(["open", "open", T("Open in default app")], oneFile));
+    block(off(["cut", "cut", T("Cut"), ["⌘", "X"]], bigSel || (cards ? "" : T("Nothing to copy"))), off(["copy", "copy", T("verb::Copy"), ["⌘", "C"]], cards ? "" : T("Nothing to copy")), pasteHere,
+      items && ["dup", "dup", T("Duplicate"), ["⌘", "D"]]);
+    block(...pacts.map((a, i) => off(["plg" + i, a.icon || "", a.label, a.keys], a.off)));
+    // grouping lives here and on its keys, not in the dock (owner 2026-10-04): «Group» for things, «Ungroup» for a group
+    const ws = ORDER.map(([how]) => orderPlan(ids, how).why);
+    block(items && ["group", "group", T("verb::Group"), ["⌘", "G"]], has("group") && ["ungroup", "ungroup", T("Ungroup"), ["⇧", "⌘", "G"]],
+      off(Object.assign(["topage", "topage", T("Move to page")], { sub: pagesSub }), FIXED ? T("This board has no pages") : ""),   // its pages in a submenu (owner 2026-10-06)
+      off(Object.assign(["order", "order", T("Order")], { sub: orderSub(ids) }), ws.every(Boolean) ? ws[0] : ""), window.hyGrid && hyGrid.entry(ids));   // order; Arrange ›
+    block(...propsMenu(ids, id));   // «Copy properties ›», «Paste properties ›», «Clear properties ›»: the kinds this selection can have (owner 2026-10-06, 2026-10-07)
+    // «Copy as ›» (owner 2026-10-07, as Figma's «Copy/Paste as»): the links to it and to this view, the app's first (ui/applink.js); a file's picture and path
+    const pdf = has("pdf") && ids.length === 1 && it && isPdf(it);
+    block(Object.assign(["copyas", "copy", T("Copy as")], { sub: () => [hyLink.items(kind),
+        ...(pics ? [hyMenuItem('data-act="image"', "image", T("Image"), ["⇧", "⌘", "C"], oneFile ? hyMenuOff(oneFile) : "")] : []),
+        ...(has("file") ? [hyMenuItem('data-act="path"', "file", T("File path"), null, oneFile ? hyMenuOff(oneFile) : "")] : [])].join("") }),
+      has("pdf") && off(["split", "split", pdf && splitable(it) ? T("Split into pages ({n})", { n: pdfPages(it.path) }) : T("Split into pages"), ["⌥", "P"]],
+        ids.length > 1 ? T("Select one PDF") : !pdf ? T("Only for a PDF") : it.pageFixed ? T("This is already one page of a PDF") : !pdfPages(it.path) ? (pdfAsk(it.path), T("Counting the PDF's pages")) : !splitable(it) ? T("This PDF has one page") : ""),
+      has("file") && off(["reveal", "finder", T("Show in Finder")], files.length ? "" : T("No file in the selection")));
+    // last, red: off the board (the file stays; a picture on no page any more is the archive, owner 2026-09-29)
+    acts.push(Object.assign(off(["del", "del", T("Remove from the board"), ["⌫"]], bigSel), bigSel ? {} : { danger: true }));
+  } else {
+    block(pasteHere); block(...pacts.map((a, i) => off(["plg" + i, a.icon || "", a.label, a.keys], a.off)));
+    acts.push(...hyLink.viewActs());   // the app's link to this view, the browser's (ui/applink.js)
+  }
   const m = $("#ctx");
   m.innerHTML = acts.map(a => !a ? `<div class="sep"></div>` : a.sub ? hyMenuSub(`data-sub="${a[0]}"${a.act ? ` data-act="${a[0]}"` : ""}${a.pv ? ` data-pv="${a.pv}"` : ""}`, a[1], a[2], a.sub, a[3], { act: !!a.act, off: a.off })
     : hyMenuItem(`data-act="${a[0]}"`, a[1], a[2], a[3], a.off ? hyMenuOff(a.off) : a.danger ? ' class="danger"' : "")).join("");
@@ -3136,19 +3121,19 @@ stage.addEventListener("contextmenu", e => {
     else if (b.dataset.act === "group") makeGroup();
     else if (b.dataset.act === "ungroup") ungroup();
     else if (b.dataset.act === "split") splitPdf(id);
-    else if (b.dataset.act === "link") copyText(linkTo({ obj: ids.join(",") }), T("Link copied: it opens and shows this object"));
+    else if (b.dataset.act === "link" || b.dataset.act === "applink") hyLink.copy(b.dataset.act, { obj: ids.join(",") });
     else if (b.dataset.act === "image") copyPicture(id);
-    else if (b.dataset.act === "path") copyText(it.path, T("File path copied"));
+    else if (b.dataset.act === "path") copyText(fileOf(it), T("File path copied"));
     else if (b.dataset.act === "reveal") hyReveal(files, toast);
     else if (b.dataset.act === "topage") moveToPage(b.dataset.pg || null);
     else if (b.dataset.act === "order") orderMove(b.dataset.how, ids);
     else if (b.dataset.act === "cut") cutSel();
     else if (b.dataset.act === "copy") copySel();
     else if (b.dataset.act === "paste") { lastPt = p; paste(); }   // at the click
-    else if (b.dataset.act === "dup") duplicate();
+    else if (b.dataset.act === "dup") duplicate(); else if (window.hyGrid && hyGrid.act(b, ids)) {}   // «Arrange ›» (ui/grid.js)
     else if (b.dataset.act === "del") { if (selArrow) selArrow = null; removeSel(); }
     else if (propsAct(b, ids, id)) {}
-    else copyText(linkTo({ at: [Math.round(cam.x), Math.round(cam.y), +cam.z.toFixed(4)].join(",") }), T("Link to this view copied"));
+    else hyLink.copy(b.dataset.act, { at: [Math.round(cam.x), Math.round(cam.y), +cam.z.toFixed(4)].join(",") });   // view, appview
   };
   m.classList.add("open");
   const w = m.offsetWidth, h = m.offsetHeight;
@@ -3165,11 +3150,11 @@ document.addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) e.preventD
 
 /* ---------- history and saving ---------- */
 // the selection rides along (owner 2026-09-30): undoing a delete brings the frames back selected, as they were when deleted
-function snap() { return JSON.stringify({ items: board.items, groups: board.groups, removed: board.removed, sel: [...sel] }); }
+function snap() { return JSON.stringify({ items: board.items, groups: board.groups, removed: board.removed, grids: board.grids, links: board.links, sel: [...sel] }); }
 // "removed from the canvas" (owner 2026-09-29): a picture taken off the board with no other copy or crop of it left there is
 // remembered in board.removed; putting it back clears the mark. The library filters by these marks.
-// a picture inside an image frame (Hyimg-frames) lies on the page too, inside the frame (owner 2026-10-05): its card lists it in pics
-const picsOf = it => isPic(it) ? [it.path] : it && Array.isArray(it.pics) ? it.pics : [];
+// a picture inside an image frame (Hyimg-frames) lies on the page too (owner 2026-10-05): its card lists it in pics; fileOf: a card's own file (an HTML page, a 3D scene)
+const picsOf = it => isPic(it) ? [it.path] : it && Array.isArray(it.pics) ? it.pics : [], fileOf = it => it && [it.path, it.src, it.scene].find(f => typeof f === "string" && f) || "";
 function paths() { return new Set(Object.values(board.items).flatMap(picsOf)); }
 function trackRemoved(before) {
   const was = new Set(Object.values(JSON.parse(before).items || {}).flatMap(picsOf)), now = paths(), t = new Date().toISOString().slice(0, 19);
@@ -3186,7 +3171,7 @@ const Q = t => T("“{t}”", { t });   // a name in the language's quotes: “E
 let favTail = Promise.resolve();
 const favVer = new Map();   // path -> number of the latest press: an answer to an older press must not paint over a newer one
 function toggleFav(ids) {
-  const paths = [...new Set(ids.map(id => board.items[id]).filter(isPic).map(it => it.path))]; if (!paths.length) return;
+  const paths = [...new Set(ids.map(id => hyCardFav.path(board.items[id])).filter(Boolean))]; if (!paths.length) return;   // a picture, an HTML page
   const want = !paths.every(p => ((byPath.get(p) || {}).feedback || {}).fav);
   const was = new Map(paths.map(p => [p, (byPath.get(p) || {}).feedback])), ver = new Map(paths.map(p => [p, (favVer.get(p) || 0) + 1]));
   ver.forEach((v, p) => { favVer.set(p, v); favAt.set(p, Date.now()); }); const latest = p => favVer.get(p) === ver.get(p);
@@ -3225,16 +3210,16 @@ function tellLibrary() {
   const on = new Set([...paths(), ...OTHER.on]), removed = [...new Set([...Object.keys(board.removed), ...OTHER.removed])].filter(p => !on.has(p));
   parent.postMessage({ type: "board", on: [...on], removed }, location.origin);
 }
-function commit(before, note) {
+function commit(before, note) { if (window.hyGrid) hyGrid.settle(before); hyConn.prune(board);   // grids reflow (ui/grid.js); arrows to what went go
   if (typeof PREV !== "undefined" && PREV) {   // a saved version is only looked at: changes go back, nothing is saved
-    const o = JSON.parse(before); board.items = o.items; board.groups = o.groups; board.removed = o.removed || {}; render();
+    const o = JSON.parse(before); board.items = o.items; board.groups = o.groups; board.removed = o.removed || {}; board.grids = o.grids; board.links = o.links; render();
     toast(T("This is a version preview. To change it, press “Restore this version”")); return;
   }
   const tr = trackRemoved(before);
   if (note) toast(note);
   else if (tr.gone) toast(T("{n} frames went to the archive", { n: tr.gone }));
   else if (tr.back) toast(T("{frames} back on the canvas", { frames: frames(tr.back) }), "success"); past.push(before); if (past.length > 200) past.shift(); future = []; dirty = true; queueSave(); render(); renderLibMarks(); tellLibrary(); }
-function restore(s) { const o = JSON.parse(s); board.items = o.items; board.groups = o.groups; board.removed = o.removed || {}; if (o.sel) sel = new Set(o.sel); tellLibrary(); [...sel].forEach(id => { if (!board.items[id] && !board.groups[id]) sel.delete(id); }); dirty = true; queueSave(); render(); renderLibMarks(); }
+function restore(s) { const o = JSON.parse(s); board.items = o.items; board.groups = o.groups; board.removed = o.removed || {}; board.grids = o.grids; board.links = o.links; if (o.sel) sel = new Set(o.sel); tellLibrary(); [...sel].forEach(id => { if (!board.items[id] && !board.groups[id]) sel.delete(id); }); dirty = true; queueSave(); render(); renderLibMarks(); }
 function histFlush() { HISTP.forEach(f => { try { f(); } catch (e) { console.error("plugin history", e); } }); }
 function undo() { histFlush(); if (PREV || !past.length) return; future.push(snap()); const s = past.pop(); restore(s); xmoveStep(s, future, "undo"); restored("undo"); }
 function redo() { histFlush(); if (PREV || !future.length) return; past.push(snap()); const s = future.pop(); restore(s); xmoveStep(s, past, "redo"); restored("redo"); }
@@ -3289,9 +3274,10 @@ function setRow(px) {
   de.style.setProperty("--row", px + "px");
 }
 let saveFlight = null, editVersion = 0, canvasOperations = 0, pagesFailed = false, conflicts = 0, BASE = null, boardMtime = 0;   // BASE, boardMtime: live board, below
+let lastEdit = 0;   // when the newest edit here was made: a save sends it, the server lets the newer of two changes to one field win
 let saveWarn = null;   // the sticky note that saving failed: it goes by itself once a save works again
 const unwarn = () => { if (saveWarn && saveWarn.querySelector) { const x = saveWarn.querySelector(".x"); if (x) x.click(); } saveWarn = null; };
-function queueSave() { if (typeof PREV !== "undefined" && PREV) return; editVersion++; clearTimeout(saveT); status(T("saving…")); saveT = setTimeout(save, 700); }
+function queueSave() { if (typeof PREV !== "undefined" && PREV) return; editVersion++; lastEdit = Date.now(); clearTimeout(saveT); status(T("saving…")); saveT = setTimeout(save, 700); }
 function save() {
   clearTimeout(saveT); saveT = null;
   if (saveFlight) return saveFlight;
@@ -3302,14 +3288,15 @@ function save() {
       const version = editVersion, current = board;
       try {
         const sent = JSON.stringify(current);
-        const r = await fetch("/api/board?name=" + BOARD, { method: "POST", headers: { "Content-Type": "application/json" }, body: sent });
+        const r = await fetch(`/api/board?name=${BOARD}${lastEdit ? "&edited=" + lastEdit / 1000 : ""}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: sent });
         if (r.status === 409) {   // someone else saved first (the AI, another tab): merge their version with the edits here and try again
           if (++conflicts > 3) { status(T("not saving"), true); if (!saveWarn) saveWarn = toast(T("The board is being changed elsewhere: reload the page, or the changes here won't be saved"), "error", { sticky: true }); return false; }
           await pullRemote(); continue;
         }
         if (!r.ok) throw new Error(r.status);
-        const res = await r.json(); current.revision = res.revision; conflicts = 0;
-        BASE = JSON.parse(sent); BASE.revision = res.revision; if (res.mtime) boardMtime = res.mtime;
+        const res = await r.json(); conflicts = 0; if (res.mtime) boardMtime = res.mtime;
+        if (res.board) await applyMerged(JSON.parse(sent), res);   // merged with changes made elsewhere: theirs and ours, edits since on top
+        else { current.revision = res.revision; current.vid = res.vid; BASE = JSON.parse(sent); BASE.revision = res.revision; BASE.vid = res.vid; }
         dirty = version !== editVersion;
         unwarn(); status("✓ " + res.saved.slice(11, 16) + (res.notes_synced ? " · " + T("notes in json: {n}", { n: res.notes_synced }) : ""));
       } catch (e) { status(T("not saved"), true); if (!saveWarn) saveWarn = toast(T("Not saved: the server isn't answering. The changes are kept here, I'll save them as soon as it answers"), "error", { sticky: true }); return false; }
@@ -3326,39 +3313,39 @@ window.hyimgFlush = async () => {
   const ok = await save();
   return ok && !dirty && !saveT && !saveFlight && !canvasOperations && !pagesFailed;
 };
+window.hyimgSleepState = () => ({ unsaved: !!(dirty || saveT || saveFlight || canvasOperations || pagesFailed), editing: !!(openEditor || cropState),
+  studio: MODES && MODES.open !== "board" ? MODES.open : "", busy: [...BUSY.values()], page: BOARD, sel: [...sel] });   // may it sleep (ui/switcher.js)
+window.hyimgSelect = ids => HY.select(ids.filter(id => board.items[id] || board.groups[id]));   // a woken board's selection back
 addEventListener("beforeunload", e => { if (dirty || saveT) { save(); e.preventDefault(); } });
 // Live board (owner 2026-10-01: "when the AI adds pictures, it should show up without reloading the board"). BASE is the board as
 // last loaded or saved here; the page asks /api/changes every two seconds and, when the file changed elsewhere, takes the new
-// version. Edits made here and not saved yet are kept: every frame, group and mark is merged by id, what changed here wins,
-// everything else comes from the other side.
-function mergeMap(b = {}, l = {}, r = {}) {
-  const out = {};
-  // the order is the draw order (Order ›): reordered here, ours; otherwise theirs (an agent's hy.py front), what is new after it
-  const ord = Object.keys(l).join("\n") !== Object.keys(b).join("\n") ? [l, r, b] : [r, l, b];
-  for (const k of new Set(ord.flatMap(o => Object.keys(o)))) {
-    const bs = k in b ? JSON.stringify(b[k]) : null, ls = k in l ? JSON.stringify(l[k]) : null;
-    const v = ls !== bs ? l[k] : r[k];   // changed (or added, or deleted) here: ours; otherwise theirs
-    if (v !== undefined && v !== null) out[k] = v;
-  }
-  return out;
-}
+// version. Edits made here and not saved yet are kept: merged by id and field with the other side (ui/merge.js), what changed here
+// wins, everything else comes from the other side. A save the server merged (review/merge.py) comes back the same way.
 async function pullRemote() {
-  const remote = await (await fetch("/api/board?name=" + BOARD)).json();
-  remote.items = remote.items || {}; remote.groups = remote.groups || {}; remote.removed = remote.removed || {};
-  const before = new Set(Object.keys(board.items)), local = dirty || saveT ? board : null;
-  const next = local && BASE ? { ...remote, items: mergeMap(BASE.items, local.items, remote.items), groups: mergeMap(BASE.groups, local.groups, remote.groups), removed: mergeMap(BASE.removed, local.removed, remote.removed) } : remote;
+  const remote = await (await fetch("/api/board?name=" + BOARD)).json(); await aliasesNow();
+  const local = dirty || saveT, next = local && BASE ? hyMerge.merge3(BASE, board, remote) : remote;
   BASE = JSON.parse(JSON.stringify(remote));
-  // files laid out as on the board move under the open page (owner 2026-10-05, foldersync.py): the old paths map to the new ones
-  try { ALIASES = await (await fetch("/api/aliases")).json(); } catch {}
+  adopt(next, !local);
+  if (local) { clearTimeout(saveT); saveT = setTimeout(save, 700); }   // not queueSave: no new edit here, its time stays
+}
+async function applyMerged(sent, res) {
+  await aliasesNow(); BASE = JSON.parse(JSON.stringify(res.board));
+  adopt(hyMerge.merge3(sent, board, res.board), false, true);   // the edits made since the save left stay on top
+  hyMerge.tell(res.merged, toast, { sent, board: res.board, rect: rectOf, show: focusOn });   // their things glow, a toast only for a clash
+}
+// files laid out as on the board move under the open page (owner 2026-10-05, foldersync.py): the old paths map to the new ones
+async function aliasesNow() { try { ALIASES = await (await fetch("/api/aliases")).json(); } catch {} }
+function adopt(next, fresh, quiet) {   // synchronous from the merge on: an edit can't land on the board being replaced
+  next.items = next.items || {}; next.groups = next.groups || {}; next.removed = next.removed || {};
+  const before = new Set(Object.keys(board.items));
   if (ALIASES) Object.values(next.items).forEach(it => { if (it.path && ALIASES[it.path]) it.path = ALIASES[it.path]; });
   board = next;
   for (const id of [...sel]) if (!board.items[id] && !board.groups[id]) sel.delete(id);
   // the undo steps hold the board as it was before: undoing one now would quietly take the other side's work away
-  if (JSON.stringify(Object.keys(remote.items).sort()) !== JSON.stringify([...before].sort()) || !local) { past = []; future = []; }
+  if (JSON.stringify(Object.keys(next.items).sort()) !== JSON.stringify([...before].sort()) || fresh) { past = []; future = []; }
   render(); renderLibMarks(); tellLibrary();
   const added = Object.keys(board.items).filter(id => !before.has(id)).length, gone = [...before].filter(id => !board.items[id]).length;
-  if (added || gone) toast(T("Board updated") + ": " + [added && T("added {n}", { n: added }), gone && T("removed {n}", { n: gone })].filter(Boolean).join(", "));
-  if (local) queueSave();
+  if (!quiet && (added || gone)) toast(T("Board updated") + ": " + [added && T("added {n}", { n: added }), gone && T("removed {n}", { n: gone })].filter(Boolean).join(", "));
 }
 async function syncStamp() { try { const c = await (await fetch("/api/changes?board=" + BOARD)).json(); boardMtime = c.board.mtime; libV = c.lib; } catch {} }
 let libV = null, libBusy = false;
@@ -3570,7 +3557,8 @@ stage.addEventListener("pointerdown", e => {
   stage.setPointerCapture(e.pointerId);
   const p = toWorld(e.clientX, e.clientY);
   if (e.button === 1 || space) { if (SPACE) SPACE.used = true; drag = { mode: "pan", sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y }; stage.classList.add("panning"); return; }
-  const lk = e.target.closest(".it .lk"); if (lk) { toggleFav([lk.parentElement.dataset.id]); return; }
+  const lk = e.target.closest(":is(.it, .plg) > .lk"); if (lk) { toggleFav([lk.parentElement.dataset.id]); return; }
+  const nd = e.target.closest("[data-nd]"); if (nd && board.items[nd.dataset.nd]) { sel = new Set([nd.dataset.nd]); render(); return; }   // a note's dot: that note
   const dm = e.target.closest(".it.dup .dupmark"); if (dm) { const id = dm.parentElement.dataset.id; goTo(origOf(id), id); return; }
   const vpb = e.target.closest(".it .vp"); if (vpb) { vidToggle(vpb.parentElement.dataset.id); return; }
   // the pill: what plays with sound pauses; what stands, or plays silently under the pointer (it starts as the pointer comes), plays with sound
@@ -3590,7 +3578,7 @@ stage.addEventListener("pointerdown", e => {
   const fr = e.target.closest("[data-frame]"); if (fr) { if (!fr.disabled) setFrame([...sel][0], fr.dataset.frame); return; }
   const tls = e.target.closest("[data-tlsize]"); if (tls) { if (!tls.disabled) setTlSize(+tls.dataset.tlsize); return; }
   const pb = e.target.closest("[data-plgbar]"); if (pb) { const a = (renderHandles.pbar || [])[+pb.dataset.plgbar]; if (a && a.fn) a.fn(); return; }
-  if (e.target.closest(".tidy [data-fav]")) { toggleFav([...sel].filter(id => isPic(board.items[id]))); return; }
+  if (e.target.closest(".tidy [data-fav]")) { toggleFav([...sel]); return; }   // the pictures and HTML pages among them
   if (e.target.closest(".tidy [data-crop]")) { startCropSel(); return; }
   if (e.target.closest(".tidy [data-split]")) { splitPdfSel(); return; }
   const td = e.target.closest("[data-tidy]"); if (td) { ({ row: tidyRow, smart: smartTidy, grid: tidy })[td.dataset.tidy](); return; }
@@ -3613,6 +3601,8 @@ stage.addEventListener("pointerdown", e => {
   const adl = e.target.closest("[data-arrowdel]"); if (adl) { selArrow = adl.dataset.arrowdel; removeArrow(); return; }   // the − on a hovered arrow
   const cn = e.target.closest("[data-connect]"); if (cn) { drag = { mode: "connect", id: cn.dataset.connect, before: snap(), p, cur: p }; return; }
   const ar = e.target.closest("[data-arrow]"); if (ar) { selArrow = ar.dataset.arrow; sel = new Set([selArrow.split("|")[0]]); render(); return; }
+  const mh = e.target.closest("[data-mresize]");   // the box around several selected: they scale together (ui/multiscale.js)
+  if (mh) { drag = { mode: "mresize", p, st: hyMultiScale.begin(sel, mh.dataset.mresize), before: snap(), moved: true }; render(); return; }
   const rh = e.target.closest("[data-resize]");
   if (rh) { const id = rh.dataset.resize, zone = !!rh.dataset.zone, key = id + rh.dataset.rc + zone, now = performance.now();
     if (lastHandle && lastHandle.key === key && now - lastHandle.t < 400) { lastHandle = null; drag = null; fitFrame(id, zone); return; }   // double click on a corner
@@ -3696,7 +3686,7 @@ function onMove(e) {
   if (drag.mode === "move") {
     drag.last = { clientX: e.clientX, clientY: e.clientY };
     if (!drag.moved && Math.hypot(dx, dy) * cam.z < 3) return;
-    drag.moved = true;
+    drag.moved = true; drag.kh = drag.kh || hyHint("move", $("#handles .mbox") || EL.get(drag.start[0][0]) || GEL.get(drag.start[0][0]), { untilUp: true });
     // Shift keeps the move on one axis, whichever way the mouse went further (owner 2026-09-29, like Figma)
     if (e.shiftKey || drag.shift) { if (Math.abs(dx) >= Math.abs(dy)) dy = 0; else dx = 0; }
     drag.start.forEach(([id, r]) => { const o = board.items[id] || board.groups[id]; if (o) { o.x = r.x + dx; o.y = r.y + dy; } });
@@ -3708,16 +3698,18 @@ function onMove(e) {
       const hit = Object.entries(board.groups).filter(([, g]) => inside(c, g)).sort((a, b) => a[1].w * a[1].h - b[1].w * b[1].h)[0];
       if (hit) document.querySelector(`.grp[data-id="${hit[0]}"]`).classList.add("drop");
     }
-    render(); return;
+    if (window.hyGrid) hyGrid.moving(drag); render(); return;
   }
   if (drag.mode === "connect") {
-    drag.cur = p; document.querySelectorAll(".linktarget").forEach(el => el.classList.remove("linktarget"));
-    const t = document.elementsFromPoint(e.clientX, e.clientY).find(el => el.classList.contains("it") || el.classList.contains("grp"));
-    drag.target = t ? t.dataset.id : null; if (t) t.classList.add("linktarget");
+    drag.cur = p; document.querySelectorAll(".linktarget").forEach(el => { el.classList.remove("linktarget"); el.style.removeProperty("--lt"); });
+    const t = document.elementsFromPoint(e.clientX, e.clientY).find(el => hyNoteLink.dropEl(board, el, drag.id));   // any kind of thing or a group
+    drag.target = t ? t.dataset.id : null; if (t) { t.classList.add("linktarget"); t.style.setProperty("--lt", noteCol(board.items[drag.id])[0]); }   // in the arrow's colour
     renderLinks(); return;
   }
   // ⌥ while resizing scales from the centre, every side at once (owner 2026-09-30, as in Figma); pressing or letting go of ⌥ mid-drag switches at once
-  const alt = e.altKey; if (drag.mode === "resize") drag.last = { clientX: e.clientX, clientY: e.clientY };
+  const alt = e.altKey; if (/resize$/.test(drag.mode)) drag.last = { clientX: e.clientX, clientY: e.clientY };
+  if (/resize$/.test(drag.mode) && !drag.kh) drag.kh = hyHint(drag.mode, $("#handles .mbox") || EL.get(drag.id) || GEL.get(drag.id), { untilUp: true });
+  if (drag.mode === "mresize") { hyMultiScale.apply(drag.st, dx, dy, alt, e.shiftKey); render(); return; }
   if (drag.mode === "resize" && drag.zone) {   // the zone of a note: its margins around the card
     const n = board.items[drag.id], m0 = drag.m0, c = drag.rc;
     if (c.includes("w")) { n.reach.l = Math.max(0, Math.round(m0.l - dx)); if (alt) n.reach.r = Math.max(0, Math.round(m0.r - dx)); }
@@ -3738,7 +3730,7 @@ function onMove(e) {
         const kk = !L && !R ? Math.max(.05, (T ? r0.h - dy * m : r0.h + dy * m) / r0.h) : k;
         it.w = Math.max(80, drag.it0.w * kk); it.h = drag.it0.h * it.w / drag.it0.w;
       }
-      else if (isNote(it)) it.w = Math.max(60, drag.it0.w * k); else it.fs = Math.max(8, drag.it0.fs * k);
+      else if (isNote(it)) it.w = Math.max(60, drag.it0.w * k); else hyTextDoc.resize(it, drag.it0, c, k, (L ? -dx : dx) * m);   // a side: a document's width
       render();   // measures the new width and height
       if (alt) { it.x = cx - it.w / 2; it.y = cy - it.h / 2; }
       else { it.x = L ? r0.x + r0.w - it.w : r0.x; it.y = T ? r0.y + r0.h - it.h : r0.y; }
@@ -3793,12 +3785,17 @@ function pointerUp(e) {
   if (drag.mode === "move" && !drag.moved && tlPlus && !drag.copy) { const t = tlPlus; tlPlus = null; drag = null; addTlPoint(t.id, t.t); return; }   // a click on the + of a line
   if (drag.mode === "move" && drag.copy && !drag.moved) {   // ⌥-click without a drag: no copy is left behind
     const o = JSON.parse(drag.before); board.items = o.items; board.groups = o.groups; sel.clear(); render();
-  } else if (drag.mode === "move" && drag.moved) { regroup(drag.start.map(([id]) => id).filter(id => board.items[id] && !drag.start.some(([g]) => board.groups[g] && board.groups[g].members.includes(id)))); commit(drag.before); }
+  } else if (drag.mode === "move" && drag.moved) { if (window.hyGrid) hyGrid.drop(drag); regroup(drag.start.map(([id]) => id).filter(id => board.items[id] && !drag.start.some(([g]) => board.groups[g] && board.groups[g].members.includes(id)))); commit(drag.before); }
   else if (drag.mode === "connect") {
-    document.querySelectorAll(".linktarget").forEach(el => el.classList.remove("linktarget"));
-    const n = board.items[drag.id], t = drag.target, ok = n && t && t !== drag.id && (isPic(board.items[t]) || board.groups[t]) && !(n.to || []).includes(t);
-    if (ok) { n.to = [...(n.to || []), t]; commit(drag.before, board.groups[t] ? T("Arrow: to the group, all its frames are linked") : T("Arrow: to the frame")); } else render();
+    document.querySelectorAll(".linktarget").forEach(el => { el.classList.remove("linktarget"); el.style.removeProperty("--lt"); });
+    const n = board.items[drag.id], t = drag.target, ok = n && t && t !== drag.id && (hyNoteLink.target(board.items[t]) || board.groups[t]) && !(n.to || []).includes(t);
+    const msg = () => board.groups[t] ? T("Arrow: to the group, all its frames are linked")
+      : isPic(board.items[t]) ? T("Arrow: to the frame") : T("Arrow: {what}", { what: hyNoteLink.what(board, [t]) });
+    const rp = n && t && t !== drag.id && isNote(board.items[t]) && hyNoteLink.reply(board, drag.id, t);   // a note: a reply to it (2026-10-08)
+    if (rp) { if (rp.ok) commit(drag.before, rp.msg); else { if (rp.msg) toast(rp.msg); render(); } } else if (ok) { n.to = [...(n.to || []), t]; commit(drag.before, msg()); } else render();
   }
+  else if (drag.mode === "mresize" && drag.last) {   // one undo step; a group's members stay in it, the rest find their frame as after a move
+    const inG = new Set([...drag.st.g0.values()].flatMap(g => g.members)); regroup([...drag.st.it0.keys()].filter(id => !inG.has(id))); commit(drag.before); }
   else if (drag.mode === "resize") { regroup(board.items[drag.id] ? [drag.id] : Object.keys(board.items)); commit(drag.before); if (board.items[drag.id] && PLG[board.items[drag.id].type]) { const id = drag.id; drag = null; framed(id); } }
   drag = null;
   renderHandles();   // the redraw above ran while the drag was still on, which hides the buttons over the selection
@@ -3811,6 +3808,7 @@ stage.addEventListener("dblclick", e => {
   // pointer capture sends the dblclick to the stage, so look up what is under the cursor
   const under = document.elementsFromPoint(e.clientX, e.clientY);
   const pe = under.find(el => el.classList.contains("plg")), pt = pe && board.items[pe.dataset.id];
+  if (pt && window.hyPlugBoard && hyPlugBoard.open(pt.type, pe.dataset.id, e)) return;   // another plugin opens this kind (HY.opener: Dev mode for HTML frames)
   if (pt && PLG[pt.type] && PLG[pt.type].dblclick) return PLG[pt.type].dblclick(pe.dataset.id, e);
   const gs = under.find(el => el.classList.contains("gst"));
   if (gs) return renamePlate(gs);
@@ -3818,7 +3816,7 @@ stage.addEventListener("dblclick", e => {
   const tlb = under.find(el => el.classList.contains("lbl") && el.closest(".tl")); if (tlb) return editTlLabel(tlb.closest(".tl").dataset.id, tlb.dataset.pid);
   const tld = under.find(el => el.classList.contains("dot") && el.closest(".tl")); if (tld) return editTlLabel(tld.closest(".tl").dataset.id, tld.dataset.pid);
   if (under.find(el => el.classList.contains("tl"))) return;   // a double click on the line itself does nothing (the + adds dots)
-  const tx = under.find(el => el.classList.contains("tx")); if (tx) return editText(tx.dataset.id, null, caretAt(e));
+  const tx = under.find(el => el.classList.contains("tx")); if (tx) return editText(tx.dataset.id, null, caretAt(e), e);   // ui/textdoc.js
   const nt = under.find(el => el.classList.contains("note")); if (nt) return editNote(nt.dataset.id, null, caretAt(e));
   const it = under.find(el => el.classList.contains("it")), fid = it ? it.dataset.id : lodHit(toWorld(e.clientX, e.clientY));
   // a video: crop & trim on the card itself (owner 2026-10-06; the large player opens from ⤢ in its pill now)
@@ -3832,7 +3830,8 @@ stage.addEventListener("dblclick", e => {
   const p = toWorld(e.clientX, e.clientY), id = uid("t"), before = snap();
   // a new text is "Обычный"; zoomed far out, where that would be under 12 px on screen, the smallest size you can still read and edit
   let size = 1; while (size < TSIZE.length - 1 && TSIZE[size].fs * cam.z < 12) size++;
-  board.items[id] = { type: "text", text: "", x: p.x, y: p.y - TSIZE[size].fs * .6, fs: TSIZE[size].fs, size, w: 0, h: 0 };
+  const fs = TSIZE[size].fs * hyNewSize.text(cam.z);   // zoomed in, no bigger on screen than at 100 % (2026-10-07, ui/newsize.js)
+  board.items[id] = { type: "text", text: "", x: p.x, y: p.y - fs * .6, fs, size, w: 0, h: 0 };
   render(); editText(id, before);
 });
 // character under the pointer in a title (read before the text is swapped for the editor)
@@ -3852,37 +3851,18 @@ function selectWordAt(ta, at) {
   if (a === b) { ta.setSelectionRange(at, at); return; }
   ta.setSelectionRange(a, b);
 }
-function editText(id, before0, at) {
-  const it = board.items[id], el = document.querySelector(`.tx[data-id="${id}"]`); if (!el) return;
-  const before = before0 || snap(), ta = document.createElement("textarea"); ta.rows = 1; ta.value = it.text; ta.placeholder = T("Heading");
-  el.textContent = ""; el.appendChild(ta); el.classList.add("editing");
-  const fit = () => { ta.style.width = "0"; ta.style.height = "0"; ta.style.width = Math.max(ta.scrollWidth, it.fs * 4) + 4 + "px"; ta.style.height = ta.scrollHeight + "px"; };
-  fit(); ta.focus(); selectWordAt(ta, at); sel = new Set([id]);
-  let closed = false;
-  const done = ok => {
-    if (closed) return; closed = true; openEditor = null;
-    const v = ta.value.replace(/\s+$/, ""); ta.remove(); el.classList.remove("editing");
-    if (!ok) { if (!it.text) { delete board.items[id]; } render(); return; }
-    if (!v.trim()) { delete board.items[id]; sel.delete(id); if (before0) { render(); return; } commit(before); return; }   // an empty title disappears
-    it.text = v; render(); regroup([id]); commit(before);
-  };
-  ta.addEventListener("input", fit);
-  ta.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); done(true); } if (e.key === "Escape") { e.preventDefault(); done(true); } });   // Esc applies like Enter (owner 2026-09-30, as in Figma)
-  ta.addEventListener("blur", () => done(true), { once: true });
-  openEditor = done;
-}
-
+// editText(id, before, at, event): a text's editor, its title and Markdown body, is ui/textdoc.js
 function editNote(id, before0, at) {
   const it = board.items[id], el = document.querySelector(`.note[data-id="${id}"]`); if (!el) return;
-  const before = before0 || snap(), ta = document.createElement("textarea"); ta.rows = 1; ta.value = it.text; ta.placeholder = T("What you liked here. ⌘B bold, - list");
+  const before = before0 || snap(), ta = document.createElement("textarea"); ta.rows = 1; ta.value = it.text; ta.placeholder = T("What you liked here");
   delete el.dataset.md; el.textContent = ""; el.appendChild(ta); el.classList.add("editing");
   // the field fills the whole square, not just the lines written so far: a click anywhere on the note keeps typing instead of closing it
   const cs = getComputedStyle(el), inner = it.w - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   const fit = () => { ta.style.height = "0"; ta.style.height = Math.max(ta.scrollHeight, inner) + "px"; };
-  fit(); ta.focus(); selectWordAt(ta, at); sel = new Set([id]);
+  fit(); ta.focus(); selectWordAt(ta, at); sel = new Set([id]); const kh = hyHint("note", el);
   let closed = false;
-  const done = () => {   // Esc and ⌘↵ apply, Enter is a new line (lists continue), a click outside applies too
-    if (closed) return; closed = true; openEditor = null;
+  const done = () => {   // ↵, ⌘↵ and Esc apply, ⇧↵ is a new line (lists continue), a click outside applies too
+    if (closed) return; closed = true; openEditor = null; kh.hide();
     const v = ta.value.replace(/\s+$/, ""); ta.remove(); el.classList.remove("editing");
     // an empty note stays (owner 2026-09-30: it vanished when he grabbed it to move it before writing); ⌫ removes it
     if (!before0 && v === it.text) { render(); return; }
@@ -3890,15 +3870,15 @@ function editNote(id, before0, at) {
   };
   ta.addEventListener("input", fit);
   ta.addEventListener("keydown", e => {
-    e.stopPropagation();
+    e.stopPropagation(); if (e.isComposing || e.keyCode === 229) return;   // an IME's ↵ picks its candidate and stays in the note (WebKit: 229)
     const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
-    if (e.key === "Escape" || (mod && e.key === "Enter")) { e.preventDefault(); done(); return; }   // Esc or ⌘↵ apply; plain Enter is a new line (lists)
+    if (e.key === "Escape" || (e.key === "Enter" && (!e.shiftKey || mod))) { e.preventDefault(); done(); return; }   // ↵, ⌘↵, Esc (owner 2026-10-09)
     if (mod && (k === "b" || k === "и")) { e.preventDefault(); toggleMark(ta, "**"); fit(); return; }
     if (mod && (k === "i" || k === "ш")) { e.preventDefault(); toggleMark(ta, "*"); fit(); return; }
-    if (e.key === "Enter" && !e.shiftKey && !mod && continueList(ta)) { e.preventDefault(); fit(); }
+    if (e.key === "Enter" && e.shiftKey && continueList(ta)) { e.preventDefault(); fit(); kh.used("list"); }   // ⇧↵: a new line, a list goes on
   });
   ta.addEventListener("blur", () => done(), { once: true });
-  openEditor = done;
+  openEditor = done; hyUndoNew.watch(ta, !!before0, done);   // ⌘Z: a note just made goes with its links (owner 2026-10-08), ui/undonew.js
 }
 // insert through execCommand so the field's own undo (⌘Z) keeps working
 function typeIn(ta, text) { if (text === "" ? document.execCommand("delete") : document.execCommand("insertText", false, text)) return; { const a = ta.selectionStart; ta.setRangeText(text, a, ta.selectionEnd, "end"); ta.dispatchEvent(new Event("input", { bubbles: true })); } }
@@ -3915,7 +3895,7 @@ function toggleMark(ta, mark) {   // ⌘B and ⌘I: wrap the selection in the ma
   if (on(v, a, b)) { ta.setSelectionRange(a - k, b + k); typeIn(ta, sel); ta.setSelectionRange(a - k, b - k); }
   else { typeIn(ta, mark + sel + mark); ta.setSelectionRange(a + k, b + k); }
 }
-function continueList(ta) {   // Enter inside a list item starts the next item; on an empty item it ends the list
+function continueList(ta) {   // ⇧↵ inside a list item starts the next item; on an empty item it ends the list
   const v = ta.value, a = ta.selectionStart, ls = v.lastIndexOf("\n", a - 1) + 1, line = v.slice(ls, a), m = line.match(/^(\s*)([-*•]|\d+[.)])\s+(.*)$/);
   if (!m || ta.selectionEnd !== a) return false;
   if (!m[3].trim()) { ta.setSelectionRange(ls, a); typeIn(ta, ""); return true; }
@@ -3952,7 +3932,7 @@ function makeGroup() {
   const before = snap(), b = bbox(ids), pad = Math.round(unit * 1.5), id = uid("g");
   ids.forEach(i => Object.values(board.groups).forEach(g => g.members = g.members.filter(m => m !== i)));
   board.groups[id] = { title: T("Group {n}", { n: String(Object.keys(board.groups).length + 1) }), x: b.x - pad, y: b.y - pad, w: b.w + pad * 2, h: b.h + pad * 2, members: ids };
-  sel = new Set([id]); commit(before); renameGroup(id);
+  sel = new Set([id]); commit(before); renameGroup(id, null, "made");   // "made": the name joins the group's step, one ⌘Z takes both (ui/undonew.js)
 }
 function ungroup() {
   const gs = [...sel].filter(id => board.groups[id]); if (!gs.length) return;
@@ -3960,23 +3940,23 @@ function ungroup() {
   gs.forEach(g => { board.groups[g].members.forEach(m => sel.add(m)); delete board.groups[g]; });
   commit(before);
 }
-function renameGroup(id, at) {
+function renameGroup(id, at, made) {
   const el = document.querySelector(`.grp[data-id="${id}"] .gt`); if (!el) return;
   // Enter or Esc save, Shift+Enter starts a new line; the field grows with the text
   const g = board.groups[id], inp = document.createElement("textarea"); inp.rows = 1; inp.value = g.title || "";
   el.textContent = ""; el.appendChild(inp);
   const fit = () => { inp.style.height = "auto"; inp.style.height = inp.scrollHeight + "px"; };
-  fit(); inp.focus(); selectWordAt(inp, at);
+  fit(); inp.focus(); selectWordAt(inp, at); const kh = hyHint("heading", el);
   let closed = false;
   const done = ok => {
-    if (closed) return; closed = true; openEditor = null;
+    if (closed) return; closed = true; openEditor = null; kh.hide();
     const v = inp.value.replace(/\s+$/, "");
-    if (ok && v.trim() && v !== g.title) { const before = snap(); g.title = v; inp.remove(); commit(before); } else { inp.remove(); render(); }
+    if (ok && v.trim() && v !== g.title) { const before = snap(); g.title = v; inp.remove(); commit(before); if (made) past.pop(); } else { inp.remove(); render(); }
   };
   inp.addEventListener("input", fit);
   inp.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); done(true); } if (e.key === "Escape") { e.preventDefault(); done(true); } });   // Esc applies like Enter (owner 2026-09-30)
   inp.addEventListener("blur", () => done(true), { once: true });
-  openEditor = done;
+  openEditor = done; hyUndoNew.watch(inp, made, done);
 }
 function removeSel() {
   if (!sel.size) return; const before = snap();
@@ -4014,7 +3994,6 @@ function setOpacity(v, live) {
   const ids = [...sel].filter(id => opOk(board.items[id])); if (!ids.length) return;   // pictures and plugin cards with def.opacity
   if (!opBefore) opBefore = snap();
   ids.forEach(id => { const it = board.items[id]; if (v >= 1) delete it.opacity; else it.opacity = Math.round(v * 100) / 100; const el = EL.get(id); if (el) el.style.opacity = v >= 1 ? "" : it.opacity; });
-  const b = document.querySelector(".tidy .op b"); if (b) b.textContent = Math.round(v * 100) + "%";
   if (!live) { const before = opBefore; opBefore = null; commit(before); }
 }
 document.addEventListener("input", e => { if (e.target.matches && e.target.matches(".tidy [data-op]")) setOpacity(+e.target.value / 100, true); });
@@ -4038,7 +4017,7 @@ document.addEventListener("paste", e => {
   if (e.target.closest && e.target.closest("input, textarea, [contenteditable=true]")) return;
   clearTimeout(pasteWait); pasteWait = null; e.preventDefault();
   const o = outerOf(e.clipboardData), txt = e.clipboardData.getData("text/plain");
-  if (o.length && !txt.startsWith(CLIPMARK) && !isOwnLink(txt)) addOuter(o, lastPt); else paste();
+  if (o.length && !txt.startsWith(CLIPMARK) && !isOwnLink(txt)) addOuter(o, lastPt); else if (o.length || isOwnLink(txt) || !hyTextDoc.paste(txt, lastPt)) paste();
 });
 async function pasteFallback() {
   pasteWait = null;
@@ -4082,7 +4061,7 @@ function tidy() {
     it.y = b.y + rowH.slice(0, r).reduce((a, v) => a + v + GAP, 0);
   });
   // group frames stay as they are and so does membership (owner 2026-09-29): the backing of a group is sized only by hand
-  commit(before);
+  if (window.hyGrid) hyGrid.arranged(rs.map(x => x.id), cols, true); commit(before);   // the block is a grid now (ui/grid.js)
 }
 // one row: tops aligned to the highest frame, equal gaps, left-to-right order kept, sizes and groups untouched.
 // ALL the selected frames in one row, however many (owner 2026-10-02: "if there are 100, all 100 in a row"); the 8-wide limit is ⌥A's
@@ -4093,7 +4072,7 @@ function tidyRow() {
   ids.map(id => ({ id, r: rectOf(id) })).sort((a, c) => a.r.x - c.r.x || a.r.y - c.r.y).forEach(({ id, r }) => {
     board.items[id].x = x; board.items[id].y = b.y; x += r.w + GAP;
   });
-  commit(before);
+  if (window.hyGrid) hyGrid.arranged(ids, ids.length); commit(before);   // the row is a grid of one row
 }
 // "Причесать" (owner 2026-09-29): keep the structure the owner made and only even out the spacing.
 // The selection is cut recursively at empty strips (first into rows or columns, whichever has the wider gap, then inside each),
@@ -4134,12 +4113,12 @@ function smartTidy() {
     return n.ax === "y" ? { w: cross, h: off } : { w: off, h: cross };
   };
   const b = bbox(ids); lay(build(rs), b.x, b.y);
-  commit(before);
+  if (window.hyGrid) hyGrid.arranged(ids, null); commit(before);   // a grid when what it laid out is one
 }
 function duplicate() {
   const ids = [...sel].filter(id => board.items[id]); if (!ids.length) return;
   const before = snap(), out = new Set();
-  ids.forEach(id => { const it = board.items[id], n = uid("i"); board.items[n] = { ...it, crop: it.crop ? [...it.crop] : null, x: it.x + 24, y: it.y + 24 }; if (it.trim) board.items[n].trim = [...it.trim]; out.add(n); });
+  ids.forEach(id => { const it = board.items[id], n = uid("i"); board.items[n] = { ...it, crop: it.crop ? [...it.crop] : null, x: it.x + 24, y: it.y + 24 }; if (it.trim) board.items[n].trim = [...it.trim]; out.add(n); if (window.hyGrid) hyGrid.dup(id, n); });
   regroup([...out]); sel = out; commit(before);
 }
 
@@ -4831,7 +4810,7 @@ addEventListener("keydown", e => {
   if (mod && (k === "a" || k === "ф")) { e.preventDefault(); sel = new Set(Object.keys(board.items)); render(); return; }
   if (mod) return;
   if (/^Arrow(Left|Right|Up|Down)$/.test(k) && !e.altKey) { if (nudgeOk()) { e.preventDefault(); nudge(k, e.shiftKey); } return; }   // the selection, a screen pixel (⇧ ten)
-  if (k === "g" || k === "G" || k === "п" || k === "П") { e.shiftKey ? ungroup() : makeGroup(); }
+  if (k === "g" || k === "G" || k === "п" || k === "П") { e.preventDefault(); e.shiftKey ? ungroup() : makeGroup(); }   // the g is not typed into the new name
   else if (k === "c" || k === "C" || k === "с" || k === "С") startCropSel();
   else if (k === "Backspace" || k === "Delete") {
     const tli = tlSel && board.items[tlSel.id], q = tli && tli.points.find(x => x.id === tlSel.pid);
@@ -4840,7 +4819,7 @@ addEventListener("keydown", e => {
   }
   else if (/^Digit[0-9]$/.test(e.code) && !e.shiftKey && !e.altKey && [...sel].some(id => opOk(board.items[id]))) { e.preventDefault(); const d = +e.code.slice(5); setOpacity(d === 0 ? 1 : d / 10, false); }   // 1…9 = 10…90 %, 0 = 100 %, as in Figma
   else if (is("KeyL", "l", "д")) { e.preventDefault(); newTimeline(true); }
-  else if (is("KeyF", "f", "а")) { if (e.repeat) { e.preventDefault(); return; } const ids = [...sel].filter(id => isPic(board.items[id])); if (ids.length) { e.preventDefault(); toggleFav(ids); } }   // ♥ on the selected frames
+  else if (is("KeyF", "f", "а")) { if (e.repeat) { e.preventDefault(); return; } const ids = [...sel].filter(id => hyCardFav.path(board.items[id])); if (ids.length) { e.preventDefault(); toggleFav(ids); } }   // ♥ on the selected
   else if (is("KeyN", "n", "т")) { e.preventDefault(); newNote(true); }   // the note's field takes focus right away: without this the "n" itself was typed into it (owner 2026-10-01)
   else if (k === "Escape") { sel.clear(); tlSel = null; render(); }
   else if (k === "!" || (e.shiftKey && e.code === "Digit1")) fit();
@@ -4849,12 +4828,12 @@ addEventListener("keydown", e => {
 // no text selection can even start outside fields you type into (⌘A, drags, double clicks)
 document.addEventListener("selectstart", e => { const t = e.target.nodeType === 1 ? e.target : e.target.parentElement; if (!t || !t.closest("input, textarea, [contenteditable=true]")) e.preventDefault(); });
 // Shift pressed or released in the middle of a drag: re-apply the move at the same mouse position
-function reAlt(alt) {   // ⌥ pressed or let go while resizing: redraw at the same pointer
-  if (!drag || drag.mode !== "resize" || !drag.last) return;
-  stage.dispatchEvent(new PointerEvent("pointermove", { clientX: drag.last.clientX, clientY: drag.last.clientY, altKey: alt, bubbles: true }));
+function reAlt(alt, shift) {   // ⌥ (or ⇧ on several selected) pressed or let go while resizing: redraw at the same pointer
+  if (!drag || !/resize$/.test(drag.mode) || !drag.last) return;
+  stage.dispatchEvent(new PointerEvent("pointermove", { clientX: drag.last.clientX, clientY: drag.last.clientY, altKey: alt, shiftKey: shift, bubbles: true }));
 }
-addEventListener("keydown", e => { if (e.key === "Alt") { if (drag && drag.mode === "resize") e.preventDefault(); reAlt(true); } });
-addEventListener("keyup", e => { if (e.key === "Alt") reAlt(false); });
+addEventListener("keydown", e => { if (e.key === "Alt" || e.key === "Shift") { if (drag && /resize$/.test(drag.mode)) e.preventDefault(); reAlt(e.altKey, e.shiftKey); } });
+addEventListener("keyup", e => { if (e.key === "Alt" || e.key === "Shift") reAlt(e.altKey, e.shiftKey); });
 function reMove(shift) {
   if (!drag || drag.mode !== "move" || !drag.moved || !drag.last) return;
   drag.shift = shift;
@@ -4870,7 +4849,7 @@ const isCmd = (e, code, ...keys) => (e.metaKey || e.ctrlKey) && !e.shiftKey && !
 let UIHID = false;
 // zoom: every part scales around the window's centre (owner 2026-10-06: «the scale animation must happen around the centre, not each UI
 // element separately»), so its origin is the centre seen from its own box, its own translate taken out (as the entrance does)
-const UI_PARTS = "#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #ctx, #gsticky, [data-hyui]";
+const UI_PARTS = "#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #gsticky, [data-hyui]";
 function uiOrigins(clear) {
   const cx = innerWidth / 2, cy = innerHeight / 2;
   document.querySelectorAll(UI_PARTS).forEach(el => {
@@ -4883,7 +4862,7 @@ function uiHide(on, quiet) {
   on = !!on; if (on === UIHID) return; UIHID = on;
   const root = document.documentElement;
   clearTimeout(uiHide.t); root.classList.remove("hy-ui-in"); root.dataset.hideui = localStorage.getItem("cv.hideui") === "slide" ? "slide" : "zoom";
-  if (on) uiOrigins();
+  if (on) { uiOrigins(); ctxClose(); }   // an open menu closes; one opened while hidden sits at the click (owner 2026-10-09: «должна оставаться у моего нажатия»)
   if (!on) { void root.offsetWidth; root.classList.add("hy-ui-in"); uiHide.t = setTimeout(() => { root.classList.remove("hy-ui-in"); uiOrigins(true); }, 260); }
   root.classList.toggle("hy-hideui", on); hyEntranceDone();   // the entrance never plays again (ui/entrance.js)
   document.querySelectorAll("iframe").forEach(f => { try { f.contentWindow.postMessage({ type: "hyHideUI", on }, location.origin); } catch {} });   // the frame editor's rail, panels and bars
@@ -4913,7 +4892,7 @@ $("#dock").addEventListener("click", e => { const b = e.target.closest("button")
 $("#bnote").onclick = () => newNote(false);
 $("#btl").onclick = () => newTimeline(false);
 // open the frame in the review viewer (big picture, scores, notes); on its own page the canvas opens the picture in a new tab
-$("#iFav").onclick = () => { const id = [...sel][0]; if (id && isPic(board.items[id])) toggleFav([id]); };
+$("#iFav").onclick = () => { const id = [...sel][0]; if (id) toggleFav([id]); };   // a picture or an HTML page (toggleFav keeps those)
 $("#iOpen").onclick = () => { const p = $("#iOpen").dataset.path; if (!p) return; EMBED ? parent.postMessage({ type: "openFrame", path: p }, location.origin) : open(`/img?p=${enc(p)}`, "_blank"); }; $("#bundo").onclick = undo; $("#bredo").onclick = redo; $("#bfit").onclick = () => fit();   // not "= fit": the click event would arrive as the list of frames to show
 $("#bkeys").onclick = () => { const o = $("#keys").style.display !== "block"; closeSide("keys"); $("#keys").style.display = o ? "block" : "none"; side(); };
 ["#bkeys", "#keys"].forEach(q => $(q).addEventListener("pointerdown", e => e.stopPropagation()));
@@ -4972,16 +4951,15 @@ async function switchPage(id) {
   if (openEditor) openEditor(true);
   if (cropState) endCrop();
   if (!await window.hyimgFlush()) return;
-  hist[BOARD] = { past, future };
+  hist[BOARD] = { past, future }; const from = BOARD;
   BOARD = id; try { localStorage.setItem("cv.page", id); } catch {}
   ({ past, future } = hist[id] || { past: [], future: [] });
   sel.clear(); lastPt = null; drag = null;
-  // the pictures of the page we leave go out of memory; only their elements: the far-view canvases share #items (emptying it took
-  // them too, and after a page switch nothing was painted, owner 2026-10-01)
+  // the page we leave falls asleep, the one we come to wakes at once when it slept (ui/pagesleep.js); only their elements leave #items:
+  // the far-view canvases share it (emptying it took them too, and after a page switch nothing was painted, owner 2026-10-01)
   vidStopAll();   // their sound must not go on from detached elements
-  for (const el of EL.values()) el.remove();
-  $("#groups").innerHTML = ""; $("#handles").innerHTML = ""; EL.clear(); GEL.clear();
-  board = { schema: 1, revision: 0, items: {}, groups: {}, removed: {} };
+  hyPageSleep.put(from, EL, GEL, board, BASE); $("#groups").innerHTML = ""; $("#handles").innerHTML = "";
+  board = { schema: 1, revision: 0, items: {}, groups: {}, removed: {} }; hyPageSleep.take(id);
   await refreshPages(); await loadBoard();
 }
 // a page whose name is only dashes or underscores («---», «___», «--», «________») is a divider, not a page to open (owner 2026-10-06)
@@ -5024,10 +5002,10 @@ async function deletePage(id) {
 function renamePage(id) {
   const row = $(`#pages .row[data-pg="${id}"]`); if (!row) return;
   const pg = pages.find(p => p.id === id), t = row.querySelector(".t") || row.querySelector(".ln"), inp = document.createElement("input");
-  inp.value = pg.title; t.replaceWith(inp); inp.focus(); inp.select();
+  inp.value = pg.title; t.replaceWith(inp); inp.focus(); inp.select(); const kh = hyHint("rename", inp);
   let closed = false;
   const done = ok => {
-    if (closed) return; closed = true;
+    if (closed) return; closed = true; kh.hide();
     const v = inp.value.trim();
     if (ok && v && v !== pg.title && isDivider(v)) {   // a divider holds nothing: only an empty page turns into one, and the board leaves it
       const n = pg.id === BOARD ? paths().size : (pg.on || []).length;
@@ -5298,7 +5276,10 @@ $("#ctx").addEventListener("hymenusub", () => tellOver());   // a submenu opened
 // seconds; a shorter video takes it up to its end), size (the width; the height follows each card's own proportions), opacity, a PDF's
 // page; the plugins add theirs (Hyimg-frames: the colour grade, the mask; 3D can add a camera or a light):
 //   HY.props.register({ id, label, order, has(it), applies(it) -> true | "why not", get(it), set(it, value, ctx), preview?(el, it, value),
-//                       files?(value) -> [library paths the value refers to], lacks?(it) -> "why this object has none" })
+//                       files?(value) -> [library paths the value refers to], lacks?(it) -> "why this object has none",
+//                       none?: the value that means «nothing applied» (null when absent), applied?(it) (has(it) when absent), clear: false (kept) })
+// «Clear properties ›» (owner 2026-10-07: «одним кликом убрать все, что применено»): HY.props.clear(ids, kinds?) sets every applied kind of
+// the cards to its none, one undo step; the board's menu, ⇧⌥⌘⌫, the Raw Editor panel's menu and hy.py clearprops do it the same way.
 // Every registered kind is listed in both submenus and the «Custom…» window; what an object has not, or the clipboard has not, or the
 // selection cannot take, is grey with its reason (owner 2026-10-06: «I want users to know what functions exist»).
 // A value that refers to files of the library (a mask's png) names them with files(): the copy keeps their bytes beside the clipboard and
@@ -5314,29 +5295,48 @@ HY.props = {
 };
 const clone = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));
 const vidDur = it => +((byPath.get(it.path) || {}).duration) || 0;
-HY.props.register({ id: "crop", label: T("props::Crop"), order: 30, has: it => isPic(it) && !!it.crop, applies: it => isPic(it) || T("Crop only on images and videos"), lacks: () => T("This picture isn't cropped"),
+HY.props.register({ id: "crop", label: T("props::Crop"), order: 30, none: null, has: it => isPic(it) && !!it.crop, applies: it => isPic(it) || T("Crop only on images and videos"), lacks: () => T("This picture isn't cropped"),
   get: it => it.crop ? [...it.crop] : null, set: (it, v) => { it.crop = Array.isArray(v) ? [...v] : null; } });
-HY.props.register({ id: "trim", label: T("props::Time"), order: 40, has: it => isVid(it) && !!trimOf(it), applies: it => isVid(it) || T("Time only on videos"), lacks: () => T("This video isn't trimmed"),
+HY.props.register({ id: "trim", label: T("props::Time"), order: 40, none: null, has: it => isVid(it) && !!trimOf(it), applies: it => isVid(it) || T("Time only on videos"), lacks: () => T("This video isn't trimmed"),
   get: it => trimOf(it), set: (it, v) => {
     if (!Array.isArray(v)) { delete it.trim; return; }
     const d = vidDur(it); let [a, b] = v; if (d) { b = Math.min(b, d); a = Math.max(0, Math.min(a, b - TRIM_MIN)); }
     if (b > a + .04 && !(d && a <= .05 && b >= d - .05)) it.trim = [Math.round(a * 100) / 100, Math.round(b * 100) / 100]; else delete it.trim;
   } });
-HY.props.register({ id: "size", label: T("props::Size"), order: 50, has: it => !!it && !isTl(it) && it.w > 0, applies: it => (!!it && !isTl(it)) || T("A timeline has no size to take"),
+HY.props.register({ id: "size", label: T("props::Size"), order: 50, clear: false, has: it => !!it && !isTl(it) && it.w > 0, applies: it => (!!it && !isTl(it)) || T("A timeline has no size to take"),
   get: it => ({ w: Math.round(it.w), h: Math.round(itemH(it)) }), set: (it, v) => {
     if (!v || !(v.w > 0)) return; const k = v.w / it.w;
     if (it.type && it.h && !isNote(it) && !isText(it)) it.h = Math.round(it.h * k);   // a card of a plugin keeps its own proportions
     it.w = Math.round(v.w);
   } });
-HY.props.register({ id: "opacity", label: T("props::Opacity"), order: 60, has: it => opOk(it) && it.opacity != null && it.opacity < 1, applies: it => opOk(it) || T("Opacity only on images, videos and cards"), lacks: () => T("This object is fully opaque"),
+HY.props.register({ id: "opacity", label: T("props::Opacity"), order: 60, none: 1, has: it => opOk(it) && it.opacity != null && it.opacity < 1, applies: it => opOk(it) || T("Opacity only on images, videos and cards"), lacks: () => T("This object is fully opaque"),
   get: it => it.opacity == null ? 1 : it.opacity, set: (it, v) => { if (!(v < 1)) delete it.opacity; else it.opacity = Math.max(0, Math.round(v * 100) / 100); } });
-HY.props.register({ id: "page", label: T("props::PDF page"), order: 70, has: it => isPdf(it), applies: it => (isPdf(it) && !it.pageFixed) || T("A page only on a PDF that is not split"),
+HY.props.register({ id: "page", label: T("props::PDF page"), order: 70, none: 1,
+  applied: it => isPdf(it) && pgOf(it) > 1, lacks: () => T("It shows its first page"), has: it => isPdf(it), applies: it => (isPdf(it) && !it.pageFixed) || T("A page only on a PDF that is not split"),
   get: it => pgOf(it), set: (it, v) => {
     const n = pdfPages(it.path), p = Math.max(1, Math.round(n ? Math.min(+v || 1, n) : +v || 1));
     if (p > 1) it.page = p; else delete it.page;
     const ar = ((PDFI.get(it.path) || {}).ars || [])[p - 1]; if (ar && Math.abs(ar / it.ar - 1) > .005) it.ar = ar;
   } });
 const propsOf = it => HY.props.list().filter(d => { try { return !!it && d.has(it); } catch { return false; } });
+const clearable = d => d.clear !== false;
+const applied = (d, it) => { try { return !!it && (d.applied ? d.applied(it) : d.has(it)); } catch { return false; } };
+// everything applied to the cards (all kinds, or only these), each set to its none; the count of cards changed
+function clearProps(ids, only) {
+  const tg = propTargets(ids), done = new Set(), before = snap(); let n = 0;
+  tg.forEach(id => {
+    const it = board.items[id]; let hit = false;
+    HY.props.list().forEach(d => {
+      if (!clearable(d) || (only && !only.includes(d.id)) || !applied(d, it)) return;
+      try { d.set(it, clone("none" in d ? d.none : null), { id, clear: true }); hit = true; done.add(d.id); } catch (e) { console.error("props clear", d.id, e); }
+    });
+    if (hit) { n++; const el = EL.get(id); if (el) el._k = ""; }
+  });
+  if (!n) { toast(T("Nothing to clear")); return 0; }
+  commit(before, T("Cleared {what} on {n} objects", { what: propNames([...done]), n }));
+  return n;
+}
+HY.props.clear = (ids, kinds) => clearProps(ids || [...sel], kinds || null);
 // why object it gives nothing of kind d, or "" when it has it
 function lackOf(d, it) {
   if (!it) return T("Nothing selected");
@@ -5447,7 +5447,8 @@ function savePreset(name, kinds, from) {
 }
 // «Custom…» and «Save as preset…»: a small window with a checkbox for each kind the object has (the last choice kept), as Lightroom's
 function propsDialog(id, preset) {
-  const it = board.items[id], ds = HY.props.list(); if (!propsOf(it).length) { toast(T("Nothing to copy: this object has none of these properties")); return; }
+  const it = board.items[id], ds = HY.props.list().filter(d => appliesTo(d, it) === true);   // the kinds this object can have
+  if (!propsOf(it).length) { toast(T("Nothing to copy: this object has none of these properties")); return; }
   let last = null; try { last = JSON.parse(localStorage.getItem("cv.propsPick") || "null"); } catch {}
   const on = d => !lackOf(d, it) && (!Array.isArray(last) || last.includes(d.id));
   const w = document.createElement("div"); w.id = "propsDlg"; w.setAttribute("role", "dialog"); w.setAttribute("aria-label", preset ? T("Save as preset") : T("Copy properties"));
@@ -5476,12 +5477,15 @@ function propsDialog(id, preset) {
 }
 // the two items of the right-click menu, their submenus built when they open
 function propsMenu(ids, id) {
-  const it = id && board.items[id], all = HY.props.list(), has = it ? propsOf(it) : [], clip = propsClip(), presets = propsPresets(), tg = propTargets(ids);
+  const it = id && board.items[id], tg = propTargets(ids), clip = propsClip(), presets = propsPresets();
+  // only the kinds that apply to what was clicked (owner 2026-10-07: «properties kinds that a note can't have» are not shown)
+  const fits = d => tg.some(i => appliesTo(d, board.items[i]) === true), all = HY.props.list().filter(fits), mine = it ? all.filter(d => appliesTo(d, it) === true) : [], has = it ? propsOf(it) : [];
+  if (!all.length) return [];
   if (clip && clip.files) clipFiles(clip);   // ready by the time the pointer is on «Paste properties»
   const sep = `<div class="sep"></div>`;
   const copy = Object.assign(["props-copy", "copyprops", T("Copy properties"), ["⌥", "⌘", "C"]], { act: true, off: has.length ? "" : T("Nothing to copy from this object"), sub: () =>
     hyMenuItem('data-act="props-custom"', "", T("Custom…"), ["⇧", "⌥", "⌘", "C"]) + sep
-    + all.map(d => { const no = lackOf(d, it); return hyMenuItem(`data-act="props-copy" data-k="${escH(d.id)}"`, "", escH(d.label), null, no ? hyMenuOff(no) : ""); }).join("")
+    + mine.map(d => { const no = lackOf(d, it); return hyMenuItem(`data-act="props-copy" data-k="${escH(d.id)}"`, "", escH(d.label), null, no ? hyMenuOff(no) : ""); }).join("")
     + sep + hyMenuItem('data-act="props-preset"', "", T("Save as preset…")) });
   // a kind: not in the clipboard, or nothing selected takes it (the reason of the first), else it pastes and shows itself on hover
   const why = d => { if (!clip || !(d.id in clip.kinds)) return T("Not in the clipboard"); const r = tg.map(i => appliesTo(d, board.items[i])); return r.some(x => x === true) ? "" : r[0] || T("Does not apply"); };
@@ -5493,11 +5497,18 @@ function propsMenu(ids, id) {
     + sep + hyMenuSub('data-sub="presets"', "", T("Presets"), () => presets.map((p, i) =>
       hyMenuItem(`data-act="props-usepreset" data-i="${i}" data-pv="p:${i}"`, "", escH(p.name), null, ` title="${escH(propNames(Object.keys(p.kinds)))}"`)).join(""), null,
       { off: presets.length ? "" : T("No presets yet: “Save as preset…” in Copy properties") }) });
-  return [copy, paste];
+  // «Clear properties ›»: «All» first, then each kind; grey with why when no selected card has it now
+  const cl = all.filter(clearable), on = cl.filter(d => tg.some(i => applied(d, board.items[i])));
+  const clear = Object.assign(["props-clear", "clearprops", T("Clear properties"), ["⇧", "⌥", "⌘", "⌫"]], { off: on.length ? "" : T("Nothing to clear"), sub: () =>
+    hyMenuItem('data-act="props-clear"', "", T("Clear all"), ["⇧", "⌥", "⌘", "⌫"]) + sep
+    + cl.map(d => { const w = on.includes(d) ? "" : (tg.map(i => lackOf(d, board.items[i])).find(Boolean) || T("Nothing to clear"));
+        return hyMenuItem(`data-act="props-clear" data-k="${escH(d.id)}"`, "", escH(d.label), null, w ? hyMenuOff(w) : ""); }).join("") });
+  return [...(it && mine.length ? [copy] : []), paste, ...(cl.length ? [clear] : [])];
 }
 function propsAct(b, ids, id) {
   const a = b.dataset.act, k = b.dataset.k;
   if (a === "props-copy") return copyProps(id, k ? [k] : null), true;
+  if (a === "props-clear") return clearProps(ids, k ? [k] : null), true;
   if (a === "props-custom") return propsDialog(id, false), true;
   if (a === "props-preset") return propsDialog(id, true), true;
   const clip = propsClip();
@@ -5522,6 +5533,13 @@ $("#ctx").addEventListener("pointerover", e => {
 });
 $("#ctx").addEventListener("focusin", e => { const p = pvFor(e.target.closest && e.target.closest("[role=menuitem]")); if (p) propsPreview(p.key, p.kinds, p.src); else if (PV) propsUnpreview(); });
 $("#ctx").addEventListener("pointerleave", () => { if (PV) { clearTimeout(pvT); pvT = setTimeout(propsUnpreview, 160); } });
+// ⇧⌥⌘⌫ (owner 2026-10-07): everything applied to the selected cards cleared (⌥⌘⌫ and ⌘⌫ are free on the board too; the shift keeps it
+// away from a slip of ⌫, which takes cards off the board)
+addEventListener("keydown", e => {
+  if (!(e.metaKey || e.ctrlKey) || !e.altKey || !e.shiftKey || (e.code !== "Backspace" && e.code !== "Delete")) return;
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement.tagName) || cropState || PREV || $("#propsDlg") || !sel.size) return;
+  e.preventDefault(); e.stopImmediatePropagation(); clearProps([...sel], null);
+}, true);
 // the keys, on the board only (the image editor keeps its own ⌥⌘C, Canvas Size): ⌥⌘C copies all, ⇧⌥⌘C picks, ⌥⌘V pastes all
 addEventListener("keydown", e => {
   if (!(e.metaKey || e.ctrlKey) || !e.altKey || (e.code !== "KeyC" && e.code !== "KeyV")) return;
@@ -5670,10 +5688,10 @@ $("#cPage").addEventListener("dblclick", () => { openPages(); renamePage(BOARD);
     const was = PROJ ? PROJ.name : $("#cProjName").textContent, inp = document.createElement("input");
     inp.className = "cpin"; inp.value = was; inp.spellcheck = false; inp.setAttribute("aria-label", T("Board name"));
     const fit = () => { const m = document.createElement("span"); m.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit;padding:0 10px"; m.textContent = inp.value || " "; b.parentNode.appendChild(m); inp.style.width = Math.ceil(m.offsetWidth + 4) + "px"; m.remove(); };
-    b.hidden = true; b.after(inp); fit(); inp.focus(); inp.select();
+    b.hidden = true; b.after(inp); fit(); inp.focus(); inp.select(); const kh = hyHint("board", inp);
     let closed = false;
     const done = ok => {
-      if (closed) return; closed = true;
+      if (closed) return; closed = true; kh.hide();
       const v = inp.value.trim(); inp.remove(); b.hidden = false;
       if (ok && v && v !== was) { window.hyimgProjName(v); toApp({ action: "renameTo", name: v }); }
       window.focus();
@@ -5691,11 +5709,11 @@ $("#cPage").addEventListener("dblclick", () => { openPages(); renamePage(BOARD);
     const m = $("#ctx"), b = $("#cProj"), app = !!(wk || cef);
     if (m.classList.contains("open") && b.getAttribute("aria-expanded") === "true") return ctxClose();
     // Finder, the path and the name only (owner 2026-10-06: «показать в Finder, переименовать и скопировать путь, остальное не нужно»)
-    m.innerHTML = (app ? hyMenuItem('data-act="reveal"', "finder", T("Show in Finder")) : "")
+    m.innerHTML = (parent !== window && parent.hySwitchRows ? parent.hySwitchRows(document) : "") + (app ? hyMenuItem('data-act="reveal"', "finder", T("Show in Finder")) : "")
       + hyMenuItem('data-act="copyRoot"', "file", T("Copy folder path"))
       + (app ? `<div class="sep"></div>` + hyMenuItem('data-act="rename"', "rename", T("Rename board…")) : "");
     m.onclick = ev => { const it = ev.target.closest("[data-act]"); if (!it) return; ctxClose();
-      if (it.dataset.act === "copyRoot") { if (PROJ) copyText(PROJ.root, T("Board folder path copied")); } else toApp({ action: it.dataset.act }); };
+      if (it.dataset.act === "copyRoot") { if (PROJ) copyText(PROJ.root, T("Board folder path copied")); } else toApp({ action: it.dataset.act, to: it.dataset.to }); };
     m.classList.add("open"); b.setAttribute("aria-expanded", "true");
     const r = b.getBoundingClientRect(); m.style.left = Math.min(r.left, innerWidth - m.offsetWidth - 8) + "px"; m.style.top = (r.bottom + 8) + "px"; tellOver();
     new MutationObserver((_, o) => { if (!m.classList.contains("open")) { b.setAttribute("aria-expanded", "false"); o.disconnect(); } }).observe(m, { attributes: true, attributeFilter: ["class"] });

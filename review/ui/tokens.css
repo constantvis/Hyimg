@@ -24,21 +24,74 @@
 :root, [data-hy-theme=dark] { --hy-red: #ff453a; }
 :root[data-theme="light"], [data-hy-theme=light] { --hy-red: #d70015; }
 :root { --hy-on-accent: #ffffff; }   /* words and marks on a solid accent (a count badge, a checked box) */
+:root { --hy-heart: #fb7185; }   /* a liked ♥: on a picture's or an HTML card's mark (canvas.html .mk-fav, ui/cardfav.js) */
+/* a person's avatar and the badge of the agent acting for him (ui/avatar.js, owner 2026-10-07): initials on the note colours, a colour per kind */
+:root { --hy-av-ink: #1d1d1f; --hy-ag-claude: #d9774f; --hy-ag-codex: #4f86e8; --hy-ag-gemini: #9b76e8; --hy-ag-kimi: #2fa57f; --hy-ag-opencode: #d39a26;
+  --hy-ag-agent: #7c7c86; }
 /* the small depths of the primitives: a switch's knob, a swatch's rim against any paper */
 :root { --hy-knob-sh: 0 1px 3px rgba(0, 0, 0, .3); --hy-swatch-rim: rgba(0, 0, 0, .35); }
 
 /* the plates' shadow (owner 2026-10-04, ui/look.css): on the dark paper (#17171a) a soft shadow hardly shows, it is deep and dark there,
-   with a hairline of light along the plate's top; «Тени: без теней» (data-shadow="0") lays them flat */
+   with a hairline of light along the plate's top */
 :root, [data-hy-theme=dark] { --plate-sh: 0 14px 40px rgba(0, 0, 0, .72), 0 4px 12px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .05); }
 :root[data-theme=light], [data-hy-theme=light] { --plate-sh: 0 10px 28px rgba(40, 30, 15, .13), 0 2px 6px rgba(40, 30, 15, .1); }
-:root[data-shadow="0"] { --plate-sh: none; }
 /* two depths for what floats over the board or the library (ui/ui.css): a control lying on the surface, a panel or a menu over it */
 :root { --hy-sh-ctl: 0 1px 2px rgba(0,0,0,.10), 0 6px 18px rgba(0,0,0,.12); --hy-sh-pop: 0 2px 6px rgba(0,0,0,.10), 0 18px 48px rgba(0,0,0,.18); }
 :root[data-theme="dark"] { --hy-sh-ctl: 0 1px 2px rgba(0,0,0,.40), 0 6px 18px rgba(0,0,0,.35); --hy-sh-pop: 0 2px 6px rgba(0,0,0,.35), 0 18px 48px rgba(0,0,0,.50); }
+/* The setting «Тени» (cv.shadow on the root as data-shadow; owner 2026-10-04, the middle choice 2026-10-08: «для панелей тень, а для
+   верхнего и нижнего блока тени нет»):
+     "1"       everything floats
+     "panels"  the side panels, popovers, menus, dialogs and the bars over a selection keep their depth; the top row's plates, a mode's
+               hint plate under it and the docks lie flat (they read --hy-sh-row, --hy-sh-row-ctl: ui/look.css, ui/ui.css, ui/hy/plate.css)
+     "0"       nothing has a shadow (the default since 2026-10-08)
+   A flat depth that may stand in a list beside a ring (0 0 0 1px var(--line), var(--hy-sh-ctl)) is «0 0 #0000», not none */
+:root, [data-hy-theme] { --hy-sh-row: var(--plate-sh); --hy-sh-row-ctl: var(--hy-sh-ctl); }
+:root[data-shadow="panels"], :root[data-shadow="panels"] [data-hy-theme] { --hy-sh-row: none; --hy-sh-row-ctl: 0 0 #0000; }
+:root[data-shadow="0"], :root[data-shadow="0"] [data-hy-theme] { --plate-sh: none; --hy-sh-ctl: 0 0 #0000; --hy-sh-pop: 0 0 #0000; }
+
+/* The card a mode edits, lifted (ui/editlift.js, owner 2026-10-08: «когда входишь в режим, у объекта ... появляется тень»): a close
+   ambient and a far drop, the rest of the board a little dimmer, faded in over --hy-edit-ms. Not the setting «Тени»: data-shadow leaves
+   them alone. In screen px through the board's --z; declared on the lift's own layers (.hy-lift) as well, so --z is the board's at that
+   moment, also during a zoom. On the dark paper the shadow is deep, as the plates' */
+:root, .hy-lift { --hy-edit-ms: 420ms;
+  --hy-sh-edit-near: 0 calc(2px / var(--z, 1)) calc(12px / var(--z, 1)) rgba(0, 0, 0, .6), 0 0 calc(1px / var(--z, 1)) rgba(0, 0, 0, .6);
+  --hy-sh-edit-far: 0 calc(28px / var(--z, 1)) calc(80px / var(--z, 1)) calc(4px / var(--z, 1)) rgba(0, 0, 0, .8);
+  --hy-edit-dim: rgba(0, 0, 0, .22); }
+:root[data-theme=light], :root[data-theme=light] .hy-lift {
+  --hy-sh-edit-near: 0 calc(2px / var(--z, 1)) calc(8px / var(--z, 1)) rgba(40, 30, 15, .16), 0 0 calc(1px / var(--z, 1)) rgba(40, 30, 15, .22);
+  --hy-sh-edit-far: 0 calc(22px / var(--z, 1)) calc(60px / var(--z, 1)) rgba(40, 30, 15, .2);
+  --hy-edit-dim: rgba(40, 30, 15, .06); }
 
 /* the selection's colour, the page's --sel (blue), and what is drawn from it */
 :root, [data-hy-theme] { --hy-sel: var(--sel, #3b82f6); }
 :root[data-theme=light], [data-hy-theme=light] { --hy-sel: var(--sel, #2563eb); }
+/* a choice in the tint variant (ui/hy/segmented.css): the chosen option's ground and words, from the selection's blue */
+:root, [data-hy-theme] { --hy-tint-bg: color-mix(in srgb, var(--hy-sel) 16%, transparent); --hy-tint-ink: var(--hy-sel); }
+/* The wells (owner 2026-10-08, round 11 of Settings, settings-side.html and settings-full.html: «В обеих вроде все нравится»): a control
+   lies in a dark well cut into its panel, the chosen thing on a grey plate a step lighter (ui/hy/segmented.css and switch.css, variant
+   well; ui/settings-win.css). --hy-blk is the panel they lie on, a step lighter than the paper (--hy-blk-deep a step darker, a rail
+   beside it); --hy-pline its hairline */
+:root, [data-hy-theme=dark] { --hy-blk: color-mix(in srgb, #fff 3%, var(--paper)); --hy-well: color-mix(in srgb, #000 34%, var(--paper));
+  --hy-well-hov: color-mix(in srgb, #000 20%, var(--paper)); --hy-thumb: color-mix(in srgb, var(--ink) 13%, var(--paper)); --hy-thumb-sh: none;
+  --hy-pline: color-mix(in srgb, var(--ink) 9%, transparent); --hy-knob-off: color-mix(in srgb, var(--ink) 21%, var(--paper));
+  --hy-knob-on: color-mix(in srgb, var(--ink) 84%, var(--paper)); --hy-well-on: var(--hy-well); --hy-blk-deep: color-mix(in srgb, #000 12%, var(--hy-blk)); }
+:root[data-theme=light], [data-hy-theme=light] { --hy-blk: color-mix(in srgb, #fff 62%, var(--paper)); --hy-well: color-mix(in srgb, #000 7%, var(--paper));
+  --hy-well-hov: color-mix(in srgb, #000 10%, var(--paper)); --hy-thumb: #fff; --hy-thumb-sh: 0 1px 2px rgba(40, 30, 15, .16), 0 0 0 .5px rgba(40, 30, 15, .08);
+  --hy-pline: color-mix(in srgb, var(--ink) 10%, transparent); --hy-knob-off: #fff; --hy-knob-on: #fff; --hy-well-on: color-mix(in srgb, var(--ink) 62%, var(--paper));
+  --hy-blk-deep: color-mix(in srgb, #000 3%, var(--hy-blk)); }
+/* a well's corner and its plate's inside it, in both shapes (the concepts' 8 in 2 px of well, 6 for the plate) */
+:root { --hy-well-r: 8px; --hy-well-in-r: 6px; }
+/* A block and its header, round 12 «A · Line» (owner 2026-10-09 on r12/image-headers.html: «реализуй уже A Line версию на весь
+   интерфейс»; on r12/image-effects.html and image-raw.html: «реализуй этот дизайн»). ui/hy/block.css draws them. The sizes are r8/scale's:
+   a header 34, a section's head 28, a control 24 with 6 px corners in both shapes; the room between things r11/image-spacing's: rows 2,
+   controls 4, sections 6, blocks 8. A tab or a header's button on a plate of ink at 8 %; a value (a slider's fill, a chosen option) grey,
+   in a Studio the Studio's colour (--hy-val, --hy-val-on: Image Studio sets its purple) */
+:root { --hy-blk-r: 14px; --hy-bh-h: 34px; --hy-sec-h: 28px; --hy-ctl-h: 24px; --hy-ctl-r: 6px; --hy-tab-r: 7px;
+  --hy-gap-row: 2px; --hy-gap-ctl: 4px; --hy-gap-sec: 6px; --hy-gap-blk: 8px; }
+:root, [data-hy-theme] { --hy-tab-on: color-mix(in srgb, var(--ink) 8%, transparent); --hy-hov: color-mix(in srgb, var(--ink) 6%, transparent);
+  --hy-wbtn: color-mix(in srgb, var(--ink) 7%, transparent); --hy-wbtn-hov: color-mix(in srgb, var(--ink) 11%, transparent);
+  --hy-acc: var(--hy-sel); --hy-val: color-mix(in srgb, var(--ink) 15%, transparent); --hy-val-drag: color-mix(in srgb, var(--ink) 21%, transparent);
+  --hy-val-on: var(--hy-thumb); --hy-val-ink: var(--ink); }
 /* A row of a tree list (ui/look.css): 28 px tall, 8 px corners, a grey hover; the selected row a fill and a line in the selection colour */
 :root, [data-hy-theme] { --hy-trow-h: 28px; --hy-trow-r: 8px; --hy-trow-hover: color-mix(in srgb, var(--raise) 85%, transparent);
   --hy-trow-on: color-mix(in srgb, var(--hy-sel) 14%, transparent); --hy-trow-ring: inset 0 0 0 1px color-mix(in srgb, var(--hy-sel) 55%, transparent); }
@@ -58,6 +111,8 @@
 :root { --hy-h-xs: 20px; --hy-h-s: 24px; --hy-h-m: 28px; --hy-h-l: 30px; --hy-h-row: 32px; --hy-h-dock: 34px; --hy-h-plate: var(--hy-plate-h); }
 /* The app's curve for new work (contract.json easing) */
 :root { --hy-ease: cubic-bezier(.32,.72,0,1); }
+/* a board's state in ⌃Tab's cards and the crumb's list (ui/switcher.js, owner 2026-10-08): open, warm (its page kept), asleep */
+:root { --hy-st-open: #22c55e; --hy-st-warm: #f5a524; --hy-st-sleep: #8ea2c8; }
 
 /* Corners by the setting «Углы» (owner 2026-10-04): round pills, or «pro», a moderate radius. A plate of the top row 11, a bar 14, a
    control in a row or a plate 8 (--hy-row-r, owner 2026-10-06: «одни круглые другие квадратные»), a choice's track 8, a chip 6 */

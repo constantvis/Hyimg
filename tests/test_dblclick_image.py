@@ -93,6 +93,6 @@ def test_double_click_on_a_picture_enters_image_and_the_crop_is_on_the_bar(serve
         page.keyboard.press("Escape")
         # the shortcuts panel tells the double click and C apart
         keys = page.evaluate("() => document.getElementById('keys').textContent.replace(/\\s+/g, ' ')")
-        assert "double-click an image: the Image mode; a video: crop and trim" in keys and "C crop; a video: crop and trim" in keys, keys
+        assert "double-click an image: Image Studio; a video: crop and trim" in keys and "C crop; a video: crop and trim" in keys, keys
         assert not errors, errors
         browser.close()

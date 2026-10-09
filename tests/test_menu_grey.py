@@ -1,13 +1,14 @@
-"""What does not apply stays in the menu, grey, with its reason (owner 2026-10-06: «if some options are not available in the right-click
-menu, they must simply be grey — I want users to know what functions exist»).
+"""The board's right-click menu by kind (owner 2026-10-07: «show only items that relate to the KIND of thing clicked; within those,
+unavailable-right-now items stay grey with their reason; items that make no sense for that kind are hidden»; it refines 2026-10-06's «if
+some options are not available in the right-click menu, they must simply be grey»).
 
-- the board's right-click menu has one fixed list for any selection (a picture, a PDF, a note, a group): the items that do not apply keep
-  their place, grey (aria-disabled), their reason in the tooltip; a click on one does nothing, the arrow keys pass over them
-- the plugins' items follow (the frames plugin: open, unframe, make frame, frame each, the mask's two)
-- «Copy properties ›» and the «Custom…» window list every registered kind, what the object has not grey with why; «Paste properties ›»
-  every kind, «Not in the clipboard» grey; an empty clipboard and no presets: the item itself is grey, «The clipboard is empty»
+- a picture, a PDF, a note, a group and the empty board each get their own list, in one fixed order: no «Split into pages» but on a PDF, no
+  file items on a note, «Ungroup» only for a group, the frame editor's items only for a frame; «Copy as ›» holds the links, the image and
+  the path; what applies to the kind but not now is grey with its reason, a click on it does nothing, the arrow keys pass over it
+- the plugins' items follow (the frames plugin: make frame, frame each, the mask's two for pictures)
+- «Copy properties ›», «Paste properties ›» and the «Custom…» window list the kinds the object can have, what it has not grey with why
 - a page's own menu keeps «Delete page» grey on the only page; the library's card menu keeps «Show on board» grey for a frame on no board
-Runs in Chromium and WebKit where Playwright has them, on temporary libraries only (the frames plugin from its repository's last commit)."""
+Runs in Chromium where Playwright has it, dark, on temporary libraries only (the frames plugin from its repository's last commit)."""
 import json
 import os
 import subprocess
@@ -25,7 +26,7 @@ from test_pdf import make_pdf, COLORS
 
 playwright = pytest.importorskip("playwright.sync_api")
 ROOT = Path(__file__).resolve().parents[1]
-ENGINES = ["chromium", "webkit"]
+ENGINES = ["chromium"]   # the board's tests run in Chromium, dark (owner 2026-10-07)
 
 
 def board():
@@ -69,7 +70,7 @@ def server(tmp_path):
 def open_board(p, engine, port, frames=False):
     try: browser = getattr(p, engine).launch()
     except Exception as error: pytest.skip(f"no {engine} for Playwright: {error}")
-    page = browser.new_page(viewport={"width": 1400, "height": 1000})
+    page = browser.new_page(viewport={"width": 1400, "height": 1000}, color_scheme="dark")
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     url = f"http://127.0.0.1:{port}/canvas.html"
@@ -93,7 +94,7 @@ ROWS = """sel => [...document.querySelector(sel).children].filter(e => e.matches
 
 def menu(page, at):
     page.mouse.click(at[0], at[1], button="right")
-    page.wait_for_selector("#ctx.open [data-act=view]")
+    page.wait_for_selector("#ctx.open [role=menuitem]")
     return page.evaluate(ROWS, "#ctx")
 
 
@@ -106,46 +107,52 @@ def rows(page):
     return {r[0]: r[1] for r in page.evaluate(ROWS, "#ctx") if r != "—"}
 
 
+LABELS = lambda rows: [r if r == "—" else r[0] for r in rows]
+
+
 @pytest.mark.parametrize("engine", ENGINES)
-def test_one_list_grey_with_reasons(server, engine):
+def test_each_kind_its_own_list_grey_within(server, engine):
     with playwright.sync_playwright() as p:
         browser, page, errors = open_board(p, engine, server["port"], server["frames"])
         fr = server["frames"]
         pic = menu(page, on(page, "p"))
-        labels = [r if r == "—" else r[0] for r in pic]
-        plugin = ["Open frame editor", "Unframe", "Make frame", "Frame each", "Mask from alpha", "Clear mask", "—"] if fr else []
-        assert labels == ["Open in default app", "—", "Cut", "Copy", "Paste", "Duplicate", "—", *plugin, "Group", "Ungroup", "Move to page", "Order", "—", "Copy properties", "Paste properties", "—",
-                          "Copy link to the frame", "Split into pages", "Copy image", "Copy file path", "Show in Finder", "—", "Copy link to this view", "—", "Remove from the board"], labels
+        plugin = ["Make frame", "Frame each", "Mask from alpha", "Clear mask", "—"] if fr else []
+        assert LABELS(pic) == ["Open in default app", "—", "Cut", "Copy", "Paste", "Duplicate", "—", *plugin, "Group", "Move to page", "Order", "Arrange", "—",
+                               "Copy properties", "Paste properties", "Clear properties", "—", "Copy as", "Show in Finder", "—", "Remove from the board"], LABELS(pic)
         r = rows(page)
-        assert r["Group"] == "" and r["Ungroup"] == "No group selected" and r["Split into pages"] == "Only for a PDF" and r["Copy image"] == ""
-        assert r["Paste properties"] == "The clipboard is empty" and r["Copy properties"] == ""
-        if fr:
-            assert r["Open frame editor"] == "Only for a frame" and r["Unframe"] == "Only for a frame" and r["Make frame"] == ""
-            assert r["Frame each"] == "Only for 2 images or more" and r["Mask from alpha"] == "" and r["Clear mask"] == "No mask here"
+        assert r["Paste"] == "The clipboard is empty" and r["Paste properties"] == "The clipboard is empty" and r["Clear properties"] == "Nothing to clear"
+        if fr: assert r["Make frame"] == "" and r["Frame each"] == "Only for 2 images or more" and r["Mask from alpha"] == "" and r["Clear mask"] == "No mask here"
+        # «Copy as ›»: the links, the image, the path
+        page.locator("#ctx [data-sub=copyas]").hover()
+        page.wait_for_function("() => document.querySelectorAll('#ctx .hy-sub [role=menuitem]').length === 6")
+        assert [x[0] for x in page.evaluate(SUB)] == ["App link", "Browser link", "App link to this view", "Browser link to this view", "Image", "File path"]
         # a click on a grey item does nothing and the menu stays; the arrow keys pass over the grey ones
-        page.locator("#ctx [data-act=ungroup]").click(force=True)
-        assert page.evaluate("() => $('#ctx').classList.contains('open') && Object.keys(board.groups).length === 1")
-        page.evaluate("() => document.querySelector('#ctx [data-act=group]').focus()")
+        page.mouse.move(1390, 990)
+        page.locator("#ctx [data-act=paste]").click(force=True)
+        assert page.evaluate("() => $('#ctx').classList.contains('open') && Object.keys(board.items).length === 4")
+        page.evaluate("() => document.querySelector('#ctx [data-act=copy]').focus()")
         page.keyboard.press("ArrowDown")
-        assert page.evaluate("() => document.activeElement.dataset.sub") == "topage"   # Ungroup is skipped
+        assert page.evaluate("() => document.activeElement.dataset.act") == "dup"   # Paste is skipped
+        page.keyboard.press("Escape"); page.keyboard.press("Escape")
+        # a PDF: its page items
+        r = {x[0]: x[1] for x in menu(page, on(page, "d")) if x != "—"}
+        assert r.get("Split into pages (3)") == "" and "Ungroup" not in r, json.dumps(r)
         page.keyboard.press("Escape")
-        # the same places for a PDF, a note and a group, other items grey
-        page.keyboard.press("Escape")
-        menu(page, on(page, "d")); r = rows(page)
-        assert r.get("Split into pages (3)") == "" and r["Ungroup"] == "No group selected", json.dumps(r)
-        page.keyboard.press("Escape")
-        nt = menu(page, on(page, "n")); r = rows(page)
-        assert [x if x == "—" else x[0] for x in nt][:1] == ["Open in default app"] and len(nt) == len(pic) and "Copy link to the note" in r
-        assert r["Open in default app"] == "Only for a file" and r["Copy image"] == "Only for a file" and r["Show in Finder"] == "No file in the selection"
-        assert r["Split into pages"] == "Only for a PDF"
-        if fr: assert r["Make frame"] == "Only images go into a frame" and r["Mask from alpha"] == "A mask only on images and frames"
-        page.keyboard.press("Escape")
-        gr = menu(page, on(page, "G", dy=-10)); r = rows(page)
-        assert "Copy link to the group" in r and len(gr) == len(pic)
-        assert r["Group"] == "Groups are not grouped: select the objects" and r["Ungroup"] == "" and r["Open in default app"] == "Only for a file"
+        # a note: no file items, no frames, no picture kinds
+        nt = menu(page, on(page, "n"))
+        assert LABELS(nt) == ["Cut", "Copy", "Paste", "Duplicate", "—", "Group", "Move to page", "Order", "—", "Copy properties", "Paste properties", "—",
+                              "Copy as", "—", "Remove from the board"], LABELS(nt)
+        page.locator("#ctx [data-sub=copyas]").hover()
+        page.wait_for_function("() => document.querySelectorAll('#ctx .hy-sub [role=menuitem]').length === 4")
+        assert [x[0] for x in page.evaluate(SUB)] == ["App link", "Browser link", "App link to this view", "Browser link to this view"]
+        page.keyboard.press("Escape"); page.keyboard.press("Escape")
+        # a group: «Ungroup», no «Group», no «Duplicate», the properties of its pictures
+        gr = menu(page, on(page, "G", dy=-10))
+        assert LABELS(gr) == ["Cut", "Copy", "Paste", "—", *(["Make frame", "Frame each", "—"] if fr else []), "Ungroup", "Move to page", "Order", "Arrange", "—",
+                              "Paste properties", "Clear properties", "—", "Copy as", "—", "Remove from the board"], LABELS(gr)
         page.keyboard.press("Escape")
         # the empty board: only its own
-        assert [x if x == "—" else x[0] for x in menu(page, [1300, 900])] == ["Paste here", "—", "Copy link to this view"]
+        assert LABELS(menu(page, [1300, 900])) == ["Paste here", "—", "Hide annotations", "—", "Copy app link to this view", "Copy browser link to this view"]
         assert not errors, errors
         browser.close()
 
@@ -155,7 +162,7 @@ SUB = """() => [...document.querySelectorAll('#ctx .hy-sub > [role=menuitem]')].
 
 
 @pytest.mark.parametrize("engine", ENGINES)
-def test_properties_list_every_kind(server, engine):
+def test_properties_list_the_kinds_of_the_object(server, engine):
     with playwright.sync_playwright() as p:
         browser, page, errors = open_board(p, engine, server["port"], server["frames"])
         fr = server["frames"]
@@ -164,20 +171,18 @@ def test_properties_list_every_kind(server, engine):
         page.wait_for_function("() => document.querySelectorAll('#ctx .hy-sub [role=menuitem]').length > 3")
         got = page.evaluate(SUB)
         kinds = ([["Raw Editor", "Raw Editor isn't applied"], ["Mask", "This picture has no mask"]] if fr else []) + [
-            ["Crop", "This picture isn't cropped"], ["Time", "Time only on videos"], ["Size", ""], ["Opacity", "This object is fully opaque"],
-            ["PDF page", "A page only on a PDF that is not split"]]
+            ["Crop", "This picture isn't cropped"], ["Size", ""], ["Opacity", "This object is fully opaque"]]   # no Time (videos), no PDF page
         assert got == [["Custom…", ""], *kinds, ["Save as preset…", ""]], got
-        # the size, the one it has: copied; then the paste submenu lists every kind, the others «Not in the clipboard»
+        # the size, the one it has: copied; a note's paste submenu lists the kinds a note can have: the size
         page.locator("#ctx .hy-sub [role=menuitem]", has_text="Size").click()
         menu(page, on(page, "n"))
         assert rows(page)["Paste properties"] == ""
         page.locator("#ctx [data-sub=props-paste]").hover()
-        page.wait_for_function("() => document.querySelectorAll('#ctx .hy-sub [role=menuitem]').length > 3")
+        page.wait_for_function("() => document.querySelectorAll('#ctx .hy-sub [role=menuitem]').length >= 2")
         got = dict(page.evaluate(SUB))
-        assert got["Size"] == "" and got["Crop"] == "Not in the clipboard" and got["Presets"].startswith("No presets yet")
-        assert list(got)[:len(kinds)] == [k for k, _ in kinds]
+        assert list(got) == ["Size", "Presets"] and got["Size"] == "" and got["Presets"].startswith("No presets yet"), got
         page.keyboard.press("Escape"); page.keyboard.press("Escape")
-        # the Custom… window: every kind, what the object has not unticked and disabled, its reason on the row
+        # the Custom… window: the picture's kinds, what it has not unticked and disabled, its reason on the row
         page.evaluate("() => { sel = new Set(['p']); render(); }")
         page.keyboard.press("Control+Alt+Shift+KeyC"); page.wait_for_selector("#propsDlg")
         box = page.evaluate("() => [...document.querySelectorAll('#propsDlg label')].map(l => [l.textContent.trim(), l.querySelector('input').disabled, l.querySelector('input').checked, l.title])")

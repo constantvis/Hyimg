@@ -41,7 +41,7 @@ hyLang({
     // a 3D file in the viewer (ui/lib3d.js and the 3D plugin's viewer.js, 2026-10-07)
     "Drag to turn · scroll to zoom": "Тяни, чтобы повернуть · колесо приближает",
     "Put on the board": "На доску",
-    "A 3D card of this file on the board: turn it, light it, render it in the 3D studio": "3D-карточка этого файла на доске: поворот, свет и рендер в 3D-студии",
+    "A 3D card of this file on the board: turn it, light it, render it in 3D Studio": "3D-карточка этого файла на доске: поворот, свет и рендер в 3D Studio",
     "The 3D plugin shows 3D files: it is not installed": "3D-файлы показывает плагин «3D-объекты», он не установлен",
     "FreeCAD converts the file into a 3D model…": "FreeCAD превращает файл в 3D-модель…",
     "Loading the 3D model…": "Загружаю 3D-модель…",

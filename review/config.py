@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import tempfile
 import uuid
 from typing import Final
 
@@ -19,9 +20,24 @@ W: Final = absolute_setting("HYIMG_LIBRARY_ROOT")
 HERE: Final = absolute_setting("HYIMG_STATE_ROOT", os.path.join(W, "_review"))
 BOARDS: Final = os.path.join(HERE, "boards")
 NOTES: Final = os.path.join(W, "notes")
-# the app's cache (~/Library/Caches/Hyimg), outside Dropbox; tests give each session its own (tests/procguard.py), so they never
-# write into the person's
-CACHE_ROOT: Final = os.path.realpath(os.environ.get("HYIMG_CACHE_ROOT") or os.path.expanduser("~/Library/Caches/Hyimg"))
+
+
+def _cache_root() -> str:
+    """the app's cache (~/Library/Caches/Hyimg), outside Dropbox; HYIMG_CACHE_ROOT moves it, the test suites give each session its own
+    (tests/procguard.py). A library in the temporary folder, a throwaway board a test or an agent started by hand outside the suites,
+    keeps its cache in the temporary folder too, so it never writes into the person's (on 2026-10-08 about 10,800 folders of such
+    boards were found there). The choice goes into the environment: perflog.py, webvideo.py, storage.py and the programs the server
+    starts read it there."""
+    if os.environ.get("HYIMG_CACHE_ROOT"):
+        return os.path.realpath(os.environ["HYIMG_CACHE_ROOT"])
+    temps = {os.path.realpath(d) for d in (tempfile.gettempdir(), "/tmp", "/private/tmp", "/private/var/folders")}
+    if any((p + os.sep).startswith(t + os.sep) for p in (W, HERE) for t in temps):
+        os.environ["HYIMG_CACHE_ROOT"] = os.path.join(tempfile.gettempdir(), "hyimg-test-cache-temp-boards")
+        return os.path.realpath(os.environ["HYIMG_CACHE_ROOT"])
+    return os.path.realpath(os.path.expanduser("~/Library/Caches/Hyimg"))
+
+
+CACHE_ROOT: Final = _cache_root()
 STYLE_REFS: Final = absolute_setting("HYIMG_STYLE_REFS") if os.environ.get("HYIMG_STYLE_REFS") else ""
 PROJECT_ID: Final = os.environ.get("HYIMG_PROJECT_ID", "")
 try:

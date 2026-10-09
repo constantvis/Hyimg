@@ -10,17 +10,21 @@ from config import CACHE_ROOT, CODE_DIR, HERE, W, BOARDS, NOTES, PROJECT_ID, RUL
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from PIL import Image
 import tags
-import history   # version snapshots of the boards (2026-09-30)
+import history, merge   # version snapshots of the boards (2026-09-30); saves merged object by object (2026-10-08)
 import events    # what happened on a page, event by event (2026-10-02)
 import dedup     # one picture, one place in the library: sha1 of every file (2026-10-02)
 import foldersync   # folders as on the board, «Разложить по папкам как на доске» (2026-10-05)
 import webvideo     # a WebM copy for an engine without H.264, the app's Chromium (2026-10-05)
-import pdfpages, lib3d   # a PDF's pages as pictures, one page at a time (2026-10-06); 3D files as files of their folders (2026-10-07)
+import pdfpages, lib3d, notelinks   # a PDF's pages as pictures (2026-10-06); 3D files as files (2026-10-07); what a note touches
 import filters      # the dock's pinned filters and a project's own tags (owner 2026-10-06)
 import thumbcache    # thumbnails and previews in the app's cache, not in Dropbox (2026-10-07)
 import lifetime      # how long a server lives: with the app, or with whoever started it (2026-10-07)
-import storage       # where the disk goes, Settings › Storage, and the one safe cleanup (owner 2026-10-07)
+import storage, perflog   # where the disk goes, Settings › Storage, the one safe cleanup (owner 2026-10-07); slow frames logged (2026-10-08)
 import foldercolors   # a folder's colour in the library's tree, a mark for finding your way (owner 2026-10-06)
+import notifplace, notifsince   # every notification has a place on the board; the Mac app asks what came since a time (2026-10-08)
+import feedthumbs, favread   # and pictures in the bell: an area's crop, a card's still, the board around (2026-10-08); ♥ read by path
+import people, comments, boardid   # who wrote what (profile, stamps, shared or private boards); drawings and comments on the board (2026-10-07)
+import plugins_admin   # Settings › Plugins: where plugins are, which are on, a page's hold on one, add and remove (owner 2026-10-07)
 tags.configure(RULES)   # the board's theme tags, from its rules
 
 THUMBS = thumbcache.THUMBS   # ~/Library/Caches/Hyimg/<board>/thumbs, outside Dropbox, capped; moved from <state>/_thumbs (thumbcache.py)
@@ -496,80 +500,16 @@ def load_board(name):
     return json.load(open(p, encoding="utf-8"))
 
 
-# ---- sticky notes on the canvas (owner 2026-09-30) ----
-# A note is a board item {type:"note", text, x, y, w, h, reach:{l,t,r,b}|null, to:[item or group ids]}. It touches a picture when
-#   overlap: the note card overlaps the picture, zone: the dashed zone (the card grown by reach margins) overlaps it,
-#   arrow: an arrow from the note points at the picture, or at a group (then every picture of that group),
-#   group: the note has none of those but sits inside a group frame, so it speaks for the whole group.
+# ---- sticky notes on the canvas (owner 2026-09-30; every kind of thing since 2026-10-07, the rule is review/notelinks.py) ----
+# A note is a board item {type:"note", text, x, y, w, h, reach:{l,t,r,b}|null, to:[item or group ids, a note: a reply], by}; what it touches (overlap,
+# zone, arrow, its group) is notelinks.links(), one rule for a picture, a video, a PDF and any plugin's card.
 # Stored once, linked many times (owner: "not the whole text into every json"): the note lives in one file NOTES/<board>__<id>.json
-# (text as Markdown, colour, scope, the list of pictures it touches and how); each touched picture's sidecar gets only a short
-# "related_notes": [{"note": "<board>/<id>", "via": [...]}]. Changing a note's text rewrites one file, not fifty sidecars.
-# The board stays the master (positions, text, arrows); the files here are regenerated from it on every save.
-# boards/<name>.notes-index.json remembers which sidecars carry references, so a note that moved away or was deleted is taken out again.
-
-
-
-def _pic_rect(it):
-    c = it.get("crop") or [0, 0, 1, 1]; w = float(it["w"]); ar = float(it.get("ar") or 1)
-    return (float(it["x"]), float(it["y"]), w, w * ((c[3] - c[1]) / ar) / (c[2] - c[0]))
-
-
-def _hit(a, b):
-    return a[0] < b[0] + b[2] and a[0] + a[2] > b[0] and a[1] < b[1] + b[3] and a[1] + a[3] > b[1]
-
-
-def note_index(b):
-    """{note id: {text, color, group, scope, pics: {path: set(via)}}} for one board dict; notes without text are left out"""
-    items, groups = b.get("items", {}), b.get("groups", {})
-    pics = {i: v for i, v in items.items() if v.get("path")}
-    rects = {i: _pic_rect(v) for i, v in pics.items()}
-    # pictures by cells of the board: a note is tested only against the frames near it (owner 2026-10-02: 520 notes x 3600 frames on
-    # every save took 0.26 s), as canvas.html picIndex
-    C, cells = 2048, {}
-    for i, r in rects.items():
-        for cx in range(int(r[0] // C), int((r[0] + r[2]) // C) + 1):
-            for cy in range(int(r[1] // C), int((r[1] + r[3]) // C) + 1): cells.setdefault((cx, cy), []).append(i)
-    def near(a):
-        seen = []
-        for cx in range(int(a[0] // C), int((a[0] + a[2]) // C) + 1):
-            for cy in range(int(a[1] // C), int((a[1] + a[3]) // C) + 1): seen += cells.get((cx, cy), ())
-        return dict.fromkeys(seen)
-    out = {}
-    for nid, n in items.items():
-        if n.get("type") != "note" or not (n.get("text") or "").strip():
-            continue
-        nw = float(n.get("w") or 0)   # a note is at least a square on the canvas (min-height = width), as canvas.html reachRect
-        nr = (float(n["x"]), float(n["y"]), nw, max(nw, float(n.get("h") or float(n.get("fs") or 16) * 1.2)))
-        z = n.get("reach")
-        zr = (nr[0] - z["l"], nr[1] - z["t"], nr[2] + z["l"] + z["r"], nr[3] + z["t"] + z["b"]) if z else None
-        via, grp = {}, None
-        box = (min(nr[0], zr[0]), min(nr[1], zr[1]), max(nr[0] + nr[2], zr[0] + zr[2]) - min(nr[0], zr[0]), max(nr[1] + nr[3], zr[1] + zr[3]) - min(nr[1], zr[1])) if zr else nr
-        for i in near(box):
-            r = rects[i]
-            if _hit(nr, r): via.setdefault(i, set()).add("overlap")
-            # a picture is in a zone when its centre is (owner 2026-09-30): a roomy zone must not catch the edges of the next row
-            if zr and zr[0] <= r[0] + r[2] / 2 <= zr[0] + zr[2] and zr[1] <= r[1] + r[3] / 2 <= zr[1] + zr[3]: via.setdefault(i, set()).add("zone")
-        for t in n.get("to") or []:
-            if t in pics:
-                via.setdefault(t, set()).add("arrow")
-            elif t in groups:
-                grp = grp or (groups[t].get("title") or "").strip()
-                for m in groups[t].get("members", []):
-                    if m in pics: via.setdefault(m, set()).add("arrow")
-        scope = "pictures"
-        if not via and not z and not (n.get("to") or []):   # nothing of its own and no zone or arrow: a note inside a group frame speaks for the whole group (the smallest frame holding its centre)
-            cx, cy = nr[0] + nr[2] / 2, nr[1] + nr[3] / 2
-            hit = sorted(((g["w"] * g["h"], gid) for gid, g in groups.items() if g["x"] <= cx <= g["x"] + g["w"] and g["y"] <= cy <= g["y"] + g["h"]))
-            if hit:
-                g = groups[hit[0][1]]; grp = (g.get("title") or "").strip(); scope = "group"
-                for m in g.get("members", []):
-                    if m in pics: via.setdefault(m, set()).add("group")
-        e = {"text": n["text"].strip(), "color": n.get("color") or "yellow", "scope": scope, "pics": {}}
-        if grp: e["group"] = grp
-        for i, v in via.items():
-            e["pics"].setdefault(pics[i]["path"], set()).update(v)   # a picture that sits twice on the board is one entry
-        out[nid] = e
-    return out
+# (text as Markdown, colour, scope, "pictures" by path, "objects": every thing it touches by id with its kind and file); a touched
+# picture's sidecar gets only a short "related_notes": [{"note": "<board>/<id>", "via": [...]}]. A card has no json of its own (the
+# user's .html, a scene the 3D studio writes whole): it is found by its id, in the note files and in boards/<name>.notes-index.json
+# {"paths": the sidecars that carry references, "items": {item id: [{"note", "via"}]}}. The board stays the master (positions, text,
+# arrows); the files here are regenerated from it on every save, and a note that moved away or was deleted is taken out again.
+note_index, _pic_rect = notelinks.index, notelinks.rect   # _pic_rect: any item's box, the name the tests know
 
 
 _NC = {}
@@ -618,10 +558,12 @@ def sync_notes(name):
         # 1. one file per note that touches at least one picture
         want, now = {}, time.strftime("%Y-%m-%d %H:%M")
         for nid, n in index.items():
-            if not n["pics"]: continue
+            if not (n["items"] or n.get("reply_to") or n.get("replies")): continue   # a note on a card alone, a reply have files too
             doc = {"id": f"{name}/{nid}", "board": name, "text": n["text"], "color": n["color"], "scope": n["scope"]}
             if n.get("group"): doc["group"] = n["group"]
-            doc["pictures"] = [{"path": p, "via": sorted(v)} for p, v in sorted(n["pics"].items())]
+            R = (("by", n.get("by")), ("reply_to", n.get("reply_to") and f"{name}/{n['reply_to']}"), ("replies", [f"{name}/{r}" for r in n.get("replies", [])]))
+            doc.update({k: v for k, v in R if v})   # its author, the note it answers, the notes that answer it (notelinks.py, 2026-10-08)
+            doc["pictures"], doc["objects"] = [{"path": p, "via": sorted(v)} for p, v in sorted(n["pics"].items())], n["objects"]
             want[f"{name}__{nid}.json"] = doc
         touched = 0
         for f, doc in want.items():
@@ -661,24 +603,16 @@ def sync_notes(name):
                 if os.path.exists(sp): os.remove(sp)
             else: _write_json(sp, meta)
             touched += 1
-        _write_json(idx, {"paths": sorted(refs)}, indent=None)
+        _write_json(idx, {"paths": sorted(refs), "items": notelinks.by_item(index, name)}, indent=None)   # items: every kind, by id
         _SYNCED[name] = index
         return touched
 
 
-def save_board(name, board):
-    # optimistic lock: the page sends the revision it loaded; a stale save is refused so two tabs never overwrite each other
+def save_board(name, board, by=None, edited=None):
+    # the page sends the revision (and vid) it loaded; when the file changed since, the save is merged with it object by object
+    # (review/merge.py, owner 2026-10-08), so two windows, two Macs and an agent never overwrite each other
     with LOCK:
-        cur = load_board(name)
-        if board.get("revision", 0) != cur.get("revision", 0):
-            return 409, cur
-        board["revision"] = cur.get("revision", 0) + 1
-        board["saved"] = time.strftime("%Y-%m-%d %H:%M:%S")
-        os.makedirs(BOARDS, exist_ok=True)
-        p = board_path(name); tmp = p + ".tmp"
-        json.dump(board, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-        os.replace(tmp, p)
-        return 200, {"revision": board["revision"], "saved": board["saved"], "mtime": os.stat(p).st_mtime_ns}
+        board_path(name); return merge.commit(name, board, by, edited)
 
 
 # Pages of the canvas (owner 2026-09-29, like Figma): every page is its own board file, only the open one is loaded.
@@ -771,13 +705,36 @@ def video_probe(full):
     return _DUR[key]
 
 
-def preview(rel):
-    """a picture of a file the browser cannot draw (PSD, PSB, AI, TIFF, HEIC, SVG, video), made once per version of the file, 2048 px"""
+def _preview_key(pk):
+    """a plugin kind's own part of its pictures' names: its server module's PREVIEW_KEY (Dev studio's "2x" since 2026-10-08, its pages
+    drawn at twice their css size), so a plugin that draws its pictures anew gets them drawn again rather than the old ones kept"""
+    try: k = getattr(plugin_module(pk[1]), "PREVIEW_KEY", "") if pk else ""
+    except Exception: return ""
+    k = re.sub(r"[^A-Za-z0-9]", "", str(k or ""))[:8]
+    return "." + k if k else ""
+
+
+def view_of(rel, vw, vh):
+    """(w, h) in css px for a page drawn at a card's own viewport (a Dev studio HTML card of 1440 × 900, 2026-10-08: drawn at 1280 its
+    still's text and layout jumped when the live page faded in), when the file's plugin can draw one (preview_at); else None"""
+    try: w, h = int(vw), int(vh)
+    except (TypeError, ValueError): return None
+    pk = plugin_kinds().get(os.path.splitext(rel)[1].lower())
+    try: ok = bool(pk) and callable(getattr(plugin_module(pk[1]), "preview_at", None))
+    except Exception: ok = False
+    return (max(200, min(4000, w)), max(200, min(8000, h))) if ok else None
+
+
+def preview(rel, view=None):
+    """a picture of a file the browser cannot draw (PSD, PSB, AI, TIFF, HEIC, SVG, video), made once per version of the file, 2048 px;
+    view (w, h): a plugin's page drawn at that viewport, kept apart from the one of its default size"""
     src = real(rel); st = os.stat(src)
     if kind_of(rel) == "pdf" and st.st_size:
         return pdf_master(rel, 1)   # PDFKit draws the page, a grey card when nothing can
     if kind_of(rel) == "model": return lib3d.preview(rel, sprite_file)   # a 3D file: its turntable's first view, never Quick Look
-    base = os.path.join(THUMBS, re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{int(st.st_mtime)}.prev")
+    pk = plugin_kinds().get(os.path.splitext(rel)[1].lower()) if st.st_size else None   # a plugin's kind (html: Dev studio draws the page)
+    base = os.path.join(THUMBS, re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{int(st.st_mtime)}.prev" + _preview_key(pk)
+                        + (f".v{view[0]}x{view[1]}" if view and pk else ""))
     have = lambda: next((base + e for e in (".jpg", ".png") if os.path.exists(base + e)), None)
     if have():
         return have()
@@ -792,11 +749,11 @@ def preview(rel):
             _PREV_SLOTS.acquire()
             made = None
             empty = st.st_size == 0   # a 0-byte file (two such PSDs in «Lookbook FW27»): Quick Look hangs on it, it gets the grey card at once
-            pk = plugin_kinds().get(os.path.splitext(rel)[1].lower()) if not empty else None
             if pk:   # a plugin's kind (html: Dev studio draws the page in Chromium); Quick Look below when it cannot
                 try:
-                    fn = getattr(plugin_module(pk[1]), "preview", None)
-                    if fn: fn(src, os.path.join(tmp, "k.png"))
+                    mod = plugin_module(pk[1]); at = getattr(mod, "preview_at", None) if view else None
+                    if at: at(src, os.path.join(tmp, "k.png"), *view)
+                    elif getattr(mod, "preview", None): mod.preview(src, os.path.join(tmp, "k.png"))
                     if os.path.isfile(os.path.join(tmp, "k.png")) and os.path.getsize(os.path.join(tmp, "k.png")): made = os.path.join(tmp, "k.png")
                 except Exception:
                     pass
@@ -935,20 +892,23 @@ def psd_size(full):
     return [int.from_bytes(head[18:22], "big"), int.from_bytes(head[14:18], "big")]
 
 
-def thumb(rel, size=640, page=1):
+def thumb(rel, size=640, page=1, view=None):   # view: (w, h) from view_of, a page card's own viewport
     st = os.stat(real(rel))
     pdf = kind_of(rel) == "pdf" and st.st_size > 0
     if pdf and size == 2048:   # the large preview of a page (owner 2026-10-06): the page as drawn
         return pdf_master(rel, page)
-    src = (pdf_master(rel, page) if pdf and page > 1 else real(rel) if kind_of(rel) == "image" and st.st_size else preview(rel))   # an empty picture: the grey card
+    # the picture the thumbnail is made from (an empty picture: the grey card), only when it is made: a drawn one is never drawn again for a
+    # thumbnail kept (2026-10-08: a page's 2560 picture is drawn when a card first asks for it, its 640 thumbnail stays as it was)
+    src = lambda: pdf_master(rel, page) if pdf and page > 1 else real(rel) if kind_of(rel) == "image" and st.st_size else preview(rel, view)
     stem = re.sub(r"[^A-Za-z0-9._-]", "_", rel) + f".{int(st.st_mtime)}" + (f".p{page}" if pdf and page > 1 else "")   # page 1 keeps the key of a plain thumbnail
+    stem += f".v{view[0]}x{view[1]}" if view else ""
     key = f"{stem}.{size}.jpg"
     out = os.path.join(THUMBS, key)
     if not os.path.exists(out) and not thumbcache.adopt(key):   # one still in the old folder while it moves
         # small thumbs come from the 640 one when it exists: opening a 4K png for a 320 px card is the slow part
         big = os.path.join(THUMBS, f"{stem}.640.jpg")
         mid = os.path.join(THUMBS, f"{stem}.320.jpg")
-        im = Image.open(mid if size < 320 and os.path.exists(mid) else big if size < 640 and os.path.exists(big) else src).convert("RGB")
+        im = Image.open(mid if size < 320 and os.path.exists(mid) else big if size < 640 and os.path.exists(big) else src()).convert("RGB")
         im.thumbnail((size, size * 2))
         im.save(out, quality=82)
     return thumbcache.used(out)   # handed out: the ceiling keeps it longer
@@ -1243,21 +1203,12 @@ CTYPES = {".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; cha
           ".glb": "model/gltf-binary", ".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".gltf": "model/gltf+json", ".bin": "application/octet-stream", ".hdr": "application/octet-stream", ".html": "text/html; charset=utf-8"}
 
 
-def plugins():
-    # the tests (tests/conftest.py sets HY_TEST_ONLY_PLUGINS) see only the plugins they name, never what is installed on the machine:
-    # the installed ones are links to the plugins' working copies, so a test's result depended on someone's unfinished work there
-    user = [] if os.environ.get("HY_TEST_ONLY_PLUGINS") == "1" else [os.path.expanduser("~/Library/Application Support/Hyimg/plugins")]
-    roots = [r for r in os.environ.get("HYIMG_PLUGINS", "").split(os.pathsep) if r] + user
-    out = {}
-    for root in roots:
-        if not os.path.isdir(root): continue
-        for n in sorted(os.listdir(root)):
-            d = os.path.realpath(os.path.join(root, n)); m = os.path.join(d, "manifest.json")
-            if n in out or not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", n) or not os.path.isfile(m): continue
-            try: man = json.load(open(m, encoding="utf-8"))
-            except (OSError, ValueError): continue
-            if isinstance(man, dict): out[n] = (d, man)
-    return out
+def plugins(every=False):
+    """{name: (folder, manifest)} the server serves now: the ones turned off in Settings › Plugins are left out at once, no restart
+    (plugins_admin.py; every: those too). The tests (tests/conftest.py sets HY_TEST_ONLY_PLUGINS) see only the plugins they name, never
+    the ones installed on the machine: those are links to the plugins' working copies, someone's unfinished work"""
+    found = plugins_admin.scan()
+    return found if every else plugins_admin.active(found, settings_read())
 
 
 def plugin_file(name, rel):
@@ -1380,7 +1331,10 @@ def html_still(rel, w, h, port):
 # The Mac app names the file (beside projects.json); a server started without it (tests, by hand) keeps its own in its state folder,
 # so a test never changes the owner's settings.
 SETTINGS = os.environ.get("HYIMG_SETTINGS") or os.path.join(HERE, "app-settings.json")
-APP_KEYS = r"^cv\.(lang|theme|ui|bg|grain|dotsv|dotsgl|lod|glass|shadow|shape|paperDark|paperLight|paperv|notesize|notecolor|nolib|histTab|m3\..+)$|^(view|lw|fw|ftree|notesOn|autonext|rej|lwide|lmode|lsize)$"
+PEOPLE = people.root_dir(SETTINGS)   # profile.json and the address book beside the app's settings (people.py)
+APP_KEYS = r"^cv\.(lang|theme|ui|bg|grain|dotsv|dotsgl|sleep|lod|glass|shadow|shape|hideui|applinks|keyhint|keyhintUsed|perflog|plugoff|paperDark|paperLight|paperv|notesize|notecolor|nolib|histTab|m3\..+)$|^(view|lw|fw|ftree|notesOn|autonext|rej|lwide|lmode|lsize)$"
+APP_KEYS += r"|^cv\.mac(\.(agent|comment|reply|mention|note|bg))?$"   # Settings › Notifications, the Mac's banners (ui/macnotif.js)
+APP_KEYS += r"|^cv\.setsdock$"   # the settings at a board's side or as a window, the same on every board (ui/settings-win.js)
 
 
 def settings_read():
@@ -1420,7 +1374,7 @@ def tr(en, ru):
 
 
 # the imported modules' texts for the interface (foldersync's reasons and errors, history's and events' labels) in the same language
-foldersync.tr = history.tr = events.tr = tr
+foldersync.tr = history.tr = events.tr = comments.tr = merge.tr = tr; comments.real = real; merge.PEOPLE = PEOPLE   # comments: a picture's size
 
 # The library's own names in /api/items: the scan keeps them in Russian (its list is cached in memory and on disk, and a language
 # switch must not wait for a new scan), the answer puts them into the app's language: the collections of the files in the board's
@@ -1581,10 +1535,38 @@ def notify(d):
          "text": str(d.get("text") or "")[:2000], "who": str(d.get("who") or tr("agent", "агент"))[:60], "page": str(d.get("page") or ""),
          "ids": [str(x) for x in (d.get("ids") or [])][:500], "previews": [str(x) for x in (d.get("previews") or [])][:8]}
     if isinstance(d.get("area"), dict) and all(isinstance(d["area"].get(k), (int, float)) for k in "xywh"): n["area"] = {k: d["area"][k] for k in "xywh"}
+    if isinstance(d.get("by"), dict): n["by"] = d["by"]   # who: {"person", "via"} (people.py)
+    # the sender's process tree showed no agent (a script, a server on another Mac) but it names a known one: the agent it names
+    # (2026-10-08: such news read «Кто-то» in the bell); a tree that showed an agent always wins (agents.py)
+    k = people.agents.kind(n["who"])
+    if k not in ("", "agent") and people.agents.kind((n.get("by") or {}).get("via")) == "": n["by"] = {**(n.get("by") or {}), "via": k}
+    n["ts"] = time.time()
+    if not n["ids"] and "area" not in n and n["page"]:   # it named nothing: its author's things on the page since its last one (notifplace.py)
+        got = notifplace.find(n, *_evs_board(n["page"]), notifications())
+        if got: n.update(ids=got["ids"], area=got["area"], previews=n["previews"] or got["previews"])
     with LOCK:
-        L = notifications() + [n]
+        L = notifications() + [notifplace.tiles(n, load_board)]   # its pictures (feedthumbs.py)
         _write_json(NOTIFS, L[-500:])
     return n
+
+
+def _evs_board(page):
+    try: return (events.read(page, events.KEEP), load_board(page)) if page else ([], {})
+    except PermissionError: return [], {}
+
+
+def notif_place(d, by):
+    """POST /api/notifications {"action": "place"} (notifplace.py): {"id"}: where the bell goes for that notification, "fill": written
+    into it when it named nothing (a repair); {"page"}: what a notification of this requester would name now (hy.py notify)"""
+    with LOCK:
+        L = notifications()
+        n = next((x for x in L if x.get("id") == d.get("id")), None) if d.get("id") else {"id": "", "ts": time.time(), "page": str(d.get("page") or ""), "by": by}
+        if n is None: raise ValueError("no such notification")
+        had = bool(n.get("ids") or n.get("area"))
+        got = (notifplace.place if d.get("id") else notifplace.find)(n, *_evs_board(n.get("page") or ""), L)
+        if got and d.get("fill") and not had:
+            n.update(ids=got["ids"], area=got["area"], previews=n.get("previews") or got["previews"]); _write_json(NOTIFS, L)
+    return {"page": n.get("page") or "", "ids": [], "area": None, "previews": [], **(got or {}), "found": bool(got), "had": had}
 
 
 def read_notifications(ids=None):
@@ -1644,25 +1626,28 @@ def project_name():
 # The plugins an agent asks the person about (owner 2026-10-05: «if we give this repository to an agent, it must know and ASK the person
 # whether they want to install the plugins, 3D and image frames, so it doesn't slip past their attention»).
 KNOWN_PLUGINS = [
-    ("frames", "Фреймы", "https://github.com/constantvis/hyimg-frames", "редактор картинок на доске (слои, маски, Color Grading, заливка) и HTML-фреймы,"
+    ("frames", "Фреймы", "https://github.com/constantvis/hyimg-frames", "Image Studio на доске (слои, маски, Color Grading, заливка) и HTML-фреймы,"
      " маска объекта через macOS Vision, для заливки по желанию модель LaMa около 208 МБ (скачивать только с согласия человека)"),
-    ("3d", "3D-объекты", "https://github.com/constantvis/hyimg-3d-studio", "3D-сцена карточкой на доске, свой редактор, снимок в картинку,"
+    ("3d", "3D-объекты", "https://github.com/constantvis/hyimg-3d-studio", "3D-сцена карточкой на доске, 3D Studio, снимок в картинку,"
      " для переноса в Blender нужен Blender"),
+    ("dev", "Dev Studio", "https://github.com/constantvis/hyimg-dev-studio", "HTML-файлы библиотеки карточками на доске и Dev Studio: дерево"
+     " элементов, живая страница, инспектор, правки пишутся в сам файл; для картинок страниц по желанию Playwright с Chromium"),
 ]
 
 
 def plugins_brief():
     """Lines for /agent: the plugins this server sees, and the known ones it does not, named once so the agent asks the person."""
     try:
-        have = plugins()
+        have, on = plugins(every=True), plugins()
     except Exception:
-        have = {}
+        have, on = {}, {}
     L = ["## Плагины", ""]
-    L += [f"- Подключен «{m.get('title_ru') or m.get('title', n)}» (`{n}`): {d}" for n, (d, m) in have.items()] or ["- Плагинов нет."]
+    L += [f"- Подключен «{m.get('title_ru') or m.get('title', n)}» (`{n}`){'' if n in on else ', выключен в Настройках › Плагины'}: {d}"
+          for n, (d, m) in have.items()] or ["- Плагинов нет."]
     missing = [k for k in KNOWN_PLUGINS if k[0] not in have]
     if missing:
         L += ["", "Не установлены плагины Hyimg. Спроси человека про каждый по имени, ставить ли его, и ставь только после «да»"
-              f" (`{os.path.join(REPO, 'scripts', 'install_plugins.sh')} --frames --3d --yes`, только нужные флаги, потом перезапуск сервера)."
+              f" (`{os.path.join(REPO, 'scripts', 'install_plugins.sh')} --frames --3d --dev --yes`, только нужные флаги, потом перезапуск сервера)."
               " Если человек уже отказался, не спрашивай снова:", ""]
         L += [f"- «{t}» (`{n}`, {url}): {what}." for n, t, url, what in missing]
     return L
@@ -1742,9 +1727,10 @@ def agent_page(port):
           f" Те же файлы по HTTP: {base}/agent/hyimg, /agent/hyimg-board, /agent/hyimg-generate."
           + "".join(f" Еще: `{SKILLS}/{n}/SKILL.md` ({base}/agent/{n})." for n in more_skills()),
           f"3. Что владелец выделил и видит: `python3 {os.path.join(REPO, 'scripts', 'active.py')}`; ссылка с `?obj=` или `&at=`:"
-          f" `python3 {os.path.join(REPO, 'scripts', 'active.py')} --link '<ссылка>'`.",
-          f"4. Доска: `{hy} map` (оглавление), `{hy} find <слово>`, `{hy} do '...'`, `{hy} check`. Этот проект на порту {port}:"
-          f" без HYIMG_PORT={port} (или `--port {port}`) hy.py пойдет на 4180, в другой проект.",
+          f" `python3 {os.path.join(REPO, 'scripts', 'active.py')} --link '<ссылка>'` (http:// или hyimg://).",
+          f"4. Доска: `{hy} md` (страница как Markdown: группы с заметками, сетки таблицами), `{hy} map` (оглавление), `{hy} find <слово>`,"
+          f" `{hy} do '...'`, `{hy} check`. В сетку клади по ссылке (`put X in <сетка> at 2,1`, `put X after Y`), координаты не считай. Этот проект на порту {port}:"
+          f" без HYIMG_PORT={port} (или `--port {port}`) hy.py пойдет на 4180, в другой проект. Ссылку владельцу бери из `{hy} link <id>`: hyimg:// открывает приложение.",
           f"5. Что умеет Hyimg и какой командой: раздел «Что умеет Hyimg» ниже, подробно `{hy} features <слово>`. Не угадывай и не пиши JSON доски:"
           " у каждой функции есть команда.", "",
           *plugins_brief(), "",
@@ -1765,7 +1751,7 @@ def agent_page(port):
           f" через `{hy} save <файлы> --to <папка партии>`: картинку, которая уже есть в библиотеке, она не положит второй раз.",
           "5. Непонятно или правило мешает: спроси владельца коротко, с вариантами. Его поправку запиши туда, где она будет работать"
           " дальше (см. «Как улучшать» в скилле hyimg).", ""]
-    L += features_brief(hy) + [""]
+    L += features_brief(hy) + [""] + __import__("patterns").agent_brief(hy) + comments.agent_brief(hy, PEOPLE)   # layouts, arrows; @mentions
     brief = os.path.join(W, "AGENTS.md")
     L += ["## Правила проекта", "", f"Файл `{brief}`" + (":" if os.path.exists(brief) else
           " пока не создан. Спроси владельца о цели проекта и создай его по шаблону из скилла hyimg."), ""]
@@ -2002,11 +1988,16 @@ class H(BaseHTTPRequestHandler):
             return
         u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)
         if u.path == "/api/storage": return storage.http(self, "GET")   # the summary of the last scan, never waits for one (storage.py)
+        if u.path.startswith("/api/perflog"): return perflog.http(self, "GET", settings_read)   # the performance log's newest entries (perflog.py)
+        if u.path in ("/api/profile", "/api/edited"): return people.http(self, "GET", PEOPLE, HERE, q)   # who: profile, people, places (people.py)
+        if u.path in ("/api/comments", "/api/annotations"): return comments.http(self, "GET", PEOPLE, HERE, q)   # on top of the board (comments.py)
+        if u.path == "/api/fav": return favread.http(self, q, sys.modules[__name__])   # ♥ by path: an HTML card's page outside the library (favread.py)
         try:
             if u.path == "/api/sandbox":   # where the app's own pages find sandboxed library pages (SANDBOX_KEY)
                 return self.send(200, json.dumps({"base": f"/sandbox/{SANDBOX_KEY}/"}).encode(), "application/json")
             if u.path == "/api/health":
-                body = {"app": "Hyimg", "projectId": PROJECT_ID, "libraryRoot": W, "pid": os.getpid(), "port": self.server.server_port}
+                body = {"app": "Hyimg", "projectId": PROJECT_ID, "libraryRoot": W, "pid": os.getpid(), "port": self.server.server_port,
+                        **boardid.health(HERE, W)}   # boardId: the board's id in its folder, dir: the folder in Dropbox (boardid.py)
                 return self.send(200, json.dumps(body).encode(), "application/json")
             # v2 (criteria rows + zoom) is the main page since 2026-09-28; the tag-cloud page stays at /v1
             if u.path in ("/", "/index.html", "/v2", "/v2.html"):
@@ -2021,6 +2012,8 @@ class H(BaseHTTPRequestHandler):
                 name = u.path[4:]
                 if re.fullmatch(r"fonts/[a-z0-9-]+\.woff2", name) and os.path.isfile(os.path.join(CODE_DIR, "ui", name)):   # Geist, 2026-10-07: no Google Fonts
                     return self.file(os.path.join(CODE_DIR, "ui", name), "font/woff2")
+                if re.fullmatch(r"agents/[a-z0-9-]+\.svg", name) and os.path.isfile(os.path.join(CODE_DIR, "ui", name)):   # the agents' marks (ui/avatar.js)
+                    return self.file(os.path.join(CODE_DIR, "ui", name), "image/svg+xml")
                 if not re.fullmatch(r"(hy/)?[a-z0-9-]+\.(js|css)", name) or not os.path.isfile(os.path.join(CODE_DIR, "ui", name)):   # hy/: the primitives
                     return self.send(404, b"no such ui file", "text/plain")
                 return self.file(os.path.join(CODE_DIR, "ui", name), "text/javascript; charset=utf-8" if name.endswith(".js") else "text/css; charset=utf-8", cache=False)
@@ -2044,7 +2037,8 @@ class H(BaseHTTPRequestHandler):
                 if q.get("board"): body["board"] = board_stamp(q["board"][0])
                 return self.send(200, json.dumps(body).encode(), "application/json")
             if u.path == "/api/board":
-                return self.send(200, json.dumps(load_board(q.get("name", ["main"])[0]), ensure_ascii=False).encode(), "application/json")
+                nm = q.get("name", ["main"])[0]; merge.sweep(LOCK, sync_notes)   # a version handed out is a base for its save (merge.py)
+                return self.send(200, json.dumps(merge.seen(nm, load_board(nm)), ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/pages":
                 return self.send(200, json.dumps(pages_state(), ensure_ascii=False).encode(), "application/json")
             if u.path in ("/v1", "/v1.html"):
@@ -2077,7 +2071,7 @@ class H(BaseHTTPRequestHandler):
                 nm = q.get("name", ["main"])[0]; board_path(nm)
                 return self.send(200, json.dumps(history.missing(nm, q["id"][0], lambda p: os.path.exists(real(resolve(p)))), ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/notes":
-                return self.send(200, json.dumps({k: dict(v, pics={p: sorted(x) for p, x in v["pics"].items()}) for k, v in note_index(load_board(q.get("name", ["main"])[0])).items()}, ensure_ascii=False).encode(), "application/json")
+                return self.send(200, json.dumps(notelinks.public(note_index(load_board(q.get("name", ["main"])[0]))), ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/items":   # each picture once; ?all=1 keeps the copies too (copy_of, hidden), the canvas needs them
                 items = ui_items(lib3d.fresh(dedup.collapse(with_archive(scan_cached()), keep_copies=q.get("all") == ["1"]), sprite_info))
                 return self.send(200, json.dumps(items, ensure_ascii=False).encode(), "application/json")
@@ -2090,13 +2084,23 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, json.dumps(layout_state(), ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/aliases":
                 return self.send(200, json.dumps(aliases(), ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/meta":   # where a frame came from, from its <name>.json, also for frames outside the library (refs/): the card shows the link
+                rel = resolve(q["p"][0]); full = safe(rel)
+                try: d = json.load(open(os.path.splitext(full)[0] + ".json", encoding="utf-8"))
+                except (OSError, ValueError): d = {}
+                keep = ("source_url", "image_url", "link", "url", "site", "channel", "timestamp", "author", "caption", "what", "colour", "model", "chat", "source", "prompt")
+                return self.send(200, json.dumps({k: d[k] for k in keep if k in d and isinstance(d[k], (str, int, float))}, ensure_ascii=False).encode(), "application/json")
             if u.path == "/thumb":
                 rel = resolve(q["p"][0]); safe(rel)
                 size = int(q.get("s", ["640"])[0])
                 try: pg = max(1, int(q.get("pg", ["1"])[0]))   # a PDF's page (2026-10-06)
                 except ValueError: pg = 1
                 if size == 2048 and kind_of(rel) == "pdf": return self.file(thumb(rel, 2048, pg), "image/jpeg")   # the large preview's page
-                return self.file(thumb(rel, size if size in (96, 320, 640, 1280) else 640, pg), "image/jpeg")   # 96: far-out canvas (fast mode)
+                view = view_of(rel, q["vw"][0], q.get("vh", [""])[0]) if "vw" in q else None   # an HTML card's page at its own viewport
+                return self.file(thumb(rel, size if size in (96, 320, 640, 1280, 2560) else 640, pg, view), "image/jpeg")   # 96: far-out canvas (fast mode); 2560: an HTML card zoomed in
+            if u.path == "/feedthumb":   # a bell tile: an area's crop, a card's still, the board around a pin (feedthumbs.py)
+                out = feedthumbs.http(sys.modules[__name__], q)
+                return self.file(out, "image/webp") if out else self.send(404, b"nothing to show", "text/plain")
             if u.path == "/api/defaultapp":   # {name, path}: the app macOS opens this library file with ({} when none), for «Open in <App>»
                 return self.send(200, json.dumps(default_app(library_file(q["p"][0])), ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/appicon":   # that app's icon, a 64 px PNG
@@ -2115,9 +2119,10 @@ class H(BaseHTTPRequestHandler):
                     return self.file(pv, "image/png" if pv.endswith(".png") else "image/jpeg")
                 ctype = "image/png" if full.lower().endswith(".png") else "image/jpeg"
                 return self.file(full, ctype)
-            if u.path == "/api/notifications":   # newest first, with how many are unread
-                L = notifications()
-                return self.send(200, json.dumps({"items": L[::-1][:int(q.get("limit", ["60"])[0])], "unread": sum(not n.get("read") for n in L)}, ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/notifications":   # newest first, with how many are unread; comments and mentions for this Mac's person too
+                L = notifsince.typed(sorted(notifications() + comments.feed(PEOPLE, HERE), key=lambda n: n.get("t", "")), people.view(PEOPLE))   # ts, type, from
+                pv = feedthumbs.fill(sys.modules[__name__], notifsince.since(L, q)[::-1][:int(q.get("limit", ["60"])[0])])   # ?since=: the Mac's banners
+                return self.send(200, json.dumps({"items": pv, "unread": sum(not n.get("read") for n in L), "now": time.time()}, ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/models3d":   # the library's 3D files, each with its turntable if one is drawn (the library's «3D» filter, 2026-10-06)
                 return self.send(200, json.dumps(models3d(q.get("fresh") == ["1"]), ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/sprite":   # a 3D file's turntable sheet; &s=<px>: its first view as a still picture; 404 until a page has drawn it
@@ -2133,6 +2138,8 @@ class H(BaseHTTPRequestHandler):
                              sprites=f"/plugins/{n}/{m['sprites']}" if isinstance(m.get("sprites"), str) else None)   # sprites: a module that draws 3D files' turntables for the library (2026-10-06)
                         for n, (d, m) in plugins().items()]
                 return self.send(200, json.dumps(body, ensure_ascii=False).encode(), "application/json")   # title: the manifest's title_ru in Russian (2026-10-06)
+            if u.path.startswith("/api/plugins/"):   # Settings › Plugins: every plugin with its version, folder, on or off (plugins_admin.py)
+                return self.send(*plugins_admin.http("GET", u.path, b"", settings_read(), lang()))
             if u.path.startswith("/plugins/"):
                 parts = u.path.split("/", 3)
                 if len(parts) < 4: return self.send(404, b"no plugin file", "text/plain")
@@ -2183,9 +2190,13 @@ class H(BaseHTTPRequestHandler):
         self.send(404, b"not found", "text/plain")
 
     def do_POST(self):
+        people.agents.start(self)   # which agent writes, from the client's process tree, looked up while the request is handled (agents.py)
         if not self.request_allowed(writing=True):
             return
+        if self.path == "/api/profile": return people.http(self, "POST", PEOPLE, HERE)   # name, colour, sign out, aliases, places (people.py)
+        if self.path in ("/api/comments", "/api/annotations"): return comments.http(self, "POST", PEOPLE, HERE)   # threads, drawings (comments.py)
         if self.path.startswith("/api/storage/"): return storage.http(self, "POST")   # «Clear cache», old app copies to the Trash (storage_clean.py)
+        if self.path.startswith("/api/perflog"): return perflog.http(self, "POST", settings_read)   # an entry of a frame drop, «Clear» (perflog.py)
         if self.path == "/api/pages":
             n = int(self.headers.get("Content-Length", 0))
             try:
@@ -2281,7 +2292,7 @@ class H(BaseHTTPRequestHandler):
                 d = json.loads(self.rfile.read(n) or b"{}")
                 if not isinstance(d, dict) or (not isinstance(d.get("kinds"), dict) and not d.get("delete")): raise ValueError("kinds")
                 if self.path == "/api/propsclip":
-                    if isinstance(d.get("files"), list): d["files"] = props_files_keep(d["files"])
+                    d.update(by=people.stamp(PEOPLE, HERE, self), **({"files": props_files_keep(d["files"])} if isinstance(d.get("files"), list) else {}))
                     with LOCK:
                         os.makedirs(os.path.dirname(PROPS_CLIP), exist_ok=True); tmp = PROPS_CLIP + ".tmp"
                         with open(tmp, "w", encoding="utf-8") as fh: json.dump(d, fh, ensure_ascii=False)
@@ -2290,8 +2301,8 @@ class H(BaseHTTPRequestHandler):
                 name = str(d.get("name") or "").strip()[:60]
                 if not name: raise ValueError("name")
                 with LOCK:
-                    L = [p for p in presets_read() if p["name"] != name]
-                    if not d.get("delete"): L.append({"name": name, "at": int(d.get("at") or time.time() * 1000), "from": str(d.get("from") or "")[:80], "kinds": d["kinds"]})
+                    L = [p for p in presets_read() if p["name"] != name]; by = people.stamp(PEOPLE, HERE, self)
+                    if not d.get("delete"): L.append({"name": name, "at": int(d.get("at") or time.time() * 1000), "from": str(d.get("from") or "")[:80], "kinds": d["kinds"], "by": by})
                     L.sort(key=lambda p: p["name"].lower()); _write_json(presets_path(), {"presets": L})
                 return self.send(200, json.dumps({"presets": L}, ensure_ascii=False).encode(), "application/json")
             except (ValueError, TypeError) as ex:
@@ -2302,18 +2313,18 @@ class H(BaseHTTPRequestHandler):
                 req = json.loads(self.rfile.read(n) or b"{}"); nm = req.get("name", "main"); board_path(nm)
                 if req.get("action") == "save":
                     who = req.get("who") if req.get("who") in ("owner", "ai") else "owner"   # hy.py marks its own before/after versions as ai
-                    with LOCK: e = history.snapshot(nm, who, (req.get("label") or "").strip()[:120] or tr("version", "версия"))
+                    with LOCK: e = history.snapshot(nm, who, (req.get("label") or "").strip()[:120] or tr("version", "версия"), None, people.stamp(PEOPLE, HERE, self, None, who))
                     return self.send(200, json.dumps(e, ensure_ascii=False).encode(), "application/json")
                 if req.get("action") == "restore":
                     def write(b):
                         with LOCK:
-                            cur = load_board(nm); b["revision"] = cur.get("revision", 0) + 1; b["saved"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                            cur = load_board(nm); merge.stamp(nm, b, cur, by)   # a new revision and vid, so no page takes it for the old one
                             p = board_path(nm); tmp = p + ".tmp"
                             json.dump(b, open(tmp, "w", encoding="utf-8"), ensure_ascii=False, indent=1); os.replace(tmp, p)
-                            try: events.record(nm, cur, b, req.get("who") if req.get("who") in ("owner", "ai") else "owner", tr("restored a version", "возврат к версии"))
+                            try: events.record(nm, cur, b, req.get("who") if req.get("who") in ("owner", "ai") else "owner", tr("restored a version", "возврат к версии"), by=by)
                             except Exception: pass
                             return b["revision"]
-                    rev = history.restore(nm, req["id"], write)
+                    by = people.stamp(PEOPLE, HERE, self, None, req.get("who") or ""); rev = history.restore(nm, req["id"], write, by)
                     try: sync_notes(nm)
                     except Exception: pass
                     layout_kick()
@@ -2347,17 +2358,20 @@ class H(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length", 0))
             if n > MAX_UPLOAD: return self.send(413, tr("The file is over 80 MB", "Файл больше 80 МБ").encode(), "text/plain; charset=utf-8")
             try:
-                meta = json.loads(q.get("meta", ["{}"])[0])
+                meta = json.loads(q.get("meta", ["{}"])[0]); meta = {**meta, "by": people.stamp(PEOPLE, HERE, self, q)} if isinstance(meta, dict) else meta
                 res = save_snapshot(self.rfile.read(n), q.get("name", ["shot"])[0], q.get("folder", ["plugins"])[0], meta)
             except Exception as ex:
                 return self.send(400, (tr("snapshot not saved: ", "снимок не сохранен: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
             return self.send(200, json.dumps(res, ensure_ascii=False).encode(), "application/json")
-        if self.path == "/api/notifications":   # {"action": "add", title, text, who, page, ids, previews, area} | {"action": "read", "ids": [...] or none for all}
+        if self.path == "/api/notifications":   # {"action": "add", title, text, who, page, ids, previews, area} | {"action": "read", "ids": [...] or none for all} | {"action": "place", …}
             n = int(self.headers.get("Content-Length", 0))
             try:
                 d = json.loads(self.rfile.read(n) or b"{}")
-                if d.get("action") == "read": return self.send(200, json.dumps({"unread": read_notifications(d.get("ids"))}).encode(), "application/json")
-                return self.send(200, json.dumps(notify(d), ensure_ascii=False).encode(), "application/json")
+                if d.get("action") == "read":
+                    return self.send(200, json.dumps({"unread": read_notifications(d.get("ids")) + comments.read(PEOPLE, HERE, d.get("ids"))}).encode(), "application/json")
+                if d.get("action") == "place":   # where a notification goes, or what one would name now (notif_place, notifplace.py)
+                    return self.send(200, json.dumps(notif_place(d, people.stamp(PEOPLE, HERE, self)), ensure_ascii=False).encode(), "application/json")
+                return self.send(200, json.dumps(notify({**d, "by": people.stamp(PEOPLE, HERE, self)}), ensure_ascii=False).encode(), "application/json")
             except (ValueError, AttributeError, TypeError) as ex:
                 return self.send(400, (tr("not saved: ", "не записано: ") + str(ex)[:120]).encode(), "text/plain; charset=utf-8")
         if self.path == "/api/stat":   # {"paths": [...]} -> {path: mtime_ns or null}: many files in one look (3D cards and their scenes)
@@ -2391,6 +2405,8 @@ class H(BaseHTTPRequestHandler):
             try: res = html_still(q["p"][0], q.get("w", ["1440"])[0], q.get("h", ["900"])[0], self.server.server_port)
             except (KeyError, ValueError, PermissionError, FileNotFoundError) as ex: return self.send(400, (tr("no snapshot: ", "нет снимка: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
             return self.send(200, json.dumps(res).encode(), "application/json")
+        if self.path.startswith("/api/plugins/"):   # a page's hold on a plugin while in its editor, Remove (plugins_admin.py)
+            return self.send(*plugins_admin.http("POST", self.path, self.rfile.read(int(self.headers.get("Content-Length", 0))), settings_read(), lang()))
         if self.path.startswith("/api/plugin/"):   # /api/plugin/<plugin>/<route>: a plugin's own server route (plugin_routes above)
             u = urllib.parse.urlparse(self.path); parts = u.path.split("/")
             err = lambda code, t: self.send(code, json.dumps({"error": t}, ensure_ascii=False).encode(), "application/json")
@@ -2398,9 +2414,10 @@ class H(BaseHTTPRequestHandler):
             if n > MAX_UPLOAD: return err(413, "body over 80 MB")
             body = self.rfile.read(n)
             try: fn = plugin_routes(parts[3])[parts[4]] if len(parts) == 5 else None
-            except (KeyError, PermissionError, OSError, SyntaxError, ImportError) as ex: return err(404, f"no plugin route: {str(ex)[:160]}")
+            except (KeyError, PermissionError, OSError, SyntaxError, ImportError) as ex:   # a plugin turned off in Settings › Plugins says so
+                return err(*(plugins_admin.why_off(parts[3], settings_read()) or (404, f"no plugin route: {str(ex)[:160]}")))
             if not fn: return err(404, "no plugin route")
-            try: res = fn(body, urllib.parse.parse_qs(u.query))
+            try: res = fn(body, {**urllib.parse.parse_qs(u.query), "_by": [people.stamp(PEOPLE, HERE, self)]})   # _by: who, for a route that writes
             except Exception as ex: return err(500, f"{type(ex).__name__}: {str(ex)[:300]}")
             code, ctype, data = res if len(res) == 3 else (200, *res)
             return self.send(code, data, ctype)
@@ -2408,7 +2425,7 @@ class H(BaseHTTPRequestHandler):
             u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)
             n = int(self.headers.get("Content-Length", 0))
             if n > (FRAME_MAX if q.get("p", [""])[0].startswith("frames/") else MAX_UPLOAD): return self.send(413, tr("The file is too large", "Файл слишком большой").encode(), "text/plain; charset=utf-8")
-            try: res = save_plugin_file(q.get("p", [""])[0], self.rfile.read(n))
+            try: res = save_plugin_file(q.get("p", [""])[0], self.rfile.read(n)); people.log_write(HERE, "file", res["path"], people.stamp(PEOPLE, HERE, self, q))
             except (ValueError, PermissionError) as ex: return self.send(400, (tr("not saved: ", "не записано: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
             return self.send(200, json.dumps(res).encode(), "application/json")
         if self.path.startswith("/api/upload"):   # body: the image bytes (?name=file name), or JSON {"url": ...} for a picture dragged from a web page
@@ -2434,12 +2451,13 @@ class H(BaseHTTPRequestHandler):
                 try: old = load_board(nm)
                 except Exception: old = {}
                 new = json.loads(self.rfile.read(n) or b"{}")
-                code, res = save_board(nm, new)
+                by = people.stamp(PEOPLE, HERE, self, q)   # who: this Mac's person, the app or an agent
+                code, res = save_board(nm, new, by, (q.get("edited") or [None])[0]); new = res.get("board", new)   # merged: what was written
                 if code == 200:
-                    try: events.record(nm, old, new, (q.get("who") or ["owner"])[0][:20], (q.get("label") or [""])[0], (q.get("agent") or [""])[0])
+                    try: events.record(nm, old, new, people.who_of(by, q), (q.get("label") or [""])[0], people.agent_of(by), by)   # agents.py kinds
                     except Exception as ex: res["events_error"] = str(ex)[:160]
                     try:
-                        if history.auto(nm, load_board(nm)): res["snapshot"] = True
+                        if history.auto(nm, load_board(nm), by): res["snapshot"] = True
                     except Exception as ex: res["history_error"] = str(ex)[:160]
                     try: res["notes_synced"] = sync_notes(nm)
                     except Exception as ex: res["notes_error"] = str(ex)[:160]
@@ -2447,9 +2465,8 @@ class H(BaseHTTPRequestHandler):
             except PermissionError:
                 return self.send(400, b"bad board name", "text/plain")
             return self.send(code, json.dumps(res, ensure_ascii=False).encode(), "application/json")
-        if self.path == "/api/fav":   # {"paths": [...], "fav": true|false} -> {"feedback": {path: feedback}}
-            n = int(self.headers.get("Content-Length", 0))
-            entry = json.loads(self.rfile.read(n) or b"{}")
+        if self.path == "/api/fav":   # {"paths": [...], "fav": true|false} -> {"feedback": {path: feedback}}; GET reads it (favread.py)
+            entry = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
             ps = [p for p in entry.get("paths") or [] if isinstance(p, str)]
             if not ps:
                 return self.send(400, b"paths required", "text/plain")
@@ -2549,7 +2566,7 @@ def watch_library():
 
 def board_stamp(name):
     """what a page compares to notice another writer: the board file's time and its revision"""
-    p = board_path(name)
+    p = board_path(name); merge.sweep(LOCK, sync_notes)   # Dropbox's conflicted copies merged into their pages (merge.py)
     try:
         st = os.stat(p)
     except OSError:

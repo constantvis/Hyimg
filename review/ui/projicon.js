@@ -41,6 +41,8 @@
   const isIcon = v => !v || Object.prototype.hasOwnProperty.call(icons, v);
   const html = (f, size = 16) => {
     const v = f && f.icon;
+    // Home's standard Archive (ui/homearchive.js) wears the registry's archive box, not one of the icons a project can pick
+    if (v === "archive" && window.hyIcon) return `<span class="pji" style="--pj:${size}px" aria-hidden="true">${hyIcon("archive", 0, 1.8)}</span>`;
     if (!isIcon(v)) return `<span class="pji emo" style="--pj:${size}px" aria-hidden="true">${esc(v)}</span>`;
     return `<span class="pji" style="--pj:${size}px${f && f.color ? `;color:${esc(f.color)}` : ""}" aria-hidden="true">${icons[v || "layers"]}</span>`;
   };
