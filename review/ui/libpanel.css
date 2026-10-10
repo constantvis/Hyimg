@@ -25,7 +25,19 @@ body.cv-on .grid .card { border-radius: 6px; }
 /* narrower than a wide library the pictures fill the row, about the card size the slider chose (ui/libpanel.js --lcols) */
 body.cv-on.lfill:not(.lrows) .grid { grid-template-columns: repeat(var(--lcols, 2), minmax(0, 1fr)); }
 body.cv-on.lfill:not(.lrows) .grid .card { width: auto; }
-/* the list's own headings (a folder's name, its batches) stay as the app has them: r15 draws one folder's pictures without them */
+/* the list's own headings beside the board, narrower than wide (owner 2026-10-10 on round 18, question 12 b, «Все остальное делаем»): quiet
+   capitals like the path and «Folders 3», one scale with them, «PHOTOS · SELECTS 3», and the batch under it in 11 px, so the pictures start
+   higher. Before, the folder's name was 26 px, bigger than «Library» itself. The wide form and the library alone keep the big names. */
+section h2 .lqh { display: none; }
+body.cv-on:not(.fdock) section h2 { flex-direction: row; align-items: baseline; gap: 0; margin: 14px 2px 0; font-size: 0; letter-spacing: 0; }
+body.cv-on:not(.fdock) section h2 > span { display: none; }
+body.cv-on:not(.fdock) section h2 .lqh { display: contents; font-style: normal; }
+body.cv-on:not(.fdock) section h2 .lqh b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sub);
+  font: 600 10.5px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+body.cv-on:not(.fdock) section h2 .lqh em { flex: none; margin-left: 6px; color: var(--muted); font: 500 11px var(--sans); font-style: normal; font-variant-numeric: tabular-nums; }
+body.cv-on:not(.fdock) h3.batch { display: block; margin: 2px 2px 8px; color: var(--muted); font: 400 11px var(--sans); }
+body.cv-on:not(.fdock) h3.batch b { color: var(--sub); font-weight: 500; }
+body.cv-on:not(.fdock) section:first-child h2 { margin-top: 6px; }
 
 /* ---------- the header and the search: the old dock, now the panel's top (all its parts move and hide with the library) ---------- */
 body.cv-on header.hy-dock { position: fixed; top: calc(var(--lt) + 1px); bottom: auto; left: 13px; transform: none; z-index: 12; box-sizing: border-box;
@@ -139,3 +151,12 @@ body.cv-on .tfpanel.lp-in { bottom: auto; transform: none; }
 :root.intro body.cv-on .fdrawer { animation: hyLay 1.8s cubic-bezier(.45, 0, .15, 1) .3s both; }
 body.cv-only .tfpanel.lp-in { display: none !important; }
 :root.hy-hideui body.cv-on .tfpanel.lp-in { animation: hyUiOut .36s cubic-bezier(.32,.72,0,1) both; pointer-events: none !important; }
+/* round 18, question 11 b (owner 2026-10-10, ★): the old dock's arrows between collections, gone beside the board, are back as two small
+   buttons in the path row before its «…»; ⌥↑ ⌥↓ do the same, in the library and on the board (ui/libpanel.js, ui/boardkeys.js) */
+.fbar .fstep { display: none; }
+body.cv-on .fbar .fstep { display: inline-flex; gap: 4px; margin-left: auto; padding-left: 6px; }
+body.cv-on .fbar .fstep button { width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; cursor: pointer;
+  background: color-mix(in srgb, var(--ink) 8%, var(--panel)); color: var(--sub); }
+body.cv-on .fbar .fstep button:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 14%, var(--panel)); }
+body.cv-on .fbar .fstep button:disabled { opacity: .4; cursor: default; }
+body.cv-on .fbar .fstep svg { width: 12px; height: 12px; }

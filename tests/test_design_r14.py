@@ -25,7 +25,8 @@ TABS = r"""() => { const vis = e => { const r = e.getBoundingClientRect(), s = g
     return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
   return [...document.querySelectorAll('.hy-bh .hy-bh-tab, .hy-bh hy-segmented[variant=tabs] > button, .cm-tabs > button, [role=tablist] > [role=tab]')]
     .filter(vis).map(t => { const s = getComputedStyle(t);
-      return [(t.closest('[id]') || t).id + ' ' + t.textContent.trim().slice(0, 20), Math.round(t.getBoundingClientRect().height), s.fontSize, s.fontWeight]; }); }"""
+      return [(t.closest('[id]') || t).id + ' ' + t.textContent.trim().slice(0, 20), Math.round(t.getBoundingClientRect().height), s.fontSize, s.fontWeight,
+        !!t.closest('hy-segmented[variant=pill]')]; }); }"""
 # a line where a block's header meets its content: the header's own bottom border or inset shadow, or a border of anything in its block
 # within 10 px under it that runs across most of the header (the tabs' own plates are not lines)
 RULES = r"""() => { const out = [], vis = e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e);
@@ -87,7 +88,9 @@ def board_panel(world, which):
 
 def check_blocks(target, name):
     tabs, rules = target.evaluate(TABS), target.evaluate(RULES)
-    wrong = [t for t in tabs if t[1:] != [24, "12.5px", "500"]]
+    # the bell's All | Notifications | Comments are the «?» panel's pill of 30 px tabs, 13.5 / 500 (owner 2026-10-10 on round 18, question 9:
+    # «Почему ты не можешь сделать нотификации точно так же, как здесь?»); every other tab stays at the standard size
+    wrong = [t for t in tabs if t[1:4] != ([30, "13.5px", "500"] if t[4] else [24, "12.5px", "500"])]
     assert tabs and not wrong, f"{name}: tabs not at the standard 24 px, 12.5 / 500: {wrong} (all: {tabs})"
     assert not rules, f"{name}: a line where a block's header meets its content: {rules}"
 

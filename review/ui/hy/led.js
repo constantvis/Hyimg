@@ -1,14 +1,16 @@
 // @ts-check
-// <hy-led state="on|ok|off|busy|err" label="…">: round 15's status LED (owner 2026-10-09 on r15-micro.html, control 4: «Все топ, все
+// <hy-led state="on|ok|off|idle|busy|err" label="…">: round 15's status LED (owner 2026-10-09 on r15-micro.html, control 4: «Все топ, все
 // делай»; ui/hy/led.css). 6 px, flat, no glow. on: the selection's colour, which is the Studio's inside a Studio (3D pink, Image purple,
-// Dev green; the current camera, a Studio's job done); ok: green, «running» on the board and in Settings; off: a ring; busy: the on colour
-// blinking, only while something works; err: red, a write refused (Dev Studio's file, P4 S-39). Drawn from the attribute alone (Home loads
-// no modules); the script gives it role img and the label as its name, or hides it from VoiceOver when the row beside it says it.
+// Dev green; the current camera, a Studio's job done); ok: green, «running» on the board and in Settings; off: a ring, «can't» (not found,
+// can't be saved); idle: a grey dot, «nothing yet» (Dev Studio's file before its first write: owner 2026-10-10, round 18 question 17,
+// version A, the ring had said the same as «can't be saved»); busy: the on colour blinking, only while something works; err: red, a
+// write refused (Dev Studio's file, P4 S-39). Drawn from the attribute alone (Home loads no modules); the script gives it role img and
+// the label as its name, or hides it from VoiceOver when the row beside it says it.
 import { HyElement, define, oneOf } from "./base.js";
 
-/** @typedef {"on" | "ok" | "off" | "busy" | "err"} LedState */
+/** @typedef {"on" | "ok" | "off" | "idle" | "busy" | "err"} LedState */
 /** @type {readonly LedState[]} */
-export const LED_STATES = ["on", "ok", "off", "busy", "err"];
+export const LED_STATES = ["on", "ok", "off", "idle", "busy", "err"];
 
 export class HyLed extends HyElement {
   static observedAttributes = ["state", "label", "title"];

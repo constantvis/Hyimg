@@ -62,3 +62,15 @@ hy-segmented[variant=micro] > button:has(> svg:only-child) { width: 26px; min-wi
 hy-segmented[variant=micro] > button > svg { width: 12px; height: 12px; }
 hy-segmented[variant=micro] > button.on, hy-segmented[variant=micro] > button:hover { color: var(--ink); }
 hy-segmented[variant=micro]:not(.has-st) > button.on { background: var(--hy-thumb); }
+/* variant=pill (owner 2026-10-10 on the bell: «Почему ты не можешь сделать нотификации точно так же, как здесь?», «здесь» the «?» panel's
+   «Tips | All keys 60»): a side panel header's tabs, round 15's drawing (r15-tips.html): a dark pill with 3 px around 30 px tabs, words
+   500 13.5 px, a count in <em> after them, the chosen one on the panel's colour with a hairline. One look for the «?» panel and the bell */
+hy-segmented[variant=pill] { --hy-so: 30px; --hy-seg-pad: 3px; gap: 0; }
+hy-segmented[variant=pill], hy-segmented[variant=pill].seg { padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); }
+hy-segmented[variant=pill].seg > .st { border-radius: 999px; background: var(--panel); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, var(--panel)); }
+:root[data-shape] hy-segmented[variant=pill] > :is(.st, button) { border-radius: 999px !important; }
+:is(hy-segmented[variant=pill], hy-segmented[variant=pill].seg) > button { gap: 6px; padding: 0 14px; border-radius: 999px; color: var(--sub); font: 500 13.5px var(--sans);
+  transition: background-color .18s ease, color .18s ease; }
+hy-segmented[variant=pill] > button:hover, hy-segmented[variant=pill] > button.on { color: var(--ink); }
+hy-segmented[variant=pill]:not(.has-st) > button.on { background: var(--panel); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, var(--panel)); }
+hy-segmented[variant=pill] > button > em { font: 400 11.5px var(--sans); font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }

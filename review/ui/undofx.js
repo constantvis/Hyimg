@@ -2,7 +2,8 @@
 // the step before it instead, one you could not see. The board's steps are its JSON strings in canvas.html past / future; such a step is
 // the board as it is now, marked so it never equals another string, with what to do on ⌘Z and ⇧⌘Z beside it. canvas.html's undo and redo
 // restore the board (no change) and call run(), which does the change back or again and moves the mark to the string the other stack got.
-//   hyUndoFx.push({ undo, redo })       a step on top of past, the redo stack cleared, as commit does
+//   hyUndoFx.push({ undo, redo, label }) a step on top of past, the redo stack cleared, as commit does; label: its name over Undo
+//   hyUndoFx.label(s)                    that name for a string of past or future, "" for the board's own steps (ui/boarddock.js)
 //   hyUndoFx.run(s, other, dir)          canvas.html xmoveStep: s the string ⌘Z (dir "undo") or ⇧⌘Z ("redo") took; true when it was ours
 (() => {
   if (window.hyUndoFx) return;
@@ -18,5 +19,6 @@
     try { x.fx[dir](); } catch (e) { console.error("undo step", e); }
     return true;
   }
-  window.hyUndoFx = { push, run };
+  const label = s => { const x = FX.get(s); return (x && x.fx.label) || ""; };
+  window.hyUndoFx = { push, run, label };
 })();

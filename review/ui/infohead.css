@@ -1,14 +1,13 @@
 /* The Info card's header (ui/infohead.js; owner 2026-10-09, round 15 «Info · the header»). The base rules are the header as it was,
    which a group and a sticky note keep; #info.hx is the compact header of a picture, a video, a copy, a 3D scene and an HTML page:
-   the name 14 / 600, one line of facts 11.5 under it across the card, ♥ · Open · … on the right of the name. DESIGN.md «Шапка Info» */
+   the name 14 / 600, one line of facts 11.5 under it across the card, ♥ · Open ▾ on the right of the name. Open is <hy-split variant=solid>
+   (ui/hy/split.js, its look ui/hy/openin.css); the «…» button is gone (owner 2026-10-10, round 18). DESIGN.md «Шапка Info» */
 #info .ih { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 #info .ia { flex: 0 0 auto; display: flex; gap: 6px; }
 /* ♥ in the card (owner 2026-10-01): outline when not liked, pink filled when liked, a click flips it */
 #info #iFav { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 999px; background: var(--raise); color: var(--sub); display: grid; place-items: center; cursor: pointer; }
 #info #iFav:hover { color: var(--ink); }
 #info #iFav.on { color: var(--hy-heart); } #info #iFav.on svg path { fill: currentColor; }
-#info #iOpen { flex: 0 0 auto; height: 28px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--ink); color: var(--panel); font: 500 12px var(--sans); cursor: pointer; }
-#info #iMore { display: none; }
 #info #iTrim { display: none; }
 #info #iE:empty { display: none; }
 #info #iE { margin-top: 8px; }
@@ -22,10 +21,7 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #info.hx .ia { grid-row: 1; grid-column: 2; align-items: center; gap: 4px; }
 #info.hx #iFav { width: 30px; height: 30px; background: transparent; }
-#info.hx :is(#iFav, #iMore):hover { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
-#info.hx #iOpen { height: 30px; padding: 0 14px; font: 600 12.5px var(--sans); white-space: nowrap; }
-#info.hx #iOpen:hover { filter: brightness(.92); }
-#info.hx #iMore { display: grid; place-items: center; width: 28px; height: 30px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; }
+#info.hx #iFav:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
 /* a video's trim bar: the kept part of the whole clip and where it plays, «0:02 – 0:08 of 0:12»; a click opens Crop & Trim */
 #info.hx #iTrim { display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; color: var(--muted); font: 400 11px var(--sans); font-variant-numeric: tabular-nums;
   white-space: nowrap; cursor: pointer; }

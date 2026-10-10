@@ -7,6 +7,16 @@ hyLang({
     "{who} merged {n} changes": ["{who} merged {n} change", "{who} merged {n} changes"],
   },
   ru: {
+    // the one dock and Actions in every Studio (ui/dock.js, ui/palette.js, owner 2026-10-10 on round 18)
+    "Actions · ⌘K": "Действия · ⌘K", "Search actions": "Поиск действий", "Undo": "Отменить", "Redo": "Вернуть", "Actions": "Действия", "Recent": "Недавние",
+    // the board's dock (ui/boarddock.js): «+» and the step's name over Undo and Redo
+    "Create": "Создать", "Create: a note, a text, a timeline…": "Создать: заметку, текст, таймлайн…", "Fit the card between the panels": "Вписать карточку между панелями",
+    "step::New note": "Новая заметка", "step::New text": "Новый текст", "step::New timeline": "Новый таймлайн", "step::New card": "Новая карточка",
+    "step::Grouped {n}": "Группа из {n}", "step::Ungrouped": "Без группы", "step::Added: {n}": "Добавлено: {n}", "step::Deleted: {n}": "Удалено: {n}",
+    "step::Move": "Перемещение", "step::Move {n}": "Перемещение: {n}", "step::Text": "Текст", "step::Size": "Размер", "step::Colour": "Цвет",
+    "step::Crop": "Кадрирование", "step::Opacity": "Прозрачность", "step::Arrow": "Стрелка", "step::Arrange": "Раскладка", "step::Change": "Изменение",
+    "Open {studio} · ↵ or a double click": "Открыть {studio} · ↵ или двойной клик",   // the Studio's chip over a card (ui/studiochip.js)
+    "step::Page name": "Имя страницы", "Show all · ⇧1": "Показать все · ⇧1", "Show all": "Показать все",
     // menu.js: «Показать в Finder» for library files
     "Opened 5 folders, {n} more not opened": "Открыты 5 папок, еще {n} не открыты",
     "This file is outside the library": "Этот файл вне библиотеки",
@@ -386,5 +396,8 @@ hyLang({
     "All {total} shown · show only {shown}": "Показаны все {total} · показать только {shown}",
     "Running": "Работает",
     "Not found": "Не найден",
+    // the bell's tabs, the board's and Home's row module (ui/bellrow.js hyBellTabs, owner 2026-10-10)
+    "All": "Все",
+    "Comments": "Комментарии",
   },
 });

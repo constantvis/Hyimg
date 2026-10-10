@@ -4,13 +4,22 @@
 
 - one selected picture, video, 3D scene, HTML page or copy (an instance of a picture) has the compact header: its name, one line of facts
   read from the file (picture: size in px, format, bytes, ratio; video: size, length, fps, codec, sound, bytes; a plugin's card: its info),
-  ♥, Open and «…» at the top right; a video has its trim bar under it
-- ♥ likes the file, Open opens it (the viewer for a picture, the Studio for a card), a copy's button goes to its original, «…» opens the
-  thing's own menu; the body's File section no longer repeats the facts
+  ♥ and Open ▾ at the top right; a video has its trim bar under it
+- ♥ likes the file, Open opens it (the viewer for a picture, the Studio for a card, named as the dock names it), a copy's button goes to
+  its original; the body's File section no longer repeats the facts
 - a group has no Info at all, as when nothing is selected (owner 2026-10-10 on round 16: «да не, вообще picker for group не нужен»)
+Round 18 (owner 2026-10-10, r18-info.html and r18-info-tabs.html):
+- 6: the body is the «Spec sheet» (version 3 ★) for every kind: a picture's Prompt with Copy, Generation (model, batch and its place in it,
+  when), Sources with each one's model, Notes; a 3D scene's cameras; an HTML page's title and the library's pictures it uses; «More · file,
+  tags, path» folds the rest
+- 7: Open has an arrow ▾, the app's one split button (<hy-split>, the same element as «Open in <Browser> ▾»): Preview ↵, Open in its app,
+  Show in Finder, Copy path, Copy as image ⇧⌘C; a card's Studio ↵; an HTML page's browsers
+- 8: no annotations in Info («Аннотации нам тут точно не нужны»): the frame's marks are gone from the Rating section; the «…» button is gone
+  («Можно по правой кнопке просто это делать»): the right-click menu has what it offered
 Chromium, dark theme, a temporary library, the plugins from their repositories' last commits. HY_SHOTS=<folder> keeps screenshots."""
 import io
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -41,6 +50,7 @@ def board():
         "s": {"type": "model3d", "scene": "3d/scenes/s1/scene.json", "camera": "c1", "x": 0, "y": 400, "w": 400, "h": 300},
         "h": {"type": "html", "src": "site/index.html", "vw": 1440, "ar": 1.6, "pics": ["site/index.html"], "x": 440, "y": 400, "w": 400, "h": 250},
         "q": {"path": "a/x.png", "x": 0, "y": 800, "w": 200, "ar": 1, "crop": None},
+        "n": {"type": "note", "text": "Warmer light", "x": 1200, "y": 0, "w": 160, "fs": 12, "color": "yellow", "to": ["p"]},
     }
     if FFMPEG: items["v"] = {"path": "a/clip.mp4", "x": 560, "y": 0, "w": 320, "ar": 16 / 9, "crop": None, "trim": [0.5, 2]}
     groups = {"g": {"title": "Series", "x": -20, "y": 780, "w": 260, "h": 260, "members": ["q"]}}
@@ -52,9 +62,12 @@ def world(tmp):
     """a temporary library and its server: (port, lib)"""
     lib, state, plugins = tmp / "lib", tmp / "state", tmp / "plugins"
     for d in (lib / "a", lib / "site", lib / "3d/scenes/s1", state / "boards", plugins, tmp / "home"): d.mkdir(parents=True)
-    (lib / "a/form.png").write_bytes(png(1122, 1402)); (lib / "a/x.png").write_bytes(png(64, 64))
-    (lib / "a/form.json").write_text(json.dumps({"model": "Test model", "prompt": "a chrome form"}))
-    (lib / "site/index.html").write_text(PAGE)
+    (lib / "a/form.png").write_bytes(png(1122, 1402)); (lib / "a/x.png").write_bytes(png(64, 64)); (lib / "a/ref.png").write_bytes(png(32, 32))
+    # a generated picture made from another model's picture, reviewed, with marks drawn on it in the viewer (annotations: not in Info)
+    (lib / "a/form.json").write_text(json.dumps({"model": "Test model", "prompt": "a chrome form", "inputs": ["ref.png"],
+                                                 "feedback": {"verdict": "take", "notes": [{"x": 0.2, "y": 0.3, "text": "a mark"}]}}))
+    (lib / "a/ref.json").write_text(json.dumps({"model": "Other model"}))
+    (lib / "site/index.html").write_text(PAGE.replace("</h1>", '</h1><img src="../a/x.png">'))
     (lib / "3d/scenes/s1/scene.json").write_text(json.dumps({"format": "hyimg-scene/1", "rev": 1, "objects": [], "lights": [],
                                                             "cameras": [dict(CAM, id="c1", name="Front"), dict(CAM, id="c2", name="Side")], "active_camera": "c1"}))
     if FFMPEG:
@@ -107,9 +120,10 @@ def shot(page, name):
 READ = """async id => { sel = new Set([id]); render(); await new Promise(r => setTimeout(r, 50)); render();
   const b = $('#info'), h = b.querySelector('.ih'), vis = s => { const e = $(s); return !!e && getComputedStyle(e).display !== 'none' && e.offsetWidth > 0; };
   return { kind: b.dataset.kind || '', hx: b.classList.contains('hx'), name: $('#iN').textContent, facts: $('#iM').textContent,
-    fav: vis('#iFav'), favOn: $('#iFav').classList.contains('on'), open: vis('#iOpen') ? $('#iOpen').textContent : '', more: vis('#iMore'),
+    fav: vis('#iFav'), favOn: $('#iFav').classList.contains('on'), open: vis('#iOpen') ? $('#iOpen .oi-go').textContent : '', more: vis('#iMore'),
+    split: vis('#iOpen .oi-more'),
     trim: vis('#iTrim') ? $('#iTrim').textContent : '', head: Math.round(h.getBoundingClientRect().height), media: h.querySelectorAll('img, video, canvas').length,
-    file: [...document.querySelectorAll('#iNotes .isec')].map(s => s.textContent).find(t => t.startsWith('File')) || '' }; }"""
+    file: $('#iNotes').innerText }; }"""   # the body (round 18: the model is in Generation, the file under More)
 
 
 def size(n):   # the board's fmtSize
@@ -128,7 +142,7 @@ def test_info_header_for_each_kind(tmp_path):
         a = page.evaluate(READ, "p")
         assert a["kind"] == "image" and a["hx"] and a["name"] == "form.png", a
         assert a["facts"] == f"1122 × 1402 · PNG · {size((lib / 'a/form.png').stat().st_size)} · 4:5", a
-        assert a["fav"] and a["open"] == "Open" and a["more"] and not a["trim"], a
+        assert a["fav"] and a["open"] == "Open" and a["split"] and not a["more"] and not a["trim"], a   # Open ▾, no «…» (round 18)
         assert a["head"] <= 58 and a["media"] == 0, a   # compact, no preview: the picture is selected and seen
         assert "1122" not in a["file"] and "KB" not in a["file"] and "Test model" in a["file"], a["file"]
         shot(page, "1-image.png")
@@ -136,26 +150,26 @@ def test_info_header_for_each_kind(tmp_path):
         until(page, "() => { sel = new Set(['c']); render(); return /1122 × 1402/.test($('#iM').textContent); }")
         c = page.evaluate(READ, "c")
         assert c["kind"] == "instance" and c["name"] == "form.png" and c["facts"] == "copy of “form.png” · 2 of 2 · 1122 × 1402", c
-        assert c["open"] == "To the original" and c["fav"] and c["more"], c   # ♥ on a copy too, the same file (owner decision 2026-10-10, P4 B-37)
+        assert c["open"] == "To the original" and c["fav"] and c["split"] and not c["more"], c   # ♥ on a copy too, the same file (owner decision 2026-10-10, P4 B-37)
         shot(page, "2-instance.png")
-        page.click("#iOpen"); until(page, "() => sel.size === 1 && sel.has('p')")
+        page.click("#iOpen .oi-go"); until(page, "() => sel.size === 1 && sel.has('p')")
         # a video: its data from the server's probe and the trim bar
         if FFMPEG:
             until(page, "() => { sel = new Set(['v']); render(); return /fps/.test($('#iM').textContent); }")
             v = page.evaluate(READ, "v")
             assert v["kind"] == "video" and v["name"] == "clip.mp4", v
             assert v["facts"] == f"640 × 360 · 0:03 · 24 fps · H.264 · sound · {size((lib / 'a/clip.mp4').stat().st_size)}", v
-            assert v["trim"] == "0:00 – 0:02 of 0:03" and v["fav"] and v["open"] == "Open" and v["more"], v
+            assert v["trim"] == "0:00 – 0:02 of 0:03" and v["fav"] and v["open"] == "Open" and v["split"] and not v["more"], v
             shot(page, "3-video.png")
         # a 3D scene and an HTML page: the plugin's info in the same header, Open is their Studio
         until(page, "() => { sel = new Set(['s']); render(); return /cameras/.test($('#iM').textContent); }")
         s = page.evaluate(READ, "s")
         assert s["kind"] == "3d" and s["name"] == "3D scene" and s["facts"].startswith("0 objects, 0 lights, 2 cameras"), s
-        assert s["open"] == "Open" and s["more"] and s["head"] <= 58, s
+        assert s["open"] == "3D Studio" and s["split"] and not s["more"] and s["head"] <= 58, s   # the Studio's name, as the dock names it (round 18)
         shot(page, "4-3d.png")
         h = page.evaluate(READ, "h")
         assert h["kind"] == "html" and h["name"] == "index.html" and "1440×900" in h["facts"] and "site/index.html" in h["facts"], h
-        assert h["fav"] and h["open"] == "Open" and h["more"], h
+        assert h["fav"] and h["open"] == "Dev Studio" and h["split"] and not h["more"], h
         shot(page, "5-html.png")
         # a group: no Info panel at all; a picture after it has its header again
         assert page.evaluate("() => { sel = new Set(['g']); render(); return getComputedStyle($('#info')).display; }") == "none"
@@ -179,20 +193,102 @@ def test_info_header_buttons(tmp_path):
         assert json.loads((lib / "a/form.json").read_text())["feedback"]["fav"] is True
         assert json.loads((lib / "a/form.json").read_text())["model"] == "Test model"   # the json keeps the rest
         page.click("#iFav"); until(page, "() => !$('#iFav').classList.contains('on')")
-        # Open shows the picture
-        page.click("#iOpen"); until(page, "() => __opened.length === 1")
+        # Open's Preview shows the picture (its main part is Image Studio, round 19)
+        page.click("#iOpen .oi-more"); page.click(".hy-oi-menu [role=menuitem]:nth-child(2)"); until(page, "() => __opened.length === 1")
         assert page.evaluate("() => __opened[0]") == "/img?p=a%2Fform.png"
-        # «…» is the thing's own menu, under the button
-        page.click("#iMore"); until(page, "() => $('#ctx').classList.contains('open')")
-        assert "Show in Finder" in page.inner_text("#ctx")
-        m, b = page.evaluate("() => [$('#ctx').getBoundingClientRect().top, $('#iMore').getBoundingClientRect().bottom]")
-        assert m >= b - 1, (m, b)
-        page.keyboard.press("Escape"); until(page, "() => !$('#ctx').classList.contains('open')")
         # Open on an HTML page and on a 3D scene: their Studio
         for card, studio in (("h", "dev"), ("s", "3d")):
             page.evaluate("id => { sel = new Set([id]); render(); }", card)
-            page.click("#iOpen")
+            page.click("#iOpen .oi-go")
             until(page, "k => document.documentElement.dataset.studio === k", studio, t=20000)
             page.evaluate("() => MODES.enter('board')"); until(page, "() => !document.documentElement.dataset.studio", t=20000)   # Done
+        assert not page.errors, page.errors
+        browser.close()
+
+
+# what the body shows: each section's title and its text, the spec rows, More folded or not
+BODY = """() => ({ secs: [...document.querySelectorAll('#iNotes > .isec')].map(s => [s.querySelector('.sh').firstChild.textContent, s.innerText]),
+  rows: Object.fromEntries([...document.querySelectorAll('#iNotes > .isec .spec dt')].map(d => [d.textContent, d.nextElementSibling.textContent])),
+  more: (document.querySelector('#iNotes .mrow') || {}).innerText || '', moreOpen: !!document.querySelector('#iNotes .imore:not([hidden]) .path'),
+  all: document.querySelector('#info').innerText })"""
+
+
+def test_info_body_is_the_spec_sheet(tmp_path):   # round 18, question 6 (version 3 ★) and question 8 (no annotations)
+    with world(tmp_path) as (port, lib), playwright.sync_playwright() as p:
+        browser, page = open_board(p, port)
+        page.evaluate("() => { try { localStorage.removeItem('cv.infoMore'); } catch {} }")
+        page.evaluate("() => { sel = new Set(['p']); render(); }")
+        until(page, "() => !!document.querySelector('#iNotes .spec')")
+        b = page.evaluate(BODY)
+        titles = [t for t, _ in b["secs"]]
+        assert titles[:2] == ["Prompt", "Generation"] and "Sources" in titles and "Notes" in titles, titles
+        assert b["rows"]["Model"] == "Test model" and re.search(r"\d of [34]$", b["rows"]["Batch"]) and b["rows"]["When"], b["rows"]
+        src = dict(b["secs"])["Sources"]
+        assert "ref.png" in src and "Other model" in src, src   # a source made by another model says so
+        assert "Warmer light" in dict(b["secs"])["Notes"], b["secs"]
+        assert "Copy" in dict(b["secs"])["Prompt"]
+        # no annotations: the frame's marks are not counted in Info any more (they live on the board's pins and in the bell)
+        assert "Marks on the frame" not in b["all"] and "Rating" in titles, b["all"]
+        # More folds the place, tags and path; a click opens it
+        assert b["more"].startswith("More") and "file, tags, path" in b["more"] and not b["moreOpen"], b["more"]
+        page.click("#iNotes .mrow"); until(page, "() => !!document.querySelector('#iNotes .imore:not([hidden]) .path')")
+        assert page.inner_text("#iNotes .imore .path") == "a/form.png"
+        # Copy puts the prompt on the clipboard
+        page.evaluate("() => { window.__copied = []; navigator.clipboard.writeText = t => { __copied.push(t); return Promise.resolve(); }; }")
+        page.click("#iNotes .sh .act"); until(page, "() => __copied.length === 1")
+        assert page.evaluate("() => __copied[0]") == "a chrome form"
+        shot(page, "7-spec-picture.png")
+        # a 3D scene: its cameras, the card's one marked; an HTML page: its title and the library's pictures it shows
+        until(page, "() => { sel = new Set(['s']); render(); return !!document.querySelector('#iNotes .spec'); }")
+        s = page.evaluate(BODY)
+        assert [t for t, _ in s["secs"]][0] == "Camera" and s["rows"]["Front"] == "50 mm · on the card" and s["rows"]["Side"] == "50 mm", s
+        shot(page, "8-spec-3d.png")
+        until(page, "() => { sel = new Set(['h']); render(); return !!document.querySelector('#iNotes .src'); }")
+        h = page.evaluate(BODY)
+        assert h["rows"]["Title"] == "Site" and "x.png" in dict(h["secs"])["Uses"], h
+        assert "Double-click" in page.inner_text("#iNotes .pfoot")   # the plugin's own words, the body's quiet footnote
+        shot(page, "9-spec-html.png")
+        assert not page.errors, page.errors
+        browser.close()
+
+
+MENU = "() => [...document.querySelectorAll('.hy-oi-menu [role=menuitem]')].map(b => b.innerText.replace(/\\s+/g, ' ').trim())"
+
+
+def test_info_open_has_its_menu(tmp_path):   # round 18, question 7 (★ yes) and question 8 («…» goes, the right click has it)
+    with world(tmp_path) as (port, lib), playwright.sync_playwright() as p:
+        browser, page = open_board(p, port)
+        page.evaluate("() => { window.__opened = []; window.open = u => { __opened.push(u); return null; }; }")
+        page.evaluate("() => { sel = new Set(['p']); render(); }")
+        until(page, "() => customElements.get('hy-split') && $('#iOpen').querySelector('.oi-more')")
+        assert page.evaluate("() => $('#iOpen').localName") == "hy-split" and page.locator("#iMore").count() == 0
+        # the arrow: the ways to open a picture, its Studio first on ↵ (round 19, switch-b.html), Preview, a line, the file's rows
+        page.click("#iOpen .oi-more"); page.wait_for_selector(".hy-oi-menu")
+        rows = page.evaluate(MENU)
+        assert rows[:2] == ["Image Studio ↵", "Preview"] and rows[3:] == ["Show in Finder", "Copy path", "Copy as image ⇧ ⌘ C"], rows
+        assert rows[2].startswith("Open in"), rows   # its app, named once macOS answers
+        assert page.locator(".hy-oi-menu .oi-sep").count() == 1 and page.locator(".hy-oi-menu .oi-dot").count() == 1
+        m, b = page.evaluate("() => [document.querySelector('.hy-oi-menu').getBoundingClientRect().top, $('#iOpen').getBoundingClientRect().bottom]")
+        assert m >= b, (m, b)
+        page.evaluate("() => { window.__copied = []; navigator.clipboard.writeText = t => { __copied.push(t); return Promise.resolve(); }; }")
+        page.click(".hy-oi-menu [role=menuitem] >> text=Copy path"); until(page, "() => __copied.length === 1")
+        assert page.evaluate("() => __copied[0]") == "a/form.png" and page.locator(".hy-oi-menu").count() == 0
+        # ↵ on the board runs the main row: Image Studio for a picture
+        page.mouse.click(700, 700); page.evaluate("() => { sel = new Set(['p']); render(); }")
+        page.keyboard.press("Enter"); until(page, "() => document.documentElement.dataset.studio === 'image'", t=20000)
+        page.evaluate("() => MODES.enter('board')"); until(page, "() => !document.documentElement.dataset.studio", t=20000)
+        # a 3D scene: its Studio first; an HTML page: its Studio and a browser
+        page.evaluate("() => { sel = new Set(['s']); render(); }"); page.click("#iOpen .oi-more"); page.wait_for_selector(".hy-oi-menu")
+        assert page.evaluate(MENU)[:2] == ["3D Studio ↵", "Show in Finder"] and page.locator(".hy-oi-menu .oi-sep").count() == 1
+        page.keyboard.press("Escape"); until(page, "() => !document.querySelector('.hy-oi-menu')")
+        assert page.evaluate("() => [...sel]") == ["s"], "Esc closes the menu only"
+        page.evaluate("() => { sel = new Set(['h']); render(); }"); page.click("#iOpen .oi-more"); page.wait_for_selector(".hy-oi-menu")
+        assert page.evaluate(MENU)[:2] == ["Dev Studio ↵", "Open in browser"]
+        page.keyboard.press("Escape")
+        # what «…» offered is the right click's menu
+        page.evaluate("() => { sel = new Set(['p']); render(); }")
+        r = page.evaluate("() => { const r = EL.get('p').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
+        page.mouse.click(*r, button="right"); until(page, "() => $('#ctx').classList.contains('open')")
+        assert "Show in Finder" in page.inner_text("#ctx")
         assert not page.errors, page.errors
         browser.close()

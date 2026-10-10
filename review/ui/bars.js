@@ -31,8 +31,14 @@
     });
     return f;
   }
+  // a bar that grows after it was placed (its slider, a key cap, a font coming in) is placed again: the Studio chip made a bar measured
+  // narrow at first lie over the Info card once it had its width (2026-10-10)
+  let last = null, watched = [];
+  const ro = window.ResizeObserver ? new ResizeObserver(() => { if (last) requestAnimationFrame(() => (typeof clampBars === "function" ? clampBars() : clamp(last))); }) : null;
   function clamp(o) {
     const bars = [...document.querySelectorAll("#handles .tidy")], S = o.sel, st = o.stage.getBoundingClientRect(), info = document.getElementById("info");
+    last = o;
+    if (ro) { watched = watched.filter(t => t.isConnected || (ro.unobserve(t), false)); bars.forEach(t => { if (!watched.includes(t)) { watched.push(t); ro.observe(t); } }); }
     const out = !!S && (S.r < st.left || S.l > st.right || S.b < st.top || S.t > st.bottom);
     bars.forEach(t => { t.style.translate = ""; t.style.visibility = out ? "hidden" : ""; });
     if (info) info.style.visibility = out ? "hidden" : "";
@@ -53,8 +59,20 @@
     }
     // sideways: the side panels at the bars' height; one centre for the bars of a selection (stacked bars stay on one axis), the
     // selection's own, moved only as far as the widest bar needs to stay free
-    const f = free(o.stage, o.inset, { t: Math.min(...ix.map(i => rs[i].top + dy[i])), b: Math.max(...ix.map(i => rs[i].bottom + dy[i])) });
-    const wide = Math.max(...ix.map(i => rs[i].width)), room = f.r - f.l;
+    const at = d => free(o.stage, o.inset, { t: Math.min(...ix.map(i => rs[i].top + d[i])), b: Math.max(...ix.map(i => rs[i].bottom + d[i])) });
+    const wide = Math.max(...ix.map(i => rs[i].width));
+    let f = at(dy), room = f.r - f.l;
+    // too wide beside a side panel at this height (the Info card; the bar grew with the Studio chip, 2026-10-10): the other side of the
+    // selection, else just under the panel, wherever the whole width is free; it never lies over the panel
+    if (S && wide > room) {
+      const above = bot <= S.t + 1, info = [...document.querySelectorAll("#info, [data-hyside]")].map(e => e.getClientRects().length ? e.getBoundingClientRect() : null)
+        .filter(r => r && r.height >= 4 && r.top < bot && r.bottom > top);
+      const shifts = [above ? S.b + (S.t - bot) - top : S.t - (top - S.b) - (bot - top) - top, ...info.map(r => r.bottom + 8 - top)];
+      for (const d of shifts.sort((a, b) => Math.abs(a) - Math.abs(b))) {
+        const dd = bars.map(() => d), g = at(dd);
+        if (fits(top + d, bot + d) && g.r - g.l >= wide) { dy = dd; f = g; room = g.r - g.l; break; }
+      }
+    }
     const mid = !S ? null : wide > room ? f.l + wide / 2 : Math.min(Math.max((S.l + S.r) / 2, f.l + wide / 2), f.r - wide / 2);
     bars.forEach((t, i) => {
       const r = rs[i]; if (!r.width) return;

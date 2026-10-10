@@ -259,9 +259,11 @@ def test_reveal_from_the_board_menu_and_the_info_card(server):
             if reveal_calls(server): break
             time.sleep(0.1)
         assert reveal_calls(server) == [["-R", f"{lib}/v/mute.mp4", f"{lib}/v/c.mov"]]
-        # one selected: the info card has the button beside the path
+        # one selected: the info card has the button beside the path, under More (round 18's spec sheet, owner 2026-10-10)
         page.mouse.click(700, 760)   # the empty board: nothing selected
         page.mouse.click(*at("c"))
+        page.locator("#iNotes .mrow").wait_for()
+        if page.get_attribute("#iNotes .mrow", "aria-expanded") != "true": page.click("#iNotes .mrow")
         btn = page.locator("#iNotes .prow .rv")
         btn.wait_for()
         assert btn.get_attribute("title") == "Показать в Finder"

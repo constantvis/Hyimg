@@ -85,6 +85,7 @@ hyLang({
     "4 · status, 6 px, no glow": "4 · статус, 6 px, без свечения",
     "The current camera": "Текущая камера",
     "Working": "Идет работа",
+    "Nothing written yet": "Пока ничего не записано",
     "5 · drag the letter, ⇧ ×10, ⌥ ×0.1, a click types": "5 · тяни букву, ⇧ ×10, ⌥ ×0,1, щелчок вводит число",
     "Opacity": "Прозрачность",
     "6 · tiny stepper": "6 · маленький степпер",

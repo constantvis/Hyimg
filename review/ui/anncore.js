@@ -279,11 +279,11 @@
 
   // ---- wiring ----------------------------------------------------------------------------------------------------------------------
   function init() {
-    if (!ok() || A.ready || !$("#btl")) return void setTimeout(init, 100);
+    if (!ok() || A.ready || !$("#dtools")) return void setTimeout(init, 100);
     A.ready = true;
     const b = document.createElement("button");
     b.id = "bann"; b.className = "ic"; b.title = T("Annotation · C"); b.setAttribute("aria-label", T("Annotation")); b.innerHTML = hyIcon("comment", 18, 1.85);
-    b.onclick = () => (A.tool ? exit() : tool("comment")); $("#btl").after(b);
+    b.onclick = () => (A.tool ? exit() : tool("comment")); $("#dtools").appendChild(b);   // the dock's tools (ui/boarddock.js)
     addEventListener("pointerdown", down, true);
     addEventListener("pointermove", move, true); addEventListener("pointerup", up, true); addEventListener("pointercancel", up, true);
     addEventListener("keydown", undoKey, true); addEventListener("keydown", keys, true);

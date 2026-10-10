@@ -77,9 +77,9 @@ def test_new_note_follows_zoom(server):
         shot(page, "new-note-zoom-400.png")
         n = note_by_n(0.25)   # far out: never bigger than a picture
         assert n["w"] == 320
-        # the dock's button takes the same size
+        # the dock's «+» › Note takes the same size
         cam(page, -3000, -3000, 2)
-        page.click("#bnote"); n = page.evaluate(NEWEST, "note"); page.keyboard.type("b"); page.keyboard.press("Escape")
+        page.click("#bplus"); page.click("#bplusm [data-mk=note]"); n = page.evaluate(NEWEST, "note"); page.keyboard.type("b"); page.keyboard.press("Escape")
         assert n["w"] == jsround(target / 2)
         # a heading (double click on the empty board) and a timeline (L): no bigger on screen than at 100 %
         cam(page, 8000, 8000, 4)

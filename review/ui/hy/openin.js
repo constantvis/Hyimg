@@ -12,7 +12,8 @@
 // browsers: [{id, name, icon}], default, last}); {op: "open", url, app} opens the url in that browser and answers {op: "open", app} or
 // {op: "open", error}. window.hyBrowsers is this way for the classic scripts; hyBrowsers.via(fn) puts another one in (the tests).
 // A studio sets el.target = () => url (and el.tip, the tooltip of the plain form); the element sends hy-open when it opened something.
-import { HyElement, define, t } from "./base.js";
+import { define, t } from "./base.js";
+import { HySplit, esc } from "./split.js";
 
 /** @typedef {{ id: string, name: string, icon: string }} Browser */
 /** @typedef {{ browsers: Browser[], default: string, last: string }} Browsers */
@@ -71,57 +72,46 @@ export const hyBrowsers = {
 /** @type {any} */ (window).hyBrowsers = hyBrowsers;
 /** @type {any} */ (window).hyimgBrowsers = got;
 
-const esc = (/** @type {string} */ s) => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] || c);
 const chev = () => (typeof window.hyIcon === "function" ? window.hyIcon("chevron", 12, 2.4, "oi-cv") : "");
 const check = () => (typeof window.hyIcon === "function" ? window.hyIcon("check", 14, 2.4, "oi-ck") : "");
 
-export class HyOpenIn extends HyElement {
+// <hy-split> with the browsers as its menu (ui/hy/split.js: the split, the menu, its keys, a press elsewhere; owner 2026-10-10: one primitive)
+export class HyOpenIn extends HySplit {
   /** @type {() => string} */
   #target = () => "";
   #tip = "";
-  /** @type {HTMLDivElement | null} */
-  #menu = null;
   /** @type {(() => void) | null} */
   #off = null;
-  /** @type {HTMLButtonElement | null} */
-  #go = null;
-  /** @type {HTMLButtonElement | null} */
-  #more = null;
 
   connectedCallback() {
     this.upgrade("target", "tip");
-    if (!this.#go) {
-      const go = this.#go = document.createElement("button"); go.type = "button"; go.className = "oi-go";
-      const more = this.#more = document.createElement("button"); more.type = "button"; more.className = "oi-more";
-      more.setAttribute("aria-haspopup", "menu"); more.setAttribute("aria-expanded", "false"); more.setAttribute("aria-label", t("Choose a browser"));
-      more.innerHTML = chev();
-      go.addEventListener("click", () => this.openHere());
-      more.addEventListener("click", () => (this.#menu ? this.close() : this.openMenu()));
-      this.append(go, more);
-    }
-    this.#off = hyBrowsers.on(() => this.sync());
+    super.connectedCallback();
+    if (this._more) { this._more.innerHTML = chev(); this._more.setAttribute("aria-label", t("Choose a browser")); }
+    if (!this.#off) this.#off = hyBrowsers.on(() => this.sync());
     this.sync(); hyBrowsers.ask();
   }
 
-  disconnectedCallback() { if (this.#off) this.#off(); this.#off = null; this.close(); }
+  disconnectedCallback() { if (this.#off) this.#off(); this.#off = null; super.disconnectedCallback(); }
+
+  menuLabel() { return t("Choose a browser"); }
 
   /** What to open: a function, asked at the click (the page may have moved on). @returns {() => string} */
   get target() { return this.#target; }
   set target(v) { this.#target = typeof v === "function" ? v : () => String(v || ""); }
   /** The main part's tooltip while there is no browser to name (a plain browser). */
   get tip() { return this.#tip; }
-  set tip(v) { this.#tip = String(v || ""); if (this.#go) this.sync(); }
+  set tip(v) { this.#tip = String(v || ""); if (this._go) this.sync(); }
 
   /** The words, icon and tooltip of the main part; the chevron always (without the app its menu offers the default browser alone). */
   sync() {
-    const go = this.#go, more = this.#more; if (!go || !more) return;
+    const go = this._go, more = this._more; if (!go || !more) return;
     const b = hyBrowsers.chosen(), data = this.getAttribute("tips") === "data";
     go.innerHTML = (b && b.icon ? `<img class="oi-ic" alt="" src="${b.icon}">` : "") + `<span>${esc(b ? t("Open in {app}", { app: b.name }) : t("Open in browser"))}</span>`;
     const tip = b ? t("Open the page in {app}", { app: b.name }) : this.tip || t("Open the page in a new tab");
     if (data) { go.dataset.tip = tip; go.dataset.side = "bottom"; more.dataset.tip = t("Choose a browser"); more.dataset.side = "bottom"; }
     else { go.title = tip; more.title = t("Choose a browser"); }
     this.toggleAttribute("split", true);
-    if (this.#menu) this.drawMenu();
+    if (this._menu) this.drawMenu();
   }
 
   /** The address to open, whole (a browser outside knows no page of ours to resolve a path against); "" when there is none. */
@@ -142,30 +132,13 @@ export class HyOpenIn extends HyElement {
     this.emit("hy-open", { url, app: id });
   }
 
-  openMenu() {
-    if (this.#menu) return;
-    const m = this.#menu = document.createElement("div");
-    m.className = "hy-oi-menu"; m.setAttribute("role", "menu"); m.setAttribute("aria-label", t("Choose a browser"));
-    m.addEventListener("click", e => { const r = /** @type {HTMLElement} */ (e.target).closest("[data-b]"); if (r instanceof HTMLElement) this.openWith(r.dataset.b || ""); });
-    m.addEventListener("pointerdown", e => e.stopPropagation());
-    document.body.appendChild(m); this.drawMenu();
-    const r = this.getBoundingClientRect();
-    m.style.top = Math.round(r.bottom + 6) + "px"; m.style.right = Math.max(8, Math.round(innerWidth - r.right)) + "px";
-    if (this.#more) this.#more.setAttribute("aria-expanded", "true");
-    addEventListener("keydown", this.#key, true); addEventListener("pointerdown", this.#away, true);
-    const on = /** @type {HTMLElement | null} */ (m.querySelector("[aria-checked=true]") || m.querySelector("button")); if (on) on.focus({ preventScroll: true });
-    hyBrowsers.ask();   // the list again: a browser installed meanwhile shows when the answer comes
-  }
+  /** @param {HTMLElement} row */
+  choose(row) { this.openWith(row.dataset.b || ""); }
 
-  close() {
-    const m = this.#menu; if (!m) return; this.#menu = null; m.remove();
-    if (this.#more) this.#more.setAttribute("aria-expanded", "false");
-    removeEventListener("keydown", this.#key, true); removeEventListener("pointerdown", this.#away, true);
-  }
+  opened() { hyBrowsers.ask(); }   // the list again: a browser installed meanwhile shows when the answer comes
 
-  /** @private */
   drawMenu() {
-    const m = this.#menu, g = hyBrowsers.list, c = hyBrowsers.chosen(); if (!m) return;
+    const m = this._menu, g = hyBrowsers.list, c = hyBrowsers.chosen(); if (!m) return;
     // no list from the app: the one browser there is, the system's, which a new tab opens in; checked, as the main part's
     if (!g) { m.innerHTML = `<button type="button" role="menuitemradio" aria-checked="true" data-b="">` + check() + `<span class="oi-ic"></span>`
       + `<span class="oi-n">${esc(t("Default browser"))}</span></button>`; return; }
@@ -173,20 +146,5 @@ export class HyOpenIn extends HyElement {
       + check() + (b.icon ? `<img class="oi-ic" alt="" src="${b.icon}">` : `<span class="oi-ic"></span>`) + `<span class="oi-n">${esc(b.name)}</span>`
       + (b.id === g.default ? `<span class="oi-def">${esc(t("browser::Default").replace(/^\w+::/, ""))}</span>` : "") + `</button>`).join("");
   }
-
-  /** Esc closes the menu and nothing else (a studio leaves on Esc); ↑ ↓ walk it, ↵ chooses; the board never sees these keys. @param {KeyboardEvent} e */
-  #key = e => {
-    const m = this.#menu; if (!m) return;
-    if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); this.close(); if (this.#more) this.#more.focus({ preventScroll: true }); return; }
-    const at = document.activeElement;
-    if ((e.key === "Enter" || e.key === " ") && at instanceof HTMLButtonElement && m.contains(at)) { e.preventDefault(); e.stopImmediatePropagation(); at.click(); return; }
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-    e.preventDefault(); e.stopImmediatePropagation();
-    const rows = [...m.querySelectorAll("button")], i = rows.indexOf(/** @type {HTMLButtonElement} */ (document.activeElement));
-    const n = rows[(i + (e.key === "ArrowDown" ? 1 : rows.length - 1)) % rows.length]; if (n) n.focus({ preventScroll: true });
-  };
-
-  /** A press anywhere else closes the menu. @param {PointerEvent} e */
-  #away = e => { const x = /** @type {Node} */ (e.target); if (this.#menu && !this.#menu.contains(x) && !(this.#more && this.#more.contains(x))) this.close(); };
 }
 define("hy-open-in", HyOpenIn);

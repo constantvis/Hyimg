@@ -6,7 +6,7 @@
 <script src="/ui/settings.js"></script>   <!-- the app's settings, the same in every project (owner 2026-10-04); first, before anything reads them -->
 <script src="/ui/i18n.js"></script>   <!-- English or Russian, the app's setting cv.lang (owner 2026-10-06); its words in lang-*.js -->
 <script src="/ui/lang-common.js"></script>
-<script src="/ui/lang-board.js"></script>
+<script src="/ui/lang-board.js"></script><script src="/ui/dock.js"></script><script src="/ui/palette.js"></script><script src="/ui/boarddock.js"></script><script src="/ui/studiochip.js"></script>
 <script src="/ui/paper.js"></script>
 <script src="/ui/stars.js"></script><script src="/ui/switchin.js"></script>   <!-- the loading stars; coming in through ⌃Tab (2026-10-08) -->
 <script src="/ui/dragband.js"></script><script src="/ui/copyimage.js"></script>   <!-- ⇧⌘C: any card as a PNG (2026-10-09) -->
@@ -30,7 +30,8 @@
 <script src="/ui/bellrow.js"></script><script src="/ui/bellthumbs.js"></script><link rel="stylesheet" href="/ui/bell.css">   <!-- the bell: rows, pictures, look -->
 <script src="/ui/perflog.js"></script><script src="/ui/undonew.js"></script><script src="/ui/boardclip.js"></script>   <!-- the log of frame drops (Settings › Diagnostics); ⌘Z in a field -->
 <script src="/ui/boardhints.js"></script><script src="/ui/cardfav.js"></script><script src="/ui/boardkeys.js"></script><script src="/ui/undofx.js"></script><script src="/ui/boardsel.js"></script><script src="/ui/snap.js"></script>   <!-- hints; ♥; keys; ⌘Z of ♥; groups; snapping -->
-<script src="/ui/textdoc.js"></script><link rel="stylesheet" href="/ui/textdoc.css">   <!-- a text: a title and a Markdown body (2026-10-09) -->
+<script src="/ui/outer.js"></script>   <!-- pictures, videos and PDFs dropped or pasted from outside (owner 2026-10-10) -->
+<script src="/ui/textsize.js"></script><script src="/ui/textdoc.js"></script><link rel="stylesheet" href="/ui/textdoc.css">   <!-- a text: a title and a Markdown body (2026-10-09) -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hyimg canvas</title>
 <!-- ИИ-агенту: инструкция к этому проекту по адресу /agent на этом же сервере (например http://localhost:4180/agent). -->
@@ -62,7 +63,7 @@ addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) e.preventDefault();
 <link rel="stylesheet" href="/ui/tokens.css">   <!-- the app's tokens, one source: the palette, heights, corners (ui/tokens.css) -->
 <link rel="stylesheet" href="/ui/ui.css"><link rel="stylesheet" href="/ui/studio.css"><link rel="stylesheet" href="/ui/hy/hy.css"><link rel="stylesheet" href="/ui/look.css">
 <link rel="stylesheet" href="/ui/slider.css"><script type="module" src="/ui/hy/index.js"></script>   <!-- the primitives: hy-button, hy-switch ... (ui/hy) -->
-<link rel="stylesheet" href="/ui/notelink.css"><link rel="stylesheet" href="/ui/infohead.css"><script src="/ui/infohead.js"></script>   <!-- notes' arrows; Info's header -->
+<link rel="stylesheet" href="/ui/notelink.css"><link rel="stylesheet" href="/ui/infohead.css"><script src="/ui/infohead.js"></script><script src="/ui/infobody.js"></script>
 <style>
 /* Canvas (2026-09-29): Figma-like board next to the frame library. Layout only: frames, groups, crops.
    A crop never cuts the file: the item shows a rectangle of the source image (normalized [x0, y0, x1, y1]). */
@@ -600,7 +601,7 @@ html[data-bench~="nogrp"] #groups { display: none; }
 
 /* keys look like keycaps (owner 2026-09-29): ui/hy/kbd.css, the key cap of the whole app */
 .bar button { display: inline-flex !important; align-items: center; gap: 0; white-space: nowrap; }
-.bar button.ic { width: 38px; padding: 0 !important; justify-content: center; }
+.bar button.ic { width: 36px; padding: 0 !important; justify-content: center; }   /* one dock (ui/dock.js) */
 /* no focus ring on the dock after a click (owner 2026-09-29); the canvas keeps the keyboard */
 .bar button:focus, .bar button:focus-visible { outline: none !important; box-shadow: none !important; }
 .bar kbd { height: 18px; min-width: 18px; font-size: 10px; margin-left: 6px; background: var(--panel); color: var(--sub); }
@@ -616,8 +617,7 @@ html[data-bench~="nogrp"] #groups { display: none; }
 /* a plugin editor's buttons in the dock (2026-10-04): the dock's own look; the active tool is filled like a pressed key */
 #dock.plg-mode > :not(.plgdock) { display: none !important; }
 .bar .plgdock { display: contents; }
-.bar .plgdock .sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; flex: none; }
-.bar .plgdock button[data-tool], .bar .plgdock button[data-plus] { width: 38px; padding: 0 !important; justify-content: center; }
+.bar .plgdock button[data-tool], .bar .plgdock button[data-plus] { width: 36px; padding: 0 !important; justify-content: center; }
 .bar .plgdock svg { width: 17px; height: 17px; flex: none; }
 .bar .plgdock button.wide { gap: 7px; color: var(--ink) !important; }
 .bar .plgdock button.on, .bar .plgdock button.pri { background: var(--ink) !important; color: var(--panel) !important; }
@@ -692,47 +692,6 @@ body.embed #tlib { display: none !important; }
   display: none; place-items: center; font: 600 calc(18px / var(--z)) / 1 var(--sans); cursor: copy; z-index: 3; box-shadow: 0 calc(2px / var(--z)) calc(8px / var(--z)) rgba(0,0,0,.4); }
 .tl.hov .plus { display: grid; }
 .tl.sel .ln { box-shadow: 0 0 0 calc(2px / var(--z)) color-mix(in srgb, var(--sel) 70%, transparent); }
-/* the picture card (owner 2026-10-01): everything the agent reads about the frame, one quiet section each */
-#iNotes:empty { display: none; }
-#iNotes { --good: #4ade80; --idea: #fbbf24; --bad: #fb7185; margin-top: 4px; display: grid; }
-#iNotes .isec { display: grid; gap: 8px; padding: 14px 0 0; margin-top: 14px; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
-#iNotes .sh { display: flex; justify-content: space-between; margin: 0; }   /* a section's label: the blocks' one (ui/hy/block.css .hy-sub, owner 2026-10-09) */
-#iNotes .sh .hint { letter-spacing: 0; font-weight: 500; }
-#iNotes .txt { margin: 0; font-size: 12.5px; line-height: 1.5; color: color-mix(in srgb, var(--ink) 85%, transparent); overflow-wrap: anywhere; white-space: pre-wrap; }
-#iNotes .txt a { color: inherit; text-decoration: underline; text-underline-offset: 2px; -webkit-user-select: text; user-select: text; }
-#iNotes .clamp { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
-#iNotes .muted { font-size: 11.5px; color: color-mix(in srgb, var(--ink) 50%, transparent); }
-#iNotes .more { all: unset; justify-self: start; font-size: 11.5px; color: var(--sel); cursor: pointer; }
-#iNotes .chips { display: flex; flex-wrap: wrap; gap: 5px; }
-#iNotes .chip { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; color: color-mix(in srgb, var(--ink) 80%, transparent);
-  background: color-mix(in srgb, var(--ink) 7%, transparent); }
-#iNotes .chip.own { background: color-mix(in srgb, var(--sel) 22%, transparent); color: var(--ink); }
-#iNotes .chip.v { font-weight: 600; }
-#iNotes .chip.good { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
-#iNotes .chip.idea { background: color-mix(in srgb, var(--idea) 20%, transparent); color: var(--idea); }
-#iNotes .chip.bad { background: color-mix(in srgb, var(--bad) 20%, transparent); color: var(--bad); }
-#iNotes .chip.fav { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
-#iNotes .scores { display: grid; gap: 5px; }
-#iNotes .srow { display: grid; grid-template-columns: 88px auto 1fr; align-items: center; gap: 10px; font-size: 12px; }
-#iNotes .sk { color: color-mix(in srgb, var(--ink) 85%, transparent); }
-#iNotes .sv { color: color-mix(in srgb, var(--ink) 50%, transparent); font-size: 11.5px; }
-#iNotes .dots { display: inline-flex; gap: 3px; } #iNotes .dots i { width: 7px; height: 7px; border-radius: 2px; background: color-mix(in srgb, var(--ink) 14%, transparent); }
-#iNotes .dots.s1 i:nth-child(-n+1) { background: var(--bad); } #iNotes .dots.s2 i:nth-child(-n+2) { background: var(--idea); } #iNotes .dots.s3 i { background: var(--good); }
-#iNotes .inote { all: unset; box-sizing: border-box; display: grid; gap: 4px; width: 100%; padding: 9px 11px 9px 13px; border-radius: 10px; cursor: pointer;
-  background: color-mix(in srgb, var(--nc) 12%, transparent); border-left: 3px solid var(--nc); color: var(--ink); font-size: 12px; line-height: 1.45; }
-#iNotes .inote:hover { background: color-mix(in srgb, var(--nc) 22%, transparent); }
-#iNotes .inote .t { display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-#iNotes .inote .t .mh { font-weight: 700; }
-#iNotes .rf { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; } #iNotes .rf img { width: 100%; height: 64px; object-fit: cover; border-radius: 6px; display: block; background: var(--raise); }
-#iNotes .qa { display: grid; gap: 4px; } #iNotes .qa .ans { color: var(--ink); padding-left: 10px; border-left: 2px solid color-mix(in srgb, var(--ink) 20%, transparent); }
-#iNotes .path { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: color-mix(in srgb, var(--ink) 55%, transparent); overflow-wrap: anywhere; -webkit-user-select: text; user-select: text; }
-/* the file's path with «Показать в Finder» beside it (owner 2026-10-05) */
-#iNotes .prow { display: flex; align-items: flex-start; gap: 6px; } #iNotes .prow .path { flex: 1; min-width: 0; }
-#iNotes .rv { flex: none; width: 24px; height: 24px; margin-top: -4px; padding: 0; border: 0; border-radius: 7px; background: transparent; outline: none; cursor: pointer; display: grid; place-items: center;
-  color: color-mix(in srgb, var(--ink) 55%, transparent); transition: color .15s cubic-bezier(.32,.72,0,1), background .15s cubic-bezier(.32,.72,0,1); }
-#iNotes .rv:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
-#iNotes .rv:focus, #iNotes .rv:focus-visible { outline: none; }
-#iNotes .ifoot { margin-top: 16px; }   /* a footnote: ui/look.css .hy-hint */
 #info .n { font-weight: 600; color: var(--ink); } #info .m { color: color-mix(in srgb, var(--ink) 50%, transparent); font-size: 12px; } #info .p { color: color-mix(in srgb, var(--ink) 78%, transparent); font-size: 12px; line-height: 1.5; margin-top: 8px; display: -webkit-box; -webkit-line-clamp: 14; -webkit-box-orient: vertical; overflow: hidden; }
 /* pages (owner 2026-09-29, like Figma): the switch sits first in the dock, its list opens above it and never grows wide */
 .bar button.pg { max-width: 190px; gap: 6px !important; padding: 0 10px 0 14px !important; color: var(--ink) !important; }
@@ -837,7 +796,6 @@ body.embed #tlib { display: none !important; }
 #empty { position: absolute; inset: 0; display: grid; place-items: center; color: color-mix(in srgb, var(--sub) 50%, transparent); pointer-events: none; text-align: center; font: 13px/22px var(--sans); }
 /* the same text as the loading steps, as dim as the done ones (their .5; the opacity itself is the entrance's, so the colour carries it) */
 #keys { display: none; }   /* the ? panel, round 15's Tips: ui/keyspanel.css (2026-10-10) */
-#info .p.hy-hint { font-size: 11px; line-height: 1.35; color: var(--hy-hint); }   /* a plugin card's text: the app's footnote (ui/look.css .hy-hint) over #info .p */
 #iP a, #vPrompt a { color: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; -webkit-user-select: text; user-select: text; word-break: break-all; }
 #iP a:hover, #vPrompt a:hover { color: var(--ink); }
 </style>
@@ -870,11 +828,11 @@ body.embed #tlib { display: none !important; }
     <div class="bar" id="dock">
       <button id="bpage" class="pg" title="Pages · double-click to rename"><span id="pgName">Page 1</span><svg data-ic="popup" width="12" height="12" stroke-width="2.4"></svg></button>
       <button id="tlib" title="Show or hide the library · \">Library</button>
-      <button id="bnote" class="ic" title="Sticky note · N" aria-label="Sticky note"><svg data-ic="note" width="18" height="18" stroke-width="1.8"></svg></button><button id="btl" class="ic" title="Timeline · L" aria-label="Timeline"><svg data-ic="timeline" width="18" height="18" stroke-width="1.8"></svg></button>
+      <button id="bplus" class="ic" title="Create: a note, a text, a timeline…" aria-label="Create"><svg data-ic="plus" width="18" height="18" stroke-width="1.85"></svg></button>
+      <span class="sep"></span><span id="dtools" class="dgrp"></span><span class="sep"></span>   <!-- one dock: create | tools | history | view % (ui/boarddock.js) -->
       <button id="bundo" class="ic" title="Undo · ⌘Z" aria-label="Undo"><svg data-ic="undo" width="16" height="16" stroke-width="2" style="display:block"></svg></button>
       <button id="bredo" class="ic" title="Redo · ⇧⌘Z" aria-label="Redo"><svg data-ic="redo" width="16" height="16" stroke-width="2" style="display:block"></svg></button>
-      <button id="bfit" class="ic" title="Show all · ⇧1" aria-label="Show all"><svg data-ic="fit" width="18" height="18" stroke-width="1.8" style="display:block"></svg></button>
-      <span class="zl" id="zl">100%</span>
+      <span class="sep"></span><button id="bfit" class="zlb wide" title="Show all · ⇧1" aria-label="Show all"><span class="zl" id="zl">100%</span></button>
       <span class="st" id="status">loading…</span>
 
     </div>
@@ -882,7 +840,7 @@ body.embed #tlib { display: none !important; }
     <nav id="crumb" aria-label="Where I am"><button id="cHome" title="Home: all boards · ⌘⇧H" aria-label="Home"><svg data-ic="home" width="16" height="16" stroke-width="1.9"></svg></button><span class="cs"><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><button id="cFolder" hidden title="Project on Home"><i id="cFolderIc"></i><span id="cFolderName"></span></button><span class="cs" id="cFolderSep" hidden><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span><button id="cProj" aria-haspopup="menu" aria-expanded="false"><span id="cProjName"></span><span class="cs"><svg data-ic="chevron" class="hy-chev" stroke-width="2.4"></svg></span></button><button id="cPage" aria-expanded="false" title="Pages · double-click to rename"><span id="cPageName"></span><svg data-ic="chevron" class="hy-chev dn" stroke-width="2.4"></svg></button></nav>
     <div id="ctx" role="menu" aria-label="Actions"></div>
     <button id="bset" class="hy-pop" title="App settings" aria-label="App settings" aria-expanded="false"><svg data-ic="settings" width="18" height="18" stroke-width="1.8"></svg></button>
-    <button id="bkeys" title="Shortcuts" aria-label="Shortcuts" aria-expanded="false">?</button>
+    <button id="bkeys" title="Tips and shortcuts" aria-label="Tips and shortcuts" aria-expanded="false"><svg data-ic="tip" width="18" height="18" stroke-width="1.8"></svg></button>
     <button id="bntf" class="hy-bell" title="Notifications: what agents put on the boards" aria-label="Notifications" aria-expanded="false"><svg data-ic="notifications" width="18" height="18" stroke-width="1.8"></svg></button>
     <div id="ntf" role="dialog" aria-label="Notifications"></div>
     <button id="bhist" title="Version history" aria-label="Version history" aria-expanded="false"><svg data-ic="history" width="18" height="18" stroke-width="1.8"></svg></button>
@@ -909,6 +867,7 @@ body.embed #tlib { display: none !important; }
       <div><span class="k"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd></span> copy as a picture</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>F</kbd></span> the library's search</div>
       <div><span class="k"><kbd>\</kbd></span> the library, as ⌘M</div>
+      <div><span class="k"><kbd>⌥</kbd><kbd>↑</kbd> <kbd>⌥</kbd><kbd>↓</kbd></span> the library's collection above, below</div>
       <div><span class="k"><kbd>⌘</kbd> while dragging</span> no snapping to the edges and centres around</div>
       <div><span class="k">double-click on empty space</span> a heading in large type</div>
       <div><span class="k"><kbd>N</kbd>, the note button</span> sticky note: under the pointer, type right away</div>
@@ -922,8 +881,8 @@ body.embed #tlib { display: none !important; }
       <div><span class="k">in a note <kbd>↵</kbd> <kbd>Esc</kbd></span> apply (⇧↵: new line)</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>M</kbd></span> the media library: open, close</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>.</kbd></span> hide all the interface, again: bring it back</div>
-      <div><span class="k"><kbd>⌘</kbd><kbd>G</kbd> <kbd>G</kbd></span> group</div>
-      <div><span class="k"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> <kbd>⇧</kbd><kbd>G</kbd></span> ungroup</div>
+      <div><span class="k"><kbd>⌘</kbd><kbd>G</kbd></span> group</div>
+      <div><span class="k"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd></span> ungroup</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>]</kbd> <kbd>⌘</kbd><kbd>[</kbd></span> bring forward, send backward</div>
       <div><span class="k"><kbd>⌥</kbd><kbd>⌘</kbd><kbd>]</kbd> <kbd>⌥</kbd><kbd>⌘</kbd><kbd>[</kbd></span> to the front, to the back</div>
       <div><span class="k"><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></span> move the selection a little, with <kbd>⇧</kbd> more</div>
@@ -952,7 +911,7 @@ body.embed #tlib { display: none !important; }
       <div><span class="k"><kbd>⌘</kbd><kbd>X</kbd>, another page, <kbd>⌘</kbd><kbd>V</kbd></span> move frames</div>
     </div>
     <div id="hint"><span class="hp">Crop: drag the frame · <kbd>X</kbd> turn the ratio · <kbd>↵</kbd> apply · <kbd>Esc</kbd> cancel · <kbd>R</kbd> the whole frame</span><span class="hv">Crop and trim: the yellow handles set the start and the end · <kbd>↵</kbd> apply · <kbd>Esc</kbd> cancel</span></div>
-    <div id="info"><div class="ih"><div><div class="n" id="iN"></div><div class="m" id="iM"></div></div><div class="ia"><button id="iFav" title="♥ Like · F" aria-label="Like"><svg data-ic="heart" width="16" height="16" stroke-width="2.2"></svg></button><button id="iOpen" title="Open the frame to view and rate it">Open</button><button id="iMore" title="More" aria-label="More"><svg data-ic="more" width="15" height="15"></svg></button></div></div><div id="iTrim"></div><div class="p" id="iP"></div><div class="m" id="iE"></div><div class="rf" id="iR"></div><div id="iNotes"></div></div>
+    <div id="info"><div class="ih"><div><div class="n" id="iN"></div><div class="m" id="iM"></div></div><div class="ia"><button id="iFav" title="♥ Like · F" aria-label="Like"><svg data-ic="heart" width="16" height="16" stroke-width="2.2"></svg></button><hy-split id="iOpen" variant="solid"></hy-split></div></div><div id="iTrim"></div><div class="p" id="iP"></div><div class="m" id="iE"></div><div class="rf" id="iR"></div><div id="iNotes"></div></div>
     <div id="empty" style="padding-left:var(--inset,0px)">Drag frames from the library on the left</div>
   </main>
 </div>
@@ -1148,23 +1107,21 @@ const NCOL = { yellow: ["#f4c430", "#241c04"], orange: ["#f59a3d", "#2b1400"], r
 const NCOL_NAME = { yellow: T("yellow"), orange: T("orange"), red: T("red"), pink: T("pink"), purple: T("purple"), blue: T("blue"), green: T("green"), grey: T("grey") };
 // five type sizes for a note (owner 2026-09-30), as a share of the card width, so scaling the card scales the type with it and the buttons change the share
 const NSIZE = [1 / 32, 1 / 24, 1 / 18, 1 / 13, 1 / 9];
-// text on the board has five sizes (owner 2026-09-30), in board units where a picture is 320 wide, so the hierarchy is the same at any zoom:
-// the big headline is the size of the section titles the owner already made (874); layout.py reads text of 160 and more as a section title
-const TSIZE = [{ fs: 24, wt: 400, name: "Small" }, { fs: 40, wt: 400, name: "Regular" }, { fs: 72, wt: 500, name: "Large" }, { fs: 128, wt: 700, name: "Heading" }, { fs: 874, wt: 700, name: "Big heading" }];
+// text on the board has five sizes (owner 2026-09-30), in board units where a picture is 320 wide, so the hierarchy is the same at any zoom;
+// each step about 1.75× (owner 2026-10-10: H2 to H1 was 128 to 874, «колоссальнейшая разница»; 874 had been the owner's section titles), a
+// text's own scale on top (ui/textsize.js); layout.py reads text of 160 and more as a section title
+const TSIZE = [{ fs: 24, wt: 400, name: "Small" }, { fs: 40, wt: 400, name: "Regular" }, { fs: 72, wt: 500, name: "Large" }, { fs: 128, wt: 700, name: "Heading" }, { fs: 224, wt: 700, name: "Big heading" }];
 function setTextSize(to) {
   const ids = [...sel].filter(id => isText(board.items[id])); if (!ids.length) return;
   const before = snap();
-  ids.forEach(id => { const t = board.items[id]; t.size = to; if (t.tw) t.tw *= TSIZE[to].fs / t.fs; t.fs = TSIZE[to].fs; });   // a document: its width too
+  ids.forEach(id => hyTextSize.set(board.items[id], to));   // in the text's own scale, a document's width too (ui/textsize.js)
   commit(before);
 }
 // each selected text one step smaller or bigger from its own size (a size made by the corner steps from the nearest of the five)
 function stepTextSize(d) {
   const ids = [...sel].filter(id => isText(board.items[id])); if (!ids.length) return;
   const before = snap();
-  ids.forEach(id => { const t = board.items[id], c = TSIZE.findIndex(z => Math.abs(z.fs - t.fs) < .5);
-    const at = c >= 0 ? c : TSIZE.reduce((b, z, i) => Math.abs(Math.log(t.fs / z.fs)) < Math.abs(Math.log(t.fs / TSIZE[b].fs)) ? i : b, 0);
-    const to = Math.max(0, Math.min(TSIZE.length - 1, c >= 0 ? at + d : (d < 0 ? (TSIZE[at].fs < t.fs ? at : at - 1) : (TSIZE[at].fs > t.fs ? at : at + 1))));
-    t.size = Math.max(0, to); if (t.tw) t.tw *= TSIZE[t.size].fs / t.fs; t.fs = TSIZE[t.size].fs; });
+  ids.forEach(id => hyTextSize.step(board.items[id], d));
   commit(before);
 }
 function noteSize(n) { if (Number.isInteger(n.size) && NSIZE[n.size]) return n.size; let b = 2, d = 9; NSIZE.forEach((r, i) => { const x = Math.abs(n.fs / n.w - r); if (x < d) { d = x; b = i; } }); return b; }
@@ -1257,8 +1214,9 @@ const HY = {
   },
   addPicture(path, ar, x, y, w) { const id = uid("i"); board.items[id] = { path, x: Math.round(x), y: Math.round(y), w: Math.round(w), ar, crop: null }; regroup([id]); return id; },
   openFrame(path) { EMBED ? parent.postMessage({ type: "openFrame", path }, location.origin) : open(`/img?p=${enc(path)}`, "_blank"); },
-  // a button of the plugin in the dock, after the timeline button; svg is the icon markup
-  addButton(svg, title, onclick) { const b = document.createElement("button"); b.className = "ic"; b.title = title; b.setAttribute("aria-label", title); b.innerHTML = svg; b.onclick = onclick; $("#btl").after(b); return b; },
+  // an item of the plugin in the dock's «+» list, after the board's own (ui/boarddock.js; a button of its own until 2026-10-10); svg is the
+  // icon markup, o.label the item's words (else the title up to «:»), the title its tooltip
+  addButton(svg, title, onclick, o) { return hyBoardDock.add(svg, title, onclick, o); },
   // the centre of what is on screen, in board units: where a new card goes
   viewCenter() { const r = stage.getBoundingClientRect(); return toWorld(r.left + INSET + (r.width - INSET) / 2, r.top + r.height / 2); },
   select(ids) { sel = new Set(ids); render(); },
@@ -1266,7 +1224,8 @@ const HY = {
   busy(key, label, id) { busy("plg:" + key, label || null); const el = id && EL.get(id); if (el) el.classList.toggle("working", !!label); },
   // while a plugin's editor is open its buttons take the dock (owner 2026-10-04: the 3D editor's buttons go down into our dock, in its
   // look); null gives the dock back. The node keeps its own click handling.
-  dock(node) { const d = $("#dock"); d.querySelectorAll(".plgdock").forEach(x => x !== node && x.remove()); d.classList.toggle("plg-mode", !!node); if (node) { node.classList.add("plgdock"); d.appendChild(node); } },
+  dock(node) { hyBoardDock.dock(node); const d = $("#dock"); d.querySelectorAll(".plgdock").forEach(x => x !== node && x.remove());   // the view % first (ui/boarddock.js)
+    d.classList.toggle("plg-mode", !!node); if (node) { node.classList.add("plgdock"); d.appendChild(node); } },
   // the frame of a plugin card: "free", an exact ratio "4:5" (width:height) or "flip"; the ratio bar over the card does the same
   frame(id, k) { setFrame(id, k); },
   // a plugin's editor takes the whole screen while it is open: the library around the canvas folds and comes back after
@@ -1372,8 +1331,8 @@ function newTimeline(atPointer) {
   if (hyPrevNo()) return; const before = snap(), vr = stage.getBoundingClientRect();
   const c = atPointer && lastPt ? lastPt : toWorld(vr.left + INSET + (vr.width - INSET) / 2, vr.top + vr.height / 2);
   let size = 2; while (size < TSIZE.length - 1 && TSIZE[size].fs * cam.z < 12) size++;
-  const fs = TSIZE[size].fs * hyNewSize.text(cam.z), len = Math.round(fs * 36), id = uid("l");   // zoomed in: as on screen at 100 %
-  const it = { type: "timeline", dir: "h", fs, len, x: Math.round(c.x - len / 2), y: 0, w: 0, h: 0, points: [0, 1, 2, 3].map(k => ({ id: uid("p"), t: Math.round(len * k / 3), text: "" })) };
+  const ts = hyTextSize.make(size, cam.z), fs = ts.fs, len = Math.round(fs * 36), id = uid("l");   // zoomed in: as on screen at 100 %, in its own scale
+  const it = { type: "timeline", dir: "h", ...ts, len, x: Math.round(c.x - len / 2), y: 0, w: 0, h: 0, points: [0, 1, 2, 3].map(k => ({ id: uid("p"), t: Math.round(len * k / 3), text: "" })) };
   tlSize(it); it.y = Math.round(c.y - it.h / 2); board.items[id] = it; sel = new Set([id]); render();
   editTlLabel(id, it.points[0].id, before);
 }
@@ -1410,7 +1369,7 @@ function setTlDir(dir) {
 }
 function setTlSize(to) {
   const ids = [...sel].filter(id => isTl(board.items[id])); if (!ids.length) return;
-  const before = snap(); ids.forEach(id => { const it = board.items[id]; it.size = to; it.fs = TSIZE[to].fs; tlSize(it); }); commit(before);
+  const before = snap(); ids.forEach(id => { const it = board.items[id]; hyTextSize.set(it, to); tlSize(it); }); commit(before);
 }
 function newNote(atPointer) {
   if (hyPrevNo()) return; const before = snap(), vr = stage.getBoundingClientRect();
@@ -1652,7 +1611,8 @@ async function pollNtf() {
     $("#bntf").classList.toggle("dot", NTF.unread > 0); if ($("#ntf").classList.contains("open")) drawNtf(); } catch {}
 }
 function drawNtf() {   // written again only when a row changed: every poll (8 s) rewrote the list and loaded and decoded its pictures again
-  const el = $("#ntf"), h = hyBellHead() + (NTF.items.length ? NTF.items.map(n => hyBellRow(n)).join("") : `<div class="none">${T("Nothing yet")}</div>`); if (el._h !== h) el.innerHTML = el._h = h;
+  const el = $("#ntf"), L = hyBellTabs.rows(NTF.items), h = hyBellTabs.head(NTF.items) + (L.length ? L.map(n => hyBellRow(n)).join("") : `<div class="none">${T("Nothing yet")}</div>`);
+  if (el._h !== h) el.innerHTML = el._h = h;   // the tabs All | Notifications | Comments: ui/bellrow.js hyBellTabs (owner 2026-10-10)
 }
 // A click never does nothing (owner 2026-10-08): another board's notification opens that board; one that named nothing asks the server
 // for its author's things around its time (server.py notif_place, notifplace.py); with none found, its page and a toast.
@@ -2481,7 +2441,7 @@ function renderHandles() {
     Object.assign(f.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" }); h.appendChild(f);
   }
   // several frames selected: a floating "tidy up" button above the selection (owner 2026-09-29, like Figma)
-  const many = [...sel].filter(id => board.items[id] && isPic(board.items[id])), cards = [...sel].filter(id => arrangeable(board.items[id]));
+  const many = [...sel].filter(id => board.items[id] && isPic(board.items[id])), cards = [...sel].filter(id => arrangeable(board.items[id])), chip = hyStudioChip.html([...sel]);
   // the plugins' buttons for this selection (HY.bar), the key cap a direct child of the button as on the bar's own (ui/keyhints.js)
   const pbar = renderHandles.pbar = []; BARP.forEach(f => { try { (f([...sel]) || []).forEach(a => pbar.push(a)); } catch (er) { console.error("plugin bar", er); } });
   pbar.sort((a, b) => (b.first ? 1 : 0) - (a.first ? 1 : 0));   // the main action of a card first (a: first), in the plugins' order otherwise
@@ -2493,7 +2453,7 @@ function renderHandles() {
     const op = Math.round(100 * (board.items[many[0]].opacity ?? 1));
     const opHtml = opPlate(op);
     // one picture: «Crop», one video: «Crop & Trim» (owner 2026-10-06), the key cap a direct child as on the bar's other buttons
-    const one = !several && many.length === 1 ? board.items[many[0]] : null, cropB = !one ? "" : `<button data-crop title="${isVid(one) ? T("Crop the picture, trim the start and the end · ⇧C") : T("Crop · ⇧C")}">${IC_CROP}${isVid(one) ? T("Crop & Trim") : T("Crop")}<kbd>⇧C</kbd></button><span class="sep"></span>`;
+    const one = !several && many.length === 1 ? board.items[many[0]] : null, cropB = chip + (!one ? "" : `<button data-crop title="${isVid(one) ? T("Crop the picture, trim the start and the end · ⇧C") : T("Crop · ⇧C")}">${IC_CROP}${isVid(one) ? T("Crop & Trim") : T("Crop")}<kbd>⇧C</kbd></button><span class="sep"></span>`);
     const splitB = !one || !splitable(one) ? "" : `<button data-split title="${T("Split into pages · ⌥P")}">${IC_SPLIT}${T("Split into pages ({n})", { n: pdfPages(one.path) })}<kbd>⌥P</kbd></button><span class="sep"></span>`;
     if (!several) t.innerHTML = cropB + splitB + (pbHtml ? pbHtml + `<span class="sep"></span>` : "") + opHtml; else t.innerHTML = tidyBtns() + (pbHtml ? `<span class="sep"></span>` + pbHtml : "")
       // ♥ for the whole selection right here (owner 2026-10-01): pink when every selected frame is already liked, a click then takes it off
@@ -2503,8 +2463,8 @@ function renderHandles() {
     Object.assign(t.style, { left: b.x + b.w / 2 + "px", top: (below ? b.y + b.h : b.y) + "px" });
     if (below) t.style.transform = "scale(calc(1 / var(--z))) translate(-50%, 12px)";
     h.appendChild(t); t.querySelectorAll(".hy-slider").forEach(hySlider.mount);   // the opacity's slider (ui/slider.js)
-  } else if (!cropState && (pbar.length || cards.length >= 2 || [...sel].some(i => { const it = board.items[i]; return !!(it && it.type && opOk(it)); })) && !(drag && drag.moved) && !(sel.size === 1 && frameEdit([...sel][0]))) {   // groups, plugin cards: the plugins' buttons alone
-    const b = bbox([...sel].filter(id => rectOf(id))), t = document.createElement("div"); t.className = "tidy"; t.innerHTML = (cards.length >= 2 ? tidyBtns() + (pbHtml ? `<span class="sep"></span>` : "") : "") + pbHtml;   // 3D, HTML, Dev cards: «Arrange» too
+  } else if (!cropState && (chip || pbar.length || cards.length >= 2 || [...sel].some(i => { const it = board.items[i]; return !!(it && it.type && opOk(it)); })) && !(drag && drag.moved) && !(sel.size === 1 && frameEdit([...sel][0]))) {   // groups, plugin cards: the plugins' buttons alone
+    const b = bbox([...sel].filter(id => rectOf(id))), t = document.createElement("div"); t.className = "tidy"; t.innerHTML = chip + (cards.length >= 2 ? tidyBtns() + (pbHtml ? `<span class="sep"></span>` : "") : "") + pbHtml;   // 3D, HTML, Dev cards: «Arrange» too
     if (sel.size === 1 && board.groups[[...sel][0]]) { t.classList.add("gbar"); t.dataset.gid = [...sel][0]; }
     // plugin cards that take opacity (def.opacity: an image frame) get the pictures' opacity plate after their buttons (owner 2026-10-06)
     const opc = [...sel].map(i => board.items[i]); if (opc.length && opc.every(opOk)) t.innerHTML += (t.innerHTML ? `<span class="sep"></span>` : "") + opPlate(Math.round(100 * (opc[0].opacity ?? 1)));
@@ -2518,7 +2478,7 @@ function renderHandles() {
   const texts = [...sel].filter(i => isText(board.items[i]));
   if (!cropState && sel.size >= 2 && texts.length === sel.size && !(drag && drag.moved)) {
     const b = bbox(texts), t = document.createElement("div"); t.className = "tidy tsz";
-    const sizes = texts.map(i => TSIZE.findIndex(z => Math.abs(z.fs - board.items[i].fs) < .5)), all = sizes.every(c => c === sizes[0]) ? sizes[0] : -1;
+    const sizes = texts.map(i => hyTextSize.cur(board.items[i])), all = sizes.every(c => c === sizes[0]) ? sizes[0] : -1;
     t.innerHTML = `<button class="hx ${all === 4 ? "on" : ""}" data-tsize="4" title="${T("Big heading")}">H1</button><button class="hx ${all === 3 ? "on" : ""}" data-tsize="3" title="${T("Heading")}">H2</button><span class="sep"></span>`
       + `<button class="fz" data-tstep="-1" title="${T("Smaller text")}" ${sizes.every(c => c === 0) ? "disabled" : ""}><span style="font-size:11px">A</span></button>`
       + `<button class="fz" data-tstep="1" title="${T("Bigger text")}" ${sizes.every(c => c === 4) ? "disabled" : ""}><span style="font-size:18px">A</span></button>`;
@@ -2550,7 +2510,7 @@ function renderHandles() {
   };
   const n = board.items[id];
   if (isTl(n)) {   // a timeline: direction and heading size; its length is the square at the end of the line, dots move along it
-    const t = document.createElement("div"), cur = TSIZE.findIndex(z => Math.abs(z.fs - n.fs) < .5); t.className = "tidy tsz";
+    const t = document.createElement("div"), cur = hyTextSize.cur(n); t.className = "tidy tsz";
     t.innerHTML = `<button class="hx ${n.dir !== "v" ? "on" : ""}" data-tldir="h" title="${T("Horizontal: labels on top")}">${T("Horizontal")}</button><button class="hx ${n.dir === "v" ? "on" : ""}" data-tldir="v" title="${T("Vertical: labels on the left")}">${T("Vertical")}</button><span class="sep"></span>`
       + `<button class="fz" data-tlsize="${Math.max(0, (cur < 0 ? 2 : cur) - 1)}" title="${T("Smaller labels")}" ${cur === 0 ? "disabled" : ""}><span style="font-size:11px">A</span></button><button class="fz" data-tlsize="${Math.min(4, (cur < 0 ? 2 : cur) + 1)}" title="${T("Bigger labels")}" ${cur === 4 ? "disabled" : ""}><span style="font-size:18px">A</span></button>`
       + `<span class="tsl">${T("point at the line: + adds a dot")}</span>`;
@@ -2578,9 +2538,10 @@ function renderHandles() {
   }
   if (isText(n)) {   // the five text sizes above the selected text; the active one is the size it has (a text scaled by its corner has none lit)
     hyTextDoc.edges(h, id, r, n, handlesOn(r.w * cam.z, r.h * cam.z));   // a document's side strips: its width (ui/textdoc.js)
-    const t = document.createElement("div"), cur = TSIZE.findIndex(z => Math.abs(z.fs - n.fs) < .5); t.className = "tidy tsz";
-    // H1 and H2 jump to the two headlines, the small and big A step one size down or up through all five, as on a note (owner 2026-09-30)
-    const at = cur >= 0 ? cur : TSIZE.reduce((b, z, i) => Math.abs(Math.log(n.fs / z.fs)) < Math.abs(Math.log(n.fs / TSIZE[b].fs)) ? i : b, 0);
+    const t = document.createElement("div"), cur = hyTextSize.cur(n); t.className = "tidy tsz";
+    // H1 and H2 jump to the two headlines, the small and big A step one size down or up through all five, as on a note (owner 2026-09-30),
+    // all in the text's own scale (ui/textsize.js, 2026-10-10)
+    const at = hyTextSize.near(n);
     t.innerHTML = `<button class="hx ${cur === 4 ? "on" : ""}" data-tsize="4" title="${T("Big heading")}">H1</button><button class="hx ${cur === 3 ? "on" : ""}" data-tsize="3" title="${T("Heading")}">H2</button><span class="sep"></span>`
       + `<button class="fz" data-tsize="${Math.max(0, cur >= 0 ? at - 1 : at)}" title="${T("Smaller text")}" ${cur === 0 ? "disabled" : ""}><span style="font-size:11px">A</span></button>`
       + `<button class="fz" data-tsize="${Math.min(4, cur >= 0 ? at + 1 : at)}" title="${T("Bigger text")}" ${cur === 4 ? "disabled" : ""}><span style="font-size:18px">A</span></button>`
@@ -2633,13 +2594,13 @@ function infoFresh() {
 function renderInfo() {
   const box = $("#info");
   if (sel.size !== 1 || cropState) { box.style.display = "none"; return; }
-  $("#iNotes").textContent = ""; $("#iP").classList.remove("hy-hint");   /* a plugin card's text is a footnote, the rest is data */
+  $("#iNotes").textContent = "";
   const id = [...sel][0], it = board.items[id];
   if (isText(it) || isTl(it)) { box.style.display = "none"; return; }
   if (it && it.type && !isNote(it)) {   // a plugin's card: it says what to show
     const inf = (PLG[it.type] && PLG[it.type].info && PLG[it.type].info(id, it)) || { name: it.type };
-    box.style.display = "block"; $("#iR").innerHTML = ""; hyInfoHead.card(id, it, inf); $("#iP").textContent = inf.text || ""; $("#iP").classList.add("hy-hint");
-    hyNoteLink.cardNotes($("#iNotes"), id); return;   // its notes, as a picture's (2026-10-07)
+    box.style.display = "block"; $("#iR").innerHTML = ""; $("#iP").textContent = ""; hyInfoHead.card(id, it, inf);
+    hyInfoBody.card($("#iNotes"), id, it, inf); return;   // round 18's spec sheet: its file, its notes, More (ui/infobody.js)
   }
   if (isNote(it)) {
     const lk = linksOf(id), K = [...lk.keys()], L = K.map(k => hyNoteLink.label(board, k));   // every kind of thing, named by its kind (2026-10-07)
@@ -2651,12 +2612,11 @@ function renderInfo() {
     $("#iP").textContent = L.slice(0, 14).join("\n") + (L.length > 14 ? "\n…" : ""); return;
   }
   if (!it) { box.style.display = "none"; return; }   // a group too: no Info at all, as for nothing selected (owner 2026-10-10: «вообще picker for group не нужен»)
-  const m = byPath.get(it.path) || {}, f = m.feedback || {};
+  const m = byPath.get(it.path) || {};
   box.style.display = "block"; $("#iP").textContent = ""; $("#iR").innerHTML = ""; hyInfoHead.pic(id, it, m);   // the header: ui/infohead.js
-  infoCard($("#iNotes"), id, it, m, f);
+  hyInfoBody.pic($("#iNotes"), id, it, m);   // the body, round 18's spec sheet (ui/infobody.js)
 }
-// Everything the agent reads about a picture, section by section, shown only when there is something in it (owner 2026-10-01:
-// "I want to see what goes to the AI"). The data is the picture's json next to the file, its board notes and its place on the board.
+// The owner's review words for the Info card's body (ui/infobody.js reads them here: the json keeps the library's Russian words)
 const CRIT_RU = { idea: ["Idea", ["Boring, cliché", "There, but weak", "Strong idea"]], humor: ["Humor", ["Misses", "Makes you smile", "Hooks"]], world: ["Our world", ["Not our world", "criterion::Close", "Our world"]],
   future: ["Futurism", ["Present day", "A hint", "Future"]], casting: ["Casting", ["Wrong faces", "level::Fine", "Strong casting"]], costume: ["Costume", ["Kitsch", "level::Fine", "Stylish"]],
   pose: ["Pose", ["Unmotivated", "level::Fine", "Great"]], light: ["criterion::Light", ["Wrong", "level::Fine", "Excellent"]], color: ["Color", ["Wrong", "level::Fine", "Color system"]],
@@ -2675,95 +2635,6 @@ const OLD_TAG_EN = { "Идея": "Idea", "Юмор": "Humor", "Эмоция": "E
 const oldTag = t => T.lang === "en" && OLD_TAG_EN[t] ? OLD_TAG_EN[t] : t;
 // the engine tags tags.py names itself: the library's filter ids stay Russian, the card shows them in the app's language (owner 2026-10-06)
 const ENGINE_TAG = { "3D и перекраска": "3D and recolor", "Движок не указан": "Engine not set" };
-function infoCard(root, id, it, m, f) {
-  root.textContent = "";
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const sec = (title, hint) => { const s = el("section", "isec"), h = el("div", "sh hy-sub", title); if (hint) h.appendChild(el("span", "hint", hint)); s.appendChild(h); root.appendChild(s); return s; };
-  const chips = (list, cls) => { const w = el("div", "chips"); list.forEach(t => w.appendChild(el("span", "chip" + (cls ? " " + cls : ""), t))); return w; };
-  // the owner's review
-  const sc = f.scores || {}, keys = Object.keys(sc).filter(k => CRIT_RU[k]), use = (f.use || []).map(u => USE_RU[u] ? T(USE_RU[u]) : u), marks = (f.notes || []).length;
-  if (f.verdict || keys.length || f.comment || use.length || marks || (f.good || []).length || (f.bad || []).length) {
-    const s = sec(T("Rating"));
-    const top = el("div", "chips");
-    if (f.verdict && VERDICT_RU[f.verdict]) top.appendChild(el("span", "chip v " + VERDICT_RU[f.verdict][1], T(VERDICT_RU[f.verdict][0])));
-    use.forEach(u => top.appendChild(el("span", "chip", u)));
-    if (top.childNodes.length) s.appendChild(top);
-    if (keys.length) {
-      const g = el("div", "scores");
-      keys.forEach(k => { const v = sc[k], r = el("div", "srow"); r.appendChild(el("span", "sk", T(CRIT_RU[k][0]))); const d = el("span", "dots s" + v); d.innerHTML = "<i></i><i></i><i></i>"; r.appendChild(d); r.appendChild(el("span", "sv", CRIT_RU[k][1][v - 1] ? T(CRIT_RU[k][1][v - 1]) : v)); g.appendChild(r); });
-      s.appendChild(g);
-    }
-    // the old good / bad tags only when there are no scores: the scores were made from them and would say the same twice
-    const tags = keys.length ? [] : [...(f.good || []).map(t => "+ " + oldTag(t)), ...(f.bad || []).map(t => "− " + oldTag(t))]; if (tags.length) s.appendChild(chips(tags));
-    if (f.comment) s.appendChild(el("p", "txt", f.comment));
-    if (marks) s.appendChild(el("div", "muted", T("Marks on the frame: {n}", { n: marks })));
-  }
-  // what the frame is: the prompt of a generated frame, or the caption and link of a reference
-  if (m.prompt) {
-    const ref = (m.folder || "").startsWith("ext/"), s = sec(ref ? T("Source") : T("Prompt")), p = el("div", "txt clamp");
-    linkify(p, m.prompt); s.appendChild(p);
-    if (m.prompt.length > 260) { const more = el("button", "more", T("Show in full")); more.onclick = () => { const o = p.classList.toggle("clamp"); more.textContent = o ? T("Show in full") : T("Collapse"); }; s.appendChild(more); }
-  }
-  // where it came from when the library has no prompt for it (refs/ and other frames outside the library, owner 2026-10-01:
-  // "the description must have a link I can click"): source page, video with its timestamp, image address, Gemini chat
-  if (!m.prompt) {
-    const s = sec(T("Source")), box = el("div", "txt"); s.appendChild(box); box.textContent = "…";
-    fetch("/api/meta?p=" + enc(it.path)).then(r => r.json()).then(d => {
-      const lines = [], yt = d.source_url && d.timestamp && /youtube\.com|youtu\.be/.test(d.source_url);
-      const secs = yt ? String(d.timestamp).split(":").reduce((a, v) => a * 60 + +v, 0) : 0;
-      const vid = yt ? d.source_url + (d.source_url.includes("?") ? "&" : "?") + "t=" + secs : "";
-      [vid || d.source_url, d.link, d.url, d.chat, d.image_url].filter(Boolean).forEach(u => lines.push(u));
-      const head = [d.site || d.channel, d.timestamp ? T("frame {t}", { t: d.timestamp }) : "", d.colour, d.model].filter(Boolean).join(" · ");
-      box.textContent = "";
-      if (head) box.appendChild(el("div", "muted", head));
-      const t = el("div", "txt"); box.appendChild(t);
-      linkify(t, [...new Set(lines)].join("\n") + (d.what ? "\n" + d.what : "") + (d.caption ? "\n" + d.caption : ""));
-      if (!lines.length && !d.what && !d.caption) box.textContent = T("The frame's json has no link to its source");
-    }).catch(() => { box.textContent = T("Couldn't read the frame's json"); });
-  }
-  // board notes about it
-  const VIA = { zone: T("in the area"), arrow: T("by an arrow"), overlap: T("lies on the frame"), group: T("through the group"), reply: T("as a reply") }, NN = [];
-  const near = picIndex();
-  for (const nid in board.items) { const n = board.items[nid]; if (!isNote(n) || !(n.text || "").trim()) continue; const v = linksOf(nid, near).get(id); if (v) NN.push([nid, n, v]); }
-  if (NN.length) {
-    const s = sec(NN.length === 1 ? T("Note from the board") : `${T("Notes from the board")} · ${NN.length}`);
-    NN.forEach(([nid, n, v]) => {
-      const b = el("button", "inote"); b.style.setProperty("--nc", noteCol(n)[0]); b.title = T("Go to the note");
-      b.innerHTML = `<div class="t">${mdHtml(n.text)}</div><div class="muted">${[...v].map(x => VIA[x] || x).join(", ")}</div>`;
-      b.onclick = () => { goTo(nid); render(); }; s.appendChild(b);
-    });
-  }
-  // its place on the board
-  // the same picture inside image frames counts as a copy on the page (owner 2026-10-05)
-  const gid = Object.keys(board.groups).find(g => board.groups[g].members.includes(id)), inFrames = Object.values(board.items).filter(x => !isPic(x) && picsOf(x).includes(it.path)).length;
-  const copies = Object.values(board.items).filter(x => x.path === it.path).length + inFrames;
-  const place = [gid ? T("Group “{name}”", { name: (board.groups[gid].title || "").split("\n")[0] }) : T("Outside groups"), it.crop ? T("cropped") : "", copies > 1 ? T("copies on the page: {n}", { n: copies }) + (inFrames ? T(", in frames {n}", { n: inFrames }) : "") : ""].filter(Boolean);
-  sec(T("On the board")).appendChild(el("div", "txt", place.join(" · ")));
-  // tags
-  if ((m.owner_tags || []).length || (m.tags || []).length) {
-    const s = sec(T("Tags")); const w = chips(m.owner_tags || [], "own"); (m.tags || []).forEach(t => w.appendChild(el("span", "chip", ENGINE_TAG[t] ? T(ENGINE_TAG[t]) : t))); s.appendChild(w);
-  }
-  // references that went in with the prompt
-  if ((m.refpaths || []).length) {
-    const s = sec(T("References"), `${m.refpaths.length}`), g = el("div", "rf");
-    // a click opens the reference in the viewer, as «Открыть» does for the frame (owner 2026-10-03)
-    m.refpaths.forEach(r => { const im = el("img"); im.src = `/thumb?p=${enc(r)}&s=320`; im.title = r + " · " + T("open"); im.alt = ""; im.draggable = false; im.style.cursor = "zoom-in";
-      im.onclick = () => EMBED ? parent.postMessage({ type: "openFrame", path: r }, location.origin) : open(`/img?p=${enc(r)}`, "_blank"); g.appendChild(im); }); s.appendChild(g);
-  }
-  // the agent's questions and the owner's answers
-  if ((m.questions || []).length) {
-    const s = sec(T("AI questions"));
-    m.questions.forEach(q => { const d = el("div", "qa"); d.appendChild(el("p", "txt", q.q)); d.appendChild(el("p", q.a ? "txt ans" : "muted", q.a || T("no answer"))); s.appendChild(d); });
-  }
-  // the file
-  // the size, length, format and bytes are the header's (ui/infohead.js, owner 2026-10-09); here what made it, its batch and who changed it
-  const s = sec(T("File")), who = s.appendChild(el("div", "muted", [m.model, m.start ? T("batch") + " " + m.start : ""].filter(Boolean).join(" · ")));
-  window.hyEdited?.(who, BOARD, id, [it.path]); const pr = el("div", "prow"); pr.appendChild(el("div", "path", it.path)); s.appendChild(pr);
-  const rv = el("button", "rv"); rv.title = T("Show in Finder"); rv.setAttribute("aria-label", T("Show in Finder")); rv.innerHTML = (window.HY_IC || {}).finder || "";
-  rv.onclick = () => hyReveal([it.path], toast); pr.appendChild(rv);   // owner 2026-10-05
-  const foot = el("p", "ifoot hy-hint"); foot.innerHTML = T("<b>The AI reads</b> this: the frame's json and the board's notes"); root.appendChild(foot);
-}
-
 /* ---------- copy <-> original (owner 2026-09-30) ---------- */
 // the original is the first instance of a picture on the page, later ones are copies
 function origOf(id) { const p = board.items[id] && board.items[id].path; return p ? Object.keys(board.items).find(k => board.items[k].path === p) : null; }
@@ -3150,7 +3021,7 @@ const favVer = new Map();   // path -> number of the latest press: an answer to 
 function toggleFav(ids) {
   const paths = [...new Set(ids.map(id => hyCardFav.path(board.items[id])).filter(Boolean))]; if (!paths.length) return;   // a picture, an HTML page
   const want = !paths.every(p => ((byPath.get(p) || {}).feedback || {}).fav), flip = paths.filter(p => !((byPath.get(p) || {}).feedback || {}).fav === want);
-  setFav(paths, want); hyUndoFx.push({ undo: () => setFav(flip, !want), redo: () => setFav(flip, want) });
+  setFav(paths, want); hyUndoFx.push({ undo: () => setFav(flip, !want), redo: () => setFav(flip, want), label: "♥" });
 }
 function setFav(paths, want) {
   if (!paths.length) return; const was = new Map(paths.map(p => [p, (byPath.get(p) || {}).feedback])), ver = new Map(paths.map(p => [p, (favVer.get(p) || 0) + 1]));
@@ -3399,52 +3270,10 @@ stage.addEventListener("wheel", e => {
 }, { passive: false });
 
 /* ---------- drop from library, from Finder, from a web page; paste from the clipboard ---------- */
-// A picture from outside (a file, a copied image, an image dragged off a web page) is saved by the server into added/<day>/ and
-// lands on the board like a frame from the library (owner 2026-09-30: build moodboards from anything and comment on them).
-const isOuter = dt => { const t = [...dt.types]; return t.includes("Files") || (t.includes("text/uri-list") && !t.includes("text/x-frame")); };
-stage.addEventListener("dragover", e => { const t = [...e.dataTransfer.types]; if (t.includes("text/x-frame") || isOuter(e.dataTransfer)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+// A picture, a video or a PDF from outside is saved by the server into added/<day>/ and lands on the board (ui/outer.js, review/added.py).
+stage.addEventListener("dragover", e => { const t = [...e.dataTransfer.types]; if (t.includes("text/x-frame") || hyOuter.is(e.dataTransfer)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
 // a file dropped next to the board (on the toolbar, a panel) must not make the browser open it instead of the canvas
 ["dragover", "drop"].forEach(t => addEventListener(t, e => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files") && !e.defaultPrevented) e.preventDefault(); }));
-async function toUpload(file) {   // jpeg, png and webp go as they are; any other picture the browser can open (heic in Safari, avif, gif) goes as png
-  if (/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
-  try {
-    const bm = await createImageBitmap(file), c = document.createElement("canvas"); c.width = bm.width; c.height = bm.height; c.getContext("2d").drawImage(bm, 0, 0);
-    return await new Promise(r => c.toBlob(b => r(b || file), "image/png"));
-  } catch { return file; }
-}
-async function upload(src) {   // src: a File/Blob, or {url}
-  const r = src instanceof Blob
-    ? await fetch("/api/upload?name=" + enc(src.name || "clipboard"), { method: "POST", body: await toUpload(src) })
-    : await fetch("/api/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: src.url }) });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-async function addOuter(srcs, at) {
-  canvasOperations++;
-  try { return await addOuterImages(srcs, at); }
-  finally { canvasOperations--; }
-}
-async function addOuterImages(srcs, at) {
-  srcs = srcs.filter(Boolean); if (!srcs.length) return false;
-  status(srcs.length === 1 ? T("adding the image…") : T("adding {frames}…", { frames: frames(srcs.length) })); busy("upload", srcs.length === 1 ? T("saving the image…") : T("saving {frames}…", { frames: frames(srcs.length) }));
-  const got = [], bad = [];
-  for (const s of srcs) { try { got.push(await upload(s)); } catch (ex) { bad.push(String(ex.message || ex).replace(/^Error: /, "")); } }
-  if (got.length) {
-    got.forEach(g => byPath.has(g.path) || byPath.set(g.path, { path: g.path, name: g.path.split("/").pop().replace(/\.[^.]+$/, ""), folder: g.path.split("/").slice(0, -1).join("/"), feedback: {} }));
-    placePaths(got.map(g => g.path), at, got.map(g => g.ar), T("Added: {frames}, the files are in the folder {folder}", { frames: frames(got.length), folder: got[0].path.split("/").slice(0, -1).join("/") }));
-    if (EMBED) parent.postMessage({ type: "itemsChanged" }, location.origin); else loadLib();
-  }
-  busy("upload");
-  if (bad.length) { status(T("not added"), true); toast(bad[0], "error", { sticky: true }); } else { status(T("saved")); toast(srcs.length === 1 ? T("Image added") : T("Added: {frames}", { frames: frames(srcs.length) }), "success"); }
-  return true;
-}
-function outerOf(dt) {   // files first; else the picture's address from a web page (dragged image or link)
-  const files = [...(dt.files || [])].filter(f => f.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|heic|heif|avif|tiff?|bmp)$/i.test(f.name));
-  if (files.length) return files;
-  const html = dt.getData("text/html"), m = html && html.match(/<img[^>]+src=["']([^"']+)["']/i);
-  const url = (m && m[1]) || (dt.getData("text/uri-list") || "").split("\n").find(l => l && !l.startsWith("#"));
-  return url && /^https?:/.test(url.trim()) ? [{ url: url.trim() }] : [];
-}
 // a wave through the WebGL dots from where pictures land (owner 2026-10-04: «gravitational waves when we drop pictures there»)
 function dotWave(cx, cy, strength = 1) { if (!DOTSGL || !stage.classList.contains("dotsgl")) return; const r = stageBox(); DOTSGL.wave(cx - r.left, cy - r.top, strength); }
 // the WebGL dots follow the CSS dot layer's opacity (the entrance fades the grid in through it)
@@ -3459,7 +3288,7 @@ stage.addEventListener("drop", async e => {
   let paths = []; try { paths = JSON.parse(e.dataTransfer.getData("text/x-frames") || "[]"); } catch {}
   if (!paths.length) { const p = e.dataTransfer.getData("text/x-frame"); if (p) paths = [p]; }
   if (emptyOf(paths).length) { const ne = emptyOf(paths).length; paths = paths.filter(x => !emptyOf([x]).length); toast(T("{n} empty files stay in the library: there is nothing to place", { n: ne })); if (!paths.length) { e.preventDefault(); return; } }
-  if (!paths.length) { const o = outerOf(e.dataTransfer); if (o.length) { e.preventDefault(); dotWave(e.clientX, e.clientY); addOuter(o, toWorld(e.clientX, e.clientY)); } return; }
+  if (!paths.length) { const o = hyOuter.of(e.dataTransfer); if (o.length) { e.preventDefault(); dotWave(e.clientX, e.clientY); hyOuter.add(o, toWorld(e.clientX, e.clientY)); } return; }
   e.preventDefault(); dotWave(e.clientX, e.clientY, Math.min(1.6, .8 + paths.length / 20));
   const at = toWorld(e.clientX, e.clientY);
   if (paths.length > 600 && !await hyAsk({ title: T("Put {frames} on the canvas?", { frames: frames(paths.length) }), note: T("It takes room and memory"), ok: T("Put them") })) return;
@@ -3798,13 +3627,7 @@ stage.addEventListener("dblclick", e => {
   if (fid && isImgFile(board.items[fid])) { sel = new Set([fid]); render(); if (!(MODES && MODES.enter("image", [fid]))) startCrop(fid); return; }
   // a PDF and the other files the library draws (PSD, TIFF, HEIC, SVG): the crop, as before
   if (fid) { sel = new Set([fid]); startCrop(fid); return; }
-  // empty board (or inside a group frame): a new big title right here
-  const p = toWorld(e.clientX, e.clientY), id = uid("t"), before = snap();
-  // a new text is "Обычный"; zoomed far out, where that would be under 12 px on screen, the smallest size you can still read and edit
-  let size = 1; while (size < TSIZE.length - 1 && TSIZE[size].fs * cam.z < 12) size++;
-  const fs = TSIZE[size].fs * hyNewSize.text(cam.z);   // zoomed in, no bigger on screen than at 100 % (2026-10-07, ui/newsize.js)
-  board.items[id] = { type: "text", text: "", x: p.x, y: p.y - fs * .6, fs, size, w: 0, h: 0 };
-  render(); editText(id, before);
+  hyTextDoc.create(toWorld(e.clientX, e.clientY));   // empty board (or inside a group frame): a new big title right here (ui/textdoc.js)
 });
 // character under the pointer in a title (read before the text is swapped for the editor)
 function caretAt(e) {
@@ -3974,7 +3797,7 @@ function cutSel() {
   const n = items.filter(id => isPic(JSON.parse(before).items[id])).length;
   sel.clear(); commit(before, T("Cut: {what}, ⌘V pastes them on any page", { what: hySel.words(JSON.parse(before), items, groups) || T("1 object") }), { key: "clip" });
 }
-// ⌘V: a picture in the system clipboard (copied in Finder, a browser, a screenshot) is added as a new frame; otherwise the frames
+// ⌘V: a picture, a video or a PDF in the system clipboard (copied in Finder, a browser, a screenshot) is added as a new card; else the frames
 // copied on the board. The browser's paste event carries the clipboard; Safari sends none without a text field, so after a moment
 // the async clipboard API is asked instead.
 const CLIPMARK = "hyimg-canvas-frames-v0:";   // what ⌘C wrote before 2026-10-03, still read
@@ -3984,19 +3807,10 @@ function pasteKey() { if (hyPrevNo()) return; clearTimeout(pasteWait); pasteWait
 document.addEventListener("paste", e => {
   if (hyTyping(e)) return; if (PREV) { e.preventDefault(); return; }
   clearTimeout(pasteWait); pasteWait = null; e.preventDefault();
-  const o = outerOf(e.clipboardData), txt = e.clipboardData.getData("text/plain");
-  if (o.length && !txt.startsWith(CLIPMARK) && !isOwnLink(txt)) addOuter(o, lastPt); else if (o.length || isOwnLink(txt) || !hyTextDoc.paste(txt, lastPt)) paste(txt);
+  const o = hyOuter.of(e.clipboardData), txt = e.clipboardData.getData("text/plain");
+  if (o.length && !txt.startsWith(CLIPMARK) && !isOwnLink(txt)) hyOuter.add(o, lastPt); else if (o.length || isOwnLink(txt) || !hyTextDoc.paste(txt, lastPt)) paste(txt);
 });
-async function pasteFallback() {
-  pasteWait = null;
-  try {
-    for (const it of await navigator.clipboard.read()) {
-      const t = it.types.find(t => t.startsWith("image/"));
-      if (t) { const b = await it.getType(t); return addOuter([new File([b], "clipboard." + t.split("/")[1], { type: t })], lastPt); }
-    }
-  } catch {}
-  paste();
-}
+async function pasteFallback() { pasteWait = null; const o = await hyOuter.fromClip(); if (o.length) return hyOuter.add(o, lastPt); paste(); }
 async function paste(txt) {
   let mine = null; try { mine = JSON.parse(localStorage.getItem("cv.clip") || "null"); } catch {}
   const r = stage.getBoundingClientRect(), at = lastPt || { x: cam.x + (r.width / 2) / cam.z, y: cam.y + (r.height / 2) / cam.z };
@@ -4822,8 +4636,6 @@ addEventListener("blur", spaceOff);
 document.addEventListener("visibilitychange", () => { if (document.hidden) spaceOff(); });
 $("#dock").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setTimeout(() => { b.blur(); window.focus(); }); });
 
-$("#bnote").onclick = () => newNote(false);
-$("#btl").onclick = () => newTimeline(false);
 // open the frame in the review viewer (big picture, scores, notes); on its own page the canvas opens the picture in a new tab
 $("#iFav").onclick = () => { const id = [...sel][0]; if (id) toggleFav([id]); };   // a picture or an HTML page (toggleFav keeps those)
 $("#bundo").onclick = undo; $("#bredo").onclick = redo; $("#bfit").onclick = () => fit();   // not "= fit": the click event would arrive as the list of frames to show
@@ -4951,7 +4763,7 @@ function renamePage(id) {
     }
     if (ok && v && v !== pg.title) {   // one undo step (P4 B-49): ⌘Z gives the page its name back
       const was = pg.title, name = t => { const q = pages.find(x => x.id === id); if (q) { q.title = t; savePages(pages); renderPages(); } };
-      pg.title = v; savePages(pages); hyUndoFx.push({ undo: () => name(was), redo: () => name(v) });
+      pg.title = v; savePages(pages); hyUndoFx.push({ undo: () => name(was), redo: () => name(v), label: T("step::Page name") });
     }
     renderPages(); window.focus();
   };

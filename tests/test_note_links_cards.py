@@ -136,7 +136,7 @@ def test_a_note_links_html_frames_3d_and_dev_cards(server):
 
         # the card's Info lists the note, as a picture's does
         page.evaluate("() => { sel = new Set(['d']); render(); }")
-        notes = page.evaluate("() => [...document.querySelectorAll('#iNotes .inote')].map(b => b.textContent)")
+        notes = page.evaluate("() => [...document.querySelectorAll('#iNotes .inote')].map(b => b.textContent + ' | ' + b.title)")   # how: the tooltip (round 18)
         assert len(notes) == 1 and "Arrow to dev" in notes[0] and "by an arrow" in notes[0]
         shot(page, "dev-card-info-notes.png")
 

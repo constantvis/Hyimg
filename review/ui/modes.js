@@ -332,6 +332,21 @@
       // a mode entered by other means than its segment (a double click on a picture enters Image, owner 2026-10-07): true when it goes in
       enter: (k, ids) => enter(k, ids),
       leaveFirst,
+      // the open Studio's card back between its panels, as when it opened (the view % in its dock, ui/boarddock.js); a Studio with its own
+      // camera fits itself (fit()), one that keeps the camera (fit: false) is left as it is
+      refit() {
+        const k = openKey(), d = M.get(k); if (k === "board" || !d || d.fit === false || !hy) return false;
+        if (d.fit) { safe(() => d.fit()); return true; }
+        const id = cardOf(k, safe(sel, [])), c = id && fitCam(id); if (!c) return false;
+        flew = id; fly(c, 380); return true;
+      },
+      // the Studio one selected card opens on the board, for the chip over it (ui/studiochip.js, owner 2026-10-10 round 19 switch-d): {key,
+      // name, color} of the first mode whose target is that card, the order the switch shows them; null for none, several or a Studio open
+      studioFor(ids) {
+        if (openKey() !== "board" || !ids || ids.length !== 1) return null;
+        for (const [k, d] of defs()) if (!d.board && safe(() => d.target && d.target(ids), null) === ids[0]) return { key: k, name: d.name || d.label || k, color: d.color ? String(d.color) : "" };
+        return null;
+      },
       get open() { return openKey(); },
       get hint() { return hintH; },   // the open Studio's Hint bar: used(id) when a key's action came by the mouse
     };

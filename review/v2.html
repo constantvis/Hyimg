@@ -909,7 +909,7 @@ html:has(.viewer.open), body:has(.viewer.open) { overflow: hidden; overscroll-be
         <div class="pname" id="vName"></div>
         <div class="psub"><span id="vPos"></span><span class="dot">·</span><span id="vSub"></span></div>
       </div>
-      <button class="icon" id="help" aria-label="Shortcuts" aria-expanded="false">?</button>
+      <button class="icon" id="help" title="Shortcuts" aria-label="Shortcuts" aria-expanded="false"><svg data-ic="tip" width="18" height="18" stroke-width="1.8"></svg></button>
       <button class="icon" id="close" aria-label="Close">✕</button>
     </div>
     <div class="helpbox" id="helpbox" hidden>
@@ -1206,7 +1206,7 @@ function treeHtml() {
   const path = crumbs.length ? crumbs.join(`<span class="fsep">${HY_CHEV}</span>`) + `<span class="fcnt">${T.num(node ? node.n : 0)}</span>` : `<span class="fcr all">${T("All folders")}</span>`;
   const shown = docks() || sects() || DRAWER;
   const bar = `<button class="fticon" data-ftree aria-pressed="${shown}" title="${shown ? T("Hide folders") : T("Show folders")}" aria-label="${shown ? T("Hide folders") : T("Show folders")}">${hyIcon("folder", 14, 1.8)}${HY_CHEV}</button><span class="fpath">${path}</span>`
-    + (window.hyFsBar ? hyFsBar() : "")   // «Разложить по папкам как на доске» and the «Как на доске» plate (ui/layout-sync.js, 2026-10-05)
+    + (window.hyLibPanel ? hyLibPanel.steps() : "") + (window.hyFsBar ? hyFsBar() : "")   // the arrows (round 18); «Разложить по папкам как на доске» (2026-10-05)
     + (FPICK.size ? `<span class="fpk" title="${T("Marked folders are dragged onto the canvas together")}">✓ ${FPICK.size}</span><button class="fhbtn" data-fclear title="${T("Clear marks")}">${T("clear")}</button>` : "");
   return [bar, `<nav class="ftree">`
     + (true ? `<div class="frow ${c ? "" : "on"}" data-f="" style="--d:0"><button class="fx" disabled></button>${hyIcon("grid", 15, 1.8, "fi")}<span class="fn">${T("All folders")}</span><span class="fc">${T.num(root.n)}</span></div>`
@@ -1541,7 +1541,7 @@ function render() {
   ASKN = items.reduce((a, i) => a + (openQs(i).length ? 1 : 0), 0);   // the «?» chip of the filter bar says how many (renderTF)
   const groups = new Map();
   view.forEach((i, idx) => { const k = i.folder; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([i, idx]); });
-  const batchHtml = arr => {
+  const quiet = (k, t) => (k === "." ? t : k).split("/").join(" · "), batchHtml = arr => {   // quiet: the heading beside the board (round 18)
     if (MODE3D) { GRIDS.push(arr); return `<div class="grid" data-g="${GRIDS.length - 1}" data-n="${arr.length}"></div>`; }   // 3D files: no batches
     const bs = new Map(); arr.forEach(x => { const b = x[0].batch; if (!bs.has(b)) bs.set(b, []); bs.get(b).push(x); });
     return [...bs.entries()].map(([b, xs]) => {
@@ -1556,7 +1556,7 @@ function render() {
   const c0 = $("#coll").value, emptyN = MODE3D ? 0 : items.filter(i => i.empty && i.folder.split("/")[0] !== "_rejected" && (!c0 || inFolder(i.folder, c0))).length;
   const emptyNote = emptyN ? `<p class="emptynote">${c0 ? T("{n} files here are empty", { n: emptyN }) : T("{n} files in all folders are empty", { n: emptyN })}</p>` : "";
   $("#list").innerHTML = emptyNote + (view.length ? [...groups.entries()].map(([k, arr]) =>
-    `<section><h2>${arr[0][0].title} <span>${k} · ${arr.length}</span></h2>${batchHtml(arr)}</section>`).join("")
+    `<section><h2>${arr[0][0].title} <span>${k} · ${arr.length}</span><i class="lqh"><b>${quiet(k, arr[0][0].title)}</b><em>${arr.length}</em></i></h2>${batchHtml(arr)}</section>`).join("")
     : `<p class="empty">${T("Nothing matches these filters")}</p>`);
   // counter (owner 2026-09-29): frames shown now / frames in the chosen collection; filters and search make the left number shrink
   const c = $("#coll").value;

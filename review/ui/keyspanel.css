@@ -10,13 +10,6 @@
 #keys .kp-in { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 #keys .kp-bh { flex: none; height: 58px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 12px 0 14px; }
 #keys .kp-bh .sp { flex: 1; }
-/* hy-allow: hy-primitive r15's dark pill of two 30 px tabs, which <hy-segmented> has no variant of yet (its files are another session's today) */
-#keys .kp-tabs { display: inline-flex; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); }
-#keys .kp-tab { height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--sub);
-  font: 500 13.5px var(--sans); white-space: nowrap; cursor: pointer; transition: background-color .18s ease, color .18s ease; }
-#keys .kp-tab:hover { color: var(--ink); }
-#keys .kp-tab.on { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, var(--panel)); }
-#keys .kp-tab em { font: 400 11.5px var(--sans); font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
 #keys .kp-x { width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--sub); cursor: pointer; }
 #keys .kp-x:hover { background: var(--hy-hov); color: var(--ink); }
 #keys .kp-x > svg { width: 13px; height: 13px; }

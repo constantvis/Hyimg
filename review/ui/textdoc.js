@@ -241,6 +241,17 @@
 
   window.hyTextDoc = {
     split, isDoc, html: bodyHtml, paint,
+    // a new text, its field open: at p (board units; a double click on the empty board) or in the middle of what is on screen («+» › Text
+    // in the dock, owner 2026-10-10). "Обычный" size; zoomed far out, where that would be under 12 px on screen, the smallest one still
+    // read and edited; zoomed in, no bigger on screen than at 100 % (ui/newsize.js)
+    create(p) {
+      if (!p && window.hyPrevNo && hyPrevNo()) return null;
+      const r = stage.getBoundingClientRect(), at = p || toWorld(r.left + INSET + (r.width - INSET) / 2, r.top + r.height / 2), id = uid("t"), before = snap();
+      let size = 1; while (size < TSIZE.length - 1 && TSIZE[size].fs * cam.z < 12) size++;
+      const ts = hyTextSize.make(size, cam.z);   // its own scale kept: H1, H2 and the A's stay in it (ui/textsize.js)
+      board.items[id] = { type: "text", text: "", x: at.x, y: at.y - ts.fs * .6, ...ts, w: 0, h: 0 };
+      render(); editText(id, before); return id;
+    },
     // a resize drag on a text: a side strip (e, w) sets a document's width; a corner scales the type, and a document's width with it
     resize(it, it0, c, k, d) {
       if ((c === "e" || c === "w") && isDoc(it)) { it.tw = Math.round(Math.max(it.fs * 4, (it0.tw || autoW(it0)) + d)); return; }
@@ -262,8 +273,8 @@
       if (!t.trim() || /^(hyimg:\/\/|hyimg-canvas-frames-v0:)/.test(t) || (/^https?:\/\/\S+$/.test(t) && own())) return false;
       const r = stage.getBoundingClientRect(), p = at || { x: cam.x + r.width / 2 / cam.z, y: cam.y + r.height / 2 / cam.z };
       let size = 1; while (size < TSIZE.length - 1 && TSIZE[size].fs * cam.z < 12) size++;
-      const fs = TSIZE[size].fs * hyNewSize.text(cam.z), id = uid("t"), before = snap();
-      board.items[id] = { type: "text", text: t, x: p.x, y: p.y, fs, size, w: 0, h: 0 };
+      const ts = hyTextSize.make(size, cam.z), fs = ts.fs, id = uid("t"), before = snap();
+      board.items[id] = { type: "text", text: t, x: p.x, y: p.y, ...ts, w: 0, h: 0 };
       if (isDoc(board.items[id])) board.items[id].tw = Math.round(fs * 14);
       sel = new Set([id]); render(); regroup([id]); commit(before, T("Pasted: text")); return true;
     },

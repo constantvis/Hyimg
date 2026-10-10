@@ -190,6 +190,25 @@ class TestAddedPictures:
         names = [server.add_image(png_bytes(2, 2, (n, 0, 0)), name="s.png")["path"] for n in range(3)]
         assert names == ["added/261006/120000-s.png", "added/261006/120000-s~2.png", "added/261006/120000-s~3.png"]
 
+    def test_a_video_is_kept_as_it_is_read_in_pieces_and_not_twice(self, lib, monkeypatch):
+        """owner 2026-10-10 («не могу перетащить видео на наш канвас»): review/added.py add_file"""
+        import io
+
+        class Trickle(io.BytesIO):   # a socket gives what it has: never more than 7 bytes a read
+            def read(self, n=-1): return super().read(min(n, 7))
+        monkeypatch.setattr(server, "video_probe", lambda full: (1.0, [640, 360], "h264", None, 30))
+        data = b"\x00\x00\x00\x18ftypmp42" + bytes(range(256)) * 9
+        out = server.added.add_file(server, Trickle(data), len(data), "My Clip.MP4")
+        assert out["path"].startswith("added/") and out["path"].endswith("-my-clip.mp4") and out["kind"] == "video" and out["ar"] == 640 / 360
+        assert (lib / out["path"]).read_bytes() == data
+        meta = json.loads((lib / (out["path"] + ".json")).read_text())
+        assert meta["size"] == [640, 360] and meta["original_name"] == "My Clip.MP4" and meta["how"] == "file" and len(meta["sha1"]) == 40
+        again = server.added.add_file(server, io.BytesIO(data), len(data), "other.mp4")
+        assert again == {**out, "again": True}
+        with pytest.raises(ValueError):   # the sender went away: nothing is kept, no piece is left behind
+            server.added.add_file(server, io.BytesIO(data[:100]), len(data) + 1, "cut.mp4")
+        assert sorted(p.name for p in (lib / "added").rglob("*") if p.is_file()) == sorted([out["path"].split("/")[-1], out["path"].split("/")[-1] + ".json"])
+
     def test_a_plugin_snapshot_goes_to_its_folder_with_its_json(self, lib, png_bytes):
         out = server.save_snapshot(png_bytes(4, 2), "Front View", "3d/shots", {"camera": 1})
         meta = json.loads((lib / out["path"]).with_suffix(".json").read_text())

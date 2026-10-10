@@ -16,3 +16,8 @@
 #ntf .nt b { font-weight: 600; } #ntf .nt p { margin: 0; color: var(--sub); line-height: 1.45; }
 #ntf .nt .who { display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--sub); font-size: 11px; }   /* the face, then the words */
 #ntf .nt .pv { display: flex; gap: 4px; margin-top: 2px; } #ntf .nt .pv img { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; background: var(--raise); }
+/* the board's bell header: the tabs All | Notifications | Comments with their counts, <hy-segmented variant=pill> as the «?» panel's
+   «Tips | All keys» (owner 2026-10-10), in a header as tall as the pill and its 8 px of air (ui/bellrow.js hyBellTabs) */
+#ntf .nh-tabs { height: 52px; padding: 0 8px; } #ntf .nh-tabs .sp { flex: 1; }
+#ntf .nx { width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--sub); cursor: pointer; }
+#ntf .nx:hover { background: var(--hy-hov); color: var(--ink); } #ntf .nx > svg { width: 13px; height: 13px; }

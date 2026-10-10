@@ -169,7 +169,7 @@
     };
     const end = ev => {
       removeEventListener("pointermove", mv, true); removeEventListener("pointerup", end, true);
-      if (!moved) { C.open === id ? close() : thread(id); return; }
+      if (!moved) { C.open === id ? close() : reply(id); return; }
       const p = toWorld(ev.clientX, ev.clientY), at = AN().anchorAt({ x: p.x, y: p.y, w: 0, h: 0 });
       act({ op: "move", id, anchor: at.anchor, at: at.rel(p.x, p.y) }, clone(t));
     };
@@ -240,6 +240,15 @@
     const box = el.querySelector(".cm-msgs"); box.scrollTop = box.scrollHeight;
     // a thread opened anew says so (Dev Studio's tree selects its element's row); made: the one just written, its row is where it was
     if (fresh) try { window.dispatchEvent(new CustomEvent("hy-comment-open", { detail: { id, thread: t, made: C.made === id } })); } catch {}
+  }
+  // a thread opened by a person (its pin on the board or in a Studio, a row's count, the list, the bell): the cursor waits in its reply at
+  // once, as in a new annotation (owner 2026-10-10, round 18 question 20, version A: «Да, все окей»). One rule for every Studio, they all
+  // open threads through hyComments.open. The 8 s refresh draws an open thread anew (thread) and leaves the focus where it is
+  function reply(id) {
+    thread(id); if (C.open !== id) return;
+    const put = () => { const ta = document.querySelector("#cmthread.open textarea"); if (!ta || C.open !== id || document.activeElement === ta) return;
+      ta.focus({ preventScroll: true }); ta.setSelectionRange(ta.value.length, ta.value.length); };
+    put(); setTimeout(put, 0);   // a click's own focus (a Studio's frame) comes after it
   }
   // a new thread at board point p; o: {anchor, at, element} when the caller knows better (Dev mode: an element of the page), cancel: called
   // when the box closes unsent
@@ -438,7 +447,7 @@
     const p = where(t); if (!p) return;
     const r = stage.getBoundingClientRect();
     cam.x = p.x - (r.width / 2 - 120) / cam.z; cam.y = p.y - r.height / 2 / cam.z; if (typeof saveCam === "function") saveCam(); render();
-    thread(id);
+    reply(id);
   }
 
   // Move to page takes the annotations of what goes (P4 B-32): a thread on a moved thing is written on the other page with the thing's
@@ -495,7 +504,7 @@
     load(); setInterval(() => { if (!document.hidden && !C.busy) load(); }, 8000);
   }
   const escape = () => { if (AT.list.length) { mentionsOff(); return true; } if (C.open || C.draft) { close(); return true; } return false; };
-  window.hyComments = { draw, follow, list, open: thread, close, cancelDraft, load, escape, newAt, light, carry, position: f => { PLACE.push(f); draw(); },
+  window.hyComments = { draw, follow, list, open: reply, close, cancelDraft, load, escape, newAt, light, carry, position: f => { PLACE.push(f); draw(); },
     bounds: f => { C.bounds = typeof f === "function" ? f : null; follow(); },   // a Studio's free part for the open thread (null: the stage)
     threads: () => [...C.threads.values()],
     openCount: () => [...C.threads.values()].filter(t => !t.resolved).length, authors: () => [...C.threads.values()].map(t => t.by).filter(Boolean), get state() { return C; } };

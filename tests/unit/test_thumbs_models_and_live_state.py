@@ -118,4 +118,4 @@ class TestChangeStamps:
     def test_fetching_a_picture_needs_a_web_address(self, lib):
         for url in ("file:///etc/hosts", "ftp://x/y.png", "/etc/hosts", "javascript:alert(1)"):
             with pytest.raises(ValueError):
-                server.fetch_image(url)
+                server.added.fetch_image(server, url)   # review/added.py since 2026-10-10

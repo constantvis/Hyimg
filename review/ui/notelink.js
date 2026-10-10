@@ -145,21 +145,6 @@
     if (!el.matches || !el.matches(".it, .plg, .tx, .tl, .grp, .note") || !el.dataset.id || el.dataset.id === nid) return false;
     return el.classList.contains("grp") ? !!board.groups[el.dataset.id] : target(board.items[el.dataset.id]) || isNote(board.items[el.dataset.id]);
   }
-  // «Notes from the board» in the Info of a card, as a picture has them (canvas.html infoCard): each note, how it is linked, a click goes to it
-  function cardNotes(root, id) {
-    const near = picIndex(), NN = [];
-    for (const nid in board.items) { const n = board.items[nid]; if (n.type !== "note" || !(n.text || "").trim()) continue; const v = linksOf(nid, near).get(id); if (v) NN.push([nid, n, v]); }
-    if (!NN.length) return;
-    const VIA = { zone: T("in the area"), arrow: T("by an arrow"), overlap: T("lies on the card"), group: T("through the group"), reply: T("as a reply") };
-    const s = document.createElement("section"), h = document.createElement("div"); s.className = "isec"; h.className = "sh";
-    h.textContent = NN.length === 1 ? T("Note from the board") : `${T("Notes from the board")} · ${NN.length}`; s.appendChild(h);
-    NN.forEach(([nid, n, v]) => {
-      const b = document.createElement("button"); b.className = "inote"; b.style.setProperty("--nc", noteCol(n)[0]); b.title = T("Go to the note");
-      b.innerHTML = `<div class="t">${mdHtml(n.text)}</div><div class="muted">${[...v].map(x => VIA[x] || x).join(", ")}</div>`;
-      b.onclick = () => { goTo(nid); render(); }; s.appendChild(b);
-    });
-    root.appendChild(s);
-  }
   // ---- the note dots on a thing (owner 2026-10-08: «each video shows only ONE blue dot» under two notes): one dot per note that links
   // it, in that note's colour, in the order the notes were made, left to right; 3 at most, then «+N». Hover: that note is outlined, a
   // click selects it. A reply's dot only on what it links itself, not on the things of the note it answers.
@@ -354,6 +339,6 @@
     return h + "</g>";
   }
   // hy-allow-end
-  window.hyNoteLink = { target, caught, kind, index, links, what, meta, label, dropEl, cardNotes, WORD,
+  window.hyNoteLink = { target, caught, kind, index, links, what, meta, label, dropEl, WORD,
     replyOf, replies, circle, reply, chain, chainSvg, replyInfo, marks, paintDots, lodDots, rowW, placeReply, anchors, arrowSvg, underCut, side, bz, holds };   // the last four: ui/connectors.js
 })();

@@ -16,7 +16,8 @@ export { HySegmented } from "./segmented.js";
 export { HyKeyHint } from "./keyhint.js";   // also window.hyKeyHint for the classic scripts
 export { HyTip } from "./tip.js";   // also window.hyTip for the classic scripts
 export { HyStudioActions } from "./actions.js";   // a Studio's session actions, top right (owner 2026-10-09)
-export { HyOpenIn } from "./openin.js";   // «Open in <Browser>»; its way to the app is window.hyBrowsers
+export { HySplit } from "./split.js";   // the one split button ▾ (owner 2026-10-10, round 18: Info's Open ▾)
+export { HyOpenIn } from "./openin.js";   // «Open in <Browser>», a hy-split; its way to the app is window.hyBrowsers
 export { HyMiniToggle } from "./minitoggle.js";   // round 15's micro UI (owner 2026-10-09, r15-micro.html: «Все топ, все делай»)
 export { HyScope } from "./scope.js";
 export { HyLed } from "./led.js";

@@ -1,7 +1,7 @@
 // The ? panel (the top row's ?, canvas.html #keys), round 15's Tips (owner 2026-10-09, ♥ on Concepts/html/editors-concepts/r15/r15-tips.html,
 // version 1, the list; before that, on round 14's Tips: «Почему здесь у нас нет иконок этих кнопок? И у нас же есть шорткат-символы»).
-// The board's dark side panel, 340 px as History; its header as r15 draws it (58 px, a pill of two tabs, no icons), not the blocks'
-// standard 24 px tabs of round 14 (owner 2026-10-10: round 15 wins where they differ). Two tabs:
+// The board's dark side panel, 340 px as History; its header as r15 draws it (58 px, a pill of two tabs, no icons: <hy-segmented
+// variant=pill>, the bell's tabs too), not the blocks' standard 24 px tabs of round 14 (owner 2026-10-10: round 15 wins where they differ). Two tabs:
 //   Tips      «Here · Board»: a few things to do here, each with its icon and its keys; «Keys here»: the main keys, a row each
 //   All keys  every row canvas.html writes, and those other modules add later (ui/anncore.js C, ui/arrange.js after ⌥D, ui/annotate.js P)
 // Every row is the action's icon (the menus' and the dock's, ui/icons.js HY_IC), its words, its keys at the right end, one cap per key
@@ -12,10 +12,11 @@
   const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "/ui/keyspanel.css";
   (document.head || document.documentElement).appendChild(css);
   const t = (s, o) => (window.T ? window.T(s, o) : s);
-  const ICON = { "N": "note", "C": "comment", "P": "pen", "⌘M": "library", "⌘.": "eyeoff", "⌘GG": "group", "⇧⌘G⇧G": "ungroup", "⌘]⌘[": "orderForward",
+  const ICON = { "N": "note", "C": "comment", "P": "pen", "⌘M": "library", "⌘.": "eyeoff", "⌘G": "group", "⇧⌘G": "ungroup", "⌘]⌘[": "orderForward",
     "⌥⌘]⌥⌘[": "orderFront", "⇧C": "crop", "⌘C⌘X": "copy", "⌘V": "paste", "⌘D": "duplicate", "⌥A": "tidyBlock", "⌥S": "tidyRow", "⌥D": "tidy", "⌫": "trash",
     "⌘Z⇧⌘Z": "undo", "⌘A": "select", "Esc": "close", "↵": "open", "F": "heart", "L": "timeline", "190": "opacity", "⌥P": "split", "⇧⌘C": "image",
     "⌘F": "search", "\\": "library", "X⌘Z": "crop", "⇧1": "fit", "⌘X⌘V": "toPage", "←↑→↓": "move", "↵Esc": "check", "R": "frame", "⌘B⌘I": "editText", "Space": "hand", "⌘": "zoomIn", "⌥": "copy" };
+  ICON["⌥↑⌥↓"] = "library";   // the library's collection above, below (round 18)
   // a row without keys of its own, by its first words (English, as canvas.html writes them; compared in the page's language)
   const WORDS = { "drag": "library", "scroll wheel, trackpad": "hand", "marquee,": "select", "double-click on empty space": "heading",
     "a note over frames": "link", "a note inside a group, linked to nothing": "group", "the note's yellow dot": "drawArrow", "small and big": "editText",
@@ -59,9 +60,10 @@
 
   function build(panel) {
     const legacy = [...panel.children].filter(r => r.tagName === "DIV" && r.querySelector(":scope > .k"));
-    panel.innerHTML = `<div class="kp-in"><div class="kp-bh"><span class="kp-tabs" role="tablist">
-        <button type="button" class="kp-tab on" role="tab" aria-selected="true" data-kt="tips"><span></span></button>
-        <button type="button" class="kp-tab" role="tab" aria-selected="false" data-kt="all"><span></span><em></em></button></span>
+    // the tabs: <hy-segmented variant=pill>, the same control as the bell's All | Notifications | Comments (owner 2026-10-10)
+    panel.innerHTML = `<div class="kp-in"><div class="kp-bh"><hy-segmented class="kp-tabs" variant="pill" value="tips">
+        <button type="button" class="kp-tab on" value="tips" role="tab" aria-selected="true" data-kt="tips"><span></span></button>
+        <button type="button" class="kp-tab" value="all" role="tab" aria-selected="false" data-kt="all"><span></span><em></em></button></hy-segmented>
         <span class="sp"></span><button type="button" class="kp-x">${svg("close")}</button></div>
       <label class="kp-s">${svg("search")}<input type="search" autocomplete="off" spellcheck="false"></label>
       <div class="kp-body"><section data-kt="tips"><div class="kp-lb" data-l="here"><span></span><em></em></div><div class="kp-tips"></div>
@@ -95,6 +97,7 @@
     P.panel.querySelector(".kp-lnk").textContent = t("All {n}", { n });
   }
   function show(which) {
+    const tabs = P.panel.querySelector(".kp-tabs"); tabs.setAttribute("value", which);   // the primitive marks the chosen tab (before it is defined: these marks)
     P.panel.querySelectorAll(".kp-tab").forEach(b => { const on = b.dataset.kt === which; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
     P.panel.querySelectorAll(".kp-body > section").forEach(s => { s.hidden = s.dataset.kt !== which; });
     filter();

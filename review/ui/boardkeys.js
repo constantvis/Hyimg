@@ -43,9 +43,13 @@
     // ⌘A: the groups no group holds and every card outside them (P4 B-21: the cards without their groups left empty frames on ⌫ and a drag)
     if (mod && (k === "a" || k === "ф")) { e.preventDefault(); sel = new Set(hySel.tops()); selArrow = null; render(); return; }   // key: ⌘A
     if (mod) return;
+    // the library's collection above, below (round 18, owner 2026-10-10): the library beside the board steps, as its path row's arrows (ui/libpanel.js)
+    if (e.altKey && !mod && !e.shiftKey && (k === "ArrowUp" || k === "ArrowDown") && EMBED) {   // key: ⌥↑ ⌥↓
+      e.preventDefault(); parent.postMessage({ type: "libStep", dir: k === "ArrowUp" ? -1 : 1 }, location.origin); return;
+    }
     if (/^Arrow(Left|Right|Up|Down)$/.test(k) && !e.altKey) { if (nudgeOk()) { e.preventDefault(); nudge(k, e.shiftKey); } return; }   // key: ←↑→↓ a screen pixel (⇧ ten)
-    if (k === "g" || k === "G" || k === "п" || k === "П") { e.preventDefault(); e.shiftKey ? ungroup() : makeGroup(); }   // key: G ⇧G; the g is not typed into the new name
-    else if (e.shiftKey && is("KeyC", "c", "с")) startCropSel();   // key: ⇧C; C alone starts an annotation (ui/anncore.js)
+    // G alone groups no more (owner 2026-10-10 on round 18: grouping is ⌘G only, G is Move in the Studios); it was the board's since 2026-09-29
+    if (e.shiftKey && is("KeyC", "c", "с")) startCropSel();   // key: ⇧C; C alone starts an annotation (ui/anncore.js)
     else if (k === "Backspace" || k === "Delete") {   // key: ⌫
       const tli = tlSel && board.items[tlSel.id], q = tli && tli.points.find(x => x.id === tlSel.pid);
       if (q && q.t !== 0) { const before = snap(); tli.points = tli.points.filter(x => x !== q); tlSel = null; hySel.deleted(before, [], [], T("a dot")); }   // a dot, not the line
@@ -61,7 +65,7 @@
     }
     else if (is("KeyN", "n", "т")) { e.preventDefault(); newNote(true); }   // key: N; the note's field takes focus right away: without this the "n" itself was typed into it (owner 2026-10-01)
     else if (k === "Escape") { sel.clear(); tlSel = null; selArrow = null; render(); }   // key: Esc, the last: the selection, a selected arrow too (P4 B-20)
-    else if (k === "Enter" && !e.shiftKey && !e.altKey && sel.size === 1 && hyInfoHead.open()) e.preventDefault();   // key: ↵ the Info header's Open (P4 B-36)
+    else if (k === "Enter" && !e.shiftKey && !e.altKey && sel.size === 1 && (hyStudioChip.enter() || hyInfoHead.open())) e.preventDefault();   // key: ↵ the card's Studio (its chip), else Info's Open
     else if (k === "!" || (e.shiftKey && e.code === "Digit1")) fit();   // key: ⇧1
     else if (k === "\\") EMBED ? parent.postMessage({ type: "toggleCanvasFull" }, location.origin) : toggleLib();   // key: \ in the app ⌘M's, never the old library (P4 B-13)
   }

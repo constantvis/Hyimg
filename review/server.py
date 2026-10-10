@@ -4,7 +4,7 @@
 # Identical copies of the image elsewhere in the library (same name and byte size, e.g. in _favs)
 # get the same feedback. Every change is also appended to _review/feedback-log.jsonl as history.
 # Run: python3 server.py [port]   (default 4180), open http://localhost:4180
-import fcntl, hashlib, io, json, os, re, shutil, subprocess, sys, tempfile, threading, time, urllib.parse, urllib.request
+import fcntl, hashlib, io, json, os, re, shutil, subprocess, sys, tempfile, threading, time, urllib.parse
 from contextlib import ExitStack
 from config import CACHE_ROOT, CODE_DIR, HERE, W, BOARDS, NOTES, PROJECT_ID, RULES, MOUNTS, MOUNT_SETS, real
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -25,6 +25,7 @@ import notifplace, notifsince   # every notification has a place on the board; t
 import feedthumbs, favread, copyimg   # pictures in the bell: an area's crop, a card's still, the board around (2026-10-08); ♥ read by path; ⇧⌘C
 import people, comments, boardid   # who wrote what (profile, stamps, shared or private boards); drawings and comments on the board (2026-10-07)
 import plugins_admin   # Settings › Plugins: where plugins are, which are on, a page's hold on one, add and remove (owner 2026-10-07)
+import added   # what is pasted or dropped onto the board from outside: pictures, videos, PDFs (owner 2026-10-10)
 import arrange, boardclip   # right click › Arrange runs the agents' layout patterns (owner 2026-10-09); ⌘C ⌘V from board to board (P4 B-05)
 tags.configure(RULES)   # the board's theme tags, from its rules
 
@@ -1140,60 +1141,12 @@ def layout_kick():
     t = threading.Timer(4.0, _layout_auto); t.daemon = True; _LAYOUT["timer"] = t; t.start()
 
 
-# Pictures the owner pastes (⌘V) or drops onto the canvas (owner 2026-09-30: "to build moodboards and comment on them").
-# One folder for everything added by hand, a subfolder per day: added/260930/174012-name.jpg, with a sidecar json saying where it came from.
-# jpeg, png and webp are kept byte for byte; anything else Pillow can open is stored as png. The same bytes added twice reuse the first file.
-ADDED = "added"
-MAX_UPLOAD = 80 * 1024 * 1024
+# Pictures, videos and files the owner pastes (⌘V) or drops onto the board from outside: added/<day>/ with a json (review/added.py)
+ADDED, MAX_UPLOAD = added.ADDED, 80 * 1024 * 1024
 
 
-def _added_sha():
-    out = {}
-    for root, _d, files in os.walk(os.path.join(W, ADDED)):
-        for f in files:
-            if f.endswith(".json"):
-                try:
-                    m = json.load(open(os.path.join(root, f), encoding="utf-8")); out[m["sha1"]] = m["path"]
-                except (OSError, ValueError, KeyError, TypeError):
-                    pass
-    return out
-
-
-def add_image(data, name="", url=""):
-    if not data:
-        raise ValueError("empty")
-    sha = hashlib.sha1(data).hexdigest()
-    with LOCK:
-        known = _added_sha().get(sha) or dedup.known([sha]).get(sha)   # anywhere in the library, not only among pasted pictures
-        if known and os.path.exists(real(known)):
-            im = Image.open(real(known)); return {"path": known, "ar": im.width / im.height, "again": True}
-        try:
-            im = Image.open(io.BytesIO(data)); im.load()
-        except Exception:
-            raise ValueError(tr("not an image, or a format that does not open (jpg, png, webp, gif and tiff work)",
-                                "это не картинка или формат не открывается (подходят jpg, png, webp, gif, tiff)"))
-        fmt = (im.format or "").upper()
-        ext = {"JPEG": ".jpg", "MPO": ".jpg", "PNG": ".png", "WEBP": ".webp"}.get(fmt)
-        if not ext:   # gif, tiff, bmp, heic (if a plugin is there): store the first frame as png
-            buf = io.BytesIO(); (im if im.mode in ("RGB", "RGBA", "L", "LA") else im.convert("RGBA")).save(buf, "PNG"); data, ext = buf.getvalue(), ".png"
-        stem = re.sub(r"[^a-z0-9а-яё_-]+", "-", os.path.splitext(os.path.basename(name or url.split("?")[0]))[0].lower()).strip("-")[:40] or "image"
-        day = time.strftime("%y%m%d"); d = os.path.join(W, ADDED, day); os.makedirs(d, exist_ok=True)
-        base = time.strftime("%H%M%S") + "-" + stem; n = 2
-        while os.path.exists(os.path.join(d, base + ext)): base = base.rsplit("~", 1)[0] + f"~{n}"; n += 1
-        open(os.path.join(d, base + ext), "wb").write(data)
-        rel = f"{ADDED}/{day}/{base}{ext}"
-        now = time.strftime("%Y-%m-%d %H:%M:%S")
-        # what is known about a pasted picture is said in "prompt" and "model", so its card is not empty (owner 2026-10-03); the owner
-        # knows the rest and may add it
-        # written in the app's language at the moment of pasting (owner 2026-10-06: two languages); the owner's data from then on
-        if lang() == "ru":
-            what = f"вставлено владельцем на холст {now[:16]}" + (f" со страницы {url}" if url else f" из файла {name}" if name and name != "image.png" else " из буфера обмена")
-        else:
-            what = f"pasted on the canvas by the owner {now[:16]}" + (f" from the page {url}" if url else f" from the file {name}" if name and name != "image.png" else " from the clipboard")
-        meta = {"source": "owner", "how": "url" if url else "file", "added": now, "original_name": name, "url": url,
-                "sha1": sha, "path": rel, "size": [im.width, im.height], "model": tr("pasted by the owner", "вставлено владельцем"), "prompt": what}
-        _write_json(os.path.join(d, base + ".json"), meta)
-        return {"path": rel, "ar": im.width / im.height}
+def add_image(data, name="", url=""):   # boardclip.py and the tests call it here
+    return added.add_image(sys.modules[__name__], data, name, url)
 
 
 # Plugins (owner 2026-10-03: modules such as 3D objects or an editor live outside this repository). A plugin is a folder with
@@ -1577,17 +1530,6 @@ def read_notifications(ids=None):
             if ids is None or n["id"] in ids: n["read"] = True
         _write_json(NOTIFS, L)
     return sum(not n["read"] for n in L)
-
-
-def fetch_image(url):
-    if not url.startswith(("http://", "https://")):
-        raise ValueError("not a web address")
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Macintosh) review-board", "Accept": "image/*"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        data = r.read(MAX_UPLOAD + 1)
-    if len(data) > MAX_UPLOAD:
-        raise ValueError("too big")
-    return data
 
 
 _SIZES = {}
@@ -2432,21 +2374,7 @@ class H(BaseHTTPRequestHandler):
             try: res = save_plugin_file(q.get("p", [""])[0], self.rfile.read(n)); people.log_write(HERE, "file", res["path"], people.stamp(PEOPLE, HERE, self, q))
             except (ValueError, PermissionError) as ex: return self.send(400, (tr("not saved: ", "не записано: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
             return self.send(200, json.dumps(res).encode(), "application/json")
-        if self.path.startswith("/api/upload"):   # body: the image bytes (?name=file name), or JSON {"url": ...} for a picture dragged from a web page
-            u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)
-            n = int(self.headers.get("Content-Length", 0))
-            if n > MAX_UPLOAD:
-                return self.send(413, tr("The file is over 80 MB", "Файл больше 80 МБ").encode(), "text/plain; charset=utf-8")
-            body = self.rfile.read(n)
-            try:
-                if (self.headers.get("Content-Type") or "").startswith("application/json"):
-                    url = json.loads(body or b"{}").get("url", "")
-                    res = add_image(fetch_image(url), url=url)
-                else:
-                    res = add_image(body, name=q.get("name", [""])[0])
-            except Exception as ex:
-                return self.send(400, (tr("Couldn't add the image: ", "Не получилось добавить картинку: ") + str(ex)[:160]).encode(), "text/plain; charset=utf-8")
-            return self.send(200, json.dumps(res, ensure_ascii=False).encode(), "application/json")
+        if self.path.startswith("/api/upload"): return added.http(self, sys.modules[__name__])   # a picture, a video, a PDF from outside (added.py)
         if self.path.startswith("/api/board"):
             n = int(self.headers.get("Content-Length", 0))
             u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query)

@@ -70,13 +70,17 @@ def test_the_micro_primitives_render_at_the_sheets_sizes(chromium, showcase):
     ms = page.locator(LOOK + 'hy-segmented[variant="micro"]')
     assert ms.first.evaluate(BOX)[1] == 22 and ms.first.locator("button").first.evaluate(BOX)[1] == 18
     assert ms.nth(2).locator("button").first.evaluate(BOX) == [26, 18]
-    # 4 · the LED: 6 px, flat; on in the selection's colour, ok green, off a ring, busy blinking
+    # 4 · the LED: 6 px, flat; on in the selection's colour, ok green, off a ring, idle a grey dot (nothing yet: not the ring of «can't»,
+    # owner 2026-10-10, round 18 question 17), busy blinking
     leds = page.locator(LOOK + "hy-led")
     got = leds.evaluate_all("ls => ls.map(l => { const s = getComputedStyle(l), r = l.getBoundingClientRect(); return [l.getAttribute('state') || 'on', r.width, r.height, "
                             "s.backgroundColor, s.boxShadow === 'none', s.animationName]; })")
     green = page.evaluate(PROBE, ["var(--hy-st-open)", "background-color"])
+    grey = leds.nth(3).evaluate("l => { const p = document.createElement('i'); p.style.backgroundColor = 'var(--muted)'; l.parentNode.append(p);"
+                                " const c = getComputedStyle(p).backgroundColor; p.remove(); return c; }")
     assert got == [["on", 6, 6, sel, True, "none"], ["ok", 6, 6, green, True, "none"], ["off", 6, 6, "rgba(0, 0, 0, 0)", False, "none"],
-                   ["busy", 6, 6, sel, True, "hy-led-busy"]], got
+                   ["idle", 6, 6, grey, True, "none"], ["busy", 6, 6, sel, True, "hy-led-busy"]], got
+    assert grey not in ("rgba(0, 0, 0, 0)", sel, green), grey
     # 6 · the stepper: one 22 px well, − and + 20 px, the number at least 26
     st = page.locator(LOOK + "hy-stepper").first
     assert st.evaluate(BOX)[1] == 22 and st.locator(".hy-stp-b").first.evaluate(BOX) == [20, 22] and st.locator(".hy-stp-n").evaluate(BOX)[0] >= 26
@@ -138,7 +142,7 @@ def test_the_micro_primitives_keyboard_and_aria(chromium, showcase):
     assert b.evaluate("b => [b.getAttribute('aria-pressed'), b.getAttribute('aria-label'), b.textContent.replace(/\\s/g, '')]") == ["true", "All 87 shown · show only 22", "87/87"]
     # the LED is an image with its name
     assert page.locator(LOOK + "hy-led").evaluate_all("ls => ls.map(l => [l.getAttribute('role'), l.getAttribute('aria-label')])") \
-        == [["img", "The current camera"], ["img", "Running"], ["img", "Not found"], ["img", "Working"]]
+        == [["img", "The current camera"], ["img", "Running"], ["img", "Not found"], ["img", "Nothing written yet"], ["img", "Working"]]
     ev = page.evaluate("() => __ev")
     assert ["hy-minitoggle", {"checked": True}] in ev and ["hy-segmented", {"value": "m"}] in ev and ["hy-stepper", {"value": 4}] in ev \
         and ["hy-scope", {"all": True}] in ev, ev
@@ -291,13 +295,16 @@ def test_a_drag_whose_release_went_elsewhere_ends(chromium, showcase):
             for i in range(1, 5): page.mouse.move(x + 8 * i, y)
             dragged = value()
             if way == "capture lost":   # as when the release lands in another document: this one never gets the pointerup
-                el.evaluate("e => { for (const n of [e, ...e.querySelectorAll('*')]) if (n.hasPointerCapture(1)) n.releasePointerCapture(1); }")
+                el.evaluate("e => { for (const n of [e, ...e.querySelectorAll('*')])"
+                            " if (n.hasPointerCapture(1)) n.releasePointerCapture(1); }")
             else:   # a move that says the button is up, the pointerup itself lost
-                el.evaluate(f"e => e.dispatchEvent(new PointerEvent('pointermove', {{ pointerId: 1, isPrimary: true, pointerType: 'mouse', buttons: 0, clientX: {x + 40}, clientY: {y}, bubbles: true }}))")
+                el.evaluate(f"e => e.dispatchEvent(new PointerEvent('pointermove', {{ pointerId: 1, isPrimary: true, pointerType: 'mouse',"
+                            f" buttons: 0, clientX: {x + 40}, clientY: {y}, bubbles: true }}))")
             page.mouse.move(5, 5); page.mouse.up()   # the real release, far away
             page.mouse.move(x + 60, y, steps=4); page.mouse.move(x - 60, y, steps=4)   # a hover across the control
             assert value() == dragged, f"{name}, {way}: a hover moved the value from {dragged} to {value()}"
-            assert not page.evaluate("() => document.documentElement.classList.contains('hy-scrub-drag') || document.querySelector('#sl').classList.contains('drag')")
+            assert not page.evaluate("() => document.documentElement.classList.contains('hy-scrub-drag')"
+                                     " || document.querySelector('#sl').classList.contains('drag')")
     assert page.evaluate("() => __chg") == 2, "each drag of the slider ended in one change"
     assert not page.errors, page.errors
     page.close()

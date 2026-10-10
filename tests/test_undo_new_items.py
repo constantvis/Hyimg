@@ -131,10 +131,10 @@ def test_undo_takes_a_new_note_or_heading_away(server):
         page.keyboard.press("Meta+z")
         assert S()["ids"] == OLD and S()["qx"] == qx
 
-        # the dock's note button, nothing typed: ⌘Z removes the empty note, the step before stays
+        # the dock's «+» › Note, nothing typed: ⌘Z removes the empty note, the step before stays
         qx = page.evaluate(STEP)
         page.evaluate("() => { sel = new Set(); render(); }")
-        page.click("#bnote"); page.wait_for_selector(".note textarea")
+        page.click("#bplus"); page.click("#bplusm [data-mk=note]"); page.wait_for_selector(".note textarea")
         assert new_id(page)
         page.keyboard.press("Meta+z")
         s = S(); assert s["ids"] == OLD and not s["editing"] and s["qx"] == qx, s
@@ -191,8 +191,8 @@ def test_undo_takes_a_new_note_or_heading_away(server):
 
         # a new group: ⌘Z in its name field takes the group away, ⇧⌘Z brings it back with the name typed
         page.evaluate("() => { cam = { x: -900, y: -800, z: .4 }; sel = new Set(['p', 'q']); render(); }")   # the group's title on screen
-        page.keyboard.press("g"); page.wait_for_selector(".gt textarea", state="attached")
-        assert page.evaluate("() => document.activeElement.matches('.gt textarea') && document.activeElement.value") == "Group 1"   # G types no g
+        page.keyboard.press("Meta+g"); page.wait_for_selector(".gt textarea", state="attached")   # ⌘G only (G alone until 2026-10-10)
+        assert page.evaluate("() => document.activeElement.matches('.gt textarea') && document.activeElement.value") == "Group 1"   # ⌘G types no g
         gid = page.evaluate("() => Object.keys(board.groups)[0]")
         page.keyboard.type("Shots")
         page.keyboard.press("Meta+z")
@@ -203,7 +203,7 @@ def test_undo_takes_a_new_note_or_heading_away(server):
         assert S()["groups"] == []
         # its name applied with Enter: still the group's own step, one ⌘Z takes the group away, not the name first
         page.evaluate("() => { sel = new Set(['p', 'q']); render(); }")
-        page.keyboard.press("g"); page.wait_for_selector(".gt textarea", state="attached")
+        page.keyboard.press("Meta+g"); page.wait_for_selector(".gt textarea", state="attached")
         gid = page.evaluate("() => Object.keys(board.groups)[0]")
         page.keyboard.type("Shots"); page.keyboard.press("Enter")
         assert not S()["editing"] and page.evaluate("id => board.groups[id].title", gid) == "Shots"

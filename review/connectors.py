@@ -361,6 +361,7 @@ def hook(g):
     for k in list(OPS): OPS[k] = _keep(OPS[k])
     OPS.update(connect=op_connect, disconnect=_keep(op_disconnect), structure=op_structure)
     patterns.register(g)
+    import imageops; imageops.register(g)   # hy.py image: Image Studio's tools for an agent (imageops.py)
     cmd_map, cmd_find, main = g["cmd_map"], g["cmd_find"], g["main"]
 
     def map_(b, ref_, tol, groups):

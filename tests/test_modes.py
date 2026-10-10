@@ -248,7 +248,7 @@ def test_the_3d_studio_is_not_open_when_the_board_comes_back(tmp_path):
             errors = []; page.on("pageerror", lambda e: errors.append(str(e)))
             ready = "() => typeof PLGST !== 'undefined' && PLGST.some(p => p.name === '3d' && p.ok)"
             page.goto(f"http://127.0.0.1:{port}/canvas.html"); page.wait_for_function(ready, timeout=30000)
-            page.click("button[title^='3D scene']")   # the dock's «3D scene»
+            page.click("#bplus"); page.click("#bplusm [title^='3D scene']")   # the dock's «+» › 3D scene (its own button until 2026-10-10)
             page.wait_for_function("() => Object.values(board.items).some(i => i.type === 'model3d' && i.scene)", timeout=30000)
             cid = page.evaluate("() => Object.keys(board.items).find(k => board.items[k].type === 'model3d')")
             live = "() => MODES.open === '3d' && !!document.querySelector('.plg-live') && !!document.querySelector('.m3ui')"

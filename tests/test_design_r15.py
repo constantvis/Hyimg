@@ -200,6 +200,12 @@ ROWS = """(sel) => [...document.querySelectorAll(sel)].filter(r => r.getClientRe
 
 def test_tips_panel_as_drawn(world):
     page, frame = open_tips(world)
+    # the button wears the bulb of the tips, as the board's other round buttons wear their icons (owner 2026-10-10: «у нас была иконка
+    # лайтболб, нужно ее заменить тут», the «?» it had)
+    btn = frame.evaluate("""() => { const b = document.querySelector('#bkeys'), s = b.querySelector('svg');
+      return { text: b.textContent.trim(), ic: s && s.dataset.ic, paths: s ? s.querySelectorAll('path').length : 0,
+        w: s ? Math.round(s.getBoundingClientRect().width) : 0, bell: Math.round(document.querySelector('#bntf svg').getBoundingClientRect().width) }; }""")
+    assert btn["text"] == "" and btn["ic"] == "tip" and btn["paths"] >= 3 and btn["w"] == btn["bell"], btn
     assert frame.evaluate(GEO, "#keys") == [1088, 58, 340, 830], "History's place and size (it was up to 1000 px wide)"
     assert frame.evaluate(SKIN, "#keys") == frame.evaluate("() => { const h = document.querySelector('#hist'); h.classList.add('open');"
                                                           " const s = getComputedStyle(h), o = { bg: s.backgroundColor, r: s.borderTopLeftRadius,"

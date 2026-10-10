@@ -4,6 +4,7 @@ hy-led { display: inline-block; flex: none; box-sizing: border-box; width: 6px; 
 hy-led[state=ok] { background: var(--hy-st-open); }
 hy-led[state=err] { background: var(--hy-red, #ff453a); }   /* a write refused (P4 S-39) */
 hy-led[state=off] { background: transparent; box-shadow: inset 0 0 0 1.2px var(--muted); }
+hy-led[state=idle] { background: var(--muted); }   /* nothing yet: a grey dot, not the ring of «can't» (owner 2026-10-10, r18 question 17) */
 hy-led[state=busy] { animation: hy-led-busy 1.2s linear infinite; }
 @keyframes hy-led-busy { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: .25; } }   /* on, off: a blink, no fade */
 @media (prefers-reduced-motion: reduce) { hy-led[state=busy] { animation: none; opacity: .6; } }

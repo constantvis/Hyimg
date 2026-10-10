@@ -1,0 +1,75 @@
+/* The Info card's body (ui/infobody.js), round 18's «Spec sheet» (owner 2026-10-10, r18-info.html version 3 ★): sections in a fixed order,
+   each a caps title (the blocks' .hy-sub) with its count or a small action on the right, rows as a spec sheet (a label column of 82 px,
+   the values, a hairline under each row), the sources as small squares with their names and models, the notes in their colours, and
+   «More · file, tags, path» folding the rest. The rules that were canvas.html's (the picture card, owner 2026-10-01) moved here with it;
+   a sticky note's Info (ui/notelink.js replyInfo) uses the same sections and notes. */
+#iNotes:empty { display: none; }
+#iNotes { --good: #4ade80; --idea: #fbbf24; --bad: #fb7185; margin-top: 4px; display: grid; }
+#iNotes .isec { display: grid; gap: 8px; padding: 14px 0 0; margin-top: 14px; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+#iNotes .sh { display: flex; justify-content: space-between; margin: 0; }   /* a section's label: the blocks' one (ui/hy/block.css .hy-sub, owner 2026-10-09) */
+#iNotes .sh .hint { letter-spacing: 0; font-weight: 500; }
+#iNotes .txt { margin: 0; font-size: 12.5px; line-height: 1.5; color: color-mix(in srgb, var(--ink) 85%, transparent); overflow-wrap: anywhere; white-space: pre-wrap; }
+#iNotes .txt a { color: inherit; text-decoration: underline; text-underline-offset: 2px; -webkit-user-select: text; user-select: text; }
+#iNotes .clamp { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+#iNotes .muted { font-size: 11.5px; color: color-mix(in srgb, var(--ink) 50%, transparent); }
+#iNotes .more { all: unset; justify-self: start; font-size: 11.5px; color: var(--sel); cursor: pointer; }
+#iNotes .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+#iNotes .chip { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11.5px; color: color-mix(in srgb, var(--ink) 80%, transparent);
+  background: color-mix(in srgb, var(--ink) 7%, transparent); }
+#iNotes .chip.own { background: color-mix(in srgb, var(--sel) 22%, transparent); color: var(--ink); }
+#iNotes .chip.v { font-weight: 600; }
+#iNotes .chip.good { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
+#iNotes .chip.idea { background: color-mix(in srgb, var(--idea) 20%, transparent); color: var(--idea); }
+#iNotes .chip.bad { background: color-mix(in srgb, var(--bad) 20%, transparent); color: var(--bad); }
+#iNotes .chip.fav { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+#iNotes .scores { display: grid; gap: 5px; }
+#iNotes .srow { display: grid; grid-template-columns: 88px auto 1fr; align-items: center; gap: 10px; font-size: 12px; }
+#iNotes .sk { color: color-mix(in srgb, var(--ink) 85%, transparent); }
+#iNotes .sv { color: color-mix(in srgb, var(--ink) 50%, transparent); font-size: 11.5px; }
+#iNotes .dots { display: inline-flex; gap: 3px; } #iNotes .dots i { width: 7px; height: 7px; border-radius: 2px; background: color-mix(in srgb, var(--ink) 14%, transparent); }
+#iNotes .dots.s1 i:nth-child(-n+1) { background: var(--bad); } #iNotes .dots.s2 i:nth-child(-n+2) { background: var(--idea); } #iNotes .dots.s3 i { background: var(--good); }
+#iNotes .inote { all: unset; box-sizing: border-box; display: grid; gap: 4px; width: 100%; padding: 9px 11px 9px 13px; border-radius: 10px; cursor: pointer;
+  background: color-mix(in srgb, var(--nc) 12%, transparent); border-left: 3px solid var(--nc); color: var(--ink); font-size: 12px; line-height: 1.45; }
+#iNotes .inote:hover { background: color-mix(in srgb, var(--nc) 22%, transparent); }
+#iNotes .inote .t { display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+#iNotes .inote .t .mh { font-weight: 700; }
+#iNotes .rf { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+#iNotes .rf img { width: 100%; height: 64px; object-fit: cover; border-radius: 6px; display: block; background: var(--raise); }
+#iNotes .qa { display: grid; gap: 4px; } #iNotes .qa .ans { color: var(--ink); padding-left: 10px; border-left: 2px solid color-mix(in srgb, var(--ink) 20%, transparent); }
+#iNotes .path { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: color-mix(in srgb, var(--ink) 55%, transparent);
+  overflow-wrap: anywhere; -webkit-user-select: text; user-select: text; }
+/* the file's path with «Показать в Finder» beside it (owner 2026-10-05) */
+#iNotes .prow { display: flex; align-items: flex-start; gap: 6px; } #iNotes .prow .path { flex: 1; min-width: 0; }
+#iNotes .rv { flex: none; width: 24px; height: 24px; margin-top: -4px; padding: 0; border: 0; border-radius: 7px; background: transparent; outline: none; cursor: pointer;
+  display: grid; place-items: center;
+  color: color-mix(in srgb, var(--ink) 55%, transparent); transition: color .15s cubic-bezier(.32,.72,0,1), background .15s cubic-bezier(.32,.72,0,1); }
+#iNotes .rv:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+#iNotes .rv:focus, #iNotes .rv:focus-visible { outline: none; }
+#iNotes .ifoot { margin-top: 16px; }   /* a footnote: ui/look.css .hy-hint */
+/* round 18: the section's right end (a count, «Copy»), the spec sheet, the sources, the notes, More */
+#iNotes .sh em { font-style: normal; color: var(--muted); letter-spacing: 0; text-transform: none; font-weight: 500; }
+#iNotes .sh .act { all: unset; color: var(--muted); letter-spacing: 0; text-transform: none; font-weight: 500; cursor: pointer; }
+#iNotes .sh .act:hover { color: var(--ink); }
+#iNotes .isec { gap: 7px; padding-top: 12px; margin-top: 12px; }
+#iNotes .spec { display: grid; grid-template-columns: 82px minmax(0, 1fr); margin: 0; font: 400 12px/1.4 var(--sans); }
+#iNotes .spec > * { margin: 0; padding: 5px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); overflow-wrap: anywhere; }
+#iNotes .spec > :nth-last-child(-n+2) { border-bottom: 0; }
+#iNotes .spec dt { color: var(--muted); } #iNotes .spec dd { color: var(--ink); }
+#iNotes .srcs { display: grid; gap: 6px; }
+#iNotes .src { all: unset; display: flex; align-items: center; gap: 8px; min-width: 0; cursor: zoom-in; border-radius: 7px; }
+#iNotes .src img { flex: none; width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--raise); box-shadow: 0 0 0 1px var(--line); }
+#iNotes .src .lab, #iNotes .srcs > .lab { display: grid; min-width: 0; color: var(--sub); font: 400 11.5px/1.35 var(--sans); }
+#iNotes .src .lab > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } #iNotes .src .lab em { font-style: normal; color: var(--muted); }
+#iNotes .src:hover .lab { color: var(--ink); }
+#iNotes .inote.nt { display: flex; gap: 8px; padding: 7px 9px; border: 0; border-radius: 8px; background: color-mix(in srgb, var(--nc) 16%, transparent);
+  color: color-mix(in srgb, var(--nc) 45%, var(--ink)); font: 400 12px/1.4 var(--sans); }
+#iNotes .inote.nt:hover { background: color-mix(in srgb, var(--nc) 24%, transparent); }
+#iNotes .inote.nt > i { flex: none; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--nc); }
+#iNotes .inote.nt .t { -webkit-line-clamp: 4; }
+#iNotes .mrow { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 12px; padding-top: 10px; cursor: pointer;
+  border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); color: var(--ink); font: 500 12.5px var(--sans); }
+#iNotes .mrow em { font-style: normal; color: var(--muted); font-weight: 400; } #iNotes .mrow .sp { flex: 1; }
+#iNotes .mrow .mcv { color: var(--muted); transition: transform .2s var(--hy-ease, ease); } #iNotes .mrow[aria-expanded=true] .mcv { transform: rotate(90deg); }
+#iNotes .mrow:hover em, #iNotes .mrow:hover .mcv { color: var(--ink); }
+#iNotes .imore[hidden] { display: none; }
+#iNotes .pfoot { margin-top: 10px; }   /* a plugin card's own words under the body (ui/infobody.js card) */

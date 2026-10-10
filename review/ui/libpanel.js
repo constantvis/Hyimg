@@ -5,6 +5,8 @@
 //   - «Folders 6» over the tree with its fold button, which puts the folders into the path (v2.html toggleTree)
 //   - the Filter button opens the app's filter window (v2.html #tfPanel) under the search; filters on, it shows them as the app did (its ink
 //     plate and the count). r15 draws the button closed only; older rounds' states are not followed (owner 2026-10-10)
+//   - the arrows between collections in the path row, before its «…», and ⌥↑ ⌥↓ (round 18, question 11 b, owner 2026-10-10 ★: the old dock's
+//     arrows had gone beside the board); the board sends ⌥↑ ⌥↓ by message (ui/boardkeys.js libStep)
 //   - lay(): the search, the folders (a column, a section or a well under the path) and the path, one under the other;
 //     the list's padding starts under them. The width decides the form (v2.html renderFolders): wide ≥ 480 px, regular ≥ 280, compact below.
 // v2.html calls hyLibPanel.sync(root) after each drawing of the folders and hyLibPanel.placeTF() when it places the filter window.
@@ -83,6 +85,11 @@
     fold.querySelector("em").textContent = last.folders;
     paint(); soon();
   }
+  // the two arrows in the path row, written with it (v2.html treeHtml): the collection above, below; shown only beside the board (libpanel.css)
+  const steps = () => `<span class="fstep">` + [[-1, "up", "Previous collection", "⌥↑"], [1, "down", "Next collection", "⌥↓"]].map(([d, i, w, k]) =>
+    `<button type="button" data-fstep="${d}" title="${t(w)} · ${k}" aria-label="${t(w)}" aria-keyshortcuts="${d < 0 ? "Alt+ArrowUp" : "Alt+ArrowDown"}">`
+    + `${ic(i, 12, 2.2)}</button>`).join("") + `</span>`;
+  const step = d => { if (typeof stepCollection === "function") stepCollection(d); };
 
   // ---------- the Filter button: the app's filter window ----------
   const count = () => +($("#tfN") && $("#tfN").getAttribute("count")) || 0;
@@ -101,6 +108,7 @@
     btn.addEventListener("click", e => { e.stopPropagation(); press(); });
     document.addEventListener("click", e => {
       if (e.target.closest("[data-lpfold]")) { e.stopPropagation(); if (typeof toggleTree === "function") toggleTree(false); }
+      const st = e.target.closest("[data-fstep]"); if (st) { e.stopPropagation(); step(+st.dataset.fstep); }
     }, true);
     // ⌘F: the library's search, opening the library if it is closed (the board's page asks by message, canvas.html)
     // not while the viewer is open (P4 B-14): the search hides behind it and the next letters would filter the library, not rate the picture
@@ -114,6 +122,14 @@
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.code === "KeyF" || ["f", "F", "а", "А"].includes(e.key))) { e.preventDefault(); find(); }
     }, true);
     addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.type === "libSearch") find(); });
+    // ⌥↑ ⌥↓: the collection above, below, here and from the board (its keys come by message), while the library is beside it
+    addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.type === "libStep" && on()) step(e.data.dir < 0 ? -1 : 1); });
+    document.addEventListener("keydown", e => {
+      if (!e.altKey || e.metaKey || e.ctrlKey || e.shiftKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown") || !on()) return;
+      if (window.hyTyping && hyTyping(e)) return;
+      const v = document.getElementById("viewer"); if (v && v.classList.contains("open")) return;
+      e.preventDefault(); step(e.key === "ArrowUp" ? -1 : 1);
+    });
     // Esc in the search: its words go first, a second Esc gives the keys back to the board (P4 B-55: the search kept them)
     $("#q").addEventListener("keydown", e => {
       if (e.key !== "Escape" || e.isComposing) return; e.preventDefault(); e.stopPropagation();
@@ -141,5 +157,5 @@
   // v2.html's placeTF: beside the board the window is the panel's own, under the search
   function placeTF() { if (!ready || !on()) return false; $("#tfPanel").classList.add("lp-in"); lay(); return true; }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
-  window.hyLibPanel = { sync, lay, placeTF, form, press, tfClose, focusBoard, FOLD, WIDE, get ready() { return ready; } };
+  window.hyLibPanel = { sync, lay, placeTF, form, press, tfClose, focusBoard, steps, FOLD, WIDE, get ready() { return ready; } };
 })();

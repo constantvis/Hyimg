@@ -36,7 +36,7 @@ const last = el => el.events[el.events.length - 1];
 
 test("index.js defines every primitive once, under its tag", () => {
   const tags = ["hy-switch", "hy-check", "hy-kbd", "hy-badge", "hy-chip", "hy-hint", "hy-info", "hy-swatch", "hy-swatches", "hy-button",
-    "hy-icon-button", "hy-plate", "hy-segmented", "hy-keyhint", "hy-tip", "hy-studio-actions", "hy-open-in",
+    "hy-icon-button", "hy-plate", "hy-segmented", "hy-keyhint", "hy-tip", "hy-studio-actions", "hy-open-in", "hy-split",
     "hy-minitoggle", "hy-scope", "hy-led", "hy-scrub", "hy-stepper"];   // the micro controls (bf07b4b)
   assert.deepEqual([...registry.keys()].sort(), [...tags].sort());
   assert.equal(Object.values(HY).filter(c => c.tag).length, tags.length);   // classes only: scrub() is a helper beside its element

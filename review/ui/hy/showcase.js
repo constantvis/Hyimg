@@ -132,7 +132,8 @@ function families() {
       ] },
       { title: "hy-led", sub: t("4 · status, 6 px, no glow"), items: [
         S("hy-led", { label: t("The current camera") }), S("hy-led", { state: "ok", label: t("Running") }),
-        S("hy-led", { state: "off", label: t("Not found") }), S("hy-led", { state: "busy", label: t("Working") }),
+        S("hy-led", { state: "off", label: t("Not found") }), S("hy-led", { state: "idle", label: t("Nothing written yet") }),
+        S("hy-led", { state: "busy", label: t("Working") }),
       ] },
       { title: "hy-scrub", sub: t("5 · drag the letter, ⇧ ×10, ⌥ ×0.1, a click types"), items: [
         S("hy-scrub", { label: "X", value: "24", unit: "px" }), S("hy-scrub", { label: "W", value: "160", min: "16" }),
