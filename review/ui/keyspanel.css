@@ -1,0 +1,65 @@
+/* The ? panel, round 15's Tips (owner 2026-10-09, ♥ on Concepts/html/editors-concepts/r15/r15-tips.html, version 1, the list): the board's
+   dark side panel, as History (canvas.html #hist): 340 px at the right, under the top row down to 12 px over the window's bottom; the
+   header as drawn, 58 px with a pill of two tabs Tips and All keys, 30 px, no icons (r15 wins over round 14's standard 24 px block tabs,
+   owner 2026-10-10), the search, then the sections in the drawing's capitals. Every row: the action's icon, its words, its keys one cap per key, at the right.
+   Before round 15 it was one list up to 1000 px wide with uneven columns. ui/keyspanel.js builds it around the rows canvas.html writes. */
+#keys { position: absolute; top: 58px; bottom: 12px; right: 12px; z-index: 31; width: 340px; box-sizing: border-box; overflow: hidden; padding: 0;
+  border: 1px solid var(--line); border-radius: 18px; color: var(--ink); font: 400 12.5px var(--sans); line-height: normal;
+  background: color-mix(in srgb, var(--panel) 97%, transparent); -webkit-backdrop-filter: blur(24px) saturate(1.4); backdrop-filter: blur(24px) saturate(1.4); }
+/* its shadow is the side panels' token (ui/ui.css --hy-sh-pop), as History's */
+#keys .kp-in { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+#keys .kp-bh { flex: none; height: 58px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 12px 0 14px; }
+#keys .kp-bh .sp { flex: 1; }
+/* hy-allow: hy-primitive r15's dark pill of two 30 px tabs, which <hy-segmented> has no variant of yet (its files are another session's today) */
+#keys .kp-tabs { display: inline-flex; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); }
+#keys .kp-tab { height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--sub);
+  font: 500 13.5px var(--sans); white-space: nowrap; cursor: pointer; transition: background-color .18s ease, color .18s ease; }
+#keys .kp-tab:hover { color: var(--ink); }
+#keys .kp-tab.on { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, var(--panel)); }
+#keys .kp-tab em { font: 400 11.5px var(--sans); font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
+#keys .kp-x { width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--sub); cursor: pointer; }
+#keys .kp-x:hover { background: var(--hy-hov); color: var(--ink); }
+#keys .kp-x > svg { width: 13px; height: 13px; }
+#keys .kp-s { flex: none; position: relative; display: block; margin: 0 10px 6px; }
+#keys .kp-s > svg { position: absolute; left: 10px; top: 50%; width: 13px; height: 13px; translate: 0 -50%; color: var(--muted); pointer-events: none; }
+/* hy-allow: row-radius r15's search field is History's field (canvas.html #hist input), 9 px */
+#keys .kp-s input { width: 100%; height: 32px; box-sizing: border-box; padding: 0 10px 0 31px; border: 1px solid var(--line); border-radius: 9px; outline: none;
+  background: color-mix(in srgb, var(--raise) 80%, transparent); color: var(--ink); font: 400 12.5px var(--sans); }
+#keys .kp-s input:focus { border-color: color-mix(in srgb, var(--hy-sel) 70%, var(--line)); }
+#keys .kp-s input::placeholder { color: var(--muted); }
+#keys .kp-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 0 12px; }
+#keys :is(.kp-body > section, .kp-row, .kp-tip, .kp-lb, .kp-none)[hidden] { display: none !important; }
+/* a section's label: «HERE · BOARD 5», «KEYS HERE 9 … All 48» */
+#keys .kp-lb { height: 30px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 8px 8px 0; margin: 0 2px 0 9px;
+  font: 600 10.5px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+#keys .kp-lb em { font-style: normal; letter-spacing: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
+#keys .kp-lb .sp { flex: 1; }
+#keys .kp-lnk { border: 0; padding: 0 2px; background: none; color: var(--sub); font: 500 11px var(--sans); letter-spacing: 0; text-transform: none; cursor: pointer; }
+#keys .kp-lnk:hover { color: var(--ink); }
+/* a tip: the icon, a sentence with its keys in caps and its main words */
+#keys .kp-tips { display: flex; flex-direction: column; gap: 1px; margin: 0 10px; }
+#keys .kp-tip { display: flex; gap: 10px; align-items: flex-start; padding: 6px; border-radius: 7px; color: var(--sub); font: 400 12px/1.5 var(--sans); }
+#keys .kp-tip > .kpi { margin-top: 2px; }
+#keys .kp-tip b { color: var(--ink); font-weight: 500; }
+#keys .kp-tip hy-kbd { vertical-align: 0; margin-right: 2px; }
+/* a key's row: 32 px, the icon, the words, the caps at the right end; lit 30 px tall (ui/look.css, --hy-gap-row) */
+#keys .kp-rows { display: flex; flex-direction: column; margin: 0 10px; }
+#keys .kp-row { min-height: 32px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 3px 6px; border-radius: 7px; color: var(--ink);
+  font: 400 12.5px/1.35 var(--sans); border-block: calc(var(--hy-gap-row) / 2) solid transparent; background-clip: padding-box; }
+#keys .kp-row:hover { background-color: var(--hy-hov); }
+#keys .kpi { flex: none; display: grid; place-items: center; width: 15px; height: 15px; color: var(--sub); order: 0; }
+#keys .kpi > svg { width: 15px; height: 15px; display: block; }
+#keys .kp-tip .kpi, #keys .kp-tip .kpi > svg { width: 14px; height: 14px; }
+#keys .kp-row .t { flex: 1; min-width: 0; order: 1; }
+#keys .kp-row .k { order: 2; flex: none; max-width: 46%; margin-left: auto; display: inline-flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 2px;
+  color: var(--muted); font: 400 11.5px/1.35 var(--sans); text-align: right; }
+#keys .kp-row .k kbd { margin: 0; }
+#keys .kp-row .t kbd { margin: 0 1px; }
+#keys .kp-row b { color: var(--ink); font-weight: 500; }
+/* a gesture's row (a drag, a double click): no key to press, its words lead the line as the tips' main words */
+#keys .kp-row.kp-gest { display: block; position: relative; padding: 7px 6px 7px 31px; }
+#keys .kp-row.kp-gest .kpi { position: absolute; left: 6px; top: 8px; }
+#keys .kp-row.kp-gest :is(.k, .t) { display: inline; max-width: none; margin: 0; text-align: left; }
+#keys .kp-row.kp-gest .k { color: var(--ink); font: 500 12.5px/1.35 var(--sans); }
+#keys .kp-row.kp-gest .t { color: var(--sub); }
+#keys .kp-none { padding: 18px 16px; color: var(--muted); font: 400 12px var(--sans); }

@@ -15,11 +15,24 @@
 //                      working inside an object is a Studio, on the canvas the Board); the label when not given
 //   order              its place after Board (Image 10, Dev 20, 3D 30)
 //   title, hint        what it does when it can be entered (aria-description), and when it cannot: what enables it (the tooltip says it)
+//   hintStudio         optional: the same while another Studio is open, where nothing can be selected (owner decision 2026-10-10: «Open a
+//                      3D card to use 3D Studio»); hint when not given
+//   pending()          optional: its work still being written after it left (Image Studio writes after it closes, owner decision
+//                      2026-10-10): a promise of true once written, false when refused; null when nothing is on its way. leaveFirst waits
+//                      for it (a page switch), false keeps the page
+//   unsaved()          optional: true while leaving the page would lose work; a browser asks before it unloads (⌘R there is the
+//                      browser's; in the app View › Reload Page saves first)
 //   isOpen()           its editor is open now (the switch shows it chosen)
 //   target(ids)        the card the mode would open for this selection, or null: the segment is enabled when there is one
 //   enter(id), leave() open its editor for that card; close it the way its own Done does
 //   card()             optional: the card its open editor works on (else the live card .plg-live, the card it was entered with, the
 //                      one selected card)
+//   fit()              optional: the Studio puts its card between its own panels itself (Image Studio's own camera); else Hyimg flies
+//                      the board's camera there as the Studio opens and back as it closes (P4 S-61, owner decision 2026-10-10)
+//   fit: false         the camera stays where it is
+//   primary, hints     the Hint bar as the Studio opens (P4 S-29): every Studio's is V Select, C Annotation, its 1–2 own keys (hints,
+//                      <hy-keyhint> items, words with the plugin's prefix) and Esc / ⌘↵ with the primary action's word (primary: "Save"
+//                      or "Done"); showHint(items, ctx) optional: shows them in the Studio's own page and returns the handle
 //   color              optional: the Studio's colour (a CSS colour or var(), Image Studio's purple var(--frame)); its segment, chosen,
 //                      wears it instead of the selection's blue (owner 2026-10-09: «вроде же бы в цвет режима должно быть?»). Board and
 //                      a Studio without one keep the blue. While that Studio is open the colour is the whole window's: <html> gets
@@ -31,7 +44,15 @@
 // in its place, dimmed. A dock too narrow for all its buttons keeps only the modes that can be entered now.
 // While a mode is open the card it edits is lifted (ui/editlift.js, owner 2026-10-08): the board's selection around it hidden, a shadow
 // under it, the rest of the board a little dimmer; every plugin's mode gets it from here.
-//   const M = hyModes({ dock, sel: () => [...ids], toast, t, rect: id => {x, y, w, h} })   M.add(key, def)   M.sync()   M.enter(key, ids?)   M.el
+// In any Studio the board around it is inert (P4 S-08, П4 audit 2026-10-10: a click beside the 3D or Dev card picked and moved the board's
+// cards, a file dropped on it made hidden cards): a press, a double click or a right click on the board outside the open card does
+// nothing, and a file or a card dragged over the board shows that it can't be dropped, the reason in a note. A Studio that takes drops
+// itself says so with def.drop(e) -> true (Image Studio takes its own in its page, as layers). M.leaveFirst() asks the open Studio to leave
+// its own way (it may ask about unsaved work) and resolves true once the board is back, false when it stayed (P4 S-09: a page switch)
+// Moving from one Studio to another (P4 S-31) is the first one's own leave (it keeps the work: the last Esc, the Board segment and another
+// Studio's segment save or are Done, owner decision 2026-10-10, S-27 A), waited for: leave() may return a promise, a question it asks is
+// waited for as long as it is open, and only a Studio that stayed open keeps the second from opening
+//   const M = hyModes({ dock, sel: () => [...ids], toast, t, rect: id => {x, y, w, h}, hy })   M.add(key, def)   M.sync()   M.enter(key, ids?)   M.el
 (() => {
   if (window.hyModes) return;
   const EASE = "cubic-bezier(.32,.72,0,1)";
@@ -76,10 +97,10 @@
 #modetip .mth { color: var(--sub); font-weight: 400; }
 :root[data-shape=pro] #modetip { border-radius: 11px; }
 @media (prefers-reduced-motion: reduce) { #dock #modes > button, #modetip { transition: none; } }`;
-  window.hyModes = function ({ dock, sel, t = k => k, rect = null }) {
+  window.hyModes = function ({ dock, sel, t = k => k, rect = null, hy = null }) {
     const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
     const LIFT = rect && window.hyEditLift ? window.hyEditLift({ rect }) : null;
-    let liftK = "board", entered = { k: "", id: null };
+    let liftK = "board", liftL = "board", entered = { k: "", id: null };
     const M = new Map([["board", { label: t("Board"), icon: BOARD_IC(), order: 0, title: t("Board: every card, the canvas itself"), board: true }]]);
     const wrap = document.createElement("div"), el = document.createElement("div");
     wrap.id = "modesw"; wrap.innerHTML = `<span class="msep" aria-hidden="true"></span>`;
@@ -104,14 +125,14 @@
     // what is chosen and what can be entered, from the open editor and the selection
     function sync(now) {
       if (!now) { if (!raf) raf = requestAnimationFrame(() => { raf = 0; sync(true); }); return; }
-      const open = openKey(), ids = safe(sel, []); let moved = false;
+      const open = openKey(), ids = open === "board" ? safe(sel, []) : [cardOf(open, safe(sel, []))].filter(Boolean); let moved = false;   // in a Studio: its card
       for (const b of el.querySelectorAll(":scope > button")) {
         const k = b.dataset.mode, d = M.get(k); if (!d) continue;
         const on = k === open, can = d.board || on || !!safe(() => d.target && d.target(ids), null);
         if (b.getAttribute("aria-pressed") !== String(on)) b.setAttribute("aria-pressed", String(on));
         if (b.getAttribute("aria-disabled") !== String(!can)) { b.setAttribute("aria-disabled", String(!can)); moved = true; }
-        // the tooltip: the name; on a disabled one also what enables it
-        const hint = can ? "" : (d.hint || d.title || ""), desc = can ? (d.title || "") : hint;
+        // the tooltip: the name; on a disabled one also what enables it, in a Studio what to do instead (nothing can be selected there)
+        const hint = can ? "" : ((open !== "board" && d.hintStudio) || d.hint || d.title || ""), desc = can ? (d.title || "") : hint;
         if (b.dataset.tip !== (hint || b.dataset.name)) b.dataset.tip = hint || b.dataset.name;
         if (desc) { if (b.getAttribute("aria-description") !== desc) b.setAttribute("aria-description", desc); } else b.removeAttribute("aria-description");
         if (tipFor === b) showTip(b, true);
@@ -137,11 +158,73 @@
     // that card lifted while the mode is open, set down when it closes; the card is the one found when it opened, unless the mode names
     // another (its frame turned into a new card)
     function lift(open, ids) {
+      if (open !== liftK) { const was = liftK; liftK = open; if (was !== "board") depart(was); if (open !== "board") arrive(open, ids); }
       if (!LIFT) return;
-      if (open !== liftK) { liftK = open; return LIFT.set(open === "board" ? null : cardOf(open, ids), open); }
+      if (open !== liftL) { liftL = open; return LIFT.set(open === "board" ? null : cardOf(open, ids), open); }
       if (open === "board") return;
       const d = M.get(open), own = safe(() => d && d.card ? d.card() : null, null);
       if (own && own !== LIFT.id) LIFT.set(own, open); else if (!LIFT.id) LIFT.set(cardOf(open, ids), open); else LIFT.place();
+    }
+    // A Studio opens (P4 S-29, S-61): the Hint bar with every Studio's set, and the card flown between the Studio's panels, as Dev Studio
+    // did alone before; it closes: the bar goes, the camera flies back to where the board was
+    let hintH = null, camAt = null, flew = null, camKept = null;   // camKept: the board's camera while one Studio gives way to another
+    function arrive(k, ids) {
+      const d = M.get(k); if (!d) return;
+      const items = [{ id: "select", keys: ["v"], t: "Select" }, { id: "comment", keys: ["c"], t: "Annotation" }, ...(d.hints || []).slice(0, 2),
+        { id: "done", keys: ["escape", "mod+enter"], t: d.primary || "Done" }];
+      hintH = safe(() => d.showHint ? d.showHint(items, k) : window.hyKeyHint ? window.hyKeyHint.show(dock, k, items, { place: "top" }) : null, null);
+      camAt = hy && d.fit !== false ? camKept || { ...hy.cam } : null; flew = null; camKept = null;
+      if (!camAt) return;
+      let n = 0;
+      const go = () => {   // once the Studio's panels stand: two frames, and again while the free part is too small to measure
+        if (openKey() !== k) return;
+        if (d.fit) return safe(() => d.fit());
+        const id = cardOf(k, ids), c = id && fitCam(id); if (!c) { if (++n < 12) requestAnimationFrame(go); return; }
+        flew = id; fly(c);
+      };
+      requestAnimationFrame(() => requestAnimationFrame(go));
+      // the library folds a moment after a Studio opens and its panels move with it: the card is fitted again once they settle (2 s)
+      const t0 = performance.now(); let rt = 0;
+      const mo = new MutationObserver(() => {
+        if (performance.now() - t0 > 2000 || openKey() !== k || !flew) return;
+        clearTimeout(rt); rt = setTimeout(() => { const c = flew && openKey() === k && fitCam(flew);
+          if (c && (Math.abs(c.z - hy.cam.z) > .01 || Math.abs(c.x - hy.cam.x) * c.z > 4 || Math.abs(c.y - hy.cam.y) * c.z > 4)) fly(c, 300); }, 140);
+      });
+      mo.observe(document.documentElement, { attributes: true, attributeFilter: ["style"] }); setTimeout(() => mo.disconnect(), 2200);
+    }
+    function depart() {
+      if (hintH) { safe(() => hintH.hide()); hintH = null; }
+      const it = flew && hy && hy.board.items[flew];
+      if (waiting && waiting.to !== "board" && camAt) camKept = camAt;   // another Studio opens next: it flies from here, and back to the board's own camera at the end
+      else if (it && camAt) fly({ ...camAt, cx: it.x + it.w / 2, cy: it.y + it.h / 2 }, 380);
+      flew = null; camAt = null;
+    }
+    // the camera that puts the card in the board's free part (ui/bars.js: the library, the Studio's side panels [data-hyui], the top row
+    // and the dock), as large as fits, at most 4×
+    function fitCam(id) {
+      const it = hy.board.items[id], B = window.hyBars, st = hy.stage; if (!it || !B || !st) return null;
+      const s = st.getBoundingClientRect(), f = B.free(st, parseFloat(document.documentElement.style.getPropertyValue("--inset")) || 0);
+      const x0 = f.l + 16 - s.left, x1 = f.r - 16 - s.left, y0 = f.t + 8 - s.top, y1 = f.b - 8 - s.top;
+      if (x1 - x0 < 80 || y1 - y0 < 80) return null;
+      const z = Math.min((x1 - x0) / it.w, (y1 - y0) / it.h, 4);
+      return { x: it.x - (x0 + (x1 - x0 - it.w * z) / 2) / z, y: it.y - (y0 + (y1 - y0 - it.h * z) / 2) / z, z, cx: it.x + it.w / 2, cy: it.y + it.h / 2 };
+    }
+    // the flight on the app's curve, cubic-bezier(.32,.72,0,1): the board point under the card's centre moves straight, the zoom evenly
+    let flyRaf = 0;
+    function bez(x) {
+      const [a, b, c, d] = [.32, .72, 0, 1], X = s => 3 * a * s * (1 - s) ** 2 + 3 * c * s * s * (1 - s) + s ** 3, Y = s => 3 * b * s * (1 - s) ** 2 + 3 * d * s * s * (1 - s) + s ** 3;
+      let lo = 0, hi = 1; for (let k = 0; k < 24; k++) { const m = (lo + hi) / 2; if (X(m) < x) lo = m; else hi = m; } return Y((lo + hi) / 2);
+    }
+    function fly(to, ms = 420) {
+      cancelAnimationFrame(flyRaf);
+      const from = { ...hy.cam }, t0 = performance.now(), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const step = now => {
+        const k = still ? 1 : Math.min(1, (now - t0) / ms), e = bez(k), z = from.z * (to.z / from.z) ** e;
+        const sx = (to.cx - from.x) * from.z * (1 - e) + (to.cx - to.x) * to.z * e, sy = (to.cy - from.y) * from.z * (1 - e) + (to.cy - to.y) * to.z * e;
+        hy.camera(to.cx - sx / z, to.cy - sy / z, z, k < 1);
+        if (k < 1) flyRaf = requestAnimationFrame(step);
+      };
+      step(t0);
     }
     // a dock too narrow for all its buttons (a narrow window, the library open beside the board): the modes that cannot be entered now
     // step out (Board and the chosen one stay)
@@ -177,15 +260,59 @@
       const d = M.get(k), open = openKey(); if (!d || k === open) return false;
       const ids = given || safe(sel, []), id = d.board ? null : safe(() => d.target(ids), null);
       if (!d.board && !id) return false;
-      clearInterval(waiting); entered = { k, id };
+      waiting = null; entered = { k, id };
       const go = () => { if (!d.board) safe(() => d.enter(id)); sync(); };
       if (open === "board") { go(); return true; }
-      // another editor is open: it closes as its own Done does (it may ask first, the frame editor about unsaved changes), then this one opens
-      safe(() => M.get(open).leave());
-      if (d.board) { sync(); return true; }
-      let n = 0; waiting = setInterval(() => { if (openKey() === "board") { clearInterval(waiting); go(); } else if (++n > 100) clearInterval(waiting); }, 40);
+      // another Studio is open: it leaves its own way, keeping the work (it may ask, or still write), and this one opens once it is gone;
+      // a Studio that stayed open (refused, or kept by the person) keeps it out (P4 S-31: a fixed 4 s gave up on a slow «Save»)
+      if (d.board) { waiting = null; safe(() => M.get(open).leave()); sync(); return true; }   // the Board: its own leave, at once (it may still write)
+      const ticket = waiting = { to: k };
+      leaveFirst().then(ok => { const mine = waiting === ticket; waiting = null; if (ok && mine) go(); else { camKept = null; sync(); } });
       return true;
     }
+    // the board around an open Studio: its own surface outside the card (#world: the cards, groups, arrows), not the card's handles
+    const stage = document.getElementById("stage");
+    const around = e => {
+      const k = openKey(), w = document.getElementById("world"), x = e.target; if (k === "board" || !w || !x || !x.closest) return false;
+      if (x !== stage && x !== w && !(w.contains(x) && !x.closest("#handles, #crop, #cmpins"))) return false;   // annotations' pins stay
+      const id = cardOf(k, safe(sel, [])), c = id && document.querySelector(`#items > [data-id="${CSS.escape(id)}"]`);
+      return !(c && c.contains(x));
+    };
+    for (const ev of ["pointerdown", "mousedown", "click", "dblclick", "contextmenu"]) {
+      addEventListener(ev, e => { if (around(e)) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+    }
+    let said = 0;
+    const noDrop = e => {
+      const k = openKey(); if (k === "board" || !stage || !stage.contains(e.target)) return;
+      const d = M.get(k); if (d && d.drop && safe(() => d.drop(e), false)) return;
+      e.stopImmediatePropagation(); e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = "none";
+      if (e.type !== "dragover" && Date.now() - said > 4000 && typeof window.toast === "function") {
+        said = Date.now(); window.toast(t("{studio} is open: leave it to put this on the board", { studio: (d && (d.name || d.label)) || k }), "info");
+      }
+    };
+    for (const ev of ["dragenter", "dragover", "drop"]) addEventListener(ev, noDrop, true);
+    // leave the open Studio its own way and wait: true when the board is back, false when it stayed (it asked and the person kept it);
+    // then the work a Studio still writes after leaving (pending): false when a write was refused, the page stays with it
+    function leaveFirst() { return leaveOpen().then(ok => ok && settled()); }
+    function settled() {
+      const ps = defs().map(([, d]) => (d.pending ? safe(() => d.pending(), null) : null)).filter(p => p !== null && p !== undefined);
+      return Promise.all(ps.map(p => Promise.resolve(p).catch(() => false))).then(r => r.every(x => x !== false));
+    }
+    function leaveOpen() {
+      const k = openKey(); if (k === "board") return Promise.resolve(true);
+      const p = safe(() => M.get(k).leave());   // a promise when the leave writes first (lesson 15): waited for
+      const asking = () => [document, ...[...document.querySelectorAll("iframe")].map(f => { try { return f.contentDocument; } catch { return null; } })]
+        .some(d => d && d.querySelector("#hyConfirm, [aria-modal=true], #dlgw.on"));
+      return Promise.resolve(p).catch(() => {}).then(() => new Promise(ok => { let t0 = Date.now(); const poll = setInterval(() => {
+        if (openKey() === "board") { clearInterval(poll); ok(true); }
+        else if (asking()) t0 = Date.now();   // a question is open: the clock waits for the answer
+        else if (Date.now() - t0 > 3000) { clearInterval(poll); ok(false); }
+      }, 50); }));
+    }
+    // a browser asks before it unloads a page with a Studio's unsaved work (the board saves itself as it goes: no question for it). ⌘R is
+    // never ours (owner 2026-10-10): in the app View › Reload Page has no key, so it does nothing; in a browser it reloads the tab, and
+    // this question guards the work. A Studio's own reload is ⌥R (Dev Studio's page)
+    addEventListener("beforeunload", e => { if (defs().some(([, d]) => d.unsaved && safe(() => d.unsaved(), false))) { e.preventDefault(); e.returnValue = ""; } });
     el.addEventListener("click", e => {
       const b = e.target.closest("button[data-mode]"); if (!b) return;
       e.stopPropagation();
@@ -204,7 +331,9 @@
       sync: () => sync(),
       // a mode entered by other means than its segment (a double click on a picture enters Image, owner 2026-10-07): true when it goes in
       enter: (k, ids) => enter(k, ids),
+      leaveFirst,
       get open() { return openKey(); },
+      get hint() { return hintH; },   // the open Studio's Hint bar: used(id) when a key's action came by the mouse
     };
   };
 })();

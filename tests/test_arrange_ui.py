@@ -223,7 +223,7 @@ def test_arrange_menu_and_layouts_match_the_agents(server):
         close(page)
 
         # the shortcuts panel names Arrange's rows
-        page.click("#bkeys")
+        page.click("#bkeys"); page.click("#keys .kp-tab[data-kt=all]")   # round 15's Tips: the rows are in All keys
         assert page.locator("#keys [data-arrange-keys]").count() == 3
         assert "Layout patterns" in page.locator("#keys").inner_text()
         page.click("#bkeys")

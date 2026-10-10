@@ -283,8 +283,8 @@ def test_comment_mentions_reply_resolve_bell_and_hy_py(tmp_path, lang):
             page.locator('#cmlist [data-cf="done"]').click()
             assert page.locator(f'#cmlist [data-go="{t["id"]}"]').count() == 1
             shot(page, f"comment-{lang}-4-list")
-            # ⌘Z: the resolve back
-            page.keyboard.press("Escape"); page.mouse.click(700, 760)
+            # ⌘Z: the resolve back; Esc closes the list, a second Esc the Annotation tool (one Esc, one thing: P4 B-16, B-17)
+            page.keyboard.press("Escape"); page.keyboard.press("Escape"); page.mouse.click(700, 760)
             page.keyboard.press("Meta+z")
             wait(lambda: not next(x for x in get(port, "/api/comments?name=main")["items"] if x["id"] == t["id"])["resolved"], "undo did not reopen")
             kinds = [e["kind"] for e in get(port, "/api/events?name=main")][::-1]

@@ -165,8 +165,8 @@ def test_board_history_names_people_and_a_save_says_who(tmp_path):
             assert ev["by"] == {"person": ME, "via": "app"}, ev
             box = page.evaluate("() => { const r = EL.get('i1').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }")
             page.mouse.click(box["x"], box["y"])
-            page.wait_for_selector("#iM .hy-edited", timeout=5000)
-            assert "Codex · Partner" in page.locator("#iM .hy-edited").inner_text()
+            page.wait_for_selector("#info .hy-edited", timeout=5000)   # in the File section since the header became the facts (2026-10-10)
+            assert "Codex · Partner" in page.locator("#info .hy-edited").inner_text()
             shot(page, "6-info-edited-by")
             # Settings › Profile on the board: the partner renamed for this Mac only
             page.click("#bset"); page.evaluate("s => hySetPanel.go(s)", "team")   # the people this Mac knows: Team & agents

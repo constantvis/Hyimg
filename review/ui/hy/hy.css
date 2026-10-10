@@ -17,4 +17,10 @@
 @import url("tip.css");   /* <hy-tip>: one line about one thing you can do here, for someone only looking (owner 2026-10-09) */
 @import url("actions.css");   /* <hy-studio-actions>: a Studio's Save, Cancel, Done … top right (owner 2026-10-09) */
 @import url("openin.css");   /* <hy-open-in>: «Open in <Browser>», a split button with the browsers of this Mac */
+@import url("minitoggle.css");   /* round 15's micro UI (owner 2026-10-09, r15-micro.html): <hy-minitoggle>, <hy-scope>, <hy-led>, */
+@import url("scope.css");   /* <hy-stepper>, and the marks .hy-dot, .hy-tag, .hy-ri in micro.css; the micro segments are segmented.css */
+@import url("led.css");
+@import url("stepper.css");
+@import url("micro.css");
+@import url("scrub.css");   /* round 16's scrub a number: <hy-scrub> and scrub() on a page's own label (owner 2026-10-10) */
 @import url("avatar.css");   /* <hy-avatar>, defined by ui/avatar.js (a classic script: Home loads no modules) */

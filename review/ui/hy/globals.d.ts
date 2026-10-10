@@ -13,6 +13,11 @@ import type { HySegmented } from "./segmented.js";
 import type { HyKeyHint } from "./keyhint.js";
 import type { HyStudioActions } from "./actions.js";
 import type { HyOpenIn } from "./openin.js";
+import type { HyMiniToggle } from "./minitoggle.js";
+import type { HyScope } from "./scope.js";
+import type { HyLed } from "./led.js";
+import type { HyStepper } from "./stepper.js";
+import type { HyScrub } from "./scrub.js";
 
 declare global {
   interface HyT {
@@ -29,6 +34,8 @@ declare global {
     hySeg?: (root?: ParentNode) => void;
     HY_SEG_MANUAL?: boolean;
     HY_COLORS?: Record<string, string>;
+    /** the one rule for keys while typing (ui/typing.js): true while a key goes into a field that takes text */
+    hyTyping?: ((e?: Event) => boolean) & { field(el: Element | null): boolean; active(doc?: Document): Element | null };
   }
   interface HTMLElementTagNameMap {
     "hy-switch": HySwitch;
@@ -47,6 +54,11 @@ declare global {
     "hy-keyhint": HyKeyHint;
     "hy-studio-actions": HyStudioActions;
     "hy-open-in": HyOpenIn;
+    "hy-minitoggle": HyMiniToggle;
+    "hy-scope": HyScope;
+    "hy-led": HyLed;
+    "hy-stepper": HyStepper;
+    "hy-scrub": HyScrub;
   }
 }
 export {};

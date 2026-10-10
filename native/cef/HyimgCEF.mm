@@ -133,7 +133,7 @@ class HYClient : public CefClient, public CefLifeSpanHandler, public CefLoadHand
   void OnBeforeContextMenu(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, CefRefPtr<CefContextMenuParams> params, CefRefPtr<CefMenuModel> model) override {
     if (!(params->GetTypeFlags() & CM_TYPEFLAG_EDITABLE)) model->Clear();
   }
-  // keys the page did not take (⌘W, ⌘⇧H, ⌘R...) go to the app's menu, as they would from a WKWebView
+  // keys the page did not take (⌘W, ⌘⇧H, ⌘M...) go to the app's menu, as they would from a WKWebView
   bool OnKeyEvent(CefRefPtr<CefBrowser>, const CefKeyEvent &event, CefEventHandle os_event) override {
     if (os_event && event.type == KEYEVENT_RAWKEYDOWN && (event.modifiers & (EVENTFLAG_COMMAND_DOWN | EVENTFLAG_CONTROL_DOWN)))
       return [[NSApp mainMenu] performKeyEquivalent:(__bridge NSEvent *)os_event];

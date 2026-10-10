@@ -318,5 +318,12 @@ hyLang({
     "Next page": "Следующая страница",
     "Previous page · PageUp": "Предыдущая страница · PageUp",
     "Next page · PageDown": "Следующая страница · PageDown",
+    // the Library beside the board, round 15 (ui/libpanel.js, 2026-10-10)
+    "Filter": "Фильтр",
+    "Fold into the path": "Свернуть в путь",
+    "Filters on: {n}": "Включено фильтров: {n}",
+    "Search {n} items": "Поиск среди {n}",
+    "This picture is on no board": "Этой картинки нет на досках",
+    "Show on board ({n})": "Показать на доске ({n})",
   },
 });

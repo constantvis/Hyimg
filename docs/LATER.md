@@ -15,6 +15,6 @@
 - `review/comments.py`: хранение `annotations/<страница>__<id>.json`, события `annotate`, `annotate-edit`, `annotate-remove`. `review/annotext.py` описывает рисунки словами для агентов, `hy.py annotations` и `hy.py look --ann` работают как раньше.
 - Dev Studio (`hyimg-dev-studio/canvas.js`): кнопка «Рисовать» и P появляются, только когда инструменты загружены (`hyAnnot.drawing`).
 
-Как включить для проверки: в консоли доски `localStorage.setItem("cv.annDraw", "1")`, затем ⌘R. Выключить: `localStorage.removeItem("cv.annDraw")`. Переключателя в настройках нет. Без флага `annotate.js` не запрашивается, проверяет `tests/test_annotations_ui.py`.
+Как включить для проверки: в консоли доски `localStorage.setItem("cv.annDraw", "1")`, затем Вид › Обновить. Выключить: `localStorage.removeItem("cv.annDraw")`. Переключателя в настройках нет. Без флага `annotate.js` не запрашивается, проверяет `tests/test_annotations_ui.py`.
 
 Что решить перед возвращением: где живут инструменты, чтобы не подменять док (владельцу мешало переключение в другое меню); нужен ли весь набор или хватит пера и стрелки; общая ли это клавиша для доски и студий.

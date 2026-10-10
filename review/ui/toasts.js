@@ -3,7 +3,9 @@
 // another, the top one does not leave at once»): the newest stands in front, the older ones tuck in behind it a little lower and smaller,
 // the pointer on the stack fans it out into a list and holds every timer; each leaves after its own time, the oldest first.
 // Glass with blur like the panels; the colour says what it is: error red, news or a note blue, success green; light and dark themes.
-// hyToast(text, kind?, {sticky}?) — kind "error" | "info" | "success" | "warn" (amber: a clash of two edits, ui/merge.js); without it the words decide. A sticky one (something to act on,
+// hyToast(text, kind?, {sticky, actions, key}?) — key: one action's note, a later one with the same key takes its place, words and buttons
+// (P4 B-42: a cut said «Copied» and then «Cut», copy as image left «Copying…» beside «Copied»).
+// kind "error" | "info" | "success" | "warn" (amber: a clash of two edits, ui/merge.js); without it the words decide. A sticky one (something to act on,
 // owner 2026-10-04: «key notes that matter in the moment can stay, with a × on the right to close») stays until its × is pressed. The canvas inside the library page sends its
 // notes up here, so one stack shows everything. They stand in the window's middle, an open library or not (owner 2026-10-04); --toast-x on <html> can move them, 50% by default.
 // They stand IN the top row, at its centre, over whatever is there for their few seconds (owner 2026-10-09, again: «должно быть на уровне
@@ -87,15 +89,22 @@
     // inside an iframe of the same page family (the canvas in the library): the top page shows it, one stack for both
     try { if (window.parent !== window && window.parent.hyToast) return window.parent.hyToast(text, kind, opt); } catch {}
     const b = ensure(); kind = kind || kindOf(text);
-    const same = [...b.children].find(el => !el._gone && el._text === text);   // the same words again: that one stays longer, no copy
-    if (same) { if (!same._sticky) life(same); return same; }
-    const el = document.createElement("div"); el.className = "ht " + kind; el._text = text; el._ms = kind === "error" ? 5200 : 3200;
-    el.innerHTML = "<i></i><span></span>"; el.lastChild.textContent = text; el._sticky = !!opt.sticky;
+    const same = [...b.children].find(el => !el._gone && (opt.key ? el._key === opt.key : el._text === text));   // the same words, or key
+    if (same && !opt.key) { if (!same._sticky) life(same); return same; }
     // buttons on the note (owner 2026-10-06, «Move to page»: «Open» and «Undo»): opt.actions [{ label, fn }]; a press runs it and the note goes
-    (opt.actions || []).forEach(a => {
+    const buttons = el => (opt.actions || []).forEach(a => {
       const b = document.createElement("button"); b.type = "button"; b.className = "ab"; b.textContent = a.label;
-      b.addEventListener("click", ev => { ev.stopPropagation(); leave(el); try { a.fn(); } catch (er) { console.error(er); } }); el.appendChild(b);
+      b.addEventListener("click", ev => { ev.stopPropagation(); leave(el); try { a.fn(); } catch (er) { console.error(er); } });
+      el.insertBefore(b, el.querySelector(".x"));
     });
+    if (same) {   // the same action's note: its words, kind and buttons now, its time again
+      same.className = "ht " + kind + (opt.actions && opt.actions.length ? " act" : ""); same._text = text; same.querySelector("span").textContent = text;
+      same.querySelectorAll(".ab").forEach(x => x.remove()); buttons(same); same._ms = opt.actions && opt.actions.length ? 6500 : kind === "error" ? 5200 : 3200;
+      if (!same._sticky) life(same); requestAnimationFrame(lay); return same;
+    }
+    const el = document.createElement("div"); el.className = "ht " + kind; el._text = text; el._key = opt.key || null; el._ms = kind === "error" ? 5200 : 3200;
+    el.innerHTML = "<i></i><span></span>"; el.lastChild.textContent = text; el._sticky = !!opt.sticky;
+    buttons(el);
     if (opt.actions && opt.actions.length) { el._ms = 6500; el.classList.add("act"); }   // time to read it and reach a button
     if (el._sticky) {   // it stays: only its × takes it away
       const x = document.createElement("button"); x.className = "x"; x.type = "button"; x.title = t("Close"); x.setAttribute("aria-label", t("Close notification"));

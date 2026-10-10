@@ -33,7 +33,7 @@ usage() {
 
 Копии плагинов берутся рядом с этим репозиторием (../hyimg-image-studio, ../hyimg-3d-studio, ../hyimg-dev-studio)
 или клонируются туда. Ссылки ставятся в ~/Library/Application Support/Hyimg/plugins
-(другая папка: HYIMG_PLUGINS_DIR). После установки перезапусти сервер Hyimg (⇧⌘R).
+(другая папка: HYIMG_PLUGINS_DIR). После установки перезапусти сервер Hyimg: Вид › Перезапустить сервер.
 EOF
 }
 
@@ -128,4 +128,4 @@ if [ "$want_lama" = 1 ]; then
 fi
 
 echo
-echo "Готово. Перезапусти сервер Hyimg: Вид › Перезапустить сервер (⇧⌘R)."
+echo "Готово. Перезапусти сервер Hyimg: Вид › Перезапустить сервер."

@@ -5,8 +5,9 @@
 /* the dashed zones of notes lie under the pictures (owner 2026-10-03: a selected note's zone tinted the frames yellow) */
 #zones { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; z-index: 1; pointer-events: none; }
 #links .hit { pointer-events: stroke; cursor: pointer; }
-/* a note's arrow (owner 2026-10-08, a7 «Arrow states», ui/notelink.js arrowSvg): 2 px; hovered 3 px and a round × at its middle, or beside
-   its note's dot while the dot is hovered (.dh): one click takes the arrow off (2026-10-02: no select-then-Delete); picked: the selection's blue */
+/* a note's arrow (owner 2026-10-08, a7 «Arrow states», ui/notelink.js arrowSvg): 2 px; hovered 3 px; a click selects it (owner decision
+   2026-10-10, P4 B-20: a click took it off): the selection's blue and a round × at its middle, or beside its note's dot while the dot is
+   hovered (.dh); ⌫ or the × takes it off */
 #links .arw .ln { stroke-width: calc(2px / var(--z)); transition: stroke-width .12s var(--hy-ease); }
 /* the rest of an arrow by --z too, live through a zoom (2026-10-08); far out its head stops at a share of the thing it ends on (--hmax
    from arrowSvg) instead of covering it. fill-box: each part scales round its own point (the head round its tip). An arrow that ends
@@ -23,6 +24,6 @@
 #zones rect { rx: calc(6px / var(--z)); stroke-width: calc(1.5px / var(--z)); stroke-dasharray: calc(7px / var(--z)) calc(5px / var(--z)); }
 #links .arw:is(:hover, .pick, .dh) .ln { stroke-width: calc(3px / var(--z)); } #links .arw.pick .ln { stroke: var(--sel); } #links .arw.pick .hh { fill: var(--sel); }
 #links .arw .del { opacity: 0; pointer-events: none; cursor: pointer; transition: opacity .12s var(--hy-ease); }
-#links .arw:hover:not(.dh) .del.m, #links .arw.dh .del.e, #links .arw .del:hover { opacity: 1; pointer-events: all; }
+#links .arw.pick:not(.dh) .del.m, #links .arw.pick.dh .del.e { opacity: 1; pointer-events: all; }
 #links .del circle { fill: var(--panel); stroke: currentColor; } #links .del path { fill: none; stroke: var(--ink); }
 #links .del:hover circle { fill: var(--hy-red); stroke: var(--hy-red); } #links .del:hover path { stroke: var(--hy-on-accent); }

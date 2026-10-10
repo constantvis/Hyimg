@@ -113,15 +113,17 @@ def test_arrows_draw_hover_remove_make_edit(server):
         assert 9 <= page.evaluate(BOX, ".cnx[data-c='c1'] .clab text")[3] <= 17
         shot(page, "connectors-rest.png")
 
-        # hover the line: 3 px, the × under the pointer; a click takes it off, ⌘Z brings it back
+        # hover the line: 3 px, no ×; a click selects it (owner decision 2026-10-10, P4 B-20): its × in the middle, the arrow stays; ⌫
+        # takes it off, ⌘Z brings it back
         x, y = page.evaluate(AT, ["c3", .3])
-        page.mouse.move(x, y); seen(page, ".cnx[data-c='c3'] .del.m", True)
-        m = page.evaluate(BOX, ".cnx[data-c='c3'] .del.m circle")
-        assert ((m[0] - x) ** 2 + (m[1] - y) ** 2) ** .5 <= 3, (m, x, y)
+        page.mouse.move(x, y); seen(page, ".cnx[data-c='c3'] .del.m", False); page.wait_for_timeout(200)
         w = page.evaluate("() => parseFloat(getComputedStyle(document.querySelector(\".cnx[data-c='c3'] .ln\")).strokeWidth) * cam.z")
         assert abs(w - 3) < .3, w
         shot(page, "connectors-hover.png")
         page.mouse.down(); page.mouse.up()
+        assert page.evaluate("() => [!!(board.links || {}).c3, selArrow]") == [True, "cn:c3"]
+        seen(page, ".cnx[data-c='c3'] .del.m", True)
+        page.keyboard.press("Backspace")
         assert page.evaluate("() => !(board.links || {}).c3") and "Arrow removed" in page.evaluate(TOASTS)
         page.mouse.move(5, 300)
         page.keyboard.press("Meta+z")

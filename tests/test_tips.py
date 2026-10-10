@@ -127,7 +127,7 @@ def test_library_header_tip_takes_the_free_part_and_the_quick_way_once(server):
             t = tip(); gaps = pg.evaluate(room); shot(pg, "tip-library.png")
             assert t[0] == "altx" and t[1] > 150 and t[2] == "⌥-click a filter excludes it at once" and gaps[0] >= 8 and gaps[1] >= 8, (t, gaps)
             # narrower: the free part only, the line cut with an ellipsis (its title keeps it whole); with no room it is not there
-            pg.evaluate("() => document.documentElement.style.setProperty('--lw', '760px')"); pg.wait_for_timeout(500)
+            pg.evaluate("() => document.documentElement.style.setProperty('--lw', '680px')"); pg.wait_for_timeout(500)   # round 15: no buttons at the bar's end
             t = tip(); assert 60 <= t[1] <= 130 and pg.evaluate("() => document.querySelector('#fbar hy-tip').title") == t[2], t
             pg.evaluate("() => document.documentElement.style.setProperty('--lw', '320px')"); pg.wait_for_timeout(500)
             assert tip()[1] == 0

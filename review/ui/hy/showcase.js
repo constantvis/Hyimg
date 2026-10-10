@@ -3,7 +3,7 @@
 // вариациях»): every element of ui/hy in its variants, sizes and states, in the four looks side by side (dark and light, round and pro),
 // live: it imports ui/hy/index.js from the app's core, so the board shows the elements as they are now, never a copy. Each specimen is
 // captioned with its own tag and attributes, read from the element itself. A page that loads this module (ui/hy/showcase.html, the
-// board's html/hy-primitives/*.html frames) names its family on <body data-family="buttons|choices|marks|hints|all">. A member that is
+// board's html/hy-primitives/*.html frames) names its family on <body data-family="buttons|choices|marks|micro|hints|all">. A member that is
 // specified but not built yet is a static picture in a dashed panel (spec: true), its look in showcase.css.
 import * as HY from "./index.js";
 import { icon, t } from "./base.js";
@@ -23,6 +23,7 @@ const S = (tag, attrs = {}, html = "") => ({ tag, attrs, html });
 const esc = (/** @type {string} */ s) => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] || c);
 const opts = (/** @type {[string, string][]} */ list) => list.map(([v, w]) => `<button value="${v}">${w}</button>`).join("");
 const ic = (/** @type {string} */ n, /** @type {string} */ label) => `<button value="${n}" aria-label="${esc(label)}">${window.hyIcon ? window.hyIcon(n, 15) : n}</button>`;
+const ic12 = (/** @type {string} */ n, /** @type {string} */ label) => `<button value="${n}" aria-label="${esc(label)}">${window.hyIcon ? window.hyIcon(n, 12) : n}</button>`;
 // a key hint's items as <hy-keyhint> fills them (keyhint.js fill): caps, «/» between keys of one item, the words; quiet: used 3 times
 const kh = (/** @type {[string[], string, boolean?][]} */ items) => items.map(([keys, w, quiet]) => `<span class="kh-i"${quiet ? " quiet" : ""}>`
   + keys.map(k => `<hy-kbd size="s">${esc(caps(k))}</hy-kbd>`).join('<span class="kh-or">/</span>')
@@ -112,6 +113,45 @@ function families() {
           + `<hy-icon-button icon="history" size="l" toggle label="${esc(t("History"))}"></hy-icon-button>`
           + `<hy-icon-button icon="notifications" size="l" label="${esc(t("Notes"))}"></hy-icon-button>`),
         S("hy-plate", {}, "Hyimg App"),
+      ] },
+    ] },
+    // round 15's micro UI (owner 2026-10-09 on r15-micro.html: «Все топ, все делай, кроме номера пять»), each at the sheet's size, and
+    // control 5, the scrub, as round 16's version A (owner 2026-10-10 on r16-scrub.html: «отлично, беру»)
+    micro: { title: t("Micro UI"), sections: [
+      { title: "hy-minitoggle", sub: t("1 · mini toggle"), items: [
+        S("hy-minitoggle", {}, t("All nodes")), S("hy-minitoggle", { checked: "" }, t("All nodes")),
+        S("hy-minitoggle", { checked: "", label: t("Snap to grid") }), S("hy-minitoggle", { disabled: "" }, t("Locked")),
+      ] },
+      { title: "hy-scope", sub: t("2 · the count is the switch"), items: [
+        S("hy-scope", { shown: "22", total: "87" }), S("hy-scope", { shown: "22", total: "87", all: "" }),
+      ] },
+      { title: 'hy-segmented variant="micro"', sub: t("3 · micro segments"), items: [
+        S("hy-segmented", { variant: "micro", value: "local", label: t("Space") }, opts([["local", t("Local")], ["world", t("World")]])),
+        S("hy-segmented", { variant: "micro", value: "cm", label: t("Units") }, opts([["cm", "cm"], ["m", "m"], ["in", "in"]])),
+        S("hy-segmented", { variant: "micro", value: "sphere", label: t("Shading") }, ic12("primBox", t("Solid view")) + ic12("sphere", t("Material")) + ic12("light", t("Render"))),
+      ] },
+      { title: "hy-led", sub: t("4 · status, 6 px, no glow"), items: [
+        S("hy-led", { label: t("The current camera") }), S("hy-led", { state: "ok", label: t("Running") }),
+        S("hy-led", { state: "off", label: t("Not found") }), S("hy-led", { state: "busy", label: t("Working") }),
+      ] },
+      { title: "hy-scrub", sub: t("5 · drag the letter, ⇧ ×10, ⌥ ×0.1, a click types"), items: [
+        S("hy-scrub", { label: "X", value: "24", unit: "px" }), S("hy-scrub", { label: "W", value: "160", min: "16" }),
+        S("hy-scrub", { icon: "opacity", value: "100", min: "0", max: "100", unit: "%", "aria-label": t("Opacity") }),
+        S("hy-scrub", { label: "Y", value: "30", min: "-720", max: "720", unit: "°" }),
+      ] },
+      { title: "hy-stepper", sub: t("6 · tiny stepper"), items: [
+        S("hy-stepper", { value: "3", min: "1", max: "12", label: t("Columns") }), S("hy-stepper", { value: "24", min: "0", step: "4", label: t("Padding") }),
+      ] },
+      { title: ".hy-dot · .hy-tag", sub: t("7 · change dot, colour dot"), items: [
+        Object.assign(S("span", { class: "hy-dot", title: t("Changed") }), { cap: '<span class="hy-dot">' }),
+        ...colours.slice(0, 3).map(([k, v]) => Object.assign(S("span", { class: "hy-tag", style: `--hy-dot:${v}` }, `<i class="hy-dot"></i>${esc(t(k))}`),
+          { cap: '<span class="hy-tag">' })),
+        Object.assign(S("span", { class: "hy-tag off" }, `<i class="hy-dot"></i>${esc(t("Off"))}`), { cap: '<span class="hy-tag off">' }),
+      ] },
+      { title: ".hy-hovrow .hy-ri", sub: t("8 · icons on hover, a set one stays"), items: [
+        Object.assign(S("div", { class: "hy-hovrow sc-lrow" }, `<span>${esc(t("Shadow"))}</span>`
+          + `<button type="button" class="hy-ri" aria-label="${esc(t("Lock"))}">${icon("lock", 12)}</button>`
+          + `<button type="button" class="hy-ri keep" aria-label="${esc(t("Hidden"))}">${icon("eyeoff", 12)}</button>`), { cap: '<div class="hy-hovrow"> <button class="hy-ri">', wrap: "full" }),
       ] },
     ] },
     // the Hints family (DESIGN.md «Семья подсказок», all three built 2026-10-09): the key hint bare on a surface and in glass where there

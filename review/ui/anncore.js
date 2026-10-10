@@ -62,22 +62,33 @@
   }
 
   // ---- undo: one step a stroke or an annotation's action, in turn with the board's own (canvas.html past / future) ---------------
+  // A step remembers where it was made: on the board, or in the Studio holding the dock. ⌘Z in a Studio never undoes the board's
+  // annotation, nor ⌘Z under a viewer (the video player, a PDF's page) (P4 B-07)
   const ST = () => A.stacks[BOARD] || (A.stacks[BOARD] = { done: [], undone: [] });
-  function step(s) { const st = ST(); st.done.push({ ...s, pastLen: past.length }); st.undone = []; if (st.done.length > 200) st.done.shift(); draw(); }
+  const place = () => ($("#dock").classList.contains("plg-mode") && !docked() ? "studio:" + ((typeof MODES !== "undefined" && MODES && MODES.open) || "") : "board");
+  const viewer = () => typeof VBIG !== "undefined" && !!VBIG;
+  function step(s) { const st = ST(); st.done.push({ ...s, pastLen: past.length, at: place() }); st.undone = []; if (st.done.length > 200) st.done.shift(); draw(); }
   const mineNext = redo => { const st = ST(), s = redo ? st.undone[st.undone.length - 1] : st.done[st.done.length - 1];
-    return !!s && (redo ? future.length <= s.futureLen : past.length <= s.pastLen); };
-  async function undoMine() { const st = ST(), s = st.done.pop(); if (!s) return; s.futureLen = future.length; st.undone.push(s); try { await s.undo(); } catch (ex) { fail(ex); } }
-  async function redoMine() { const st = ST(), s = st.undone.pop(); if (!s) return; s.pastLen = past.length; st.done.push(s); try { await s.redo(); } catch (ex) { fail(ex); } }
-  const typing = () => { const a = document.activeElement;
-    return !!a && (a.isContentEditable || a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && !/^(range|checkbox|radio|button)$/i.test(a.type))); };
-  function undoKey(e) {
-    if (!(e.metaKey || e.ctrlKey) || e.altKey || !["z", "я"].includes((e.key || "").toLowerCase()) || typing() || !ok() || PREV) return;
+    return !!s && !viewer() && s.at === place() && (redo ? future.length <= s.futureLen : past.length <= s.pastLen); };
+  // a step moves to the other stack once the server has taken it (P4 B-51): one the server refused stays where it was; a second ⌘Z
+  // while the first is on its way waits for it
+  async function turn(from, to, dir, mark) {
+    const st = ST(), s = st[from][st[from].length - 1]; if (!s || s.busy) return; s.busy = true;
+    try { await s[dir](); st[from].pop(); s[mark] = mark === "futureLen" ? future.length : past.length; st[to].push(s); } catch (ex) { fail(ex); } finally { s.busy = false; }
+  }
+  const undoMine = () => turn("done", "undone", "undo", "futureLen"), redoMine = () => turn("undone", "done", "redo", "pastLen");
+  const typing = e => window.hyTyping(e);   // a field typed in takes every key, ⌘Z too (ui/typing.js)
+  function undoKey(e) {   // in a Studio ⌘Z is the Studio's own step, never an annotation before it (P4 S-13)
+    if (!(e.metaKey || e.ctrlKey) || e.altKey || !["z", "я"].includes((e.key || "").toLowerCase()) || typing(e) || !ok() || PREV) return;
+    if (typeof MODES !== "undefined" && MODES && MODES.open !== "board") return;   // asked now, not the attribute a frame later
     if (!mineNext(e.shiftKey)) return;
     e.preventDefault(); e.stopImmediatePropagation(); e.shiftKey ? redoMine() : undoMine();
   }
 
   // ---- geometry -----------------------------------------------------------------------------------------------------------------
-  const boxOf = an => { if (!an) return null; const it = board.items[an.obj]; if (it) return rectOf(an.obj); return an.r ? { x: an.r[0], y: an.r[1], w: an.r[2], h: an.r[3] } : null; };
+  // the box of what a pin or a drawing belongs to; its object gone (deleted, cut, moved to another page): none, the pin hides until ⌘Z
+  // brings the object back (P4 B-32: the pin stayed at the stored place); an anchor without an object keeps its stored box
+  const boxOf = an => { if (!an) return null; if (board.items[an.obj]) return rectOf(an.obj); return !an.obj && an.r ? { x: an.r[0], y: an.r[1], w: an.r[2], h: an.r[3] } : null; };
   const kindOf = it => (window.hyNoteLink ? hyNoteLink.kind(it) : it.type || "picture");
   const fileOf = it => it.path || it.src || it.scene || it.doc || "";
   // the object a drawing (a board rect) or a pin (a point) belongs to: the topmost one holding its centre, else the one it overlaps most
@@ -219,7 +230,9 @@
     if (!ok() || PREV || !A.tools[name]) return;
     const busy = $("#dock").classList.contains("plg-mode") && !docked();
     if (!A.tool && busy && !hostOk()) return;   // another editor holds the dock
-    if (typeof sel !== "undefined" && sel.size) { sel.clear(); render(); }
+    // the selection waits under the tool and comes back when it ends (owner decision 2026-10-10, P4 B-61); one tool at a time (B-30)
+    if (!A.tool && typeof cropState !== "undefined" && cropState && typeof applyCrop === "function") applyCrop();
+    if (!A.tool && typeof sel !== "undefined") { A.kept = new Set(sel); if (sel.size) { sel.clear(); render(); } }
     const first = !A.tool;
     A.tool = name; A.sel.clear();
     if (A.ext && A.ext.onTool) A.ext.onTool(name, first, busy);   // the drawing tools take the dock
@@ -235,12 +248,14 @@
     if (A.ext && A.ext.onExit) A.ext.onExit();
     stage.classList.remove("annot"); delete stage.dataset.annTool; $("#bann") && $("#bann").classList.remove("on");
     if (window.hyComments) hyComments.cancelDraft();
+    const k = A.kept; A.kept = null;   // the selection from before the tool, what of it is still there
+    if (k && typeof sel !== "undefined" && !sel.size) { sel = new Set([...k].filter(id => board.items[id] || board.groups[id])); if (sel.size && typeof render === "function") render(); }
     draw();
   }
   function setShow(on) { A.show = on; store("show", on ? "1" : "0"); draw(); }
   const isC = (e, k, code) => code === "c" || k === "c" || k === "с";
   function keys(e) {
-    if (typing() || !ok()) return;
+    if (typing(e) || !ok()) return;
     const k = (e.key || "").toLowerCase(), mod = e.metaKey || e.ctrlKey, code = (e.code || "").replace(/^Key/, "").toLowerCase();
     if (!A.tool) {   // on the board: C starts an annotation (⇧C crops, canvas.html)
       if (mod || e.altKey || PREV || ($("#dock").classList.contains("plg-mode") && !hostOk())) return;
@@ -249,12 +264,17 @@
       if (A.ext && A.ext.boardKey) A.ext.boardKey(e, k, code);   // P: the drawing tools
       return;
     }
-    if (mod) return;   // ⌘Z and the rest: undoKey and the board
-    e.stopImmediatePropagation(); if (A.kh && A.kh.key) A.kh.key(e);   // the key hint's own listener comes after this one: told here
-    if (e.key === "Escape") { e.preventDefault(); if (window.hyComments && hyComments.escape()) return; if (A.sel.size) { A.sel.clear(); draw(); return; } exit(); return; }
-    if (e.key === " ") return;   // the board's hand
-    if (A.ext && A.ext.key && A.ext.key(e, k, code)) return;   // the drawing tools' letters, ⌫ for their selection
-    if (!e.shiftKey && (code === "v" || k === "v" || k === "м")) { e.preventDefault(); exit(); }   // V: back to the board's pointer, as in Figma
+    // ⌘Z and the rest: undoKey and the board; Space, ! and \ are the board's with the tool on (P4 B-09, B-31): it pans, shows all, the library
+    if (mod || e.key === " " || e.key === "!" || e.key === "\\" || ["Shift", "Alt", "Meta", "Control", "CapsLock"].includes(e.key)) return;
+    if (A.kh && A.kh.key) A.kh.key(e);   // the key hint's own listener comes after this one: told here
+    if (e.key === "Escape") {
+      e.stopImmediatePropagation(); e.preventDefault(); if (window.hyComments && hyComments.escape()) return; if (A.sel.size) { A.sel.clear(); draw(); return; } exit(); return;
+    }
+    if (A.ext && A.ext.key && A.ext.key(e, k, code)) { e.stopImmediatePropagation(); return; }   // the drawing tools' letters, ⌫ for their selection
+    // V back to the board's pointer, as in Figma; C again turns the tool off (owner decision 2026-10-10, B-61); any other key of the board
+    // ends the tool and does its own work (B-31: N, F, L, ⌫, the arrows did nothing)
+    if (!e.shiftKey && (code === "v" || k === "v" || k === "м" || isC(e, k, code))) { e.stopImmediatePropagation(); e.preventDefault(); exit(); return; }
+    exit();
   }
 
   // ---- wiring ----------------------------------------------------------------------------------------------------------------------
@@ -273,7 +293,7 @@
     const r0 = window.render; window.render = function (...a) { const out = r0.apply(this, a); try { draw(); } catch (ex) { console.error("annotate", ex); } return out; };
     const c0 = window.renderCam; window.renderCam = function (...a) { const out = c0.apply(this, a); try { window.hyComments && hyComments.follow(); } catch {} return out; };
     const keysPanel = $("#keys");   // the shortcuts panel
-    if (keysPanel) keysPanel.insertAdjacentHTML("beforeend", `<div><span class="k"><kbd>C</kbd></span> ${esc(T("annotation, an area by a drag"))}</div>`);
+    if (keysPanel) keysPanel.insertAdjacentHTML("beforeend", `<div><span class="k"><kbd>C</kbd></span> ${esc(T("annotation, an area by a drag; C again ends it"))}</div>`);
     // the empty board's right click: the eye, the page's annotations
     HY.ctx(ids => ids.length ? [] : [{ icon: A.show ? "eyeoff" : "eye", label: A.show ? T("Hide annotations") : T("Show annotations"), fn: () => setShow(!A.show) },
       { icon: "list", label: T("Annotations on this page"), fn: () => window.hyComments && hyComments.list() }]);

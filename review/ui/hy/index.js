@@ -17,3 +17,8 @@ export { HyKeyHint } from "./keyhint.js";   // also window.hyKeyHint for the cla
 export { HyTip } from "./tip.js";   // also window.hyTip for the classic scripts
 export { HyStudioActions } from "./actions.js";   // a Studio's session actions, top right (owner 2026-10-09)
 export { HyOpenIn } from "./openin.js";   // «Open in <Browser>»; its way to the app is window.hyBrowsers
+export { HyMiniToggle } from "./minitoggle.js";   // round 15's micro UI (owner 2026-10-09, r15-micro.html: «Все топ, все делай»)
+export { HyScope } from "./scope.js";
+export { HyLed } from "./led.js";
+export { HyStepper } from "./stepper.js";
+export { HyScrub, scrub } from "./scrub.js";   // round 16's scrub a number (owner 2026-10-10, r16-scrub.html A: «отлично, беру»); also window.hyScrub

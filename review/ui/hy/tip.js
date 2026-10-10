@@ -87,7 +87,7 @@ export function show(host, ctx, items, opts = {}) {
     e.stopPropagation(); next();
   });
   /** a tip's keys pressed while it is shown: learned (the next visit leaves it out) @param {KeyboardEvent} e */
-  const onKey = e => { if (!e.repeat) for (const it of items) if (it.auto !== false && (it.keys || []).some(k => matches(k, e))) used(ctx, it.id); };
+  const onKey = e => { if (!e.repeat && !(window.hyTyping && window.hyTyping(e))) for (const it of items) if (it.auto !== false && (it.keys || []).some(k => matches(k, e))) used(ctx, it.id); };
   addEventListener("keydown", onKey, true);
   /** @type {TipHandle} */
   const handle = {

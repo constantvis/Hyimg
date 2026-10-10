@@ -33,10 +33,27 @@
       it('data-how="row"', "tidyRow", T("In a row"), ["⌥", "S"], two), it('data-how="smart"', "tidy", T("Tidy"), ["⌥", "D"], two), `<div class="sep"></div>`,
       it('data-how="make"', "gridMake", T("Make grid"), null, hyGrid.placed(board, all).length >= 2 ? "" : TWO()),
       it('data-how="table"', "table", T("Make table"), null, two || (table ? T("This is a table already") : "")),
-      it('data-how="remove"', "gridRemove", T("Remove grid"), null, gs.length ? "" : T("Not in a grid")), `<div class="sep"></div>`,
+      it('data-how="remove"', "gridRemove", T("Remove grid"), null, gs.length ? "" : T("Not in a grid")), colsRow(one && gs[0]), `<div class="sep"></div>`,
       hyMenuSub('data-sub="layouts"', "layouts", T("Layout patterns"), () => layouts(ids, pics))].join("");
     return Object.assign(["arrange", "tidyBlock", T("Arrange")], { sub });
   }
+  // a grid's columns as round 15's tiny stepper (owner 2026-10-09 on r15-micro.html, control 6, «grid columns»: «Все топ, все делай»): the
+  // row stays open while − and + reflow the grid, each change one undo step
+  function colsRow(gid) {
+    const g = gid && board.grids && board.grids[gid]; if (!g) return "";
+    const n = g.members.filter(m => board.items[m]).length, c = Math.max(1, Math.min(g.cols || 1, n));
+    return `<div class="hy-mstp" role="none"><span class="mi0"></span><span class="ml">${T("Columns")}</span>`
+      + `<hy-stepper data-gcols="${esc(gid)}" value="${c}" min="1" max="${Math.max(1, n)}" label="${esc(T("Columns"))}"></hy-stepper></div>`;
+  }
+  function cols(gid, n) {
+    const g = board.grids && board.grids[gid]; if (!g || !(n >= 1)) return;
+    const before = HY.snap(), at = hyGrid.layout(board, g).shape;
+    g.cols = n; hyGrid.reflow(board, gid, { x: at.x, y: at.y });
+    HY.commit(before, T("Grid columns: {n}", { n }));
+  }
+  document.addEventListener("hy-change", e => {
+    const s = e.target instanceof Element && e.target.closest("hy-stepper[data-gcols]"); if (s) cols(s.dataset.gcols, e.detail && e.detail.value);
+  });
   function layouts(ids, pics) {
     return LAYOUTS.map(([op, icon, name]) => {
       const a = `data-how="pattern" data-op="${op}" data-name="${esc(name)}"`;

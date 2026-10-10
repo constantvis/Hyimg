@@ -491,7 +491,8 @@ def test_note_links_by_cells_match_and_arrow_line_clears(server):
 
 
 def test_hovered_arrow_shows_a_minus_that_removes_it(server):
-    """Owner 2026-10-02: a round − (a × since 2026-10-08) on an arrow under the pointer, one click takes the arrow off, no select-then-Delete."""
+    """Owner 2026-10-02: a round − (a × since 2026-10-08) on an arrow; since the owner's decision of 2026-10-10 (P4 B-20) a click selects
+    the arrow and only then shows its ×, ⌫ or the × takes it off."""
     with playwright.sync_playwright() as p:
         try:
             browser = p.chromium.launch()
@@ -514,8 +515,10 @@ def test_hovered_arrow_shows_a_minus_that_removes_it(server):
         assert pt
         assert page.evaluate("() => getComputedStyle(document.querySelector('#links .del.m')).opacity") == "0"
         page.mouse.move(*pt); page.wait_for_timeout(250)
-        assert page.evaluate("() => getComputedStyle(document.querySelector('#links .del.m')).opacity") == "1"
-        page.mouse.down(); page.mouse.up()
+        assert page.evaluate("() => getComputedStyle(document.querySelector('#links .del.m')).opacity") == "0"   # hovered: no ×
+        page.mouse.down(); page.mouse.up(); page.wait_for_timeout(250)   # a click selects it, the × shows, the arrow stays
+        assert page.evaluate("() => [board.items.na.to.length, getComputedStyle(document.querySelector('#links .del.m')).opacity]") == [1, "1"]
+        page.keyboard.press("Backspace")
         assert page.evaluate("() => board.items.na.to.length") == 0
         assert page.locator("#links .del.m").count() == 0
         browser.close()
@@ -653,7 +656,7 @@ def test_library_right_click_shows_the_frame_on_the_board(server, tmp_path):
         right_click(other)
         # «Show on board» stays, grey, its reason in the tooltip (owner 2026-10-06: «I want users to know what functions exist»)
         assert page.evaluate("() => { const b = document.querySelector('#lctx.open [data-a=show]'); return [b.textContent.trim(), b.getAttribute('aria-disabled'), b.title]; }") == [
-            "Показать на доске", "true", "Этого кадра нет на досках"]
+            "Показать на доске", "true", "Этой картинки нет на досках"]
         page.keyboard.press("Escape"); assert not page.locator("#lctx.open").count()
         right_click("b/odd.png")
         page.click("#lctx.open >> text=Показать на доске")
@@ -898,8 +901,8 @@ def test_plate_home_project_page_and_the_pages_menu(server):
         page.wait_for_function("() => BOARD === 'p2' && document.querySelector('#cPageName').textContent === 'Бэ'", timeout=5000)
         if not page.locator("#pages.open").count(): page.click("#cPage")
         page.locator("#pages .row", has_text="A").click(button="right")
-        page.once("dialog", lambda d: d.accept())
         page.locator("#ctx [data-act=del]").click()
+        page.locator("#hyConfirm [data-a=ok]").click()   # the app's own question, not the system's (P4 B-57)
         page.wait_for_function("() => pages.length === 1 && pages[0].id === 'p2'")
         assert not errors, errors
         # inside the app: the house is there, the plate starts past the window's buttons, the house asks for Home

@@ -80,11 +80,12 @@
   function copy(id, of = 1) {
     const no = why(id); if (no) { toast(no); return false; }
     const job = make(id);
-    toast(T_("Copying the image…"));
+    const K = { key: "copyimg" };   // one note, updated in place (P4 B-42)
+    toast(T_("Copying the image…"), "info", K);
     navigator.clipboard.write([new ClipboardItem({ "image/png": job.then(r => r.blob) })]).then(() => job)
       .then(r => { const size = `${r.w}×${r.h}`;
-        toast(of > 1 ? T_("Copied the first of {n} as an image · {size}", { n: of, size }) : T_("Copied as image · {size}", { size }), "success"); })
-      .catch(err => toast(T_("Couldn't copy the image: {why}", { why: (err && err.message) || err }), "error"));
+        toast(of > 1 ? T_("Copied the first of {n} as an image · {size}", { n: of, size }) : T_("Copied as image · {size}", { size }), "success", K); })
+      .catch(err => toast(T_("Couldn't copy the image: {why}", { why: (err && err.message) || err }), "error", K));
     return true;
   }
   window.hyCopyImage = {
@@ -93,7 +94,7 @@
     key(ids) {
       const ok = ids.filter(i => board.items[i] && !why(i));
       if (ok.length) return copy(ok[0], ids.filter(i => kindOf(board.items[i])).length);
-      toast(ids.length ? why(ids[0]) : T_("Select an image")); return false;
+      toast(ids.length ? why(ids[0]) : T_("Select a picture, video, PDF, page or 3D"), "info", { key: "why" }); return false;   // all it copies (P4 B-48)
     },
     // the menu's «Copy as › Image» row for the card clicked
     row: id => hyMenuItem('data-act="image"', "image", T_("Image"), ["⇧", "⌘", "C"], why(id) ? hyMenuOff(why(id)) : ""),

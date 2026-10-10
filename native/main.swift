@@ -172,7 +172,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     func key(_ name: String) -> String { name + ":" + registry.file.path }
     func tabItems() -> [TabBar.Item] { tabs.compactMap { id in registry.projects.first { $0.id == id }.map { TabBar.Item(id: id, name: $0.name) } } }
     func saveTabs() { defaults.set(tabs.map(\.uuidString), forKey: key("openTabs")); defaults.set(selected?.uuidString, forKey: key("selectedTab")) }
-    // Home is an HTML page (review/home.html) in its own web view: edits show with ⌘R like the canvas; actions come back through "hyimg"
+    // Home is an HTML page (review/home.html) in its own web view: edits show with View › Reload Page like the canvas; actions come back through "hyimg"
     @objc func showProjects() {
         switchLeave()   // a switch under way ends, the board that kept the row goes back to its look (Switcher.swift)
         markSeen(selected)   // the board leaving the front: what was done on it while it was there is not news
@@ -720,7 +720,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         cef.onCrash = { [weak self, weak session] in
             guard let self, let session else { return }
             session.loaded = false; session.loading = false
-            self.alert(L("The board's page quit"), detail: L("The latest unsaved changes may not have been written. Press ⌘R to open the saved version."))
+            self.alert(L("The board's page quit"), detail: L("The latest unsaved changes may not have been written. Choose View › Reload Page to open the saved version."))
         }
     }
     @objc func toggleEngine() {   // CEF: Вид › Движок Chromium; the open projects reopen in the other engine after saving
@@ -769,11 +769,14 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
     }
     func showFailure(_ session: ProjectView, message: String) {
         let safe = message.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
-        let page = "<html><meta charset='utf-8'><body style='background:#171719;color:#ddd;font:16px -apple-system;padding:60px'><h2>\(L("The board did not open"))</h2><p>\(safe)</p><p>\(L("Press ⌘R to try again or go back Home (⌘⇧H)."))</p></body></html>"
+        let page = "<html><meta charset='utf-8'><body style='background:#171719;color:#ddd;font:16px -apple-system;padding:60px'><h2>\(L("The board did not open"))</h2><p>\(safe)</p><p>\(L("Choose View › Reload Page to try again or go back Home (⌘⇧H)."))</p></body></html>"
         if let cef = session.cef { cef.loadHTML(page) } else { session.web.loadHTMLString(page, baseURL: nil) }
     }
+    // View › Reload Page and View › Restart Server are in the menu only, with no keys (owner 2026-10-10: «Перезагрузку доски как полной
+    // страницы по комбинации я бы вообще убрал, и добавил бы эти перезагрузки в меню приложения, а не по комбинации. В нормальном режиме
+    // ошибок на доске не должно происходить»): ⌘R reaches the page, where Dev Studio reloads its page and the board does nothing
     @objc func reload() {
-        guard let selected, let session = sessions[selected] else { homeWeb?.reloadFromOrigin(); return }   // ⌘R on Home reloads home.html
+        guard let selected, let session = sessions[selected] else { homeWeb?.reloadFromOrigin(); return }   // on Home: home.html again
         performAfterSaving(session) { self.load(session) }
     }
     // View › Media Library ⌘M and Hide Interface ⌘. (owner 2026-10-06, as in Figma): the page takes the keys itself first; these are the
@@ -951,7 +954,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         guard let session = sessions.values.first(where: { $0.web === webView }) else { return }
         session.loaded = false
         session.loading = false
-        alert(L("The board's page quit"), detail: L("The latest unsaved changes may not have been written. Press ⌘R to open the saved version."))
+        alert(L("The board's page quit"), detail: L("The latest unsaved changes may not have been written. Choose View › Reload Page to open the saved version."))
     }
     func buildMenu() {
         let menu = NSMenu()
@@ -987,7 +990,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDele
         section("Hyimg", [languageItem(), .separator(), item(L("Hide Hyimg"), #selector(NSApplication.hide(_:)), "h"), .separator(), item(L("Quit Hyimg"), #selector(NSApplication.terminate(_:)), "q")])
         section(L("Board"), [item(L("Home"), #selector(showProjects), "h", [.command, .shift]), item(L("Board from Finder Folder…"), #selector(addProject as () -> Void), "o"), item(L("New Board…"), #selector(createProject as () -> Void), "n"), .separator(), item(L("Next Tab"), #selector(nextTab), "\t", [.control]), item(L("Previous Tab"), #selector(previousTab), "\t", [.control, .shift]), item(L("Close Tab"), #selector(closeCurrentTab), "w")])
         section(L("Edit"), [item(L("Undo"), Selector(("undo:")), "z"), item(L("Redo"), Selector(("redo:")), "z", [.command, .shift]), .separator(), item(L("Cut"), #selector(NSText.cut(_:)), "x"), item(L("Copy"), #selector(NSText.copy(_:)), "c"), item(L("Paste"), #selector(NSText.paste(_:)), "v"), item(L("Select All"), #selector(NSText.selectAll(_:)), "a")])
-        section(L("View"), [item(L("Reload Page"), #selector(reload), "r"), item(L("Restart Server"), #selector(restartServer), "r", [.command, .shift]), item(L("Open in Browser"), #selector(openInBrowser), "o", [.command, .shift]), .separator(), item(L("Media Library"), #selector(menuLibrary), "m"), item(L("Hide Interface"), #selector(menuHideUI), "."), .separator(), engineItem(), .separator(), item(L("Enter Full Screen"), #selector(NSWindow.toggleFullScreen(_:)), "f", [.command, .control])])
+        section(L("View"), [item(L("Reload Page"), #selector(reload), ""), item(L("Restart Server"), #selector(restartServer), ""), item(L("Open in Browser"), #selector(openInBrowser), "o", [.command, .shift]), .separator(), item(L("Media Library"), #selector(menuLibrary), "m"), item(L("Hide Interface"), #selector(menuHideUI), "."), .separator(), engineItem(), .separator(), item(L("Enter Full Screen"), #selector(NSWindow.toggleFullScreen(_:)), "f", [.command, .control])])
         section(L("Window"), [item(L("Minimize"), #selector(NSWindow.miniaturize(_:)), "")])   // ⌘M is the media library's (owner 2026-10-06, as in Figma); the yellow button still minimizes
         NSApp.mainMenu = menu
     }

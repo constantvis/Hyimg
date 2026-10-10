@@ -112,7 +112,7 @@ def test_section_lists_turns_dev_off_and_on_and_html_frames_open_dev_mode(hy):
         assert "dev" in modes(page)
         page.click("#bset"); page.evaluate("s => hySetPanel.go(s)", "plugins")
         page.wait_for_selector("#hyPlugSet .hpl-row >> nth=2")
-        assert rows(page) == [["3d", "3D objects", "0.1.0", True], ["dev", "Dev Studio", "0.2.0", True], ["frames", "Frames", "0.3.0", True]]
+        assert rows(page) == [["3d", "3D objects", "0.1.0", True], ["dev", "Dev Studio", "0.3.0", True], ["frames", "Frames", "0.3.0", True]]
         assert "Dev Studio edits a page" in page.locator("#hyPlugSet [data-pl=\"dev\"] .hpl-desc").inner_text()
         assert page.locator("#hyPlugSet [data-pl-add]").get_attribute("title") == "Only in the Mac app"   # no app here: Add is grey
         page.locator("#hyPlugSet").scroll_into_view_if_needed(); shot(page, "1-board-section-en")

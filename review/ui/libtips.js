@@ -10,6 +10,10 @@
     { id: "folder", t: "<b>Drag a folder</b> onto the board: it lands as a block", auto: false },   // a folder row is draggable
     { id: "ctab", t: "<b>⌃Tab</b> returns to the board you had before", keys: ["ctrl+tab"] },   // ui/switcher.js
   ];
+  // ⌃Tab is the app's (P4 B-54): in a browser it goes to the browser's next tab, so the tip is not there; in the app the page never sees
+  // the key (the app takes it first), its cards (ui/switcher.js) mark it learned
+  const app = (() => { try { return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.hyimg) || /HyimgCEF/.test(navigator.userAgent); } catch { return false; } })();
+  if (!app) TIPS.splice(TIPS.findIndex(t => t.id === "ctab"), 1);
   const wrap = document.createElement("span"); wrap.className = "libtip";
   wrap.style.cssText = "position:absolute;top:0;bottom:0;display:none;align-items:center;min-width:0;pointer-events:none";
   let raf = 0;

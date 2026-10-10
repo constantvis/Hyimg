@@ -113,6 +113,8 @@
 :root { --hy-ease: cubic-bezier(.32,.72,0,1); }
 /* a board's state in ⌃Tab's cards and the crumb's list (ui/switcher.js, owner 2026-10-08): open, warm (its page kept), asleep */
 :root { --hy-st-open: #22c55e; --hy-st-warm: #f5a524; --hy-st-sleep: #8ea2c8; }
+/* the axes' letters of a scrub field X Y Z (ui/hy/scrub.css, round 16's r16-scrub.html): red, green, blue as in 3D */
+:root { --hy-axis-x: #ff5f6d; --hy-axis-y: #7bd88f; --hy-axis-z: #6cb6ff; }
 
 /* Corners by the setting «Углы» (owner 2026-10-04): round pills, or «pro», a moderate radius. A plate of the top row 11, a bar 14, a
    control in a row or a plate 8 (--hy-row-r, owner 2026-10-06: «одни круглые другие квадратные»), a choice's track 8, a chip 6 */

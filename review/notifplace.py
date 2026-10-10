@@ -133,7 +133,7 @@ def repair(api, nid):
     """hy.py notify --place ID: an old notification that names nothing gets its author's things around its time, written by the server"""
     if not nid: raise SystemExit("hy.py notify --place ID")
     code, res = api("/api/notifications", {"action": "place", "id": nid, "fill": True})
-    if code != 200: raise SystemExit(f"место не записано: {code} {res} (сервер без notifplace: перезапусти его, ⇧⌘R)")
+    if code != 200: raise SystemExit(f"место не записано: {code} {res} (сервер без notifplace: перезапусти его: Вид › Перезапустить сервер)")
     if not res.get("found"): print(f"{nid}: событий автора рядом по времени не нашлось, уведомление осталось без места"); return
     print(f"{nid}: {len(res['ids'])} вещей на странице {res.get('page')}, область {res['area']}, превью {len(res['previews'])}"
           + (" (уже было место)" if res.get("had") else ""))

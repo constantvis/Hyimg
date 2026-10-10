@@ -107,8 +107,10 @@
         if (!cancel && Number.isFinite(v)) { const { min, max, step } = range(); emit("input", snap(v, min, max, step)); input.dispatchEvent(new Event("change", { bubbles: true })); }
         paint(); input.focus({ preventScroll: true });
       };
-      f.addEventListener("keydown", k => {
-        k.stopPropagation(); if (k.key === "Enter" || k.key === "Escape") { k.preventDefault(); end(k.key === "Escape"); return; }
+      // a value: ↵ and Tab apply, Esc gives the old one back (owner 2026-10-10, ui/typing.js on the board; a page without it, the same here)
+      const keys = window.hyTyping ? window.hyTyping.keys : (f, o) => f.addEventListener("keydown", k => { k.stopPropagation();
+        if (k.key === "Enter" || k.key === "Escape") { k.preventDefault(); (k.key === "Escape" ? o.cancel : o.apply)(k); } else o.key(k); });
+      keys(f, { esc: "cancel", enter: "line", apply: () => end(false), cancel: () => end(true), key: k => {
         // ↑ ↓ in the typed number step it, ⇧ ten steps (owner 2026-10-06: «up and down change the number, with Shift by ten, everywhere
         // I clicked a number»): the picture follows at once, the field stays open with the new number selected
         const d = k.key === "ArrowUp" ? 1 : k.key === "ArrowDown" ? -1 : 0; if (!d || k.altKey || k.metaKey || k.ctrlKey) return;
@@ -117,7 +119,7 @@
         const base = raw === f._shown || raw === was ? now : api.parse ? api.parse(raw, now) : Number(raw.replace(",", "."));
         const v = snap((Number.isFinite(base) ? base : num(input.value, cur)) + d * (step > 0 ? step : 1) * (k.shiftKey ? 10 : 1), min, max, step);
         emit("input", v); f.value = f._shown = text(v); f.select();
-      });
+      } });
       f.addEventListener("blur", () => end(false)); f.addEventListener("pointerdown", k => k.stopPropagation());
     }
     if (out) { out.addEventListener("pointerdown", e => e.stopPropagation()); out.addEventListener("click", e => { e.stopPropagation(); edit(); }); }

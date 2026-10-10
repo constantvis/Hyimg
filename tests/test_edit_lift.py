@@ -35,7 +35,7 @@ export function register(HY) {
     },
   });
   const leave = () => { open = null; if (Z) Z.detach(); Z = null; HY.dock(null); HY.modeChanged(); };
-  HY.mode("fake", { label: "Fake", order: 5, icon: "<svg width=16 height=16></svg>", title: "Fake", hint: "Select a fake card",
+  HY.mode("fake", { fit: false, label: "Fake", order: 5, icon: "<svg width=16 height=16></svg>", title: "Fake", hint: "Select a fake card",
     isOpen: () => !!open, target: ids => ids.length === 1 && HY.board.items[ids[0]] && HY.board.items[ids[0]].type === TYPE ? ids[0] : null,
     enter: id => PLG[TYPE].dblclick(id), leave });
 }

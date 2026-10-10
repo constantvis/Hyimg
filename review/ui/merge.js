@@ -173,5 +173,5 @@
     const file = e.kind === "dropbox" && e.file ? `<div class="em">${esc(e.file)}</div>` : "";
     return [T(e.kind === "dropbox" ? "Dropbox copy merged" : "Changes merged"), file + rows.join("")];
   };
-  window.hyMerge = { merge3, tell, members, same, changed };
+  window.hyMerge = { merge3, tell, members, same, changed, thing };   // thing: ui/undorebase.js brings undo steps up to date
 })();

@@ -6,7 +6,7 @@
 //
 // Drawn as the notes' arrows are (a69dc0b, 0cf175e): a soft curve from the side of one that faces the other, a small dot where it
 // starts and a head on the other's edge, the line under the cards it crosses (notelink.js underCut), sizes on screen by --z; hovered
-// 3 px with a × under the pointer that rides along the line (notelink.js moves any #links .arw .del.m), a click on it takes the arrow
+// 3 px; a click selects it (the selection's blue and its × at the middle, owner decision 2026-10-10, P4 B-20), ⌫ or the × takes it
 // off («Arrow removed», Undo, ⌘Z). Its label sits on the middle of the curve, a pill of constant size on screen; a click on it edits
 // the words, the line (solid «is», dashed «like», dotted «maybe») and the colour (blue «picked»). An arrow with no words shows a
 // «+ Label» pill while one of its ends is selected.
@@ -31,6 +31,13 @@
   function add(b, a, z) {
     if (a === z || !there(b, a) || !there(b, z) || pairOf(b, a, z)) return null;
     const id = uidC(); (b.links || (b.links = {}))[id] = { from: a, to: z }; return id;
+  }
+
+  // the arrows among copied things go with the copies (P4 B-29: ⌘D, ⌥-drag and ⌘V left them behind): map old id -> new; list: the
+  // arrows to copy (a clipboard's), by default the page's
+  function copyAmong(b, map, list) {
+    for (const c of list || Object.values(table(b))) if (c && map[c.from] && map[c.to] && !pairOf(b, map[c.from], map[c.to]))
+      (b.links || (b.links = {}))[uidC()] = { ...JSON.parse(JSON.stringify(c)), from: map[c.from], to: map[c.to] };
   }
 
   // ---- geometry: board units only, the same markup at any zoom ----
@@ -59,10 +66,11 @@
   function one(id, c, ends, rev) {
     const fr = rectOf(c.from), tr = rectOf(c.to); if (!fr || !tr) return "";
     const { P, u } = curve(fr, tr, rev), b = P[3], d = `M${pt(P[0])}C${pt(P[1])} ${pt(P[2])} ${pt(b)}`, m = Math.min(tr.w, tr.h, fr.w || 1e9, fr.h || 1e9);
-    const on = sel.has(c.from) || sel.has(c.to), cls = `cnx${on ? " on" : ""}${c.color === "blue" ? " blue" : ""}`;
+    const on = sel.has(c.from) || sel.has(c.to), pick = typeof selArrow !== "undefined" && selArrow === "cn:" + id;
+    const cls = `cnx${on || pick ? " on" : ""}${c.color === "blue" ? " blue" : ""}`;
     const cut = L().underCut({ key: c.from + "|" + c.to, cid: "cn-" + id, ends, nr: fr }, P, f);
     const mid = L().bz(P, .5), lab = c.label || "", w = lab ? textW(lab) + 18 : textW(T("+ Label")) + 18;
-    let h = `<g class="${cls}" data-c="${id}"><g class="arw cn-arw${c.style === "dashed" ? " ds" : c.style === "dotted" ? " dt" : ""}" data-k="${c.from}|${c.to}"`
+    let h = `<g class="${cls}" data-c="${id}"><g class="arw cn-arw${pick ? " pick" : ""}${c.style === "dashed" ? " ds" : c.style === "dotted" ? " dt" : ""}" data-k="${c.from}|${c.to}"`
       + ` style="--rmax:${f(Math.max(1, m * .02))}px;--hmax:${f(Math.max(.05, m * .3 / HL))}">`
       + (cut ? `<g${cut}>` : "") + `<path class="hit" data-conn="${id}" d="${d}" fill="none" stroke="transparent"/><path class="ln" d="${d}" fill="none" stroke-linecap="butt"/>`
       + (cut ? "</g>" : "") + `<circle class="c0" cx="${f(P[0].x)}" cy="${f(P[0].y)}"/>`
@@ -128,6 +136,7 @@
     const id = p.target && add(board, p.id, p.target);
     if (id) { commit(p.before); sel = new Set([p.id]); render(); } else renderLinks();
   });
+  function cancelPull() { if (!pull) return false; outline(pull.el, false); pull = null; renderLinks(); return true; }   // Esc mid-drag (P4 B-44)
   function remove(id) {
     if (!table(board)[id]) return; const before = snap(); delete board.links[id]; prune(board); commit(before);
     toast(T("Arrow removed"), "info", { actions: [{ label: T("Undo"), fn: () => { if (past[past.length - 1] === before) undo(); } }] });
@@ -151,7 +160,9 @@
     const inp = el.querySelector(".cnin"); inp.focus(); inp.select();
     const set = (k, v, empty) => { const cc = table(board)[id]; if (!cc) return; if (!v || v === empty) delete cc[k]; else cc[k] = v; renderLinks(); };
     inp.addEventListener("input", () => set("label", inp.value.trim().slice(0, 60), ""));
-    inp.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter" || e.key === "Escape") { e.preventDefault(); close(); } });   // Esc applies, as everywhere on the board
+    // the whole editor's keys (P4 B-18: after Tab to the line's buttons Esc left it open and cleared the board's selection): Esc and ↵
+    // apply the words, the line and the colour, as words on the canvas do (owner 2026-10-10, ui/typing.js); Tab goes between its parts
+    hyTyping.keys(el, { esc: "apply", enter: "line", tab: "own", apply: close });
     el.querySelector(".cnst").addEventListener("hy-change", e => set("style", e.detail.value, "solid"));
     el.querySelector(".cncol").addEventListener("hy-change", e => set("color", e.detail.value, "grey"));
     el.addEventListener("pointerdown", e => e.stopPropagation());
@@ -198,5 +209,5 @@
     e.preventDefault(); copyMermaid([...sel]);
   });
 
-  window.hyConn = { prune, add, svg, handle, mermaid, edit, close, curve };
+  window.hyConn = { prune, add, remove, cancelPull, copyAmong, svg, handle, mermaid, edit, close, curve };
 })();

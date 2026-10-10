@@ -10,7 +10,7 @@
   const T = (k, v) => (window.T ? window.T(k, v) : String(k).replace(/\{(\w+)\}/g, (m, x) => (v && x in v ? v[x] : m)));
   const $ = q => document.querySelector(q);
   const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  const C = { threads: new Map(), page: null, open: null, draft: null, filter: "open", person: "", busy: false, lit: new Set() };
+  const C = { threads: new Map(), page: null, open: null, draft: null, filter: "open", person: "", busy: false, lit: new Set(), drafts: new Map(), waits: new Map(), wn: 0 };
   const AN = () => window.hyAnnot;
   const ok = () => typeof board !== "undefined" && typeof BOARD !== "undefined" && !!AN();
   const clone = o => JSON.parse(JSON.stringify(o));
@@ -22,7 +22,10 @@
     try {
       const d = await AN().api("/api/comments?name=" + encodeURIComponent(page));
       if (page !== BOARD) return;
-      C.threads = new Map((d.items || []).map(t => [t.id, t])); C.page = page; draw(); changed(); if (C.open && !C.draft) thread(C.open);
+      const was = C.open && !C.draft ? C.threads.get(C.open) : null;
+      C.threads = new Map((d.items || []).map(t => [t.id, t])); C.page = page;
+      if (was && !C.threads.has(was.id)) gone(was);   // deleted elsewhere (P4 B-33)
+      draw(); changed(); if (C.open && !C.draft) thread(C.open);
       if ($("#cmlist.open")) list(true);
       AN().paintBar();
     } catch {}
@@ -30,15 +33,17 @@
   async function send(body) {
     const d = await AN().api("/api/comments", { name: BOARD, ...body });
     if (d.thread && !d.deleted) C.threads.set(d.thread.id, d.thread);
-    if (d.deleted) { C.threads.delete(d.deleted); if (C.open === d.deleted) close(); }
+    if (d.deleted) { C.threads.delete(d.deleted); if (C.open === d.deleted) close(); C.drafts.delete(d.deleted); }
     draw(); changed(); if (C.open && C.threads.has(C.open)) thread(C.open); if ($("#cmlist.open")) list(true); AN().paintBar();
     return d;
   }
   // one undo step: the thread as it was before, as it is after (null: none); undo and redo send it back whole (op put), refused when
-  // someone changed it since (base: the updated the server must still have)
+  // someone changed it since (base: the updated the server must still have; base_rev its rev, exact where updated is whole seconds and two
+  // edits in one second looked the same, П4 audit 2026-10-10)
   function stepOf(before, after) {
-    let last = after ? after.updated : null;
-    const go = async t => { const d = await send({ op: "put", id: (before || after).id, thread: t, base: last }); last = d.thread && !d.deleted ? d.thread.updated : null; };
+    const mark = t => t ? { base: t.updated, base_rev: t.rev } : {};
+    let last = mark(after);
+    const go = async t => { const d = await send({ op: "put", id: (before || after).id, thread: t, ...last }); last = mark(d.thread && !d.deleted ? d.thread : null); };
     AN().step({ undo: () => go(before && clone(before)), redo: () => go(after && clone(after)) });
   }
   async function act(body, before) {
@@ -92,14 +97,16 @@
     for (const t of C.threads.values()) {
       if (!shown(t)) continue; const q = placed(t), p = q ? q.p : still(t); if (!p) continue;
       const n = t.messages.length - 1, off = q ? "" : beyond(t);   // on the still: the element further down says so
-      want.set(t.id, [p, `${face(t.by, 24)}${n ? `<b class="cmp-n">${n}</b>` : ""}`, `${window.hyWhoText ? hyWhoText(t) : ""}: ${t.messages[0].text.slice(0, 80)}${off}`]);
+      want.set(t.id, [p, `${face(t.by, 24)}${n ? `<b class="cmp-n">${n}</b>` : ""}${C.drafts.has(t.id) && C.open !== t.id ? DOT : ""}`,
+        `${window.hyWhoText ? hyWhoText(t) : ""}: ${t.messages[0].text.slice(0, 80)}${off}`]);
     }
+    for (const [k, w] of C.waits) if (w.d.page === BOARD && !(C.draft && C.draft.wid === k)) want.set(k, [w.d.pos, face(AN().state.me(), 24) + DOT, T("Draft: {text}", { text: w.text.slice(0, 80) })]);
     if (C.draft) want.set("draft", [C.draft.pos, face(AN().state.me(), 24), T("New annotation")]);
     drawAreas(el);
     for (const p of [...el.querySelectorAll(":scope > .cmpin")]) if (!want.has(p.dataset.c)) p.remove();
     for (const [id, [p, h, title]] of want) {
       let b = el.querySelector(`:scope > [data-c="${id}"]`);
-      if (!b) { b = document.createElement("button"); b.className = "cmpin"; b.dataset.c = id; el.appendChild(b); }
+      if (!b) { b = document.createElement("button"); b.className = "cmpin hy-apin face"; b.dataset.c = id; el.appendChild(b); }   // ui/hy/apin.css
       if (b._h !== h) { b.innerHTML = h; b._h = h; }
       own(b, id);
       b.title = title; b.style.left = p.x + "px"; b.style.top = p.y + "px";
@@ -153,6 +160,7 @@
   // a press on a pin opens its thread; a drag moves it (onto another object or the canvas), one undo step
   function pinDrag(e, id) {
     if (id === "draft") return;
+    const w = C.waits.get(id); if (w) { newAt(w.d.pos, { ...w.d, wid: id, text: w.text, ment: w.ment }); return; }   // a new one not sent: open again
     const t = C.threads.get(id); if (!t) return;
     const s = { x: e.clientX, y: e.clientY }; let moved = false;
     const mv = ev => {
@@ -175,7 +183,10 @@
       el = document.createElement("div"); el.id = "cmthread"; el.className = "cm-pop"; el.setAttribute("role", "dialog");
       stage.appendChild(el);
       ["pointerdown", "wheel"].forEach(k => el.addEventListener(k, e => e.stopPropagation(), { passive: true }));
-      el.addEventListener("click", click); el.addEventListener("keydown", key); el.addEventListener("input", typed);
+      el.addEventListener("click", click); el.addEventListener("input", typed);
+      // the board's one rule for fields (ui/typing.js): ↵ sends, ⇧↵ a new line, Esc keeps the words as a draft on the pin, an IME's ↵ is its own
+      const apply = e => (e.key === "Escape" ? leave() : e.target.matches("textarea") ? submit() : e.target.click());
+      if (window.hyTyping && hyTyping.keys) hyTyping.keys(el, { esc: "apply", tab: "own", before: mentionKey, apply }); else el.addEventListener("keydown", key);
       // the field's ↵ in its corner while it is written in (ui/boardhints.js «comment», owner 2026-10-09: «просто Enter символа достаточно»)
       el.addEventListener("focusin", e => { if (e.target.matches("textarea") && window.hyHint) C.kh = hyHint("comment", e.target); });
       el.addEventListener("focusout", e => { if (C.kh && !el.contains(e.relatedTarget)) { C.kh.hide(); C.kh = null; } });
@@ -206,11 +217,16 @@
   function thread(id) {
     const t = C.threads.get(id); if (!t) return;
     if (C.draft) cancelDraft();
-    const keep = C.open === id ? (pop().querySelector("textarea") || {}).value || "" : "";
+    // the refresh every 8 s draws an open thread anew: the field being typed in keeps its text, focus and caret, or the next keys went to
+    // the board (owner 2026-10-10: «когда я в аннотациях пишу что-то, у меня триггерится F кнопка»: F ♥ the selected, N a new note)
+    if (C.open !== id) stash();   // another thread was open: its words stay with it
+    const old = C.open === id ? pop().querySelector("textarea") : null, back = old ? null : C.drafts.get(id), keep = old ? old.value : back ? back.text : "";
+    const caret = old && document.activeElement === old ? [old.selectionStart, old.selectionEnd, old.selectionDirection] : null;
     const fresh = C.open !== id;
-    C.open = id; C.ment = C.open === id ? C.ment || [] : [];
-    const el = pop(), what = t.element ? t.element.css || t.element.tag || "" : t.anchor ? (window.hyNoteLink && board.items[t.anchor.obj]
-      ? hyNoteLink.label(board, t.anchor.obj) : t.anchor.file || "") : "";
+    C.open = id; C.ment = old ? C.ment || [] : back ? back.ment.map(q => ({ ...q })) : [];
+    if (old) mentionsOff();   // drawn anew (the 8 s refresh): the mention list goes too, a hidden one took the next ↵ (P4 B-12)
+    const el = pop(), what = t.element ? t.element.css || t.element.tag || "" : partName(t.anchor) || (t.anchor ? (window.hyNoteLink && board.items[t.anchor.obj]
+      ? hyNoteLink.label(board, t.anchor.obj) : t.anchor.file || "") : "");
     el.innerHTML = `<div class="cm-h"><b>${esc(T("Annotation"))}</b>${what ? `<span class="cm-w" title="${esc(what)}">· ${esc(what.split("/").pop())}</span>` : ""}`
       + `<span class="cm-sp"></span><hy-icon-button icon="${t.resolved ? "reset" : "resolve"}" size="s" label="${esc(t.resolved ? T("Reopen") : T("Resolve"))}"`
       + ` data-cm="${t.resolved ? "reopen" : "resolve"}"${t.resolved ? "" : ' class="cm-rs"'}></hy-icon-button>`
@@ -218,7 +234,8 @@
       + (t.resolved ? `<div class="hy-hint cm-rd">${T("Resolved by <b>{who}</b>", { who: esc(window.hyWhoText ? hyWhoText(t.resolved) : "") })}</div>` : "")
       + `<div class="cm-msgs">${t.messages.map(msg).join("")}</div>` + composer(T("Reply…"));
     el.classList.add("open"); el.dataset.c = id;
-    const ta = el.querySelector("textarea"); ta.value = keep; grow(ta);
+    const ta = el.querySelector("textarea"); ta.value = keep; grow(ta); if (old && C.edit) ta.placeholder = old.placeholder;
+    if (caret) { ta.focus({ preventScroll: true }); ta.setSelectionRange(...caret); }
     follow(); draw();
     const box = el.querySelector(".cm-msgs"); box.scrollTop = box.scrollHeight;
     // a thread opened anew says so (Dev Studio's tree selects its element's row); made: the one just written, its row is where it was
@@ -232,20 +249,49 @@
     C.draft = o ? { anchor: o.anchor || null, at: o.at, element: o.element || null, area: o.area || null, box: o.box || null, pos: p,
       cancel: typeof o.cancel === "function" ? o.cancel : null }   // cancel: the draft closed unsent (Dev Studio gives back a scroll)
       : { anchor: at.anchor, at: at.rel(p.x, p.y), pos: p };
-    C.ment = [];
+    C.draft.page = (o && o.page) || BOARD; C.draft.wid = (o && o.wid) || null;   // wid: a kept draft opened again
+    C.ment = o && o.ment ? o.ment.map(q => ({ ...q })) : [];
     const el = pop();
-    const what = C.draft.element ? C.draft.element.css || C.draft.element.tag || "" : "";
+    const what = C.draft.element ? C.draft.element.css || C.draft.element.tag || "" : partName(C.draft.anchor);
     el.innerHTML = `<div class="cm-h"><b>${esc(T("New annotation"))}</b>${what ? `<span class="cm-w" title="${esc(what)}">· ${esc(what)}</span>` : ""}<span class="cm-sp"></span>`
       + `<hy-icon-button icon="close" size="s" label="${esc(T("Cancel"))} · Esc" data-cm="close"></hy-icon-button></div>`
       + composer(C.draft.area ? T("Annotation on area {n}", { n: areaN(C.draft.anchor) }) : T("Add an annotation… @ to mention"));
     el.classList.add("open"); el.dataset.c = "draft";
+    if (o && o.text) { const ta = el.querySelector("textarea"); ta.value = o.text; grow(ta); }
     follow(); draw(); el.querySelector("textarea").focus(); setTimeout(() => { const ta = el.querySelector("textarea"); if (ta && document.activeElement !== ta) ta.focus(); }, 0);
   }
+  // a Studio's thread names its layer or 3D object in the header (anchor.part, review/comments.py clean_part)
+  const partName = an => (an && an.part && (an.part.name || an.part.id)) || "";
   const areaN = an => 1 + [...C.threads.values()].filter(t => t.area && (an ? t.anchor && t.anchor.obj === an.obj : !t.anchor)).length;
+  // Unsent words stay (P4 B-03, B-04): every way out of a thread or a new annotation (Esc, a press on the board, another pin, the dock's
+  // button, a page switch) keeps what was typed as a draft on its pin, with a small dot; opening the pin again brings the words back.
+  // Nothing is ever sent by leaving. An edit of a message is not kept: leaving it gives back the reply written before it (B-11)
+  const DOT = '<i class="hy-dot cmp-d"></i>';
+  const keepFor = (id, v) => { if (v && v.text.trim()) C.drafts.set(id, v); else C.drafts.delete(id); };
+  function stash() {
+    const ta = document.querySelector("#cmthread.open textarea"); if (!ta) return;
+    const text = ta.value, ment = (C.ment || []).filter(m => text.includes("@" + m.label));
+    if (C.edit) { if (C.open) keepFor(C.open, C.editKeep); C.edit = null; C.editKeep = null; return; }
+    if (C.draft) {
+      const k = C.draft.wid || "w" + ++C.wn;
+      if (text.trim()) { C.waits.set(k, { d: { ...C.draft }, text, ment }); C.draft.wid = k; } else C.waits.delete(k);
+    } else if (C.open) keepFor(C.open, { text, ment });
+  }
   function close() {
+    stash();
     const el = document.getElementById("cmthread"); if (el) { el.classList.remove("open"); el.innerHTML = ""; }
     const dr = C.draft; C.open = null; C.draft = null; mentionsOff(); draw();
     unsent(dr);
+  }
+  // the open thread was deleted elsewhere (another window, an agent): it closes and says so; words typed in it stay as a new draft where
+  // its pin stood (P4 B-33: it stayed open and ↵ threw an error)
+  function gone(t) {
+    const ta = document.querySelector("#cmthread.open textarea"), text = ta ? ta.value : "", ment = (C.ment || []).filter(m => text.includes("@" + m.label));
+    C.drafts.delete(t.id); C.edit = null; C.editKeep = null; C.open = null; const el = document.getElementById("cmthread"); if (el) { el.classList.remove("open"); el.innerHTML = ""; }
+    mentionsOff();
+    const r = stage.getBoundingClientRect(), pos = still(t) || toWorld(r.left + r.width / 2, r.top + r.height / 2), an = t.anchor && board.items[t.anchor.obj] ? t.anchor : null;
+    if (text.trim()) C.waits.set("w" + ++C.wn, { d: { anchor: an, at: an ? t.at : [pos.x, pos.y], area: null, pos, page: BOARD }, text, ment });
+    if (typeof toast === "function") toast(T(text.trim() ? "This annotation was deleted elsewhere, your words are kept as a draft" : "This annotation was deleted elsewhere"), "info");
   }
   function unsent(dr) { if (dr && dr.cancel) try { dr.cancel(); } catch (ex) { console.error("comment cancel", ex); } }
   function cancelDraft() { if (C.draft) close(); }
@@ -253,27 +299,32 @@
     const el = document.getElementById("cmthread"); if (!el || !el.classList.contains("open") || typeof cam === "undefined") return;
     const t = C.threads.get(C.open), p = C.draft ? C.draft.pos : t && where(t); if (!p) return;
     const r = stage.getBoundingClientRect(), x = (p.x - cam.x) * cam.z, y = (p.y - cam.y) * cam.z, w = el.offsetWidth, h = el.offsetHeight;
+    // a Studio keeps it in its free part, off its side panels (hyComments.bounds, the window's px)
+    let l0 = 12, r0 = r.width - 12, t0 = 58, b0 = r.height - 12; const fb = C.bounds && C.bounds();
+    if (fb) { l0 = Math.max(l0, fb.l - r.left); r0 = Math.min(r0, fb.r - r.left); t0 = Math.max(t0, fb.t - r.top); b0 = Math.min(b0, fb.b - r.top); }
     let left = x + 40, top = y - 40;
-    if (left + w > r.width - 12) left = x - w - 16;
-    el.style.left = Math.max(12, Math.min(r.width - w - 12, left)) + "px"; el.style.top = Math.max(58, Math.min(r.height - h - 12, top)) + "px";
+    if (left + w > r0) left = x - w - 16;
+    el.style.left = Math.max(l0, Math.min(r0 - w, left)) + "px"; el.style.top = Math.max(t0, Math.min(b0 - h, top)) + "px";
   }
   async function submit() {
     const el = pop(), ta = el.querySelector("textarea"), v = (ta && ta.value || "").trim(); if (!v || C.busy) return;
     const ment = (C.ment || []).filter(m => v.includes("@" + m.label));
-    C.busy = true;
+    C.busy = true; let after = [];
     try {
       if (C.draft) {
         const d = C.draft; C.draft = null;
         const res = await act({ op: "new", anchor: d.anchor, at: d.at, element: d.element, area: d.area, text: v, mentions: ment });
-        if (res && res.thread) { C.made = res.thread.id; thread(res.thread.id); C.made = null; const ta = pop().querySelector("textarea"); if (ta) ta.focus(); }
-        else { close(); unsent(d); }
+        if (res && res.thread) { if (d.wid) C.waits.delete(d.wid); C.made = res.thread.id; thread(res.thread.id); C.made = null; const ta = pop().querySelector("textarea"); if (ta) ta.focus(); }
+        else { C.draft = d; close(); }   // not sent: the words stay as a draft
       } else if (C.open) {
         const before = clone(C.threads.get(C.open));
-        if (C.edit) { const mid = C.edit; C.edit = null; await act({ op: "edit", id: C.open, mid, text: v, mentions: ment }, before); }
-        else { ta.value = ""; await act({ op: "reply", id: C.open, text: v, mentions: ment }, before); }
+        if (C.edit) {   // the reply written before the edit comes back into the field
+          const mid = C.edit, k = C.editKeep; C.edit = null; C.editKeep = null; ta.value = k ? k.text : ""; after = k ? k.ment : [];
+          await act({ op: "edit", id: C.open, mid, text: v, mentions: ment }, before);
+        } else { ta.value = ""; C.drafts.delete(C.open); await act({ op: "reply", id: C.open, text: v, mentions: ment }, before); }
         if (C.open) { thread(C.open); const t2 = pop().querySelector("textarea"); if (t2) t2.focus(); }
       }
-    } finally { C.busy = false; C.ment = []; }
+    } finally { C.busy = false; C.ment = after; }
   }
   function click(e) {
     const b = e.target.closest("[data-cm]"); if (!b) { if (e.target.closest(".cm-at")) return; return; }
@@ -286,19 +337,25 @@
     if (k === "del" && m) { act({ op: "delete", id: t.id, mid: m.dataset.m }, clone(t)); return; }
     if (k === "edit" && m) {
       const x = t.messages.find(q => q.id === m.dataset.m), ta = pop().querySelector("textarea"); if (!x || !ta) return;
+      if (!C.edit) C.editKeep = { text: ta.value, ment: (C.ment || []).map(q => ({ ...q })) };   // the reply being written, given back after the edit
       C.edit = x.id; C.ment = (x.mentions || []).map(q => ({ ...q })); ta.value = x.text; ta.placeholder = T("Edit the annotation…"); grow(ta); ta.focus();
     }
   }
-  function key(e) {
-    e.stopPropagation();
-    if (AT.list.length && ["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key)) {
-      e.preventDefault();
-      if (e.key === "Escape") { mentionsOff(); return; }
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") { AT.i = (AT.i + (e.key === "ArrowDown" ? 1 : -1) + AT.list.length) % AT.list.length; paintAt(); return; }
-      pickMention(AT.i); return;
-    }
+  function mentionKey(e) {   // the mention list open: its arrows, ↵, Tab and Esc are its own
+    if (!AT.list.length || !["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key)) return false;
+    e.preventDefault();
+    if (e.key === "Escape") { mentionsOff(); return true; }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { AT.i = (AT.i + (e.key === "ArrowDown" ? 1 : -1) + AT.list.length) % AT.list.length; paintAt(); return true; }
+    pickMention(AT.i); return true;
+  }
+  function leave() {   // an edit: its words go, the reply written before it comes back (P4 B-11); else close, the words kept as a draft
+    if (!C.edit) { close(); return; }
+    const k = C.editKeep || { text: "", ment: [] }; C.edit = null; C.editKeep = null; pop().querySelector("textarea").value = k.text; C.ment = k.ment; thread(C.open);
+  }
+  function key(e) {   // a page without ui/typing.js
+    e.stopPropagation(); if (e.isComposing || e.keyCode === 229 || mentionKey(e)) return;
     if (e.key === "Enter" && !e.shiftKey && e.target.matches("textarea")) { e.preventDefault(); submit(); return; }
-    if (e.key === "Escape") { e.preventDefault(); if (C.edit) { C.edit = null; thread(C.open); return; } close(); }
+    if (e.key === "Escape") { e.preventDefault(); leave(); }
   }
   const grow = ta => { ta.style.height = "auto"; ta.style.height = Math.min(140, ta.scrollHeight) + "px"; };
 
@@ -371,7 +428,7 @@
       + (pick.length ? pick.map(t => { const last = t.messages[t.messages.length - 1];
         return `<button class="cm-row" data-go="${esc(t.id)}">${face(t.by, 24)}<span class="cm-rb"><span class="cm-rh"><b>${esc(window.hyWhoText ? hyWhoText(t) : "")}</b>`
           + `<time>${esc(ago(last.created))}</time></span>${t.area && t.anchor ? `<span class="cm-ra">${esc(T("Area"))} ${pctR(t.area)}</span>` : ""}`
-          + `<span class="cm-rt">${esc(t.messages[0].text)}</span>`
+          + `${t.anchor && !board.items[t.anchor.obj] ? `<span class="cm-ra">${esc(T("object gone"))}</span>` : ""}<span class="cm-rt">${esc(t.messages[0].text)}</span>`
           + `${t.messages.length > 1 ? `<span class="cm-rr">${esc(T("{n} replies", { n: t.messages.length - 1 }))}</span>` : ""}</span></button>`; }).join("")
         : `<div class="none">${esc(C.filter === "open" ? T("No open annotations on this page") : T("No resolved annotations"))}</div>`);
     el.classList.add("open");
@@ -382,6 +439,23 @@
     const r = stage.getBoundingClientRect();
     cam.x = p.x - (r.width / 2 - 120) / cam.z; cam.y = p.y - r.height / 2 / cam.z; if (typeof saveCam === "function") saveCam(); render();
     thread(id);
+  }
+
+  // Move to page takes the annotations of what goes (P4 B-32): a thread on a moved thing is written on the other page with the thing's
+  // id there and taken off this one, the same for ⌘Z of the move; map: the thing's id here -> there. Returns how many went
+  async function carry(from, to, map) {
+    let n = 0;
+    try {
+      const d = await AN().api("/api/comments?name=" + encodeURIComponent(from));
+      for (const t of d.items || []) {
+        const o = t.anchor && t.anchor.obj; if (!o || !(o in map)) continue;
+        const c = clone(t); c.anchor = { ...c.anchor, obj: map[o] };
+        await AN().api("/api/comments", { name: to, op: "put", id: t.id, thread: c });
+        await AN().api("/api/comments", { name: from, op: "put", id: t.id, thread: null }); n++;
+      }
+    } catch (ex) { AN().fail(ex); }
+    if (n) load();
+    return n;
   }
 
   // ---- the bell, the history -------------------------------------------------------------------------------------------------------
@@ -421,7 +495,8 @@
     load(); setInterval(() => { if (!document.hidden && !C.busy) load(); }, 8000);
   }
   const escape = () => { if (AT.list.length) { mentionsOff(); return true; } if (C.open || C.draft) { close(); return true; } return false; };
-  window.hyComments = { draw, follow, list, open: thread, close, cancelDraft, load, escape, newAt, light, position: f => { PLACE.push(f); draw(); },
+  window.hyComments = { draw, follow, list, open: thread, close, cancelDraft, load, escape, newAt, light, carry, position: f => { PLACE.push(f); draw(); },
+    bounds: f => { C.bounds = typeof f === "function" ? f : null; follow(); },   // a Studio's free part for the open thread (null: the stage)
     threads: () => [...C.threads.values()],
     openCount: () => [...C.threads.values()].filter(t => !t.resolved).length, authors: () => [...C.threads.values()].map(t => t.by).filter(Boolean), get state() { return C; } };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();

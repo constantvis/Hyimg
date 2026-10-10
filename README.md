@@ -39,7 +39,7 @@ Hyimg works without them. With them the board does more, and each one lives in i
 ./scripts/install_plugins.sh --frames --3d --dev --yes   # no questions, for an agent after the person said yes
 ```
 
-The script uses checkouts next to this repository or clones them there and links them into `~/Library/Application Support/Hyimg/plugins`. Then View › Restart server (⇧⌘R). The LaMa model for content-aware fill (about 208 MB) is downloaded only with `--lama`.
+The script uses checkouts next to this repository or clones them there and links them into `~/Library/Application Support/Hyimg/plugins`. Then View › Restart Server. The LaMa model for content-aware fill (about 208 MB) is downloaded only with `--lama`.
 
 **For agents:** before you install Hyimg or start working with it, ask the person about each plugin by name, say in one line what it gives and what it needs, and install it only after a yes. Details in `AGENTS.md`.
 
@@ -52,7 +52,7 @@ You need macOS 14 or later, the Xcode Command Line Tools and Python 3.10+ with P
 ./scripts/install.sh
 ```
 
-The app goes to `~/Applications/Hyimg.app`; the code stays in this repository, so ⌘R picks up HTML changes and ⇧⌘R restarts the server after Python changes. Swift changes need a rebuild. Open Hyimg, then connect an existing folder or create a new one: each project gets its own boards, history, ratings and settings.
+The app goes to `~/Applications/Hyimg.app`; the code stays in this repository, so View › Reload Page picks up HTML changes and View › Restart Server restarts the server after Python changes (menu only, no keys). Swift changes need a rebuild. Open Hyimg, then connect an existing folder or create a new one: each project gets its own boards, history, ratings and settings.
 
 ### Rendering engine
 

@@ -15,7 +15,9 @@ Both lie on top of the canvas, never in a picture's pixels, and are stored per p
                                  at then is the point's share of the card, the pin's place on the card's still (y at most
                                  0.98: an element further down the page waits at the still's bottom edge, describe says so);
                                  area?: [u, v, w, h] a region of its object in shares (board units when free): the Comment
-                                 tool's drag, the library preview's «Comment on area N» on the board
+                                 tool's drag, the library preview's «Comment on area N» on the board;
+                                 anchor.part: a layer of an Image Studio frame or an object of a 3D scene, the pin follows it
+                                 (clean_part; op place moves at and area after it without an event)
 Every drawing and thread also carries what an agent reads without the geometry (annotext.py, refresh() after each change and when
 an agent asks): describe (one line in words and numbers), region (shares, pixels), about (a drawing's threads), marks (a thread's
 drawings).
@@ -48,6 +50,7 @@ tr = lambda en, ru: en   # server.py sets its own (the app's language)
 
 ANN, COM = os.path.join(W, "annotations"), os.path.join(W, "comments")
 KINDS = ("pen", "arrow", "rect", "ellipse", "text")
+PART_KINDS = ("layer", "object")
 PAGE = re.compile(r"[\w-]{1,80}")
 ID = re.compile(r"[a-z0-9]{4,32}")
 _LOCK = threading.RLock()
@@ -58,6 +61,12 @@ def _now(): return time.strftime("%Y-%m-%dT%H:%M:%S")
 
 
 def _id(p): return p + uuid.uuid4().hex[:10]
+
+
+def _rev(t):
+    """the thread's next rev: a count of its writes, exact where updated (whole seconds) is not"""
+    try: return int((t or {}).get("rev") or 0) + 1
+    except (TypeError, ValueError): return 1
 
 
 def _page(v):
@@ -110,6 +119,26 @@ def clean_anchor(a):
     if isinstance(a.get("file"), str) and a["file"]: out["file"] = a["file"][:400]
     r = a.get("r")
     if isinstance(r, (list, tuple)) and len(r) == 4: out["r"] = [_num(x) for x in r]
+    part = clean_part(a.get("part"))
+    if part: out["part"] = part
+    return out
+
+
+def clean_part(p):
+    """the part of a card a thread is tied to inside a Studio (owner 2026-10-09: «3D у нас ... не хватает аннотаций, чтобы можно было так же
+    выделить какой-то слой и комментировать его ... Image Studio точно так же, чтобы я мог выбрать и слой»): {kind: layer (an Image Studio
+    layer) | object (a 3D scene's object, light or camera), id, name, layer?: the path of a 3D object's layer (scene.js layerPath),
+    local: [u, v] shares of the layer's own pixels | [x, y, z] in the 3D object's (or its layer's) own axes, area?: [u, v, w, h] of the
+    layer's own pixels}. The pin follows the part; the thread's at and area stay its place on the card's picture (op place)"""
+    if not isinstance(p, dict) or p.get("kind") not in PART_KINDS: return None
+    pid = str(p.get("id") or "")
+    if not re.fullmatch(r"[\w.:~-]{1,80}", pid): return None
+    out = {"kind": p["kind"], "id": pid, "name": " ".join(str(p.get("name") or "").split())[:80]}
+    if p["kind"] == "object" and isinstance(p.get("layer"), str) and p["layer"]: out["layer"] = p["layer"][:400]
+    loc = p.get("local")
+    if isinstance(loc, (list, tuple)) and len(loc) == (2 if p["kind"] == "layer" else 3): out["local"] = [_num(v) for v in loc]
+    ar = p.get("area")
+    if p["kind"] == "layer" and isinstance(ar, (list, tuple)) and len(ar) == 4: out["area"] = [_num(v) for v in ar]
     return out
 
 
@@ -271,14 +300,17 @@ def _own(root, by, who):
 def comment(root, page, op, by, d):
     """op: new {anchor, at, text, mentions}, reply {id, text, mentions}, edit {id, mid, text, mentions}, delete {id, mid} (the first message
     takes the thread), resolve {id}, reopen {id}, move {id, anchor, at}, put {thread, base} (undo and redo: the thread as it was; base, the
-    updated it must still have, refuses a thread someone changed since). Returns {thread} or {deleted, thread}"""
+    updated it must still have, refuses a thread someone changed since; base_rev, its rev, when the client sends one), place {id, at, area?}
+    (a Studio's thread on a layer or a 3D object: its pin's place on the card's picture after the part moved; no event, updated and rev stay).
+    Every other write counts the thread's rev up by one: updated is in whole seconds, and two edits in the same second looked the same to
+    undo's check, which then put back a thread over the other edit (П4 audit 2026-10-10). Returns {thread} or {deleted, thread}"""
     page = _page(page)
     with _LOCK:
         if op == "new":
             tid, now = _id("c"), _now()
             anchor = clean_anchor(d.get("anchor"))
             text = clean_text(d.get("text"))
-            t = {"id": tid, "page": page, "anchor": anchor, "at": _at(d.get("at")), "by": by, "created": now, "updated": now, "resolved": None,
+            t = {"id": tid, "page": page, "anchor": anchor, "at": _at(d.get("at")), "by": by, "created": now, "updated": now, "rev": 1, "resolved": None,
                  "objects": [anchor["obj"]] if anchor else [],
                  "messages": [{"id": _id("m"), "by": by, "text": text, "mentions": mentions(root, text, d.get("mentions")), "created": now}]}
             if anchor and clean_element(d.get("element")): t["element"] = clean_element(d.get("element"))
@@ -290,19 +322,30 @@ def comment(root, page, op, by, d):
         p = _thread_path(page, tid)
         t = _read(p)
         if op == "put":
-            new, base = d.get("thread"), d.get("base")
-            if base is not None and (t or {}).get("updated") != base: raise ValueError(tr("changed since", "изменено с тех пор"))
+            new, base, base_rev = d.get("thread"), d.get("base"), d.get("base_rev")
+            if base_rev is not None and t and t.get("rev") is not None: changed = t.get("rev") != base_rev
+            else: changed = base is not None and (t or {}).get("updated") != base
+            if changed or (base_rev is not None and not t): raise ValueError(tr("changed since", "изменено с тех пор"))
             if not new:
                 if t: os.remove(p); _stamp_event(page, "comment-remove", by, t.get("objects") or [], text=t["messages"][0]["text"][:140], thread=tid)
                 return {"deleted": tid, "thread": t}
             new = clean_thread(root, page, new)
-            new["updated"] = _now()
+            new["updated"], new["rev"] = _now(), _rev(t)
             _write(p, new)
             was, now_r = bool((t or {}).get("resolved")), bool(new.get("resolved"))
             kind = "comment" if not t else "resolve" if now_r and not was else "reopen" if was and not now_r else "comment-edit"
             _stamp_event(page, kind, by, new.get("objects") or [], text=new["messages"][0]["text"][:140], thread=tid)
             return {"thread": new}
         if not t: raise ValueError(tr("no such annotation", "нет такой аннотации"))
+        if op == "place":   # the part moved in its Studio: the pin's place on the card follows, quietly (no event, no new updated)
+            if not (t.get("anchor") or {}).get("part"): raise ValueError("not a Studio's annotation")
+            t["at"] = _at(d.get("at"))
+            if "area" in d:
+                ar = clean_area(d.get("area"), True)
+                if ar: t["area"] = ar
+                else: t.pop("area", None)
+            _write(p, t)
+            return {"thread": t}
         now, kind, text = _now(), "", ""
         if op == "reply":
             text = clean_text(d.get("text"))
@@ -335,7 +378,7 @@ def comment(root, page, op, by, d):
             kind, text = "comment-edit", t["messages"][0]["text"]
         else:
             raise ValueError("unknown op")
-        t["updated"] = now
+        t["updated"], t["rev"] = now, _rev(t)
         _write(p, t)
         _stamp_event(page, kind, by, t.get("objects") or [], text=text[:140], thread=tid)
         return {"thread": t}

@@ -131,21 +131,23 @@ def test_studio_top_row_is_its_own(world, key):
 
 
 def test_keys_panel_icons(world):
+    """round 14's icons in the ? panel, now its All keys tab (round 15's Tips, tests/test_design_r15.py): every row its action's icon"""
     page, frame = open_canvas(world)
     frame.click("#bkeys"); frame.wait_for_timeout(600)
-    rows = frame.evaluate("""() => [...document.querySelectorAll('#keys > div')].filter(r => r.querySelector('.k')).map(r => {
+    frame.click("#keys .kp-tab[data-kt=all]"); frame.wait_for_timeout(300)
+    rows = frame.evaluate("""() => [...document.querySelectorAll('#keys .kp-all > .kp-row')].map(r => {
       const i = r.querySelector(':scope > .kpi'), keys = [...r.querySelectorAll('.k kbd')].map(k => k.textContent.trim()).join('');
       const app = n => Object.assign(document.createElement('i'), { innerHTML: HY_IC[n] }).innerHTML;   // the menus' icon, as the page parses it
       return { keys, icon: i ? i.dataset.icon || '' : null, svg: i ? i.innerHTML : '', want: i && i.dataset.icon ? app(i.dataset.icon) : '',
-               x: i ? Math.round(i.getBoundingClientRect().left) : null, first: r.firstElementChild === i }; })""")
+               x: i ? Math.round(i.getBoundingClientRect().left) : null, first: r.firstElementChild === i, own: !!r.querySelector('.k svg') }; })""")
     assert rows and all(r["icon"] is not None and r["first"] for r in rows), [r for r in rows if r["icon"] is None or not r["first"]]
     assert len({r["x"] for r in rows}) == 1, "the icons do not stand in one column"
     got = {r["keys"]: r["icon"] for r in rows}
-    for keys, icon in {"N": "note", "C": "comment", "⌘G": "group", "⇧⌘G": "ungroup", "⌘Z⌘⇧Z": "undo", "⇧1": "fit", "⇧C": "crop", "⌘M": "library",
+    for keys, icon in {"N": "note", "C": "comment", "⌘GG": "group", "⇧⌘G⇧G": "ungroup", "⌘Z⇧⌘Z": "undo", "⇧1": "fit", "⇧C": "crop", "⌘M": "library",
                        "⌘D": "duplicate", "⌥A": "tidyBlock"}.items():
         assert got.get(keys) == icon, (keys, got.get(keys))
     assert all(r["svg"] == r["want"] and "<svg" in r["svg"] for r in rows if r["icon"]), "an icon is not the app's (HY_IC)"
-    assert got.get("Space") == "" and rows[0]["icon"] == "", "a gesture's row (Space + mouse, a drag from the library) has no icon"
+    assert all(r["icon"] or r["own"] for r in rows), "a row without its icon"   # round 15: a gesture's row has one too (a drag: the library)
     assert frame.evaluate("() => document.querySelectorAll('#keys kbd').length") > 40   # the keys stay the app's key caps
     assert not page.errors, page.errors
     page.close()

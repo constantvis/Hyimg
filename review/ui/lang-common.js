@@ -298,6 +298,11 @@ hyLang({
     "The default {name} badge": "Вернуть значок {name}",
     "The {name} badge": "Значок {name}",
     "Drag to place, scroll to zoom": "Перетащите, чтобы выбрать место, колесо меняет масштаб",
+    "Save changes to “{name}”?": "Сохранить изменения в «{name}»?",
+    "Save changes?": "Сохранить изменения?",
+    "Your changes are lost if you leave without saving": "Изменения пропадут, если выйти без сохранения",
+    "Keep editing": "Продолжить",
+    "Discard": "Сбросить",
     "Save": "Сохранить",
     "The board is already there": "Доска уже там",
     // macnotif.js: Settings › Notifications, the Mac's banners (owner 2026-10-08)
@@ -374,5 +379,12 @@ hyLang({
     "Old boards that show nowhere else": "Старые доски, которых больше нигде не видно",
     "Nothing in the Archive": "В архиве пусто",
     "<b>Drag boards here</b> or choose <b>Move to Archive</b> in a board's menu": "<b>Перетащи доски сюда</b> или выбери <b>В архив</b> в меню доски",
+    // ui/hy, round 15's micro UI (owner 2026-10-09): the stepper's buttons, the count that is the scope, a plugin running or off
+    "Less": "Меньше",
+    "More": "Больше",
+    "{shown} of {total} shown · show all": "Показано {shown} из {total} · показать все",
+    "All {total} shown · show only {shown}": "Показаны все {total} · показать только {shown}",
+    "Running": "Работает",
+    "Not found": "Не найден",
   },
 });

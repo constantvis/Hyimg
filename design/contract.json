@@ -378,7 +378,11 @@
    ".frow .fck",
    ".mk",
    ".hy-search",
-   ".ifcol"
+   ".ifcol",
+   "hy-scope",
+   "hy-segmented[variant=micro]",
+   "hy-stepper",
+   ".hy-ri"
   ],
   "library_pills": [
    ".card .kd",

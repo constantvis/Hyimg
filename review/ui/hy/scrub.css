@@ -1,0 +1,26 @@
+/* Scrub a number (owner 2026-10-10 on round 16's r16-scrub.html, version A: «отлично, беру»; ui/hy/scrub.js). The handle (.hy-scrub-h, the
+   letter or icon left of the number) shows ew-resize and, under the pointer or while dragged, the selection's colour at 26 % (the Studio's
+   in a Studio) with the words in ink; the field being dragged (.hy-scrubbing) wears a 1 px ring of that colour, and the whole page keeps
+   ew-resize until the drag ends. A page's own label becomes a handle by scrub(); it stretches to its field's height. */
+.hy-scrub-h { cursor: ew-resize; align-self: stretch; display: inline-grid; place-items: center; flex: none; min-width: 14px; padding: 0 4px; margin: 0 -4px;
+  border-radius: 5px; touch-action: none; user-select: none; -webkit-user-select: none; transition: background .15s ease, color .15s ease; }
+.hy-scrub-h:hover, .hy-scrubbing .hy-scrub-h { background: color-mix(in srgb, var(--hy-sel) 26%, transparent); color: var(--ink); }
+.hy-scrubbing { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hy-sel) 70%, transparent) !important; }
+:root.hy-scrub-drag, :root.hy-scrub-drag * { cursor: ew-resize !important; }
+/* <hy-scrub>: the whole field, a 24 px well (the blocks' --hy-ctl-h): a 22 px handle cell with its 11 px letter (an X, Y, Z in its axis
+   colour) or a 12 px icon, the number at 12 px in tabular digits, its unit muted; typing it, a 1.5 px ring of the selection's colour */
+hy-scrub { position: relative; display: inline-flex; align-items: center; box-sizing: border-box; width: 88px; min-width: 0; height: var(--hy-ctl-h, 24px); border-radius: var(--hy-ctl-r, 6px);
+  vertical-align: middle; background: var(--hy-well); color: var(--ink); font: 400 12px/1 var(--sans); font-variant-numeric: tabular-nums; }
+hy-scrub > .hy-scrub-l { width: 22px; min-width: 22px; margin: 0; padding: 0; border-radius: var(--hy-ctl-r, 6px) 0 0 var(--hy-ctl-r, 6px); color: var(--muted);
+  font: 500 11px/1 var(--sans); font-style: normal; }
+hy-scrub > .hy-scrub-l > svg { width: 12px; height: 12px; }
+hy-scrub > .hy-scrub-l[data-axis=x] { color: var(--hy-axis-x); } hy-scrub > .hy-scrub-l[data-axis=y] { color: var(--hy-axis-y); }
+hy-scrub > .hy-scrub-l[data-axis=z] { color: var(--hy-axis-z); }
+hy-scrub > .hy-scrub-l:hover, hy-scrub.hy-scrubbing > .hy-scrub-l { color: var(--ink); }
+hy-scrub > .hy-scrub-v { flex: 1; min-width: 0; width: 100%; height: 100%; margin: 0; padding: 0 2px 0 4px; border: 0; outline: 0; background: transparent; color: inherit;
+  font: inherit; font-variant-numeric: tabular-nums; cursor: text; }
+hy-scrub > .hy-scrub-u { flex: none; padding-right: 6px; color: var(--muted); }
+hy-scrub > .hy-scrub-u:empty { padding-right: 4px; }
+hy-scrub:focus-within { box-shadow: inset 0 0 0 1.5px var(--hy-sel); }
+hy-scrub[disabled] { opacity: .45; }
+@media (prefers-reduced-motion: reduce) { .hy-scrub-h { transition: none; } }

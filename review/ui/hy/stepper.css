@@ -1,0 +1,19 @@
+/* <hy-stepper>: round 15's tiny stepper (owner 2026-10-09, r15-micro.html, control 6). One 22 px well: − 20 px, the number at least 26 px
+   at 500 12 px in tabular digits, + 20 px; the buttons muted, ink on the hover plate, faded at the end of the range. Under the contract's
+   24 px target on purpose: the owner approved the micro sizes at 1:1 (design/contract.json target_exempt) */
+hy-stepper { display: inline-flex; align-items: center; flex: none; box-sizing: border-box; height: 22px; border-radius: 6px; vertical-align: middle;
+  background: var(--hy-well); font: 500 12px/1 var(--sans); }
+hy-stepper > .hy-stp-b { display: grid; place-items: center; width: 20px; height: 22px; padding: 0; border: 0; border-radius: 6px; background: transparent;
+  color: var(--muted); font: 500 13px/1 var(--sans); cursor: pointer; transition: background .15s ease, color .15s ease; }
+hy-stepper > .hy-stp-b:hover:not(:disabled) { background: var(--hy-hov); color: var(--ink); }
+hy-stepper > .hy-stp-b:disabled { opacity: .35; cursor: default; }
+hy-stepper > .hy-stp-n { min-width: 26px; text-align: center; color: var(--ink); font: inherit; font-variant-numeric: tabular-nums; outline: none; }
+hy-stepper[disabled] { opacity: .45; }
+/* a stepper row in a menu (the board's «Arrange › Columns»): a 32 px row like the menu's items, and the stepper's own buttons kept small
+   where the menu styles every button as a row (#ctx button) */
+.hy-mstp { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 10px; color: var(--sub); font: 500 13px var(--sans); letter-spacing: 0;
+  text-transform: none; white-space: nowrap; }   /* a submenu is a .hy-sub, the class of a block's capitals label too (block.css) */
+.hy-mstp > .ml { flex: 1; min-width: 0; }
+:is(#ctx, #lctx, .menu) hy-stepper > .hy-stp-b { display: grid; place-items: center; width: 20px; height: 22px; padding: 0; border-radius: 6px; background: transparent;
+  color: var(--muted); font: 500 13px/1 var(--sans); }
+:is(#ctx, #lctx, .menu) hy-stepper > .hy-stp-b:hover:not(:disabled) { background: var(--hy-hov); color: var(--ink); }

@@ -1,0 +1,20 @@
+/* The rest of round 15's micro UI (owner 2026-10-09 on r15-micro.html: «Все топ, все делай»), plain classes for marks without behaviour.
+   .hy-dot  control 7, the change dot: 5 px in the selection's colour (the Studio's inside a Studio) after what changed and is not saved
+            yet, or what differs from its source (a 3D material overridden); a title says what it means.
+   .hy-tag  control 7, the colour dot on a chip: a 22 px capsule, a ring of ink at 14 %, its .hy-dot 6 px in the chip's own colour
+            (--hy-dot); .off fades it and rings the dot (a filter turned off).
+   .hy-hovrow / .hy-ri  control 8, icons on hover: a row's icon buttons (.hy-ri, 20 px, muted) show while the row is hovered or holds the
+            focus; one that is set (.keep, or [data-set]: locked, hidden) stays, a step brighter. The icon keeps the size its list draws. */
+.hy-dot { display: inline-block; flex: none; width: 5px; height: 5px; border-radius: 99px; vertical-align: middle; background: var(--hy-sel); }
+.hy-tag { display: inline-flex; align-items: center; gap: 6px; flex: none; box-sizing: border-box; height: 22px; padding: 0 8px; border: 0; border-radius: 999px;
+  vertical-align: middle; background: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 14%, transparent); color: var(--ink);
+  font: 500 11.5px/1 var(--sans); white-space: nowrap; }
+.hy-tag > .hy-dot { width: 6px; height: 6px; background: var(--hy-dot, var(--hy-sel)); }
+.hy-tag.off { opacity: .45; } .hy-tag.off > .hy-dot { background: none; box-shadow: inset 0 0 0 1.2px var(--muted); }
+button.hy-tag { cursor: pointer; } button.hy-tag:hover { background: var(--hy-hov); }
+.hy-ri { display: grid; place-items: center; flex: none; box-sizing: border-box; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px;
+  background: none; color: var(--muted); opacity: 0; cursor: pointer; transition: opacity .18s var(--hy-ease), background .15s ease, color .15s ease; }
+:is(.hy-hovrow:hover, .hy-hovrow:focus-within) .hy-ri, .hy-ri:is(.keep, [data-set]) { opacity: 1; }
+.hy-ri:is(.keep, [data-set]) { color: var(--sub); }
+.hy-ri:hover { background: var(--hy-hov); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .hy-ri { transition: none; } }

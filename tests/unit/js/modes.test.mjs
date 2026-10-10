@@ -94,17 +94,23 @@ test("the open editor's mode stays enabled even when the selection no longer fit
   assert.equal(btn("3d").getAttribute("aria-disabled"), "false");
 });
 
-test("another mode while an editor is open: the open one leaves first, then the other enters", () => {
-  const { state, click, p } = modes({ sel: ["m7"] });
+// the way from one Studio to another waits for the first one's leave, a promise (P4 S-31, П4 audit 2026-10-10): the steps between run as
+// microtasks, flushed here between the clock's ticks
+const flush = async () => { for (let i = 0; i < 6; i++) await null; };
+
+test("another mode while an editor is open: the open one leaves first, then the other enters", async () => {
+  const { state, click, p, M, btn } = modes({ sel: ["m7"] });
   click("3d");
+  // the other segments follow the open Studio's card, not a selection behind it (P4 S-31: the board around a Studio is inert since S-08)
   state.sel = ["p1"]; p.tick(16);
-  click("image");
+  assert.equal(btn("image").getAttribute("aria-disabled"), "true");
+  M.enter("image", ["p1"]);
   assert.deepEqual(state.log, [["enter", "3d", "m7"], ["leave", "3d"]]);
-  p.tick(40);
+  await flush(); p.tick(60); await flush();
   assert.deepEqual(state.log, [["enter", "3d", "m7"], ["leave", "3d"], ["enter", "image", "p1"]]);
 });
 
-test("an editor that asks before closing is waited for, then the other mode enters", () => {
+test("an editor that asks before closing is waited for, then the other mode enters", async () => {
   const p = page({ scripts: ["ui/modes.js"] });
   const dock = p.el("div", { id: "dock" }, p.document.body);
   let open = "a"; const log = [];
@@ -114,11 +120,11 @@ test("an editor that asks before closing is waited for, then the other mode ente
   p.tick(16);
   p.fire(M.el.querySelector('[data-mode="b"]'), "click");
   assert.deepEqual(log, ["leave a"]);
-  p.tick(280); assert.deepEqual(log, ["leave a"], "not while A is still open");
-  p.tick(60); assert.deepEqual(log, ["leave a", "enter b x"]);
+  await flush(); p.tick(280); await flush(); assert.deepEqual(log, ["leave a"], "not while A is still open");
+  p.tick(100); await flush(); assert.deepEqual(log, ["leave a", "enter b x"]);
 });
 
-test("an editor that never closes is given up on after about four seconds", () => {
+test("an editor that never closes is given up on after about three seconds", async () => {
   const p = page({ scripts: ["ui/modes.js"] });
   const dock = p.el("div", { id: "dock" }, p.document.body);
   const log = [];
@@ -126,7 +132,7 @@ test("an editor that never closes is given up on after about four seconds", () =
   M.add("a", { label: "A", order: 10, isOpen: () => true, target: () => "x", enter: () => log.push("enter a"), leave: () => log.push("leave a") });
   M.add("b", { label: "B", order: 20, isOpen: () => false, target: () => "x", enter: () => log.push("enter b"), leave() {} });
   p.fire(M.el.querySelector('[data-mode="b"]'), "click");
-  p.tick(10000);
+  await flush(); p.tick(10000); await flush();
   assert.deepEqual(log, ["leave a"]);
   assert.equal(p.clock.pending() <= 2, true, "the waiting interval stopped");
 });

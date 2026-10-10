@@ -277,9 +277,9 @@ def test_fullscreen_button_opens_it_large_and_esc_closes(server, engine):
         page.keyboard.press("Escape")
         page.wait_for_function("() => !VBIG && !document.querySelector('#vbig').classList.contains('open')")
         assert page.evaluate("() => [...sel]") == ["v1"], "Esc closed the player, not the selection"
-        # the card on the right says its length and size
-        info = page.inner_text("#info")
-        assert "видео 0:06" in info and "640 × 360 px" in info, info
+        # the card on the right says its size and length in its header's line of facts (ui/infohead.js, 2026-10-10)
+        info = page.inner_text("#iM")
+        assert info.startswith("640 × 360 · 0:06 · "), info
         assert not errors, errors
         browser.close()
 
@@ -423,7 +423,7 @@ def test_video_in_english_has_no_russian(tmp_path, clips):
             check("no ffmpeg")
             page.mouse.click(*center(page, "v2")); page.wait_for_timeout(300); check("a video selected")
             page.mouse.move(600, 700); open_large(page, "v2"); page.wait_for_function("() => document.querySelector('#vbig').classList.contains('open')"); check("large")
-            assert "video" in page.inner_text("#info").lower()
+            assert page.evaluate("() => document.querySelector('#info').dataset.kind") == "video"   # Info's header (ui/infohead.js)
             page.keyboard.press("Escape")
             assert not leaks, json.dumps(leaks, ensure_ascii=False, indent=1)
             assert not errors, errors

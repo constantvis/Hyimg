@@ -1,0 +1,26 @@
+/* The annotation pin, one primitive for the board, every Studio, a draft and a layer's row (owner 2026-10-10: «у аннотаций есть символ
+   такой с уголком слева — нужно вместо круга именно такой круг с уголком внизу слева, и тогда будет очень нативно», and «так вот же у
+   тебя уже так начало положено»: the board's pin since 2026-10-07). A bubble whose bottom left corner is sharp and stands exactly on the
+   annotated spot (the element's left and top are that spot; it rises above and to the right of it), in the place's colour: --sel, the
+   board's blue, a Studio's own inside it (Image purple, 3D pink, Dev green; ui/modes.js).
+     .hy-apin           the count alone, filled with the place's colour, white digits (a Studio's pin)
+     .hy-apin.face      its author's face and the replies counted, on the panel's ground (the board's pin, ui/comments.js .cmpin)
+     .hy-apin.draft     a new one not sent: the ground with a ring in the place's colour
+     .hy-apin .hy-apin-d  the dot of words typed and kept (P4 B-03, S-32)
+     .hy-apin.s         compact, on a layer's row: no taller than the row's lock and eye (owner 2026-10-10: «очень крупные ... просто меньше
+                        размер»), a quiet tint, its click target padded to 24 px */
+.hy-apin { position: absolute; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 2px; min-width: 24px; height: 24px;
+  margin: 0; padding: 0 7px; border: 0; border-radius: 999px 999px 999px 3px; background: var(--hy-studio, var(--sel)); color: var(--hy-on-accent, #fff);
+  box-shadow: 0 0 0 2px var(--panel), var(--hy-sh-ctl); font: 600 11px/1 var(--sans, system-ui); font-variant-numeric: tabular-nums; cursor: pointer;
+  transform: translate(0, -100%); transform-origin: 0 100%; transition: box-shadow .2s cubic-bezier(.32,.72,0,1), opacity .2s ease; pointer-events: auto; }
+.hy-apin:hover, .hy-apin.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--hy-studio, var(--sel)), var(--hy-sh-ctl); }
+.hy-apin.face { height: auto; min-width: 0; padding: 3px; background: var(--panel); color: var(--ink); box-shadow: 0 0 0 1px var(--line), var(--hy-sh-ctl); --hy-av-ring: var(--panel); }
+.hy-apin.face:hover, .hy-apin.face.on { box-shadow: 0 0 0 2px var(--hy-studio, var(--sel)), var(--hy-sh-ctl); }
+.hy-apin.draft { background: var(--panel); color: var(--hy-studio, var(--sel)); box-shadow: 0 0 0 2px var(--hy-studio, var(--sel)), var(--hy-sh-ctl); }
+.hy-apin .hy-apin-d { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; border-radius: 50%; background: var(--hy-studio, var(--sel));
+  box-shadow: 0 0 0 1.5px var(--panel); pointer-events: none; }
+.hy-apin.s { position: relative; flex: none; min-width: 14px; height: 14px; padding: 0 4px; border-radius: 99px 99px 99px 2px; transform: none;
+  background: color-mix(in srgb, var(--hy-studio, var(--sel)) 24%, transparent); color: var(--hy-studio, var(--sel)); box-shadow: none; font: 600 10px/1 var(--sans, system-ui); }
+.hy-apin.s::after { content: ""; position: absolute; inset: -5px -5px; }   /* the click target: 24 px tall around 14 */
+.hy-apin.s:hover { background: color-mix(in srgb, var(--hy-studio, var(--sel)) 40%, transparent); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .hy-apin { transition: none; } }

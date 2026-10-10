@@ -20,7 +20,7 @@ export function register(HY) {
     dblclick(id) { open = id; HY.dock(Object.assign(document.createElement("span"), { innerHTML: '<button class="wide pri" data-a="done">Done</button>', onclick: () => { open = null; HY.dock(null); } })); },
   });
   HY.placeAs(p => /\.fake$/.test(p) ? { type: TYPE, src: p, ar: 2 } : null);
-  HY.mode("fake", { label: "Fake", order: 5, icon: "<svg width=16 height=16></svg>", title: "Fake for the card", hint: "Select a fake card",
+  HY.mode("fake", { fit: false, label: "Fake", order: 5, icon: "<svg width=16 height=16></svg>", title: "Fake for the card", hint: "Select a fake card",
     isOpen: () => !!open, target: ids => ids.length === 1 && HY.board.items[ids[0]] && HY.board.items[ids[0]].type === TYPE ? ids[0] : null,
     enter: id => PLG_FAKE_ENTER(id), leave: () => { open = null; HY.dock(null); } });
   window.PLG_FAKE_ENTER = id => PLG[TYPE].dblclick(id);
@@ -212,7 +212,7 @@ def test_a_board_comes_back_in_board_mode(srv):
         assert page.evaluate(enter) and page.evaluate("MODES.open") == "fake" and page.is_visible("#dock .plgdock [data-a=done]")
         page.evaluate("() => { hyimgPrep(); hyimgIntro(); }")   # back from Home, as the app does it
         assert page.evaluate("MODES.open") == "board" and not page.is_visible("#dock .plgdock [data-a=done]")
-        assert page.evaluate("document.querySelector('#modes [aria-pressed=true]').dataset.mode") == "board"
+        page.wait_for_timeout(100); assert page.evaluate("document.querySelector('#modes [aria-pressed=true]').dataset.mode") == "board", errors
         assert page.evaluate(enter) and page.evaluate("MODES.open") == "fake"
         page.reload()
         page.wait_for_function("() => typeof PLGST !== 'undefined' && PLGST.length === 1 && PLGST[0].ok", timeout=20000); page.wait_for_timeout(300)

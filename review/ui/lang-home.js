@@ -106,5 +106,7 @@ hyLang({
     // a hyimg:// link the app could not open (native/LinkRouting.swift, owner 2026-10-07)
     "The board of this link is not in Hyimg on this Mac": "Доски из этой ссылки нет в Hyimg на этом Mac",
     "This link can't be opened in Hyimg": "Эту ссылку Hyimg открыть не может",
+    "Project “{name}” deleted, its boards stay": "Проект «{name}» удален, его доски остались",
+    "Undo": "Отменить",
   },
 });

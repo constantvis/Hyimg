@@ -35,3 +35,6 @@ body { padding: 20px 20px 28px; box-sizing: border-box; min-height: 100vh; }
 /* the Hint bar drawn in its row, as the key hint is (its own top is the line under the top row); its look and the tip's are the
    primitives' own: ui/hy/keyhint.css and ui/hy/tip.css (built 2026-10-09; the spec block round 11 copied is gone) */
 .sc-fixed > hy-keyhint[place=top] { top: 50%; }
+/* round 15's icons on hover: a layer row to hover (micro family) */
+.sc-lrow { display: flex; align-items: center; gap: 2px; width: 220px; height: 34px; padding: 0 6px 0 10px; border-radius: 7px; color: var(--ink); font: 400 12px var(--sans); }
+.sc-lrow > span { flex: 1; } .sc-lrow:hover { background: var(--hy-hov); }

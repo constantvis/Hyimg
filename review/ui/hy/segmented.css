@@ -47,3 +47,18 @@ hy-segmented[variant=tabs].seg > .st { background: var(--hy-tab-on); box-shadow:
 hy-segmented[variant=tabs] > button > svg { width: 14px; height: 14px; }
 hy-segmented[variant=tabs] > button:hover, hy-segmented[variant=tabs] > button.on { color: var(--ink); }
 hy-segmented[variant=tabs]:not(.has-st) > button.on { background: var(--hy-tab-on); }
+/* variant=micro (owner 2026-10-09, round 15 «Micro UI», control 3, r15-micro.html: «Все топ, все делай»): 2 to 4 options in a 22 px well,
+   2 px of it around 18 px options, words 500 10.5 px, an icon option 26 px wide with a 12 px icon; the chosen one on the grey plate
+   (--hy-thumb), the rest muted. Under the contract's 24 px target on purpose: the owner approved the micro sizes at 1:1
+   (design/contract.json target_exempt) */
+hy-segmented[variant=micro] { --hy-so: 18px; --hy-seg-pad: 2px; gap: 0; }
+hy-segmented[variant=micro], hy-segmented[variant=micro].seg { padding: 2px; border-radius: 6px; background: var(--hy-well); }
+hy-segmented[variant=micro].seg > .st { background: var(--hy-thumb); box-shadow: var(--hy-thumb-sh); }
+:root[data-shape] hy-segmented[variant=micro] { border-radius: 6px !important; }
+:root[data-shape] hy-segmented[variant=micro] > :is(.st, button) { border-radius: 4px !important; }
+:is(hy-segmented[variant=micro], hy-segmented[variant=micro].seg) > button { min-width: 22px; padding: 0 7px; color: var(--muted); font: 500 10.5px/1 var(--sans);
+  transition: color .15s ease; }
+hy-segmented[variant=micro] > button:has(> svg:only-child) { width: 26px; min-width: 0; padding: 0; }
+hy-segmented[variant=micro] > button > svg { width: 12px; height: 12px; }
+hy-segmented[variant=micro] > button.on, hy-segmented[variant=micro] > button:hover { color: var(--ink); }
+hy-segmented[variant=micro]:not(.has-st) > button.on { background: var(--hy-thumb); }

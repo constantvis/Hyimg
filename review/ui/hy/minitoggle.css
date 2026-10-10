@@ -1,0 +1,19 @@
+/* <hy-minitoggle>: round 15's mini toggle (owner 2026-10-09, r15-micro.html, control 1). 22 px tall: a 20 × 11 track (::before) with an
+   8 px knob (::after) 4 px in from the left, the words 6 px after it at 500 11 px. Off: the track ink at 18 %, the words muted; on: the
+   track the selection's colour (the Studio's inside a Studio, --hy-sel), the knob white, the words ink. Drawn from the attributes, so the
+   markup looks right before the script; the script lays a checkbox over it, a pixel past the top and the bottom (24 px to click) */
+hy-minitoggle { position: relative; display: inline-flex; align-items: center; flex: none; box-sizing: border-box; height: 22px; min-width: 28px;
+  padding: 0 4px 0 30px; border-radius: 6px; vertical-align: middle; color: var(--muted); font: 500 11px/1 var(--sans); white-space: nowrap;
+  cursor: pointer; transition: color .15s ease, opacity .2s ease; }
+hy-minitoggle:is(:empty, [bare]) { width: 28px; padding: 0; }
+hy-minitoggle::before { content: ""; position: absolute; left: 4px; top: 5.5px; width: 20px; height: 11px; box-sizing: border-box;
+  border-radius: var(--hy-switch-r); background: color-mix(in srgb, var(--ink) 18%, transparent); transition: background .15s ease; }
+hy-minitoggle::after { content: ""; position: absolute; left: 5.5px; top: 7px; width: 8px; height: 8px; border-radius: max(0px, calc(var(--hy-switch-r) - 1.5px));
+  background: var(--ink); pointer-events: none; transition: transform .15s var(--hy-ease), background .15s ease; }
+hy-minitoggle:hover { color: var(--sub); }
+hy-minitoggle[checked] { color: var(--ink); }
+hy-minitoggle[checked]::before { background: var(--hy-sel); }
+hy-minitoggle[checked]::after { transform: translateX(9px); background: var(--hy-on-accent); }
+hy-minitoggle[disabled] { opacity: .45; cursor: default; }
+hy-minitoggle > .hy-in { position: absolute; left: 0; top: -1px; width: 100%; height: calc(100% + 2px); margin: 0; padding: 0; opacity: 0; cursor: inherit; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { hy-minitoggle::before, hy-minitoggle::after { transition: none; } }

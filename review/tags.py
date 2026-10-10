@@ -4,7 +4,7 @@
 # A frame without a prompt only gets the engine tag and the tags its name codes give.
 # The rules are the board's own data (config.py RULES: "tags" [[group, tag, regex]], "tagCodes" {name part: tag}, "pinnedTags"
 # [[group, tag]]); the server hands them over with configure(). To add or fix a tag: edit the rules file and restart the server
-# (⇧⌘R); nothing is written to the sidecars. The library's filter window also adds a tag of the project's own (a name, the words that
+# (View › Restart Server); nothing is written to the sidecars. The library's filter window also adds a tag of the project's own (a name, the words that
 # find it, a group; filters.py appends it to this board's "tags" rules and the server re-reads them, owner 2026-10-06).
 import re
 

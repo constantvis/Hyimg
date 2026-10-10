@@ -64,12 +64,14 @@
     + (UP("hy-icon-button") ? "" : `<button type="button" aria-label="${esc(l)}" title="${esc(l)}">${icon("more", 14, 2)}</button>`) + "</hy-icon-button>"; };
   const sw = p => { const l = T("Turn {name} on or off", { name: p.title }); return `<hy-switch variant="well" data-pl-sw${p.off ? "" : " checked"} label="${esc(l)}">`
     + (UP("hy-switch") ? "" : `<input type="checkbox" class="hy-in" role="switch" aria-label="${esc(l)}"${p.off ? "" : " checked"}>`) + "</hy-switch>"; };
+  // round 15's LED (owner 2026-10-09, r15-micro.html: «green for «running» … in Settings, a ring for «off»»): on and working, or not
+  const led = p => { const on = !p.off && !p.error, l = esc(T(on ? "Running" : "Off")); return `<hy-led state="${on ? "ok" : "off"}" role="img" aria-label="${l}" title="${l}"></hy-led>`; };
   const folderTip = () => IN_APP || FILE ? T("Show in Finder") : T("Copy the path");
   function rowHtml(p) {
     const pend = window.hyPlugBoard ? window.hyPlugBoard.pending(p.name) : "";
     const tail = String(p.folder || "").split("/").filter(Boolean).pop() || p.folder || "";
     return `<div class="hpl-row${p.error ? " hpl-bad" : p.off ? " hpl-off" : ""}" data-pl="${esc(p.name)}"><div class="hpl-txt">`
-      + `<div class="hpl-top"><span class="hpl-name">${esc(p.title || p.name)}</span>${p.version ? `<span class="hpl-ver">${esc(p.version)}</span>` : ""}</div>`
+      + `<div class="hpl-top">${led(p)}<span class="hpl-name">${esc(p.title || p.name)}</span>${p.version ? `<span class="hpl-ver">${esc(p.version)}</span>` : ""}</div>`
       + (p.error ? `<div class="hpl-desc hpl-err">${esc(T(p.error))}</div>` : p.description ? `<div class="hpl-desc" title="${esc(p.description)}">${esc(p.description)}</div>` : "")
       + `<div class="hpl-dir">${btn(`data-pl-dir title="${esc(folderTip() + ": " + (p.folder || ""))}"`, tail, { variant: "ghost", ic: icon("folder", 12, 2) })}</div>`
       + (pend ? `<div class="hy-hint hpl-pend">${esc(pend)}</div>` : "")

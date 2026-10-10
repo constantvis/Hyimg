@@ -1,0 +1,11 @@
+/* <hy-scope>: round 15's count as the scope (owner 2026-10-09, r15-micro.html, control 2). An 18 px button at the end of a field: «22 / 87»
+   at 500 11 px in tabular digits, the slash muted; hover lights it on the hover plate, all (aria-pressed) keeps the words ink on the plate
+   of ink at 8 %. Under the contract's 24 px target on purpose: the owner approved the micro sizes at 1:1 (design/contract.json target_exempt) */
+hy-scope { display: inline-flex; flex: none; vertical-align: middle; }
+hy-scope > .hy-scope-b { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border: 0; border-radius: 5px; background: transparent;
+  color: var(--sub); font: 500 11px/1 var(--sans); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; transition: background .15s ease, color .15s ease; }
+hy-scope > .hy-scope-b > i { margin: 0 1px; color: var(--muted); font-style: normal; }
+hy-scope > .hy-scope-b:hover { background: var(--hy-hov); color: var(--ink); }
+hy-scope[all] > .hy-scope-b { background: var(--hy-tab-on); color: var(--ink); }
+hy-scope > .hy-scope-b:disabled { opacity: .45; cursor: default; }
+hy-scope[hidden], hy-led[hidden] { display: none; }

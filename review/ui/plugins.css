@@ -6,6 +6,7 @@
 #sets .hpl-row + .hpl-row { border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
 #sets .hpl-txt { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
 #sets .hpl-top { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+#sets .hpl-top > hy-led { align-self: center; }   /* the plugin on and working, or off (ui/hy/led.css, round 15) */
 #sets .hpl-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-weight: 500; }
 #sets .hpl-ver { flex: none; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 #sets .hpl-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sub); font-size: 12px; }

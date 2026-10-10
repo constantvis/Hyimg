@@ -1,3 +1,4 @@
+@import url("/ui/hy/apin.css");   /* the annotation pin, one for the board and every Studio (owner 2026-10-10) */
 /* Annotations and comments on the board (ui/annotate.js, ui/comments.js; owner 2026-10-07): the drawings' layer and the pins in the
    board's world (they move and zoom with it, the pins keep their size on screen by --z), the open thread beside its pin, the page's
    comments list on the right like the bell's, the Annotate tools in the dock (HY.dock, the plugins' editors' look). */
@@ -33,16 +34,16 @@
 #annwho button .ck { color: var(--sel); opacity: 0; transition: opacity .2s ease; } #annwho button[aria-checked=true] .ck { opacity: 1; }
 #annwho button[aria-checked=false] hy-avatar { opacity: .45; }
 
-/* a pin: its author's face in a bubble with a sharp bottom left corner where it points, the replies counted */
+/* a pin: Hyimg's one annotation pin (ui/hy/apin.css .hy-apin.face): its author's face in a bubble with a sharp bottom left corner where it
+   points, the replies counted; on the board it keeps its size on screen at any zoom */
 /* the layer itself, 1 px at the board's origin over the handles (z 3), lets the pointer through: a corner at 0,0 stayed unclickable (82f530d) */
 #cmpins { position: absolute; left: 0; top: 0; width: 1px; height: 1px; z-index: 5; pointer-events: none; }
-.cmpin { position: absolute; display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 0; border-radius: 999px 999px 999px 3px;
-  background: var(--panel); color: var(--ink); box-shadow: 0 0 0 1px var(--line), var(--hy-sh-ctl); cursor: pointer; --hy-av-ring: var(--panel);
-  transform: translate(0, -100%) scale(calc(1 / var(--z, 1))); transform-origin: 0 100%; transition: box-shadow .2s ease, opacity .2s ease; pointer-events: auto; }
-.cmpin:hover, .cmpin.on, .cmpin.lit { box-shadow: 0 0 0 2px var(--sel), var(--hy-sh-ctl); }
-.cmpin.lit { z-index: 1; }   /* lit from Dev Studio's tree: the row under the pointer has this thread */
+.cmpin { transform: translate(0, -100%) scale(calc(1 / var(--z, 1))); }
+.cmpin.lit { z-index: 1; box-shadow: 0 0 0 2px var(--sel), var(--hy-sh-ctl); }   /* lit from Dev Studio's tree: the row under the pointer has this thread */
 .cmpin.done { opacity: .55; }
 .cmpin .cmp-n { padding: 0 6px 0 3px; color: var(--sub); font: 600 11px/1 var(--sans); }
+/* a draft not sent yet: the change dot (.hy-dot, ui/hy/micro.css) on the bubble's top right, ringed in the bubble's colour (P4 B-03) */
+.cmpin .cmp-d { position: absolute; top: 0; right: 0; box-shadow: 0 0 0 1.5px var(--panel); }
 
 /* a comment's area: a thin outline in its author's colour (--ac), lit while open or pointed at; under the pins */
 .cmarea { position: absolute; box-sizing: border-box; pointer-events: none; border: calc(1.5px / var(--z, 1)) solid var(--ac, var(--sel));

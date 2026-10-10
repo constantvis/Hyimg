@@ -240,6 +240,20 @@ def element_text(el):
     return f", элемент {el.get('css') or el.get('key')}" + (f" ({PINS[el['pin']]})" if el.get("pin") in PINS else "")
 
 
+def part_text(p):
+    """«, слой «Logo» (layer p3_x, точка слоя u 40 %, v 60 %)» or «, объект 3D-сцены «Case» (object k2, слой Atlas/Case, точка x … в его осях)»:
+    the layer or the 3D object a Studio's annotation is tied to (comments.clean_part), its id and the point in its own coordinates"""
+    loc = p.get("local") or []
+    if p.get("kind") == "layer":
+        at = f", точка слоя u {pct(loc[0])} %, v {pct(loc[1])} %" if len(loc) == 2 else ""
+        ar = p.get("area")
+        if ar and len(ar) == 4: at = f", область слоя x {pct(ar[0])}–{pct(ar[0] + ar[2])} %, y {pct(ar[1])}–{pct(ar[1] + ar[3])} %"
+        return f", слой «{p.get('name') or p.get('id')}» (layer {p.get('id')}{at})"
+    lay = f", слой {p['layer']}" if p.get("layer") else ""
+    at = ", точка x {:.3f} y {:.3f} z {:.3f} в его осях".format(*loc) if len(loc) == 3 else ""
+    return f", объект 3D-сцены «{p.get('name') or p.get('id')}» (object {p.get('id')}{lay}{at})"
+
+
 def describe_thread(t, b, people, size_of=None, marks=()):
     """{text, region?, marks: [drawing ids]} of a comment: its area or pin on its object, its element, the drawings about it"""
     an = t.get("anchor") or {}
@@ -259,6 +273,7 @@ def describe_thread(t, b, people, size_of=None, marks=()):
     else:
         where = "булавка на доске x {}, y {}".format(*[round(v) for v in (t.get("at") or [0, 0])[:2]])
     if t.get("element"): where += element_text(t["element"])
+    if an.get("part"): where += part_text(an["part"])
     out["text"] = where + (f"; рисунки: {', '.join(out['marks'])}" if out["marks"] else "")
     return out
 

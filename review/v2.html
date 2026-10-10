@@ -14,7 +14,7 @@
 <script>// the window is dragged by the empty part of its top band (ui/dragband.js): the library's bar is background when it fills the top
 window.HY_DRAG = { flat: "body:not(.cv-on) header.hy-dock, body:not(.cv-on) .filters" };</script>
 <script src="/ui/dragband.js"></script><script src="/ui/applink.js"></script>   <!-- «Open in Hyimg» in a browser, the app's links reach the board (owner 2026-10-07) -->
-<script src="/ui/keyhints.js"></script>   <!-- key caps on buttons only while ⌘ is held (owner 2026-10-05) -->
+<script src="/ui/typing.js"></script><script src="/ui/keyhints.js"></script>   <!-- the one rule for keys while typing (P4 B-35); key caps while ⌘ is held -->
 <script src="/ui/icons.js"></script>   <!-- the app's icons, one per meaning (owner 2026-10-07); before the menus, which draw theirs from it -->
 <script src="/ui/menu.js"></script>
 <script src="/ui/switcher.js"></script>   <!-- ⌃Tab's cards, the switch's motion, the crumb's list of boards, a board's sleep (owner 2026-10-08) -->
@@ -414,8 +414,6 @@ body.fdock:not(.cv-on) main { padding-left: 0; }
 body.fdock:not(.cv-on) header { left: calc(50% + var(--fw, 268px) / 2); max-width: calc(100vw - var(--fw, 268px) - 32px); }
 body.fdock { --fw: var(--fwu, 268px); }   /* --fwu: the width the owner dragged it to (#fgrip) */
 body.fdock.cv-on { --fw: clamp(160px, min(var(--fwu, 268px), calc(var(--lw, 560px) * .45)), 480px); }
-/* the dock of filters stands over the frames, never over the folders (owner 2026-10-04) */
-body.fdock.cv-on header { left: calc(12px + var(--fw) + (var(--lw, 560px) - var(--fw)) / 2); max-width: calc(var(--lw, 560px) - var(--fw) - 16px); }
 /* the edge of the folders: drag it to make them wider or narrower */
 #fgrip { position: fixed; top: 0; bottom: 0; left: calc(var(--fw, 268px) - 5px); width: 10px; cursor: col-resize; z-index: 13; display: none; }
 body.fdock #fgrip { display: block; }
@@ -527,8 +525,6 @@ body.lwide:not(.cv-drag) #lgrip { display: none !important; }   /* while it is d
 body:not(.cv-on) #tlibR { display: none; }   /* the library alone (?view=lib, for agents and tests) is its own page */
 /* the library panel starts under the top line (the capsule, the round button, the crumb): nothing of it goes under the window buttons */
 body.cv-on { --lt: 58px; }
-/* the library's panel is the board's paper (owner 2026-10-04: «why does the library not have the same background, why is it black») */
-body.cv-on :is(main, .fbar), body.fdock.cv-on .fdrawer { background: var(--paper) !important; }
 #cvFrame { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; z-index: 0; display: none; }
 body.cv-on #cvFrame { display: block; }
 body.cv-on { overflow: hidden; }
@@ -684,24 +680,7 @@ body.cv-on .tfpanel { left: calc(12px + var(--lw, 560px) / 2); width: min(620px,
 :root[data-shape=pro] #tgForm input, :root[data-shape=pro] #tgGo { border-radius: 8px; }
 .chk .ico { display: none; pointer-events: none; }   /* Safari: a click on an svg inside a label may not reach the checkbox */
 .chk.idle { opacity: .35; }
-/* compact floating library dock: row 1 = ↑↓ · collection · search · Брак · reset · counter, row 2 = verdict filters */
-body.cv-on header { justify-content: flex-start; padding: 6px; gap: 6px; border-radius: 24px; }
-body.cv-on header .filters { display: contents; }
-body.cv-on header .updown { order: 1; }
-body.cv-on header #coll { order: 2; flex: 1 1 120px; max-width: none; min-width: 0; }
-body.cv-on header #q { order: 3; }
-body.cv-on header .chk { order: 4; }
-body.cv-on header #reset { order: 5; }
-body.cv-on header .progress { order: 6; padding: 0 6px 0 2px; }
-body.cv-on header #vf { order: 7; flex: 1 1 100%; justify-content: space-between; }
-body.cv-on header #vf .fc { padding: 0 8px; }
-body.cv-on .chk { width: 34px; padding: 0; justify-content: center; }
-body.cv-on .chk .ico { display: block; } body.cv-on .chk span { display: none; }
-/* search collapses to a magnifier while empty, opens on click */
-body.cv-on header #q { background: var(--raise) var(--hy-ic-search-sub) no-repeat 9px center / 16px; padding-left: 32px; width: 150px; }
-body.cv-on header #q:placeholder-shown:not(:focus) { width: 34px; padding: 0; color: transparent; cursor: pointer; }
-body.cv-on header #q:placeholder-shown:not(:focus)::placeholder { color: transparent; }
-body.cv-on header #q::-webkit-search-cancel-button { display: none; }
+body.cv-on header .filters { display: contents; }   /* beside the board the dock is the panel's top: the header and the search (ui/libpanel.css) */
 /* up / down between galleries (owner 2026-09-29): two halves of one pill */
 .seg.updown { gap: 0; padding: 3px; }
 .seg.updown button { width: 34px; padding: 0; display: grid; place-items: center; color: var(--sub); }
@@ -855,6 +834,7 @@ html:has(.viewer.open), body:has(.viewer.open) { overflow: hidden; overscroll-be
 @keyframes m3pulse { from { opacity: .35; } to { opacity: .9; } }
 @media (prefers-reduced-motion: reduce) { .card.m3d.nosp .m3s svg { animation: none; } }
 </style>
+<link rel="stylesheet" href="/ui/libpanel.css"><script src="/ui/libpanel.js"></script>   <!-- the Library beside the board, round 15 (2026-10-10) -->
 </head>
 <body>
 <!-- The first thing an agent reads on this page, in the page text and in the accessibility tree; the owner does not see it (owner 2026-10-03) -->
@@ -1162,6 +1142,8 @@ let FPICK = new Set(), treeShown = pref("ftree", "1") === "1", DRAWER = false, F
 // until «Папки» is pressed (open by itself it covered every frame)
 const roomy = () => !document.body.classList.contains("cv-on") || $("main").getBoundingClientRect().width >= 480;
 const docks = () => treeShown && roomy();
+// round 15 (ui/libpanel.js): narrower, the folders are a section over the frames; under 280 px they fold into the path, its button unfolds them
+const sects = () => treeShown && !roomy() && $("main").getBoundingClientRect().width >= 280;
 const FNAME = { ext: T("External"), research: "Research", arc: "arc", added: T("Added by hand"), ".": T("Board root") };   // files lying right in the project folder
 function folderTree() {
   const root = { path: "", kids: new Map(), n: 0, title: "" };
@@ -1222,30 +1204,31 @@ function treeHtml() {
   // «All folders» first, so the whole path is there and one click goes back up (owner 2026-10-06: «why is there no All on the left of the path»)
   if (crumbs.length) crumbs.unshift(`<button class="fcr" data-go="" title="${T("All folders")}">${T("All folders")}</button>`);
   const path = crumbs.length ? crumbs.join(`<span class="fsep">${HY_CHEV}</span>`) + `<span class="fcnt">${T.num(node ? node.n : 0)}</span>` : `<span class="fcr all">${T("All folders")}</span>`;
-  const shown = docks() || DRAWER;
-  const bar = `<button class="fticon" data-ftree aria-pressed="${shown}" title="${shown ? T("Hide folders") : T("Show folders")}" aria-label="${shown ? T("Hide folders") : T("Show folders")}">${hyIcon("sidebar", 16, 2)}</button><span class="fpath">${path}</span>`
+  const shown = docks() || sects() || DRAWER;
+  const bar = `<button class="fticon" data-ftree aria-pressed="${shown}" title="${shown ? T("Hide folders") : T("Show folders")}" aria-label="${shown ? T("Hide folders") : T("Show folders")}">${hyIcon("folder", 14, 1.8)}${HY_CHEV}</button><span class="fpath">${path}</span>`
     + (window.hyFsBar ? hyFsBar() : "")   // «Разложить по папкам как на доске» and the «Как на доске» plate (ui/layout-sync.js, 2026-10-05)
     + (FPICK.size ? `<span class="fpk" title="${T("Marked folders are dragged onto the canvas together")}">✓ ${FPICK.size}</span><button class="fhbtn" data-fclear title="${T("Clear marks")}">${T("clear")}</button>` : "");
   return [bar, `<nav class="ftree">`
     + (true ? `<div class="frow ${c ? "" : "on"}" data-f="" style="--d:0"><button class="fx" disabled></button>${hyIcon("grid", 15, 1.8, "fi")}<span class="fn">${T("All folders")}</span><span class="fc">${T.num(root.n)}</span></div>`
-      + top.map(n => row(n, 0)).join("") : "") + `</nav>`];
+      + top.map(n => row(n, 0)).join("") : "") + `</nav>`, root];
 }
 // the path bar is always there; the folders slide down over the whole library as a see-through drawer (owner 2026-09-30),
 // so a click on a folder shows the frames switching under it; ▾ Папки or Esc opens and closes it
 function renderFolders() {
-  const [bar, tree] = treeHtml(), d = $("#fdrawer"), top = d.scrollTop, dock = docks(), shown = dock || DRAWER;
+  const [bar, tree, root] = treeHtml(), d = $("#fdrawer"), top = d.scrollTop, dock = docks(), sect = sects(), shown = dock || sect || DRAWER;
   $("#fbar").innerHTML = bar; if (window.lvFit) lvFit();
   if (shown) { $("#fnav").innerHTML = tree; d.scrollTop = top; }
   d.classList.toggle("open", shown); d.classList.toggle("picking", FPICK.size > 0);
+  document.body.classList.toggle("fsect", sect); if (window.hyLibPanel) hyLibPanel.sync(root);
   if (document.body.classList.contains("fdock") !== dock) { document.body.classList.toggle("fdock", dock); if (typeof watchGrids === "function" && GRIDS.length) render(); }
 }
 function toggleTree(on) {
-  if (roomy()) { treeShown = on ?? !treeShown; setPref("ftree", treeShown ? "1" : "0"); } else DRAWER = on ?? !DRAWER;
+  if (roomy() || $("main").getBoundingClientRect().width >= 280) { treeShown = on ?? !treeShown; setPref("ftree", treeShown ? "1" : "0"); } else DRAWER = on ?? !DRAWER;
   renderFolders();
 }
 $("#ffilt").addEventListener("input", e => { FQ = e.target.value; renderFolders(); });
 // Esc closes the drawer over the library; the docked tree stays (it is part of the page, a click on «Папки» folds it)
-document.addEventListener("keydown", e => { if (e.key === "Escape" && DRAWER && !docks() && !e.target.closest("input, textarea")) { DRAWER = false; renderFolders(); } }, true);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && DRAWER && !docks() && !sects() && !hyTyping(e)) { DRAWER = false; renderFolders(); } }, true);
 addEventListener("resize", () => renderFolders());
 // the folders' width, dragged at their edge and kept (owner 2026-10-04: «so I can make the folders wider or narrower»)
 { const w = +pref("fw", "0"); if (w) document.documentElement.style.setProperty("--fwu", w + "px"); }
@@ -1769,7 +1752,8 @@ function sizeGrids() {
       const h = `${Math.round(rows * ls + (rows - 1) * gap)}px`; g.style.containIntrinsicSize = h; if (!g.dataset.filled) g.style.minHeight = h; });
     return;
   }
-  const cols = Math.max(1, Math.floor((W + gap) / ((over ? ls : min) + gap))), colW = over ? ls : (W - (cols - 1) * gap) / cols, cardH = over ? ls : colW * 4 / 3;
+  const lc = over && b.classList.contains("lfill") ? +getComputedStyle(b).getPropertyValue("--lcols") || 0 : 0;   // filled columns (ui/libpanel.js)
+  const cols = lc || Math.max(1, Math.floor((W + gap) / ((over ? ls : min) + gap))), colW = over && !lc ? ls : (W - (cols - 1) * gap) / cols, cardH = over ? colW : colW * 4 / 3;
   grids.forEach(g => { const rows = Math.ceil(+g.dataset.n / cols), h = `${Math.round(rows * cardH + (rows - 1) * gap)}px`; g.style.containIntrinsicSize = h; if (!g.dataset.filled) g.style.minHeight = h; });
 }
 // once the width rests (owner 2026-10-04: the library opening and widening stuttered): measuring 2 200 batches on every frame of
@@ -1899,7 +1883,8 @@ function renderTFPanel() {
     pn.setAttribute("aria-pressed", on); pn.title = on ? T("Unpin from the bar") : T("Pin to the bar"); pn.setAttribute("aria-label", pn.title);
   });
 }
-function placeTF() {   // sit right above the dock, whatever its height
+function placeTF() {   // sit right above the dock, whatever its height; beside the board under the search (ui/libpanel.js)
+  if (window.hyLibPanel && hyLibPanel.placeTF()) return;
   const r = $("header").getBoundingClientRect(), top = r.top, p = $("#tfPanel");
   // no higher than the library's own top (owner 2026-10-06: «why does the filter climb over the media library's edge»); alone, the window's
   const b = document.body, m = $("main"), ceil = b.classList.contains("cv-on") && !b.classList.contains("cv-only") && m ? m.getBoundingClientRect().top : 12;
@@ -1928,7 +1913,7 @@ $("#vf").addEventListener("click", e => {
   // the classes and the filter window follow a frame later, not inside the observer: they change the size it watches (a loop)
   const ro = new ResizeObserver(() => requestAnimationFrame(() => { fit(); if (!$("#tfPanel").hidden) placeTF(); })); [$("header.hy-dock"), $("#tfPanel")].forEach(el => el && ro.observe(el)); fit(); }
 $("#tfClear").onclick = () => { TF = {}; GF = {}; vfilter = ""; setRej(""); setPref("tf", "{}"); setPref("gf", "{}"); render(); };
-document.addEventListener("pointerdown", e => { const p = $("#tfPanel"); if (!p.hidden && !e.target.closest("#tfPanel, #vf")) { p.hidden = true; $("#tfBtn").setAttribute("aria-expanded", false); } });
+document.addEventListener("pointerdown", e => { if (!e.target.closest("#tfPanel, #vf, #lfbtn")) hyLibPanel.tfClose(); });   // Esc and a click on the board: ui/libpanel.js
 // a tag of the project's own (owner 2026-10-06): a name, the words that find it, a group; the server adds it to this board's tag rules and
 // scans the library again, so it shows on the frames that match
 $("#tgOpen").onclick = () => {
@@ -2048,18 +2033,19 @@ $("#list").addEventListener("click", e => {
   const c = e.target.closest(".card"); if (!c) return;
   if (c.classList.contains("m3d") && MODE3D) { e.preventDefault(); const i = view[+c.dataset.i]; if (i) pick3d(i); return; }   // the 3D filter: into a 3D card; a folder: the viewer
   if (c.classList.contains("empty")) { e.preventDefault(); libNote(T("This file is empty: there is nothing to open or to put on the board")); return; }
-  if (e.target.closest(".pick") || picked.size) { e.preventDefault(); togglePick(c); return; }   // in pick mode a click on the picture picks it
+  // in pick mode a click on the picture picks it; ⌘- or ⇧-click picks or unpicks a card, as on the board and in Finder (owner decision 2026-10-10)
+  if (e.target.closest(".pick") || picked.size || e.metaKey || e.shiftKey) { e.preventDefault(); togglePick(c); return; }
   open(+c.dataset.i);
 });
 // «Показать на доске» (owner 2026-10-03): the right click menu of a card opens the canvas where the frame lies; the canvas
 // picks the page that has it, selects the frame and puts it in view. A frame that is on no page says so instead.
 let cvReady = false;
 $("#cvFrame").addEventListener("load", () => { cvReady = true; });
-function showOnBoard(path) {
+function showOnBoard(path) {   // a path, or a list of them: the board shows them together on the page that has the first
   closeLctx();
   if (pref("view", "canvas") === "lib") setView("panel");
   else if (document.body.classList.contains("lwide")) $("#lwide").click();   // full width covers the board: back to the normal width (owner 2026-10-06)
-  const f = $("#cvFrame"), go = () => f.contentWindow.postMessage({ type: "showPath", path }, location.origin);
+  const f = $("#cvFrame"), go = () => f.contentWindow.postMessage(Array.isArray(path) ? { type: "showPath", path: path[0], paths: path } : { type: "showPath", path }, location.origin);
   if (cvReady) go(); else f.addEventListener("load", go, { once: true });
 }
 function closeLctx() { $("#lctx").classList.remove("open"); }
@@ -2072,13 +2058,16 @@ $("#list").addEventListener("contextmenu", e => {
   // «Показать в Finder» (owner 2026-10-05): the card, or every picked card when it is one of them
   const files = picked.has(i.path) ? view.map(x => x.path).filter(p => picked.has(p)) : [i.path];
   // «Open in <App>» first, as on the board's card menu (owner 2026-10-06; ui/menu.js names the app)
+  // every item acts on what «Show in Finder» does: the card, or all the picked cards when it is one of them (P4 B-56)
+  const n = files.length, any = files.some(p => ONBOARD.has(p));
   m.innerHTML = hyOpenItem('data-a="open"') + `<div class="sep"></div>`
-    + hyMenuItem('data-a="show"', "show", T("Show on board"), null, on ? "" : hyMenuOff(T("This frame is on no board")))   // grey with its reason (owner 2026-10-06)
+    + hyMenuItem('data-a="show"', "show", n > 1 ? T("Show on board ({n})", { n }) : T("Show on board"), null, any ? "" : hyMenuOff(T("This picture is on no board")))   // grey with its reason
     + hyMenuItem('data-a="reveal"', "finder", files.length > 1 ? T("Show in Finder ({n})", { n: files.length }) : T("Show in Finder"));
-  hyOpenFill(m.querySelector("[data-a=open]"), i.path);
+  const ob = m.querySelector("[data-a=open]"), cnt = () => { const l = ob.querySelector(".ml"); if (n > 1 && l && !/\(\d+\)$/.test(l.textContent)) l.textContent += ` (${n})`; };
+  cnt(); hyOpenFill(ob, i.path).then(cnt);
   m.onclick = ev => {
-    if (ev.target.closest("[data-a=open]")) { closeLctx(); hyOpenFile(i.path, (t, k) => (window.hyToast || console.log)(t, k)); }
-    else if (ev.target.closest("[data-a=show]:not([aria-disabled=true])")) showOnBoard(i.path);
+    if (ev.target.closest("[data-a=open]")) { closeLctx(); files.forEach(p => hyOpenFile(p, (t, k) => (window.hyToast || console.log)(t, k))); }
+    else if (ev.target.closest("[data-a=show]:not([aria-disabled=true])")) showOnBoard(files.filter(p => ONBOARD.has(p)));
     else if (ev.target.closest("[data-a=reveal]")) { closeLctx(); hyReveal(files, (t, k) => (window.hyToast || console.log)(t, k)); }
   };
   m.classList.add("open"); const r = m.getBoundingClientRect();
@@ -2100,11 +2089,12 @@ document.addEventListener("contextmenu", e => {
   m.style.left = Math.max(8, Math.min(e.clientX, innerWidth - b.width - 8)) + "px"; m.style.top = Math.max(8, Math.min(e.clientY, innerHeight - b.height - 8)) + "px";
 });
 document.addEventListener("pointerdown", e => { if (!e.target.closest("#lctx")) closeLctx(); }, true);
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeLctx(); });
+// Esc with the card menu open closes the menu only (P4 B-38: it dropped the picked cards too)
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#lctx").classList.contains("open")) { e.preventDefault(); e.stopImmediatePropagation(); closeLctx(); } }, true);
 addEventListener("blur", closeLctx);   // a click into the canvas iframe
 addEventListener("scroll", closeLctx, true);
 document.addEventListener("keydown", e => {
-  if (cur >= 0 || ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
+  if (cur >= 0 || hyTyping(e) || hyTyping.ownKey(e)) return;   // the board's one rule for typing (ui/typing.js, P4 B-35)
   // ⌘A in the library picks every visible card instead of selecting the page text (owner 2026-09-29)
   if ((e.metaKey || e.ctrlKey) && (e.code === "KeyA" || ["a", "ф"].includes(e.key.toLowerCase()))) { e.preventDefault(); pickAll(); return; }
   if (e.key === "Escape" && picked.size) clearPick();
@@ -2172,7 +2162,7 @@ function inset(to) {   // tell the canvas how much of the screen the library cov
 }
 // The library's panel uncovered from its left part to its right edge, or covered back (libReveal): a mask (clip-path) moving on the
 // panel's parts, which keep their width, so nothing is laid out again while it moves. from/to: the visible right edge, in px.
-const LIB_PARTS = () => ["main", ".fbar", "header.hy-dock", "#lwide", "#lviewBtn", "#lgrip"].concat(document.body.classList.contains("fdock") ? [".fdrawer"] : []).map(q => $(q)).filter(Boolean);
+const LIB_PARTS = () => ["main", ".fbar", "header.hy-dock", "#lwide", "#lviewBtn", "#lgrip", ".fdrawer.open"].map(q => $(q)).filter(Boolean);
 function libReveal(from, to, ms, done) {
   cancelAnimationFrame(libReveal.raf);
   const parts = LIB_PARTS(), rs = parts.map(e => e.getBoundingClientRect()), t0 = performance.now(), ease = k => 1 - Math.pow(1 - k, 3);
@@ -2238,7 +2228,7 @@ $("#lview").addEventListener("click", e => { const x = e.target.closest("[data-l
 const LVW = 64 + 10 + 96 + 4, LV = $("#lview"), LVEND = document.createElement("span");   // LVEND: the place after the bar's last button   // #fbar is rebuilt from a string (renderFolders), LV keeps the element across that
 function lvFit() {
   const b = document.body, bar = $("#fbar"), path = bar && bar.querySelector(".fpath"), more = bar && (bar.querySelector(".fsMore") || bar.appendChild(LVEND));
-  if (!path || !b.classList.contains("cv-on") || b.classList.contains("cv-only")) {
+  if (!path || !b.classList.contains("cv-on") || b.classList.contains("cv-only") || !b.classList.contains("fdock")) {   // only over a wide library's pictures
     if (LV.classList.contains("inl")) { LV.classList.remove("inl"); b.classList.remove("lv-inline"); LV.querySelector(".hy-slider").classList.remove("sm"); $("#lviewBtn").after(LV); }
     return;
   }
@@ -2289,8 +2279,11 @@ function setUiHidden(on, fromCanvas) {
 }
 function toggleLibraryKey() { if (uiHidden) { uiLibWas = true; setUiHidden(false); try { $("#cvFrame").contentWindow.postMessage({ type: "hyHideUI", on: false }, location.origin); } catch {} return; } toggleCanvasFull(); }
 window.hyimgMenu = what => { if (what === "library") toggleLibraryKey(); else if (what === "hideui") setUiHidden(!uiHidden); };   // the app's View menu
-document.addEventListener("keydown", e => {
-  if (isCmdKey(e, "KeyM", "m", "M", "ь", "Ь")) { e.preventDefault(); toggleLibraryKey(); }
+document.addEventListener("keydown", e => {   // the app's keys, also while you type (ui/typing.js hyTyping.global)
+  if (isCmdKey(e, "KeyM", "m", "M", "ь", "Ь")) {
+    e.preventDefault(); const b = document.body, a = document.activeElement, closing = !uiHidden && b.classList.contains("cv-on") && !b.classList.contains("cv-only");
+    toggleLibraryKey(); if (closing && a && a !== b && a.id !== "cvFrame") hyLibPanel.focusBoard();   // the keys go with the board (B-34)
+  }
   else if (isCmdKey(e, "Period", ".", "ю", "Ю")) { e.preventDefault(); setUiHidden(!uiHidden); }
 }, true);
 // a file dropped outside the canvas must not make the browser open it in place of the page (the canvas takes drops itself)
@@ -2333,7 +2326,7 @@ addEventListener("message", e => {
     if (!dragging) return;
     const raw = e.clientX - 12, on = raw > MAXL() + SNAP && !document.body.classList.contains("ed-open");
     if (on !== full) { full = on; document.body.classList.toggle("lwide", on); setWide(on); }
-    if (!on) document.documentElement.style.setProperty("--lw", Math.min(MAXL(), Math.max(300, raw)) + "px");
+    if (!on) document.documentElement.style.setProperty("--lw", Math.min(MAXL(), Math.max(240, raw)) + "px");
   });
   $("#lgrip").addEventListener("pointerup", () => {
     dragging = false; document.body.classList.remove("cv-drag"); setPref("lwide", full ? "1" : "");
@@ -2407,7 +2400,7 @@ $("#q").oninput = render;
 // the filter bar's chips: see renderTF() and the handlers beside it
 document.addEventListener("keydown", e => {
   if (cur < 0) return;
-  const typing = ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName);
+  const typing = hyTyping(e);
   if (e.key === "Escape") { if (typing) document.activeElement.blur(); else if (z.s > 1) resetZ(); else closeV(); return; }
   if (e.key === "Tab" && document.activeElement.id !== "poptext") { e.preventDefault(); tabStep(e.shiftKey ? -1 : 1); return; }
   if (typing) return;

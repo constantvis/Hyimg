@@ -166,8 +166,9 @@ def test_one_kind_of_note_dot(server):
             check(page, f"{z * 100:.0f} %", z)
             shot(page, f"dots-{z}.png")
 
-        # hovering an arrow's dot: that arrow's × touching the dot; a click on it takes the arrow off, its dot leaves the row
-        page.evaluate(LOOK, ["d", 1]); page.wait_for_timeout(600)
+        # the arrow selected (a click on its line, owner decision 2026-10-10, P4 B-20), hovering its dot: its × touching the dot; a click
+        # on it takes the arrow off, its dot leaves the row
+        page.evaluate(LOOK, ["d", 1]); page.evaluate("() => { selArrow = 'Pd|d'; sel.clear(); render(); }"); page.wait_for_timeout(600)
         dot = page.evaluate(BOX, ".plg[data-id=d] .mk-note i[data-nd=Pd]")
         page.mouse.move(dot[0], dot[1])
         page.wait_for_function("() => +getComputedStyle(document.querySelector(\"#links .arw[data-k='Pd|d'] .del.e\")).opacity > .99", timeout=3000)

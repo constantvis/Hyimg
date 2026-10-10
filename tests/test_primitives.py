@@ -19,9 +19,10 @@ playwright = pytest.importorskip("playwright.sync_api")
 ROOT = Path(__file__).resolve().parents[1]
 ENGINES = ["chromium", "webkit"]
 SHOTS = os.environ.get("HYIMG_TEST_SHOTS", "")
-FAMILIES = ["buttons", "choices", "marks", "hints"]
+FAMILIES = ["buttons", "choices", "marks", "micro", "hints"]
 TAGS = ["hy-switch", "hy-check", "hy-kbd", "hy-badge", "hy-chip", "hy-hint", "hy-info", "hy-swatch", "hy-swatches", "hy-button",
-        "hy-icon-button", "hy-plate", "hy-segmented", "hy-keyhint", "hy-tip", "hy-studio-actions", "hy-open-in"]
+        "hy-icon-button", "hy-plate", "hy-segmented", "hy-keyhint", "hy-tip", "hy-studio-actions", "hy-open-in", "hy-minitoggle", "hy-scope", "hy-led",
+        "hy-stepper", "hy-scrub"]
 LOOK = '.sc-look[data-hy-theme="{}"][data-hy-shape="{}"]'
 DR = LOOK.format("dark", "round")
 
@@ -95,8 +96,8 @@ def test_the_showcase_loads_every_primitive_live_from_the_core(browser, server):
     page = open_page(browser, server)
     assert page.evaluate("tags => tags.filter(t => !customElements.get(t))", TAGS) == []
     assert page.evaluate("() => document.documentElement.dataset.hyFrom") == "core"   # the live files of the core, not the snapshot
-    assert page.evaluate("() => document.querySelectorAll('.sc-look').length") == 16   # 4 families × 4 looks
-    assert "17 live · ui/hy" in page.inner_text(".sc-head")
+    assert page.evaluate("() => document.querySelectorAll('.sc-look').length") == 20   # 5 families × 4 looks
+    assert "23 live · ui/hy" in page.inner_text(".sc-head")
     assert page.evaluate("() => window.__tMiss || []") == []
     assert page.errors == [], page.errors
     for fam in FAMILIES:
@@ -309,7 +310,7 @@ def test_the_showcase_speaks_russian(browser, tmp_path):
     proc, log, port = serve(tmp_path, "ru")
     try:
         page = open_page(browser, port)
-        assert "Hyimg UI · примитивы" in page.inner_text(".sc-head") and "17 живых" in page.inner_text(".sc-head") and "Темная · Круглые" in page.text_content(".sc-look h3")
+        assert "Hyimg UI · примитивы" in page.inner_text(".sc-head") and "23 живых" in page.inner_text(".sc-head") and "Темная · Круглые" in page.text_content(".sc-look h3")
         assert page.evaluate("() => window.__tMiss") == []
         for fam in FAMILIES:
             p = open_page(browser, port, fam); shot(p, f"primitives-{fam}-{browser.engine}-ru"); p.close()

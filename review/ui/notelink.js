@@ -12,7 +12,7 @@
   const ARROW_ONLY = new Set(["text", "timeline"]);
   const KIND = { htmlframe: "html", html: "html", model3d: "3d", imgframe: "frame", text: "heading", timeline: "timeline" };
   // a count of each kind, in this order: «1 HTML page, 2 frames»
-  const WORD = { picture: "{n} frames", video: "{n} videos", pdf: "{n} PDFs", html: "{n} HTML pages", "3d": "{n} 3D scenes",
+  const WORD = { picture: "{n} pictures", video: "{n} videos", pdf: "{n} PDFs", html: "{n} HTML pages", "3d": "{n} 3D scenes",
     frame: "{n} image frames", heading: "{n} headings", timeline: "{n} timelines", card: "{n} cards" };
   const target = it => !!it && it.type !== "note" && !!(it.type || it.path);   // an arrow may end on it
   const caught = it => target(it) && !ARROW_ONLY.has(it.type);   // overlap, a zone and a group's note catch it
@@ -228,8 +228,9 @@
   // ---- the arrows (owner 2026-10-08 on Concepts/html/notes-glass/a7-states.html «Arrow states»: «вот это очень круто, и по наведению
   // на линию или на точку можно было бы удалить»). A soft curve from the note's side facing the thing. On a thing a note's dot can sit
   // on (a picture, a video, a PDF, any card: caught) it ends at the note's own dot inside the thing's top left corner («End: dot inside»);
-  // elsewhere (a group, a heading, a timeline, another note) on the thing's side with a head. Hovered: 3 px and a × under the pointer,
-  // riding along the line with it, or beside the dot when the dot is hovered; the × removes the link (one undo step).
+  // elsewhere (a group, a heading, a timeline, another note) on the thing's side with a head. Hovered: 3 px. A click selects it (owner
+  // decision 2026-10-10, P4 B-20: the × rode along the line under the pointer and one click anywhere took the arrow off): the selection's
+  // blue and a × at its middle, or beside the dot when the dot is hovered; the × or ⌫ removes the link (one undo step).
   // Where it starts and ends is board geometry only (owner 2026-10-08: «Если мы не двигаем элементы, линия не двигается, остается такой,
   // какая она, в зуме и в зум-ауте»): the end no longer jumped from the card's dot to its side when the card got too small for its
   // marks. Its sizes on screen (line, head, ×) follow --z in CSS (ui/notelink.css), so the arrows keep up with a zoom without a redraw
@@ -353,19 +354,6 @@
     return h + "</g>";
   }
   // hy-allow-end
-  // the × under the pointer while it moves along a line (owner 2026-10-08: «Почему я теперь не могу водить по линии мышкой? ... Я хочу,
-  // чтобы я мог водить мышкой, и у меня был этот символ удалить связь»): at the line's point nearest the pointer, so a click anywhere
-  // on the line takes the arrow off, as one click on its × did (2026-10-02: no select-then-Delete); the pointer on the × holds it still
-  document.addEventListener("pointermove", e => {
-    const g = e.target.closest && e.target.closest("#links .arw"); if (!g || e.target.closest(".del") || typeof toWorld !== "function") return;
-    const ln = g.querySelector(".ln"), xm = g.querySelector(".del.m"); if (!ln || !xm) return;
-    const p = toWorld(e.clientX, e.clientY), L = ln.getTotalLength(), N = 40, dist = l => { const q = ln.getPointAtLength(l); return (q.x - p.x) ** 2 + (q.y - p.y) ** 2; };
-    let best = 0; for (let i = 1, bd = dist(0); i <= N; i++) { const v = dist(L * i / N); if (v < bd) { bd = v; best = i; } }
-    let lo = Math.max(0, best - 1) * L / N, hi = Math.min(N, best + 1) * L / N;
-    for (let i = 0; i < 12; i++) { const a = lo + (hi - lo) / 3, b = hi - (hi - lo) / 3; if (dist(a) < dist(b)) hi = b; else lo = a; }
-    const q = ln.getPointAtLength((lo + hi) / 2);
-    xm.setAttribute("transform", `translate(${Math.round(q.x * 100) / 100} ${Math.round(q.y * 100) / 100})`);
-  });
   window.hyNoteLink = { target, caught, kind, index, links, what, meta, label, dropEl, cardNotes, WORD,
     replyOf, replies, circle, reply, chain, chainSvg, replyInfo, marks, paintDots, lodDots, rowW, placeReply, anchors, arrowSvg, underCut, side, bz, holds };   // the last four: ui/connectors.js
 })();

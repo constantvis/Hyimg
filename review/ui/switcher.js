@@ -114,6 +114,7 @@
   }
   const hide = () => { const o = document.querySelector(".hysw"); if (o) o.classList.remove("on"); };
   window.hyimgSwitcher = o => {
+    if (o && o.open && window.hyTip) try { window.hyTip.used("library", "ctab"); } catch {}   // ⌃Tab was used: the library's tip is learned (P4 B-54)
     o = o || {};
     if (o.open === true) { CARDS = o.boards || []; PICK = o.pick || 0; OPEN = true; draw(); const P = place(); if (P) out(P, true); return true; }
     if (o.open === false) {

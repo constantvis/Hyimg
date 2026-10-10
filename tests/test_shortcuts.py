@@ -184,7 +184,7 @@ def test_library_view_and_size_sit_in_the_path_bar_when_there_is_room(server):
     with playwright.sync_playwright() as p:
         browser, page, frame, errors = open_app(p, server, "panel")
         state = "() => ({ inl: document.getElementById('lview').classList.contains('inl'), btn: getComputedStyle(document.getElementById('lviewBtn')).display, inBar: !!document.querySelector('#fbar #lview') })"
-        page.evaluate("() => document.documentElement.style.setProperty('--lw', '560px')"); page.wait_for_timeout(200)
+        page.evaluate("() => document.documentElement.style.setProperty('--lw', '480px')"); page.wait_for_timeout(200)   # round 15: the bar's buttons moved up
         assert page.evaluate(state) == {"inl": False, "btn": "grid", "inBar": False}
         page.evaluate("() => document.documentElement.style.setProperty('--lw', '1000px')")
         page.wait_for_function("() => document.getElementById('lview').classList.contains('inl')")
@@ -195,7 +195,7 @@ def test_library_view_and_size_sit_in_the_path_bar_when_there_is_room(server):
         # the bar is rebuilt (another folder): it stays in it
         page.evaluate("() => renderFolders()")
         assert page.evaluate(state)["inBar"]
-        page.evaluate("() => document.documentElement.style.setProperty('--lw', '560px')")
+        page.evaluate("() => document.documentElement.style.setProperty('--lw', '480px')")
         page.wait_for_function("() => !document.getElementById('lview').classList.contains('inl')")
         assert page.evaluate(state) == {"inl": False, "btn": "grid", "inBar": False}
         assert not errors, errors
@@ -291,13 +291,14 @@ def test_folder_arrows_walk_the_tree_and_show_the_folder(tmp_path):
             page.wait_for_selector(".ftree .frow[data-f='b']")
             state = "() => ({ c: document.getElementById('coll').value, on: [...document.querySelectorAll('#fnav .frow.on')].map(r => r.dataset.f) })"
             seen = []
+            step = lambda d: page.evaluate("d => stepCollection(d)", d)   # round 15 draws no ↑ ↓ buttons beside the board (ui/libpanel.css)
             for _ in range(5):
-                page.click("#secDn"); seen.append(page.evaluate(state))
+                step(1); seen.append(page.evaluate(state))
             assert [s["c"] for s in seen] == ["a", "b", "c/x", "c/y", "c/y"], seen   # A–Z, a parent's subfolders after it, stops at the end
             assert all(s["on"] == [s["c"]] for s in seen), seen   # highlighted on the left, its parents opened
             page.fill("#q", "k"); page.wait_for_timeout(300)
-            page.click("#secUp"); assert page.evaluate(state)["c"] == "c/x"
-            page.click("#secDn"); assert page.evaluate(state)["c"] == "c/x"   # c/y has nothing with «k»: skipped
+            step(-1); assert page.evaluate(state)["c"] == "c/x"
+            step(1); assert page.evaluate(state)["c"] == "c/x"   # c/y has nothing with «k»: skipped
             page.fill("#q", "")
             crumbs = page.locator("#fbar .fcr")
             assert crumbs.first.inner_text() == "All folders" and crumbs.count() == 3, crumbs.all_inner_texts()

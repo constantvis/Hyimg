@@ -169,9 +169,7 @@
       render(); regroup([id]); commit(before);
     };
     // the title: ↵ done as a heading always was, ⇧↵ carries what is after the caret down into the body, ↓ at its end goes there
-    ta.addEventListener("keydown", e => {
-      e.stopPropagation(); if (e.isComposing || e.keyCode === 229) return;
-      if (e.key === "Escape" || (e.key === "Enter" && !e.shiftKey)) { e.preventDefault(); done(true); return; }
+    hyTyping.keys(ta, { esc: "apply", apply: () => done(true), key: e => {   // Esc, ↵ and Tab apply (owner 2026-10-10, ui/typing.js)
       if (e.key === "Enter" || (e.key === "ArrowDown" && B && ta.selectionStart === ta.value.length)) {
         e.preventDefault(); const had = !!B, cut = e.key === "Enter" ? ta.value.slice(ta.selectionEnd) : "";
         if (cut) { ta.setSelectionRange(ta.selectionStart, ta.value.length); typeIn(ta, ""); }
@@ -179,7 +177,7 @@
         if (e.key === "Enter" && (cut || had)) { typeIn(b.ta, cut + (had ? "\n" : "")); b.ta.setSelectionRange(0, 0); }
         fit();
       }
-    });
+    } });
     ta.addEventListener("paste", e => {   // several lines pasted into the title: the first stays in it, the rest opens the body
       const t = (e.clipboardData && e.clipboardData.getData("text/plain") || "").replace(/\r\n?/g, "\n"); if (!t.includes("\n")) return;
       e.preventDefault(); const i = t.indexOf("\n"), tail = ta.value.slice(ta.selectionEnd), had = !!B;
@@ -188,10 +186,8 @@
       b.ta.setSelectionRange(rest.length, rest.length); fit();
     });
     function bodyKeys(t) {
-      t.addEventListener("keydown", e => {
-        e.stopPropagation(); if (e.isComposing || e.keyCode === 229) return;
+      hyTyping.keys(t, { esc: "apply", enter: "mod", tab: "own", apply: () => done(true), key: e => {   // Esc and ⌘↵ apply, Tab indents
         const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase(), a = t.selectionStart, none = a === t.selectionEnd;
-        if (e.key === "Escape" || (e.key === "Enter" && mod)) { e.preventDefault(); done(true); return; }
         if (e.key === "Enter") { if (goOn(t)) { e.preventDefault(); fit(); } return; }   // ↵ and ⇧↵: a new line, a list goes on
         if (e.key === "Tab") { e.preventDefault(); indent(t, e.shiftKey); fit(); return; }
         if (mod && e.shiftKey && (k === "l" || k === "д")) { e.preventDefault(); checklist(t); fit(); return; }
@@ -205,7 +201,7 @@
           ta.focus(); ta.setSelectionRange(at0, at0); if (first) { typeIn(ta, first); ta.setSelectionRange(at0, at0); }
           if (!t.value.trim()) closeBody(); else fit();
         }
-      });
+      } });
       t.addEventListener("input", fit);
     }
     ta.addEventListener("input", fit);

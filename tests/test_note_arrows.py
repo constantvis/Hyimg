@@ -150,24 +150,23 @@ def test_arrow_states_and_hover_to_delete(server):
         assert page.evaluate("() => document.getElementById('links')._h === window.__h")
         page.evaluate(ZOOM, .8); page.wait_for_timeout(150)
 
-        # hover the line: 3 px and the × under the pointer; along the line it rides with it; the dot's × stays hidden
+        # hover the line: 3 px, no × (owner decision 2026-10-10, P4 B-20); a click selects the arrow: blue and its × in the middle, the
+        # arrow still there; ⌫ takes it off, ⌘Z brings it back
         x, y = page.evaluate(AT, ["A|p", .3])
-        page.mouse.move(x, y); seen(page, f"{a} .del.m", True); seen(page, f"{a} .del.e", False)
+        page.mouse.move(x, y); page.wait_for_timeout(150); seen(page, f"{a} .del.m", False); seen(page, f"{a} .del.e", False)
         assert abs(page.evaluate(WIDTH, "A|p") - 3) < .2
-        m1 = page.evaluate(BOX, f"{a} .del.m circle")
-        assert ((m1[0] - x) ** 2 + (m1[1] - y) ** 2) ** .5 <= 2, (m1, x, y)
         shot(page, "arrow-hover-line.png")
-        x2, y2 = page.evaluate(AT, ["A|p", .7])
-        page.mouse.move(x2, y2 + 5); page.wait_for_timeout(50)   # a little off the line: the × on the line's nearest point
-        m2 = page.evaluate(BOX, f"{a} .del.m circle")
-        assert ((m2[0] - x2) ** 2 + (m2[1] - y2) ** 2) ** .5 <= 4 and abs(m2[0] - m1[0]) > 20, (m1, m2, x2, y2)
-        page.mouse.down(); page.mouse.up()   # a click on the line: the × under the pointer takes the arrow off
+        page.mouse.down(); page.mouse.up()
+        assert page.evaluate("() => board.items.A.to") == ["p"] and page.evaluate("() => selArrow") == "A|p"
+        seen(page, f"{a} .del.m", True); assert page.locator(f"{a}.pick").count() == 1
+        page.keyboard.press("Backspace")
         assert page.evaluate("() => board.items.A.to") == [] and page.evaluate("() => !!board.items.A")
         assert "Arrow removed" in page.evaluate("() => [...document.querySelectorAll('#hyToasts .ht')].map(t => t.textContent).join('|')")
         page.keyboard.press("Meta+z")
         page.wait_for_function("() => (board.items.A.to || []).join() === 'p' && document.querySelector(\".arw[data-k='A|p']\")")
 
-        # hover the note's dot on the picture: the arrow's end × beside it, touching it, not the middle one
+        # the arrow selected, hover the note's dot on the picture: the arrow's end × beside it, touching it, not the middle one
+        page.evaluate("() => { selArrow = 'A|p'; sel.clear(); render(); }")
         page.mouse.move(10, 10); page.wait_for_timeout(150)
         dot = page.evaluate(BOX, rowdot)
         page.mouse.move(dot[0], dot[1]); seen(page, f"{a} .del.e", True); seen(page, f"{a} .del.m", False)
@@ -263,16 +262,16 @@ def test_the_line_runs_under_the_cards(server):
         page.mouse.move(dot[0], dot[1]); page.mouse.down(); page.mouse.up()
         assert page.evaluate("() => [...sel]") == ["E"]
         page.evaluate("() => { sel = new Set(); render(); }")
-        # hovering the visible part: the × under the pointer; moving on to the part under the picture: the picture's, the × goes
+        # the visible part takes the click and selects the arrow (owner decision 2026-10-10, P4 B-20); the part under the picture is
+        # the picture's: a click there selects the picture; ⌫ then takes the selected arrow off
         page.mouse.move(5, 5); page.wait_for_timeout(150)
         vis, hid = page.evaluate(ON, ["E|p", None, 12]), page.evaluate(ON, ["E|p", "p", 12])
-        page.mouse.move(*vis); seen(page, ".arw[data-k='E|p'] .del.m", True)
-        xm = page.evaluate(BOX, ".arw[data-k='E|p'] .del.m circle")
-        assert ((xm[0] - vis[0]) ** 2 + (xm[1] - vis[1]) ** 2) ** .5 <= 3, (xm, vis)
+        page.mouse.move(*hid); page.mouse.down(); page.mouse.up()
+        assert page.evaluate("() => [selArrow, [...sel]]") == [None, ["p"]]
+        page.mouse.move(*vis); page.mouse.down(); page.mouse.up()
+        assert page.evaluate("() => [selArrow, board.items.E.to]") == ["E|p", ["p"]]
         shot(page, "arrows-under-hover.png")
-        page.mouse.move(*hid); seen(page, ".arw[data-k='E|p'] .del.m", False)
-        page.mouse.move(*vis); seen(page, ".arw[data-k='E|p'] .del.m", True)
-        page.mouse.down(); page.mouse.up()   # the × on the visible part still takes the arrow off
+        page.keyboard.press("Backspace")
         assert page.evaluate("() => board.items.E.to") == []
         assert not errors, errors
         browser.close()

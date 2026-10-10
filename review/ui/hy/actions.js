@@ -8,7 +8,7 @@
 // (<hy-button size=plate>); the secondary ones in the order given, the one primary last, filled with the colour of where it stands
 // (--sel: a Studio's own colour inside its root) with white words and a check.
 //   const a = document.createElement("hy-studio-actions"); studioRoot.append(a);
-//   a.actions = [{ id: "reload", label: "Reload", tip: "Reload the page", key: "⌘R" }, { id: "open", open: () => url, tip: "…" },
+//   a.actions = [{ id: "reload", label: "Reload", tip: "Reload the page", key: "⌥R" }, { id: "open", open: () => url, tip: "…" },
 //                { id: "done", label: "Done", tip: "Done", key: "Esc", primary: true, run: close }]
 // A click runs the action's run() and sends hy-action {id}; every button carries data-a=<id>, so a studio that reads clicks on its root by
 // data-a keeps doing so. The tooltip is the page's kind: title="Done · Esc" (or the action's whole title) on the board, data-tip and

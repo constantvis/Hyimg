@@ -212,6 +212,6 @@ def test_page_and_library_menus_grey(server, engine):
         lib.locator("#list .card").nth(free).click(button="right")
         lib.wait_for_selector("#lctx.open [data-a=show]")
         assert lib.evaluate("() => { const b = document.querySelector('#lctx [data-a=show]'); return [b.textContent.trim(), b.getAttribute('aria-disabled'), b.title]; }") == [
-            "Show on board", "true", "This frame is on no board"]
+            "Show on board", "true", "This picture is on no board"]
         assert not errors, errors
         browser.close()

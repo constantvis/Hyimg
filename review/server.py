@@ -25,7 +25,7 @@ import notifplace, notifsince   # every notification has a place on the board; t
 import feedthumbs, favread, copyimg   # pictures in the bell: an area's crop, a card's still, the board around (2026-10-08); ♥ read by path; ⇧⌘C
 import people, comments, boardid   # who wrote what (profile, stamps, shared or private boards); drawings and comments on the board (2026-10-07)
 import plugins_admin   # Settings › Plugins: where plugins are, which are on, a page's hold on one, add and remove (owner 2026-10-07)
-import arrange   # the board's right click › Arrange runs the agents' layout patterns and the table on the selection (owner 2026-10-09)
+import arrange, boardclip   # right click › Arrange runs the agents' layout patterns (owner 2026-10-09); ⌘C ⌘V from board to board (P4 B-05)
 tags.configure(RULES)   # the board's theme tags, from its rules
 
 THUMBS = thumbcache.THUMBS   # ~/Library/Caches/Hyimg/<board>/thumbs, outside Dropbox, capped; moved from <state>/_thumbs (thumbcache.py)
@@ -336,7 +336,7 @@ def scan():
                 **({"empty": True} if is_empty(os.path.join(root, f)) else {}),
                 **({"pages": n} if kind == "pdf" and (n := pdf_pages_known(path)) else {}),
                 # length, picture size and codecs for the board's card; the codecs tell a page whether its engine plays the file (2026-10-05)
-                **(dict(zip(("duration", "vsize", "vcodec", "acodec"), video_probe(os.path.join(root, f)))) if kind == "video" else {}),
+                **(dict(zip(("duration", "vsize", "vcodec", "acodec", "fps"), video_probe(os.path.join(root, f)))) if kind == "video" else {}),
             })
     # theme tags from the prompt (tags.py): batch style blocks are learned from all prompts first, then each scene is tagged
     tags.learn(items)
@@ -676,16 +676,16 @@ def video_seconds(full):
 
 
 def video_probe(full):
-    """a video's length in seconds, its picture's [width, height] as it is shown (a phone clip turned by 90 degrees swaps them) and the
-    codec names of its picture and sound ("h264", "aac"), once per version of the file; one ffprobe for all (the board's info card shows
-    them, owner 2026-10-05; the codecs tell the app's Chromium, which has no H.264, to ask for /video), else Spotlight's length"""
+    """a video's length in seconds, its picture's [width, height] as it is shown (a phone clip turned by 90 degrees swaps them), the codec
+    names of its picture and sound ("h264", "aac") and its fps, once per version of the file; one ffprobe for all (Info shows them, owner
+    2026-10-05 and 2026-10-10; the codecs tell the app's Chromium, which has no H.264, to ask for /video), else Spotlight's length"""
     key = (full, os.path.getmtime(full))
     if key not in _DUR:
-        sec, wh, vc, ac = None, None, None, None
+        sec, wh, vc, ac, fps = None, None, None, None, None
         probe = _tool("ffprobe")
         try:
             if probe:
-                out = subprocess.run([probe, "-v", "error", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height:stream_tags=rotate:stream_side_data=rotation",
+                out = subprocess.run([probe, "-v", "error", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,avg_frame_rate:stream_tags=rotate:stream_side_data=rotation",
                                       "-of", "json", full], capture_output=True, text=True, timeout=20).stdout
                 d = json.loads(out or "{}")
                 streams = d.get("streams") or []
@@ -695,14 +695,14 @@ def video_probe(full):
                     turn = st.get("tags", {}).get("rotate") or next((x.get("rotation") for x in st.get("side_data_list", []) if "rotation" in x), 0)
                     wh = [int(st["width"]), int(st["height"])]
                     if abs(int(float(turn or 0))) % 180 == 90: wh.reverse()
-                if (d.get("format") or {}).get("duration"):
-                    sec = round(float(d["format"]["duration"]), 1)
+                fn, _, fd = str(st.get("avg_frame_rate") or "").partition("/"); fps = round(int(fn) / int(fd), 2) if fn.isdigit() and fd.isdigit() and int(fn) and int(fd) else None
+                if (d.get("format") or {}).get("duration"): sec = round(float(d["format"]["duration"]), 1)
             else:
                 out = subprocess.run(["mdls", "-raw", "-name", "kMDItemDurationSeconds", full], capture_output=True, text=True, timeout=20).stdout
                 sec = round(float(out.strip()), 1)
         except (OSError, ValueError, TypeError, AttributeError, subprocess.SubprocessError):
             pass
-        _DUR[key] = (sec, wh, vc, ac)
+        _DUR[key] = (sec, wh, vc, ac, fps)
     return _DUR[key]
 
 
@@ -2092,12 +2092,13 @@ class H(BaseHTTPRequestHandler):
                 keep = ("source_url", "image_url", "link", "url", "site", "channel", "timestamp", "author", "caption", "what", "colour", "model", "chat", "source", "prompt")
                 return self.send(200, json.dumps({k: d[k] for k in keep if k in d and isinstance(d[k], (str, int, float))}, ensure_ascii=False).encode(), "application/json")
             if u.path == "/thumb":
-                rel = resolve(q["p"][0]); safe(rel)
-                size = int(q.get("s", ["640"])[0])
+                rel = resolve(q["p"][0]); safe(rel); size = int(q.get("s", ["640"])[0])
                 try: pg = max(1, int(q.get("pg", ["1"])[0]))   # a PDF's page (2026-10-06)
                 except ValueError: pg = 1
                 if size == 2048 and kind_of(rel) == "pdf": return self.file(thumb(rel, 2048, pg), "image/jpeg")   # the large preview's page
                 view = view_of(rel, q["vw"][0], q.get("vh", [""])[0]) if "vw" in q else None   # an HTML card's page at its own viewport
+                if rel.lower().endswith(MODEL_EXT) or os.path.basename(rel) == "model.json":   # a 3D file: its turntable's still; none yet: 404, not 500 (P4 S-62)
+                    still = sprite_file(rel, 320); return self.file(still, "image/webp") if still else self.send(404, b"no picture of this 3D file yet", "text/plain")
                 return self.file(thumb(rel, size if size in (96, 320, 640, 1280, 2560) else 640, pg, view), "image/jpeg")   # 96: far-out canvas (fast mode); 2560: an HTML card zoomed in
             if u.path == "/feedthumb":   # a bell tile: an area's crop, a card's still, the board around a pin (feedthumbs.py)
                 out = feedthumbs.http(sys.modules[__name__], q)
@@ -2114,8 +2115,7 @@ class H(BaseHTTPRequestHandler):
                 if kind_of(full) != "pdf" or not os.path.isfile(full): raise FileNotFoundError(full)
                 return self.send(200, json.dumps(pdf_info(rel), ensure_ascii=False).encode(), "application/json")
             if u.path == "/img":
-                rel = resolve(q["p"][0])
-                full = safe(rel)
+                rel = resolve(q["p"][0]); full = safe(rel)
                 if kind_of(full) != "image":
                     pv = preview(rel)
                     return self.file(pv, "image/png" if pv.endswith(".png") else "image/jpeg")
@@ -2285,6 +2285,7 @@ class H(BaseHTTPRequestHandler):
             except (ValueError, AttributeError, TypeError):
                 return self.send(400, b"bad request", "text/plain")
             return self.send(200, json.dumps({"known": dedup.known(shas)}, ensure_ascii=False).encode(), "application/json")
+        if self.path in ("/api/boardclip", "/api/boardclip/take"): return self.send(*boardclip.post(sys.modules[__name__], self))   # ⌘C ⌘V between boards
         if self.path == "/api/propsclip/take":   # before a paste: the copied value's files here, {"map": {path there: path here}}
             try: return self.send(200, json.dumps({"map": props_files_take()}, ensure_ascii=False).encode(), "application/json")
             except Exception as ex: return self.send(500, str(ex)[:160].encode(), "text/plain")

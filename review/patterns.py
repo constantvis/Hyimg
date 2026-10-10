@@ -78,7 +78,7 @@ def card(path, w, sizes, html=None):
     if path.lower().endswith(".html"):
         if html == "html": return {"type": "html", "src": path, "vw": 1280, "ar": 1.6, "pics": [path], "w": w, "h": round(w / 1.6)}
         if html == "htmlframe": return {"type": "htmlframe", "src": path, "vw": 1440, "w": w, "h": round(w * 900 / 1440)}
-        raise SystemExit("HTML-карточке нужен плагин «Dev Studio» или «Фреймы»: scripts/install_plugins.sh, потом ⇧⌘R")
+        raise SystemExit("HTML-карточке нужен плагин «Dev Studio» или «Фреймы»: scripts/install_plugins.sh, потом Вид › Перезапустить сервер")
     sw, sh = sizes.get(path) or [1, 1]
     return {"path": path, "w": w, "ar": sw / sh if sh else 1}
 

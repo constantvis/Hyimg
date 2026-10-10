@@ -146,3 +146,22 @@ def test_hy_comments_delete_names_its_message_and_never_the_first(monkeypatch, c
     assert "[m0000a]" in capsys.readouterr().out   # the list names every message, for the next delete
     with pytest.raises(SystemExit): hycomments.comments([], "main", api, None, None, {}, ["delete", "c123456", "m0000a"])
     assert len(sent) == 1
+
+
+def test_undo_sees_a_second_edit_made_in_the_same_second(root, monkeypatch):
+    """updated is in whole seconds: an edit by someone else in the same second as mine left it the same, and undo's put wrote my old
+    thread over that edit. The rev counts every write (П4 audit 2026-10-10)"""
+    r, me, _ = root
+    monkeypatch.setattr(comments, "_now", lambda: "2026-10-10T12:00:00")   # every write in one second
+    t = comments.comment(r, "main", "new", by(me), {"anchor": None, "at": [10, 20], "text": "First"})["thread"]
+    mine = comments.comment(r, "main", "reply", by(me), {"id": t["id"], "text": "mine"})["thread"]
+    theirs = comments.comment(r, "main", "reply", by(OTHER), {"id": t["id"], "text": "theirs"})["thread"]
+    assert theirs["updated"] == mine["updated"]
+    with pytest.raises(ValueError):   # undo of my reply, made against my rev: refused, their reply stays
+        comments.comment(r, "main", "put", by(me), {"thread": t, "base": mine["updated"], "base_rev": mine.get("rev")})
+    assert [m["text"] for m in comments.threads("main")[0]["messages"]] == ["First", "mine", "theirs"]
+    back = comments.comment(r, "main", "put", by(me), {"thread": t, "base": theirs["updated"], "base_rev": theirs.get("rev")})["thread"]
+    assert len(back["messages"]) == 1 and back["rev"] == theirs["rev"] + 1
+    # a client without base_rev keeps the old check by updated
+    old = comments.comment(r, "main", "put", by(me), {"thread": t, "base": back["updated"]})["thread"]
+    assert old["rev"] == back["rev"] + 1
