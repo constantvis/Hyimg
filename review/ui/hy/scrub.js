@@ -2,7 +2,9 @@
 // Scrub a number (owner 2026-10-10 on round 16's r16-scrub.html, version A: «отлично, беру»; ui/hy/scrub.css). As Figma: the letter or the
 // icon left of the number is a handle, drag it ← → and the number follows, ⇧ ten times faster, ⌥ ten times finer; a click without moving
 // types the number (Enter keeps it, Esc puts it back, ↑ ↓ step by 1, ⇧ by 10); Esc while dragging puts the old value back. The pointer is
-// ew-resize over the handle and stays so for the whole drag. One drag is one change for the page's history: begin before the first move,
+// ew-resize over the handle and stays so for the whole drag. A drag whose release this page never saw (let go over a live page's frame,
+// outside the window, the capture lost) ends at the next move without a button or at the capture's loss: a hover never moves the number
+// (owner 2026-10-10). One drag is one change for the page's history: begin before the first move,
 // end after the last.
 //
 // Two ways in:
@@ -74,6 +76,7 @@ export function scrub(handle, o) {
   /** @param {PointerEvent} e */
   const move = e => {
     if (!d || e.pointerId !== d.id) return;
+    if (!(e.buttons & 1)) return up(e);   // the button is up: the release went elsewhere
     const dx = e.clientX - d.x;
     if (!d.moved) {
       if (Math.abs(dx) < 2) return;
@@ -103,10 +106,12 @@ export function scrub(handle, o) {
   handle.addEventListener("pointermove", move);
   handle.addEventListener("pointerup", up);
   handle.addEventListener("pointercancel", up);
+  handle.addEventListener("lostpointercapture", up);
   const off = () => {
     stop(false); handle.classList.remove("hy-scrub-h");
     handle.removeEventListener("pointerdown", down); handle.removeEventListener("pointermove", move);
     handle.removeEventListener("pointerup", up); handle.removeEventListener("pointercancel", up);
+    handle.removeEventListener("lostpointercapture", up);
     delete (/** @type {any} */ (handle)).__hyScrub;
   };
   /** @type {any} */ (handle).__hyScrub = off;

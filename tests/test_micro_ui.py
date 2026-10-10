@@ -268,3 +268,36 @@ def test_the_scrub_drags_the_letter_and_types_the_number(chromium, showcase):
     assert f.evaluate("f => [f.value, f.input.value]") == [53, "53"]
     assert page.errors == []
     page.close()
+
+
+def test_a_drag_whose_release_went_elsewhere_ends(chromium, showcase):
+    """owner 2026-10-10, a video of Dev Studio's Opacity: «если ты зажал мышку и двигаешь, и уводишь куда-то за пределы, оно должно работать.
+    Но потом, если ты отпустил мышку и потом опять провел туда мышку, оно не должно глючить». The release can land where the control never
+    sees it (a live page's frame, outside the window, the capture lost): the drag ends at the capture's loss or at the next move without a
+    button, and a hover after it moves nothing. The slider (ui/slider.js) and the scrub (ui/hy/scrub.js), both ways."""
+    page = open_showcase(chromium, showcase)
+    page.add_script_tag(url=f"http://127.0.0.1:{showcase}/ui/slider.js")
+    page.wait_for_function("() => !!window.hySlider")
+    page.evaluate("""() => { const s = hySlider.create({ label: 'Opacity', min: 0, max: 100, step: 1, unit: '%', value: 50 });
+      s.el.id = 'sl'; Object.assign(s.el.style, { position: 'fixed', left: '400px', top: '300px', width: '240px', zIndex: 99 });
+      document.body.append(s.el); window.__sl = s; window.__chg = 0; s.input.addEventListener('change', () => __chg++); }""")
+    f = page.locator(LOOK + 'hy-scrub[label="X"]'); h = f.locator(".hy-scrub-h"); h.scroll_into_view_if_needed()
+    targets = {"slider": ("#sl", lambda: page.evaluate("() => +__sl.input.value")), "scrub": (None, lambda: f.evaluate("f => f.value"))}
+    for name, (sel, value) in targets.items():
+        for way in ("capture lost", "move without a button"):
+            el = page.locator(sel) if sel else h
+            x, y = el.evaluate("e => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
+            page.mouse.move(x, y); page.mouse.down()
+            for i in range(1, 5): page.mouse.move(x + 8 * i, y)
+            dragged = value()
+            if way == "capture lost":   # as when the release lands in another document: this one never gets the pointerup
+                el.evaluate("e => { for (const n of [e, ...e.querySelectorAll('*')]) if (n.hasPointerCapture(1)) n.releasePointerCapture(1); }")
+            else:   # a move that says the button is up, the pointerup itself lost
+                el.evaluate(f"e => e.dispatchEvent(new PointerEvent('pointermove', {{ pointerId: 1, isPrimary: true, pointerType: 'mouse', buttons: 0, clientX: {x + 40}, clientY: {y}, bubbles: true }}))")
+            page.mouse.move(5, 5); page.mouse.up()   # the real release, far away
+            page.mouse.move(x + 60, y, steps=4); page.mouse.move(x - 60, y, steps=4)   # a hover across the control
+            assert value() == dragged, f"{name}, {way}: a hover moved the value from {dragged} to {value()}"
+            assert not page.evaluate("() => document.documentElement.classList.contains('hy-scrub-drag') || document.querySelector('#sl').classList.contains('drag')")
+    assert page.evaluate("() => __chg") == 2, "each drag of the slider ended in one change"
+    assert not page.errors, page.errors
+    page.close()

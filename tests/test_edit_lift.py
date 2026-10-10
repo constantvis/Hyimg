@@ -3,8 +3,8 @@ tests in hyimg-dev-studio/tests/test_mode_lift.py), Chromium, the dark theme:
 
 - ui/editlift.js through ui/modes.js: entering a mode hides the board's selection around its card (outline, corner squares) and lifts it
   (a shadow that fades in, the setting «Тени» off as it is by default); leaving sets it down and the selection comes back
-- ui/framezoom.js: a pinch (⌃ with the wheel) over a live page of the library's origin zooms the board, not the page; a click in the page
-  gives it the zoom (nothing drawn on the card), a click outside gives it back; ⌥ sends one pinch to the page
+- ui/framezoom.js: a pinch (⌃ with the wheel) over a live page of the library's origin zooms the board, not the page, a click in the page
+  or not, and never the window (owner 2026-10-10); ⌥ sends one pinch to the page, and to the board if the page does not take it
 
   nice -n 10 python3 -m pytest tests/test_edit_lift.py
 """
@@ -41,7 +41,7 @@ export function register(HY) {
 }
 """
 PAGE = """<!doctype html><html><body style="margin:0;background:#2a6;height:3000px"><h1>Page</h1>
-<script>window.__n = 0; addEventListener('wheel', e => { if (e.ctrlKey) { __n++; e.preventDefault(); } }, { passive: false });</script></body></html>"""
+<script>window.__n = 0; window.__take = true; addEventListener('wheel', e => { if (e.ctrlKey) { __n++; if (__take) e.preventDefault(); } }, { passive: false });</script></body></html>"""
 
 
 @pytest.fixture
@@ -106,13 +106,20 @@ def test_mode_lifts_its_card_and_page_zoom_goes_to_the_board(srv):
         z0 = page.evaluate("HY.cam.z"); pinch(-100)
         assert page.evaluate("HY.cam.z") > z0 * 1.05 and fr.evaluate("__n") == 0
         page.evaluate("HY.camera(-400, -200, 1, false)"); page.wait_for_timeout(200)
-        pinch(-100, ("Alt", "Control")); assert page.evaluate("HY.cam.z") == 1 and fr.evaluate("__n") == 1   # ⌥: that one to the page
-        page.mouse.click(*mid); page.wait_for_function("() => document.querySelector('.plg[data-id=f1]').classList.contains('hy-page-own')")
-        page.wait_for_timeout(300)   # nothing drawn on the card for it (owner 2026-10-08: «обводка эта дурацкая вокруг»)
+        pinch(-100, ("Alt", "Control")); assert page.evaluate("HY.cam.z") == 1 and fr.evaluate("__n") == 1   # ⌥: that one to the page, it took it
+        fr.evaluate("__take = false"); pinch(-100, ("Alt", "Control"))   # ⌥ and a page that does not take it: the board's
+        assert page.evaluate("HY.cam.z") > 1.05 and fr.evaluate("__n") == 2
+        page.evaluate("HY.camera(-400, -200, 1, false)"); page.wait_for_timeout(200)
+        # a click in the page gives it nothing (owner 2026-10-10: the state «the page has the zoom» is gone), nothing drawn on the card
+        page.mouse.click(*mid); page.wait_for_timeout(300)
         assert page.evaluate("""(() => { const e = document.querySelector('.plg[data-id=f1]'), b = getComputedStyle(e, '::before'), c = getComputedStyle(e);
-          return [c.outlineStyle, c.boxShadow, b.content === 'none' || b.boxShadow === 'none'] })()""") == ["none", "none", True]
-        pinch(-100); assert page.evaluate("HY.cam.z") == 1 and fr.evaluate("__n") == 2   # entered: the page's own
-        page.mouse.click(5, 300); page.wait_for_function("() => !document.querySelector('.plg[data-id=f1]').classList.contains('hy-page-own')")
+          return [c.outlineStyle, c.boxShadow, b.content === 'none' || b.boxShadow === 'none', e.classList.contains('hy-page-own')] })()""") == ["none", "none", True, False]
+        pinch(-100); assert page.evaluate("HY.cam.z") > 1.05 and fr.evaluate("__n") == 2   # still the board's
+        # a real trackpad pinch nobody took was Chromium's zoom of the whole window (the board, its menus, its panels)
+        page.evaluate("HY.camera(-400, -200, 1, false)"); page.wait_for_timeout(200)
+        cdp = page.context.new_cdp_session(page)
+        cdp.send("Input.synthesizePinchGesture", {"x": mid[0], "y": mid[1], "scaleFactor": 1.6, "gestureSourceType": "mouse"}); page.wait_for_timeout(400)
+        assert page.evaluate("visualViewport.scale") == 1 and page.evaluate("HY.cam.z") > 1.05
         # leaving: set down, the selection around it again
         page.click("#dock .plgdock [data-a=done]")
         page.wait_for_function("() => !document.documentElement.dataset.hyEdit && getComputedStyle(document.getElementById('hylift')).visibility === 'hidden'", timeout=3000)

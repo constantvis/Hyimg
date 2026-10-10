@@ -13,7 +13,8 @@ function slider(o = {}, attrs = {}) {
   const events = [];
   s.input.addEventListener("input", () => events.push(["input", +s.input.value]));
   s.input.addEventListener("change", () => events.push(["change", +s.input.value]));
-  const at = (type, x, mods = {}) => p.fire(s.el, type, Object.assign({ clientX: x, clientY: 10 }, mods));
+  // a move during a drag has the button down (buttons 1), as the browser says it; a test that lets go elsewhere passes buttons: 0
+  const at = (type, x, mods = {}) => p.fire(s.el, type, Object.assign({ clientX: x, clientY: 10, buttons: type === "pointermove" ? 1 : 0 }, mods));
   const drag = (from, to, mods = {}) => { at("pointerdown", from); at("pointermove", from + 5); at("pointermove", to, mods); at("pointerup", to, mods); };
   return { p, s, events, at, drag, v: () => +s.input.value, P: () => +s.el.style.getPropertyValue("--p") };
 }
@@ -95,6 +96,16 @@ test("a drag ends with one change event after its input events", () => {
   assert.equal(events.filter(e => e[0] === "change").length, 1);
   assert.equal(events.at(-1)[0], "change");
   assert.ok(events.slice(0, -1).every(e => e[0] === "input"));
+});
+
+test("a drag let go where the slider never heard it ends at the next move without a button: a hover moves nothing", () => {
+  const { at, s, events } = slider({ value: 50 });
+  at("pointerdown", 100); at("pointermove", 105); at("pointermove", 120);   // +20 px: 60
+  assert.equal(+s.input.value, 60);
+  at("pointermove", 160, { buttons: 0 });   // the pointerup went to a live page's frame (owner 2026-10-10, Dev Studio's Opacity)
+  at("pointermove", 20, { buttons: 0 }); at("pointermove", 200, { buttons: 0 });
+  assert.equal(+s.input.value, 60);
+  assert.equal(events.filter(e => e[0] === "change").length, 1, "what the drag moved is kept as one change");
 });
 
 test("values on a fractional step come out on the step grid without float noise", () => {

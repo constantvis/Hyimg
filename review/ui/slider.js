@@ -20,7 +20,10 @@
 //
 // The pointer: a press and a drag move the value from where it was grabbed (no jump at the start), ⇧ ten times finer, ⌥ a hundred times;
 // a click without a drag puts the value where the pointer is; a double click or a click on the number types it; the arrows move one step,
-// ⇧ ten steps. The pointer is captured, so the drag goes on outside the control. Rounded in the default shape, square-ish in «pro»;
+// ⇧ ten steps. The pointer is captured, so the drag goes on outside the control; a drag whose release this page never saw (let go over a
+// live page's frame, outside the window, the capture lost) ends at the next move without a button or at the capture's loss, so a hover
+// never moves the value (owner 2026-10-10, a video of Dev Studio's Opacity: «если отпустил мышку и потом опять провел туда мышку, оно не
+// должно глючить»). Rounded in the default shape, square-ish in «pro»;
 // easing cubic-bezier(.32,.72,0,1).
 //
 // For editors that need more (the frames editor, owner 2026-10-06): data-curve="sqrt" (finer near the start: the fill is the square root of the
@@ -73,6 +76,7 @@
     }
     function move(e) {
       if (!drag || drag.id !== e.pointerId) return;
+      if (!(e.buttons & 1)) return lost(e);   // the button is up: the release went elsewhere
       drag.moved = drag.moved || Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 3;
       if (!drag.moved) return;
       const { min, max, step } = range(), k = e.altKey ? 0.01 : e.shiftKey ? 0.1 : 1;
@@ -95,7 +99,15 @@
     root.addEventListener("pointerdown", down);
     root.addEventListener("pointermove", move);
     root.addEventListener("pointerup", up);
-    root.addEventListener("pointercancel", () => { drag = null; root.classList.remove("drag"); });
+    // the drag ended without its pointerup here: what it moved stays, as after a release (a change), never a click
+    function lost(e) {
+      if (!drag || drag.id !== e.pointerId) return;
+      const was = drag; drag = null; root.classList.remove("drag");
+      if (root.hasPointerCapture(e.pointerId)) root.releasePointerCapture(e.pointerId);
+      if (was.moved) input.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    root.addEventListener("pointercancel", lost);
+    root.addEventListener("lostpointercapture", lost);
     // the number is a field: a click on it, or a double click on the track, types the value
     function edit() {
       if (!out || out._edit || input.disabled) return;
