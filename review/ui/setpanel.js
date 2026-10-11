@@ -7,7 +7,7 @@
 // and Storage (ui/storage.js) add their sections to the same window.
 //
 // The rows here, by section: Appearance (language, theme, corners, shadows, notes; the visual choices with live previews), Board (the
-// paper's colour and grain, the dots' visibility, the boards' sleep, board links in the app), Interface (how ⌘. hides it, key hints),
+// paper's colour and grain, the dots' visibility, the boards' sleep, board links in the app), Interface (how ⌘. hides it, key hints, tooltips),
 // Performance (engine, rendering, how the dots are drawn) with Diagnostics (the performance log). One row a setting: the name on the left
 // with the chosen option's words under it, the control on the right, or under the name when the row is too narrow for both.
 // The reset of the paper is a plain <hy-button>, the dots' visibility the app's slider. Home loads the primitives' CSS but not their module (it is a file page), so the controls here
@@ -20,7 +20,7 @@
 //
 //   const P = hySetPanel.mount(document.getElementById("sets"), {
 //     get(key)        -> the setting's value now, a string (lang, theme, shape, shadow, glass, paperDark, paperLight, grain, dotsv,
-//                        engine, lod, dotsgl, sleep, hideui, applinks, keyhint, perflog); empty: the row's def
+//                        engine, lod, dotsgl, sleep, hideui, applinks, keyhint, tooltips, perflog); empty: the row's def
 //     set(changes)    the person changed {key: value}; null takes a setting back to its default (the paper's Reset)
 //     engine()        -> true when the Engine row is shown (inside the Mac app)
 //   })
@@ -68,7 +68,10 @@
         ["slide", "Slide", "Everything slides off to its edge and fades"]] },
       // the Hints family (DESIGN.md «Семья подсказок»): key hints, the Hint bar and the tips, until learned by default (ui/hy/keyhint.js, tip.js)
       { k: "keyhint", label: "Key hints", def: "learn", opts: [["always", "Always", "Key hints and tips always show, learned ones too"],
-        ["learn", "Until learned", "A key used 5 times and a tip used once are no longer shown"], ["off", "Off", "No key hints, Hint bar or tips"]] },
+        ["learn", "Until learned", "Learned keys and tips go, unused for a month they come back"], ["off", "Off", "No key hints, Hint bar or tips"]] },
+      // the app's one tooltip, a button's name and keys (ui/hy/tooltip.js; owner 2026-10-11, round 20: «возможность их отключить в Tips and
+      // shortcuts и в настройках тоже»); the «?» panel has the same switch (ui/keyspanel.js)
+      { k: "tooltips", label: "Tooltips", def: "1", sw: ["No tooltips over buttons", "A button's name and keys over it after a short rest"] },
     ]],
     ["performance", "", [
       { k: "engine", label: "Engine", opts: [["webkit", "WebKit", "The macOS engine, like Safari: draws on the CPU"],

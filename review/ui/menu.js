@@ -64,6 +64,40 @@
       return app;
     });
   };
+  // «Open with ›» (round 20, owner 2026-10-11 on open-b.html: «да вот так лучше»): the apps of this Mac that open the file, its default first
+  // with a quiet «default», then a line and «Other…» (macOS chooses), as Finder's «Open With ›». Asked once a kind of file (/api/openwith,
+  // review/openwith.py); the rows carry data-openwith and the file, and one listener below opens them in any menu (the board's #ctx, the
+  // Info card's Open ▾). hyOpenWith.rows(path, attrs) is a submenu's markup (hyMenuSub's build); asked before, the list is there at once,
+  // else a quiet «…» stands until the server answers and the open panel is drawn again.
+  const WITH = new Map();   // extension -> the apps, or a promise while asked
+  const ask = path => {
+    const k = extOf(path);
+    if (!WITH.has(k)) WITH.set(k, fetch(`/api/openwith?p=${encodeURIComponent(path)}`).then(r => (r.ok ? r.json() : {}))
+      .then(d => { const a = d.apps || []; WITH.set(k, a); return a; }).catch(() => { WITH.delete(k); return []; }));
+    return Promise.resolve(WITH.get(k));
+  };
+  const appIcon = a => `<img class="oi-ic" alt="" width="15" height="15" style="flex:none;display:block;width:15px;height:15px"`
+    + ` src="/api/appicon?app=${encodeURIComponent(a.path)}" onerror="this.style.visibility='hidden'">`;   // no icon: an empty place, the words stay in line
+  function withRows(path, attrs = "") {
+    const k = extOf(path), got = WITH.get(k), p = esc(path);
+    const row = (a, i) => window.hyMenuItem(`${attrs} data-openwith="${i}" data-owp="${p}"`, appIcon(a), esc(a.name) + (a.default ? ` <span class="mh">${t("default")}</span>` : ""));
+    const list = Array.isArray(got) ? got.map(row).join("")
+      : `<div class="mhint" data-owwait="${esc(k)}">…</div>`;
+    if (!Array.isArray(got)) ask(path).then(() => document.querySelectorAll(`.hy-sub [data-owwait="${CSS.escape(k)}"]`).forEach(w => { w.parentElement.innerHTML = withRows(path, attrs); }));
+    return list + `<div class="sep oi-sep" role="separator"></div>` + window.hyMenuItem(`${attrs} data-openwith="other" data-owp="${p}"`, '<span class="mi0"></span>', t("Other…"));
+  }
+  function withRun(path, which) {
+    if (which === "other") return post({ path, choose: true });
+    return ask(path).then(list => { const a = list[+which]; return a ? post({ path, app: a.path }) : null; });
+  }
+  const post = body => fetch("/api/openfile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .catch(st => { (window.hyToast || console.log)(st === 403 ? t("This file is outside the library") : t("The file did not open"), "error"); return null; });
+  window.hyOpenWith = { ask, rows: withRows, run: withRun };
+  document.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest("[data-openwith]"); if (!b || b.getAttribute("aria-disabled") === "true") return;
+    withRun(b.dataset.owp, b.dataset.openwith);   // the menu it is in closes by its own click handler, which sees the click after this
+  }, true);
   window.hyOpenFile = (path, note = (t, k) => (window.hyToast || console.log)(t, k)) =>
     fetch("/api/openfile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path }) })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))

@@ -11,9 +11,9 @@
   background: color-mix(in srgb, #30d158 16%, transparent); color: var(--ink); font: 500 12px var(--sans); cursor: pointer; white-space: nowrap; transition: background .2s cubic-bezier(.32,.72,0,1); }
 .fbar .fsPill:hover { background: color-mix(in srgb, #30d158 26%, transparent); }
 .fbar .fsPill i { width: 7px; height: 7px; border-radius: 50%; background: #30d158; box-shadow: 0 0 0 3px color-mix(in srgb, #30d158 25%, transparent); }
-#fsMenu { position: fixed; z-index: 80; min-width: 260px; padding: 6px; border: 1px solid var(--line); border-radius: 14px; outline: none;
-  background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  box-shadow: 0 12px 40px rgba(0,0,0,.35); opacity: 0; transform: translateY(-4px) scale(.98); transform-origin: top right; visibility: hidden;
+#fsMenu { position: fixed; z-index: 80; min-width: 260px; padding: var(--hy-pop-pad); border: 1px solid var(--line); border-radius: var(--hy-pop-r); outline: none;
+  background: var(--hy-pop-bg); backdrop-filter: var(--hy-pop-blur); -webkit-backdrop-filter: var(--hy-pop-blur);   /* a pop-up (P-17) */
+  box-shadow: var(--hy-sh-pop); opacity: 0; transform: translateY(-4px) scale(.98); transform-origin: top right; visibility: hidden;
   transition: opacity .18s cubic-bezier(.32,.72,0,1), transform .24s cubic-bezier(.32,.72,0,1), visibility 0s .24s; }
 #fsMenu.open { opacity: 1; transform: none; visibility: visible; transition: opacity .18s cubic-bezier(.32,.72,0,1), transform .24s cubic-bezier(.32,.72,0,1), visibility 0s; }
 #fsMenu button { display: flex; align-items: center; gap: 9px; width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: 9px; background: none; color: var(--sub);

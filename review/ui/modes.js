@@ -5,7 +5,7 @@
 // Made as Figma's (owner, same day, with a Figma screenshot: «look how Figma's switch is made, it's on the right and only the icon;
 // active»): at the right end of the dock after a thin divider, also while an editor owns the dock; icons only at every width, in a group
 // of their own (a raised ground in the dark look, a slightly darker one in the light), the chosen one a filled tile with its icon in the
-// selection's blue, the others muted, a disabled one dimmed. The name is in a small tooltip over the segment (the image studio's tooltip
+// selection's blue, the others muted, a disabled one dimmed. The name is in the app's tooltip over the segment (ui/hy/tooltip.js, was the image studio's tooltip
 // plate), a disabled one's says what enables it. Each segment is as big as the dock's other icon buttons; round in the round look, the
 // shared row radius (--hy-row-r) in «pro».
 //
@@ -39,9 +39,18 @@
 //                      data-studio="<key>" and --hy-studio, and --sel, --hy-sel and the notes' info colour are it, so every chosen,
 //                      picked or primary thing of the app inherits it, a dialog's action button too (ui/confirm.js; owner 2026-10-09:
 //                      «опять мы что-то выделяем, у нас это синего цвета вместо зеленого ... чтобы у нас все режимы соответствовали»)
+// The Studio's shell (owner 2026-10-11 on round 20, r20/studio-a.html «Одна оболочка», ♥ «беру»): what the three Studios share is drawn
+// here, each Studio gives only its content (studios audit S-06, S-07, S-18):
+//   doc()              the thing open in it: { name, path }. The crumb gains one step, the Studio's dot and the name, the path in its
+//                      tooltip (Figma grows its crumbs by one step as it enters a component); the leave question (ui/confirm.js hyLeave)
+//                      names it by the same name. A file's name is shown without its folder and extension (docName)
+//   docMenu(rect)      optional: a click on that step (Image Studio's frame menu, under the step's rectangle)
+//   rename(name)       optional: a double click on the step renames the thing in place (a name: ↵ applies, Esc puts it back, ⌘↵ the
+//                      primary action, ui/typing.js)
 // The switch follows what happens anyway (a double click, Esc, Done): the board calls sync() after each render and when a plugin's editor
 // takes the dock or gives it back (HY.dock), and a plugin may call HY.modeChanged(). Board leaves the open editor. A disabled mode stays
-// in its place, dimmed. A dock too narrow for all its buttons keeps only the modes that can be entered now.
+// in its place, dimmed. A dock too narrow for all its buttons keeps only the modes that can be entered now; in a Studio the switch is always
+// Board and the open Studio, nothing else (studios audit S-01, 2026-10-11: Image Studio's dock was 833 px and did not fit beside the library)
 // While a mode is open the card it edits is lifted (ui/editlift.js, owner 2026-10-08): the board's selection around it hidden, a shadow
 // under it, the rest of the board a little dimmer; every plugin's mode gets it from here.
 // In any Studio the board around it is inert (P4 S-08, П4 audit 2026-10-10: a click beside the 3D or Dev card picked and moved the board's
@@ -58,6 +67,9 @@
   const EASE = "cubic-bezier(.32,.72,0,1)";
   // the board: the place where cards lie (ui/icons.js «board», the same as a board in Home's list)
   const BOARD_IC = () => (window.hyIcon ? window.hyIcon("board", 16) : "");
+  // a thing's name as people read it: a file's name without its folder and its extension (sunset.png is «sunset»), else as given
+  const FILE_EXT = /\.(png|jpe?g|webp|gif|heic|heif|tiff?|avif|bmp|psd|html?|json|glb|gltf|obj|fbx|stl|usdz|svg|pdf)$/i;
+  const docName = s => String(s || "").trim().split("/").pop().replace(FILE_EXT, "").trim();
   const css = `
 :root { --mode-g: color-mix(in srgb, var(--ink) 6%, transparent); --mode-on: var(--panel); --mode-on-sh: 0 1px 2px rgba(0,0,0,.14), 0 0 0 1px var(--line); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mode-g: var(--raise); --mode-on: color-mix(in srgb, var(--ink) 14%, var(--raise)); --mode-on-sh: none; } }
@@ -81,22 +93,22 @@
    board's round buttons and the panels they open are away until the board is back (owner 2026-10-09 on round 14's 3D Studio: «В режиме
    студии мы вот эти все элементы убираем»); <html data-in-studio> is set below for every Studio, a colourless plugin's too */
 :root[data-in-studio] :is(#bntf, #bkeys, #bhist, #bset, #ntf, #hist, #keys, #sets.sw-side) { display: none !important; }
+/* the board's Info card too, from the first moment (S-19, 2026-10-11: it showed through Image Studio for 2–3 s as its column came in) */
+:root[data-in-studio] #info { display: none !important; }
 #dock #modes > button[aria-disabled=true] { opacity: .38; cursor: default; }
 #dock #modes > button[aria-disabled=true]:hover { color: var(--sub) !important; }
 #dock #modes > button svg { flex: none; display: block; }
-#dock #modes.few > button[aria-disabled=true] { display: none !important; }
+#dock #modes.few > button[aria-disabled=true], #dock #modes.solo > button:not([aria-pressed=true], [data-mode=board]) { display: none !important; }
 :root[data-shape=pro] #dock #modes { border-radius: var(--hy-row-r, 8px) !important; }
 :root[data-shape=pro] #dock #modes > :is(.st, button) { border-radius: calc(var(--hy-row-r, 8px) - var(--hy-seg-pad, 3px)) !important; }   /* concentric with the track */
-/* the tooltip: the image studio's (hyimg-image-studio editor #tip), a small plate over the segment; the name, and what enables a disabled one.
-   On the menus' layer, over an editor's panels (the 3D studio's are 60, 61); the frame editor lifts it with the dock (hyimg-image-studio) */
-#modetip { position: fixed; left: 0; top: 0; z-index: 79; display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; white-space: nowrap;
-  border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--panel) 86%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  box-shadow: var(--plate-sh, 0 8px 24px rgba(0,0,0,.35)); color: var(--ink); font: 500 12px var(--sans); pointer-events: none; opacity: 0;
-  transition: opacity .16s ${EASE}, transform .26s ${EASE}; }
-#modetip.on { opacity: 1; }
-#modetip .mth { color: var(--sub); font-weight: 400; }
-:root[data-shape=pro] #modetip { border-radius: 11px; }
-@media (prefers-reduced-motion: reduce) { #dock #modes > button, #modetip { transition: none; } }`;
+/* the open thing's step in the crumb (the shell's doc()): a chevron and the name with the Studio's dot, grown in from the right */
+#crumb .hycs, #cStudio { max-width: 0; opacity: 0; overflow: hidden; transition: max-width .4s ${EASE}, opacity .3s ${EASE}; }
+#crumb .hycs.in { max-width: 16px; opacity: 1; } #cStudio.in { max-width: 260px; opacity: 1; }
+#crumb #cStudio { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; color: var(--ink); cursor: default; }
+#cStudio .hyd { width: 8px; height: 8px; border-radius: 99px; background: var(--hy-studio, var(--sel)); flex: none; }
+#cStudio .hyn { overflow: hidden; text-overflow: ellipsis; }
+#cStudio input { font: inherit; color: inherit; background: transparent; border: 0; outline: none; width: 160px; padding: 0; }
+@media (prefers-reduced-motion: reduce) { #dock #modes > button { transition: none; } }`;
   window.hyModes = function ({ dock, sel, t = k => k, rect = null, hy = null }) {
     const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
     const LIFT = rect && window.hyEditLift ? window.hyEditLift({ rect }) : null;
@@ -106,7 +118,6 @@
     wrap.id = "modesw"; wrap.innerHTML = `<span class="msep" aria-hidden="true"></span>`;
     el.className = "seg"; el.id = "modes"; el.setAttribute("role", "group"); el.setAttribute("aria-label", t("Mode"));
     wrap.appendChild(el); dock.appendChild(wrap);
-    const tip = document.createElement("div"); tip.id = "modetip"; tip.setAttribute("role", "tooltip"); tip.setAttribute("aria-hidden", "true"); document.body.appendChild(tip);
     let raf = 0, waiting = null;
     const defs = () => [...M.entries()].sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
     const safe = (f, d) => { try { return f(); } catch (e) { console.error(e); return d; } };
@@ -117,6 +128,8 @@
         const b = document.createElement("button"); b.type = "button"; b.dataset.mode = k;
         b.innerHTML = d.icon || "";   // the icon alone: the name is the tooltip's and the screen reader's
         const nm = d.name || d.label || k; b.setAttribute("aria-label", nm); b.dataset.name = nm; el.appendChild(b);
+        // the app's tooltip (ui/hy/tooltip.js, round 20): the name, and in its quiet line what enables a disabled one
+        b.hyTip = () => ({ t: b.dataset.name, sub: b.dataset.tip !== b.dataset.name ? b.dataset.tip : "" });
         if (d.color) b.style.setProperty("--hy-mode-c", d.color);   // the Studio's colour when chosen
       }
       if (window.hySeg) window.hySeg(el);
@@ -135,18 +148,63 @@
         const hint = can ? "" : ((open !== "board" && d.hintStudio) || d.hint || d.title || ""), desc = can ? (d.title || "") : hint;
         if (b.dataset.tip !== (hint || b.dataset.name)) b.dataset.tip = hint || b.dataset.name;
         if (desc) { if (b.getAttribute("aria-description") !== desc) b.setAttribute("aria-description", desc); } else b.removeAttribute("aria-description");
-        if (tipFor === b) showTip(b, true);
+        if (window.hyTooltip) hyTooltip.refresh(b);
       }
-      if (moved && el.classList.contains("few")) fit();
+      if ((moved && el.classList.contains("few")) || open !== fitFor) fit();
       paint(open);
+      step(open);
       lift(open, ids);
     }
     // the open Studio's colour on <html> (data-studio, --hy-studio), gone on the board or in a Studio that brings none
     function paint(open) {
       const d = open !== "board" && M.get(open), c = d && d.color ? String(d.color) : "", r = document.documentElement;
-      if (r.hasAttribute("data-in-studio") !== !!d) r.toggleAttribute("data-in-studio", !!d);   // any Studio: the row's right end is its own
+      // any Studio, and a plugin's live view that holds the dock with its session actions top right (an HTML frame's live page, owner
+      // 2026-10-11 on its Info card over the page: «пж убери в live preview вот это справа, это пиздец как мешает»): the row's right end
+      // is its own, the board's Info card and round buttons are away until the board is back
+      const live = !d && dock.classList.contains("plg-mode") && !!document.querySelector("body > hy-studio-actions");
+      if (r.hasAttribute("data-in-studio") !== (!!d || live)) r.toggleAttribute("data-in-studio", !!d || live);
       if ((r.dataset.studio || "") === (c ? open : "") && r.style.getPropertyValue("--hy-studio") === c) return;
       if (c) { r.dataset.studio = open; r.style.setProperty("--hy-studio", c); } else { delete r.dataset.studio; r.style.removeProperty("--hy-studio"); }
+    }
+    // The open thing (doc()): its name for the crumb's step and the leave question, its path for the step's tooltip. The crumb gains the
+    // step as a Studio opens and gives it back as it closes, the name follows a rename (studios audit S-06: Image Studio had a step, 3D
+    // Studio a plate with the scene.json's path, Dev Studio nothing)
+    function docOf(k) {
+      const d = k && k !== "board" && M.get(k), x = d && d.doc ? safe(() => d.doc(), null) : null; if (!x) return null;
+      const path = String(x.path || ""), name = docName(x.name || path); return name ? { name, path } : null;
+    }
+    let stepK = "";
+    function step(open) {
+      const cr = document.getElementById("crumb"), x = docOf(open);
+      let st = document.getElementById("cStudio"), sp = document.getElementById("cStudioSep");
+      if (!x || !cr) {
+        if (st && stepK) { stepK = ""; st.classList.remove("in"); sp.classList.remove("in"); setTimeout(() => { if (!stepK) { st.remove(); sp.remove(); } }, 400); }
+        return;
+      }
+      if (!st) {
+        sp = document.createElement("span"); sp.className = "cs hycs"; sp.id = "cStudioSep"; sp.innerHTML = window.HY_CHEV || "›";
+        st = document.createElement("button"); st.type = "button"; st.id = "cStudio"; st.innerHTML = `<i class="hyd"></i><span class="hyn"></span>`;
+        st.addEventListener("click", e => { e.stopPropagation(); const d = M.get(stepK); if (d && d.docMenu && !st.querySelector("input")) safe(() => d.docMenu(st.getBoundingClientRect())); });
+        st.addEventListener("dblclick", e => { e.stopPropagation(); renameStep(); });
+        cr.append(sp, st);
+      }
+      if (st.nextElementSibling) cr.append(sp, st);   // the crumb's own parts drawn again after it: the step stays the last
+      stepK = open;
+      const n = st.querySelector(".hyn"); if (n && !st.querySelector("input") && n.textContent !== x.name) n.textContent = x.name;
+      if (st.title !== x.path) st.title = x.path;
+      st.setAttribute("aria-label", x.name);
+      if (!st.classList.contains("in")) requestAnimationFrame(() => { if (stepK) { st.classList.add("in"); sp.classList.add("in"); } });
+    }
+    // a double click on the step: the name in a field where it stands (a name: ↵ and Tab apply, Esc puts it back, ⌘↵ the primary action)
+    function renameStep() {
+      const st = document.getElementById("cStudio"), d = M.get(stepK); if (!st || !d || !d.rename || st.querySelector("input")) return;
+      const s = st.querySelector(".hyn"), old = s.textContent, inp = document.createElement("input");
+      inp.value = old; inp.spellcheck = false; s.textContent = ""; s.appendChild(inp); inp.focus(); inp.select();
+      let fin = false;
+      const done = ok => { if (fin) return; fin = true; const v = inp.value.trim(); s.textContent = ok && v ? v : old; if (ok && v && v !== old) safe(() => d.rename(v)); sync(); };
+      if (window.hyTyping && hyTyping.keys) hyTyping.keys(inp, { esc: "cancel", enter: "line", apply: () => done(true), cancel: () => done(false), primary: () => { done(true); safe(() => d.leave()); } });
+      else inp.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "Enter") done(true); if (e.key === "Escape") done(false); });
+      inp.addEventListener("blur", () => done(true)); inp.addEventListener("click", e => e.stopPropagation());
     }
     // the card the open mode edits: its own word, the live card, the card it was entered with, the one selected card
     function cardOf(k, ids) {
@@ -170,8 +228,7 @@
     let hintH = null, camAt = null, flew = null, camKept = null;   // camKept: the board's camera while one Studio gives way to another
     function arrive(k, ids) {
       const d = M.get(k); if (!d) return;
-      const items = [{ id: "select", keys: ["v"], t: "Select" }, { id: "comment", keys: ["c"], t: "Annotation" }, ...(d.hints || []).slice(0, 2),
-        { id: "done", keys: ["escape", "mod+enter"], t: d.primary || "Done" }];
+      const items = hintItems(d);
       hintH = safe(() => d.showHint ? d.showHint(items, k) : window.hyKeyHint ? window.hyKeyHint.show(dock, k, items, { place: "top" }) : null, null);
       camAt = hy && d.fit !== false ? camKept || { ...hy.cam } : null; flew = null; camKept = null;
       if (!camAt) return;
@@ -192,13 +249,25 @@
       });
       mo.observe(document.documentElement, { attributes: true, attributeFilter: ["style"] }); setTimeout(() => mo.disconnect(), 2200);
     }
+    // The Hint bar of a Studio, built here for all of them (S-04, 2026-10-11): V, C, one or two of its own keys, Esc / ⌘↵. A key held with
+    // its modifiers is one combination, written as one cap without a slash: the slash means «or» (Esc / ⌘↵), and «⌥ / R» read as ⌥ or R
+    const MODK = new Set(["alt", "option", "shift", "mod", "cmd", "meta", "ctrl", "control"]);
+    const combo = keys => keys.length > 1 && keys.slice(0, -1).every(k => MODK.has(String(k).toLowerCase())) && !MODK.has(String(keys[keys.length - 1]).toLowerCase())
+      ? [keys.join("+")] : keys;
+    function hintItems(d) {
+      return [{ id: "select", keys: ["v"], t: "Select" }, { id: "comment", keys: ["c"], t: "Annotation" },
+        ...(d.hints || []).slice(0, 2).map(h => ({ ...h, keys: combo(h.keys || []) })), { id: "done", keys: ["escape", "mod+enter"], t: d.primary || "Done" }];
+    }
     function depart() {
       if (hintH) { safe(() => hintH.hide()); hintH = null; }
       const it = flew && hy && hy.board.items[flew];
       if (waiting && waiting.to !== "board" && camAt) camKept = camAt;   // another Studio opens next: it flies from here, and back to the board's own camera at the end
-      else if (it && camAt) fly({ ...camAt, cx: it.x + it.w / 2, cy: it.y + it.h / 2 }, 380);
+      else if (it && camAt) fly({ ...camAt, cx: it.x + it.w / 2, cy: it.y + cardH(it) / 2 }, 380);
       flew = null; camAt = null;
     }
+    // a card's height as the board draws it: a picture has no h, only its width and ratio (canvas.html itemH); without it the camera
+    // flew to NaN and the whole board vanished after a Studio without its own camera opened on a picture (2026-10-10)
+    const cardH = it => (typeof itemH === "function" ? itemH(it) : it.h) || it.h || it.w;
     // the camera that puts the card in the board's free part (ui/bars.js: the library, the Studio's side panels [data-hyui], the top row
     // and the dock), as large as fits, at most 4×
     function fitCam(id) {
@@ -206,8 +275,8 @@
       const s = st.getBoundingClientRect(), f = B.free(st, parseFloat(document.documentElement.style.getPropertyValue("--inset")) || 0);
       const x0 = f.l + 16 - s.left, x1 = f.r - 16 - s.left, y0 = f.t + 8 - s.top, y1 = f.b - 8 - s.top;
       if (x1 - x0 < 80 || y1 - y0 < 80) return null;
-      const z = Math.min((x1 - x0) / it.w, (y1 - y0) / it.h, 4);
-      return { x: it.x - (x0 + (x1 - x0 - it.w * z) / 2) / z, y: it.y - (y0 + (y1 - y0 - it.h * z) / 2) / z, z, cx: it.x + it.w / 2, cy: it.y + it.h / 2 };
+      const h = cardH(it), z = Math.min((x1 - x0) / it.w, (y1 - y0) / h, 4); if (!(z > 0 && Number.isFinite(z))) return null;
+      return { x: it.x - (x0 + (x1 - x0 - it.w * z) / 2) / z, y: it.y - (y0 + (y1 - y0 - h * z) / 2) / z, z, cx: it.x + it.w / 2, cy: it.y + h / 2 };
     }
     // the flight on the app's curve, cubic-bezier(.32,.72,0,1): the board point under the card's centre moves straight, the zoom evenly
     let flyRaf = 0;
@@ -228,33 +297,15 @@
     }
     // a dock too narrow for all its buttons (a narrow window, the library open beside the board): the modes that cannot be entered now
     // step out (Board and the chosen one stay)
-    let fr = 0;
+    // In a Studio only Board and that Studio (solo): the others cannot be entered from there anyway
+    let fr = 0, fitFor = "";
     function fit(now) {
       if (!now) { if (!fr) fr = requestAnimationFrame(() => { fr = 0; fit(true); }); return; }
+      fitFor = openKey(); el.classList.toggle("solo", fitFor !== "board");
       if (!dock.isConnected || !dock.offsetWidth) return;
       el.classList.remove("few");
       if (dock.scrollWidth > dock.clientWidth + 1) el.classList.add("few");
     }
-    // the tooltip over a segment: after a short rest under the pointer, at once while another was just shown (as the image studio's)
-    let tipFor = null, tipT = 0, tipLast = 0;
-    function showTip(b, keep) {
-      const name = b.dataset.name || "", more = b.dataset.tip && b.dataset.tip !== name ? b.dataset.tip : "";
-      tip.textContent = name;
-      if (more) { const m = document.createElement("span"); m.className = "mth"; m.textContent = more; tip.appendChild(m); }
-      const r = b.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
-      const x = Math.max(8, Math.min(innerWidth - tw - 8, r.left + r.width / 2 - tw / 2)), y = Math.max(8, r.top - 10 - th);
-      if (!tip.classList.contains("on") && !keep) { tip.style.transition = "none"; tip.style.transform = `translate(${x}px, ${y + 4}px)`; tip.offsetWidth; tip.style.transition = ""; }
-      tip.style.transform = `translate(${x}px, ${y}px)`; tip.classList.add("on"); tipFor = b;
-    }
-    function hideTip() { clearTimeout(tipT); tipT = 0; if (tip.classList.contains("on")) tipLast = performance.now(); tip.classList.remove("on"); tipFor = null; }
-    el.addEventListener("pointerover", e => {
-      const b = e.target.closest("button[data-mode]"); if (!b || b === tipFor) return;
-      clearTimeout(tipT);
-      const quick = tip.classList.contains("on") || performance.now() - tipLast < 400;
-      tipT = setTimeout(() => showTip(b), quick ? 0 : 420);
-    });
-    el.addEventListener("pointerleave", hideTip);
-    addEventListener("pointerdown", hideTip, true);
     // enter mode k for these cards (the selection when not given), as its segment does; false when k is not there or takes none of them
     function enter(k, given) {
       const d = M.get(k), open = openKey(); if (!d || k === open) return false;
@@ -324,6 +375,7 @@
       .observe(dock, { childList: true, subtree: true, characterData: true });
     const ro = new ResizeObserver(() => fit()); ro.observe(dock.parentElement || dock); ro.observe(dock);   // the window, and the library's edge (--inset) narrowing the dock
     addEventListener("resize", () => fit());
+    window.hyStudioDoc = () => docOf(openKey());   // for ui/confirm.js, also from a Studio's own page (parent.hyStudioDoc)
     build();
     return {
       el,
@@ -348,6 +400,8 @@
         return null;
       },
       get open() { return openKey(); },
+      // the open Studio's thing, { name, path }, or null on the board: the crumb's step and the leave question (ui/confirm.js) say this name
+      doc: () => docOf(openKey()),
       get hint() { return hintH; },   // the open Studio's Hint bar: used(id) when a key's action came by the mouse
     };
   };

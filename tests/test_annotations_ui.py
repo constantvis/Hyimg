@@ -115,7 +115,7 @@ def test_by_default_no_drawing_tools_C_annotates_shift_C_crops(tmp_path, lang):
             page.keyboard.press("Escape"); page.keyboard.press("Escape")
             page.wait_for_function("() => !document.querySelector('#stage.annot')")
             page.evaluate("() => hyComments.list()")
-            assert page.locator("#cmlist .cm-lh b").inner_text() == ("Annotations" if en else "Аннотации")
+            assert page.locator("#cmlist .cm-tabs > button[value=open] span").inner_text() == ("Open" if en else "Открытые")   # its tabs are its header (round 20)
             page.evaluate("() => hyComments.list()")
             # ⇧C crops the selected picture; C with it selected is an annotation, never the crop
             page.evaluate("() => { sel = new Set(['i3']); render(); }")
@@ -280,7 +280,7 @@ def test_comment_mentions_reply_resolve_bell_and_hy_py(tmp_path, lang):
             wait(lambda: next(x for x in get(port, "/api/comments?name=main")["items"] if x["id"] == t["id"])["resolved"], "not resolved")
             page.wait_for_function(f"() => !document.querySelector('#cmpins [data-c=\"{t['id']}\"]')")
             page.evaluate("() => hyComments.list()")
-            page.locator('#cmlist [data-cf="done"]').click()
+            page.locator('#cmlist .cm-tabs > button[value=done]').click()
             assert page.locator(f'#cmlist [data-go="{t["id"]}"]').count() == 1
             shot(page, f"comment-{lang}-4-list")
             # ⌘Z: the resolve back; Esc closes the list, a second Esc the Annotation tool (one Esc, one thing: P4 B-16, B-17)

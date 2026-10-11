@@ -106,8 +106,9 @@ def board_menus_and_panels(world):
     frame.evaluate("() => closePages()")
     # the bell: unread rows are tinted, one under the pointer
     frame.click("#bntf"); frame.wait_for_selector("#ntf", state="visible")
-    frame.evaluate("() => { const n = document.getElementById('ntf'); n.querySelectorAll('.none').forEach(e => e.remove());"
-                   " n.insertAdjacentHTML('beforeend', [1, 2, 3].map(k => hyBellRow({ id: 'n' + k, title: 'Agent ' + k, text: 'moved 2 pictures', read: k > 1 })).join('')); }")
+    frame.evaluate("() => { const n = document.getElementById('ntf'); n.querySelectorAll('.hy-side-none').forEach(e => e.remove());"
+                   " (n.querySelector('.nl') || n).insertAdjacentHTML('beforeend',"
+                   " [1, 2, 3].map(k => hyBellRow({ id: 'n' + k, title: 'Agent ' + k, text: 'moved 2 pictures', read: k > 1 })).join('')); }")
     rows(frame, "bell", "#ntf .nt", ".new")
     frame.click("#bntf"); frame.wait_for_timeout(200)
     # the history: its events, then its versions, the one being viewed lit (a fresh board has neither: rows of the panel's own markup)

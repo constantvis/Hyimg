@@ -7,6 +7,8 @@
 //     plate and the count). r15 draws the button closed only; older rounds' states are not followed (owner 2026-10-10)
 //   - the arrows between collections in the path row, before its «…», and ⌥↑ ⌥↓ (round 18, question 11 b, owner 2026-10-10 ★: the old dock's
 //     arrows had gone beside the board); the board sends ⌥↑ ⌥↓ by message (ui/boardkeys.js libStep)
+//   - its footnote at the foot, and Esc closes it while it has the keyboard and nothing in it takes the key first (round 20, 2026-10-11:
+//     a side panel has no ×, «Esc» and its button close it; DESIGN.md «Боковая панель»)
 //   - lay(): the search, the folders (a column, a section or a well under the path) and the path, one under the other;
 //     the list's padding starts under them. The width decides the form (v2.html renderFolders): wide ≥ 480 px, regular ≥ 280, compact below.
 // v2.html calls hyLibPanel.sync(root) after each drawing of the folders and hyLibPanel.placeTF() when it places the filter window.
@@ -31,6 +33,8 @@
     fold.querySelector("span").textContent = t("Folders");
     const fb = fold.querySelector("button"); fb.title = t("Fold into the path"); fb.setAttribute("aria-label", fb.title);
     const nav = $("#fnav"); if (nav) nav.before(fold);
+    const foot = document.createElement("div"); foot.className = "hy-side-ft lpft"; foot.innerHTML = t("Files of this board's folder · <b>Esc</b> closes");
+    document.body.append(foot);
     return true;
   }
 
@@ -157,5 +161,17 @@
   // v2.html's placeTF: beside the board the window is the panel's own, under the search
   function placeTF() { if (!ready || !on()) return false; $("#tfPanel").classList.add("lp-in"); lay(); return true; }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+  // Esc: the library beside the board closes when nothing in it takes the key (a field, the viewer, a menu, the view or the filter window,
+  // the folders' well, picked cards: each takes its own Esc first, the next Esc closes the library). On the board Esc stays the board's
+  let escFree = false;
+  addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    escFree = on() && !(window.hyTyping && (hyTyping(e) || hyTyping.ownKey(e))) && !document.querySelector("#viewer.open, #lctx.open, #lview.open, .hpl-menu, #hyConfirm")
+      && ($("#tfPanel") || { hidden: true }).hidden !== false && !(typeof DRAWER !== "undefined" && DRAWER) && !(typeof picked !== "undefined" && picked.size);
+  }, true);
+  addEventListener("keydown", e => {
+    if (e.key !== "Escape" || !escFree || e.defaultPrevented || !on() || typeof toggleLibraryKey !== "function") return;
+    e.preventDefault(); toggleLibraryKey(); focusBoard();
+  });
   window.hyLibPanel = { sync, lay, placeTF, form, press, tfClose, focusBoard, steps, FOLD, WIDE, get ready() { return ready; } };
 })();

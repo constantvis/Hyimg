@@ -15,6 +15,8 @@ export { HyPlate } from "./plate.js";
 export { HySegmented } from "./segmented.js";
 export { HyKeyHint } from "./keyhint.js";   // also window.hyKeyHint for the classic scripts
 export { HyTip } from "./tip.js";   // also window.hyTip for the classic scripts
+import "./tooltip.js";   // the one tooltip, window.hyTooltip; a classic script too, so Home (a file page, no modules) loads it itself
+export { HyNudge } from "./nudge.js";   // one thing to learn about what is picked, under it; also window.hyNudge (owner 2026-10-11, round 21)
 export { HyStudioActions } from "./actions.js";   // a Studio's session actions, top right (owner 2026-10-09)
 export { HySplit } from "./split.js";   // the one split button ▾ (owner 2026-10-10, round 18: Info's Open ▾)
 export { HyOpenIn } from "./openin.js";   // «Open in <Browser>», a hy-split; its way to the app is window.hyBrowsers

@@ -1,0 +1,28 @@
+/* <hy-tooltip>: the one tooltip of the app (owner 2026-10-11, round 20 question 11, version A «Одна своя подсказка»: «идеально!!!»).
+   A button's name over it or under it after a short rest, its keys as caps, a quiet line between them when there is one («Undo  Moved 3
+   pictures  ⌘Z»), the glass of the menus. Before it there were four: the system's title on the board, the library and Home (a pale box
+   of macOS after a second, keys in words), the mode switch's #modetip, the dock's step plate #hydkstep and Image Studio's #tip. One
+   element per page, placed by ui/hy/tooltip.js; the pointer passes through it. z 1299: the top of the takeover layer, over Image Studio
+   lying over the board and over a dock's list (1210), so a tooltip is never under what it names. */
+hy-tooltip { position: fixed; left: 0; top: 0; z-index: 1299; display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 30px;
+  max-width: min(420px, calc(100vw - 16px)); padding: 0 12px; border: 1px solid var(--line); border-radius: var(--hy-plate-r, 999px);
+  background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow: var(--plate-sh); color: var(--ink); font: 500 12.5px/1.2 var(--sans); white-space: nowrap; pointer-events: none; user-select: none;
+  opacity: 0; transition: opacity .16s var(--hy-ease, cubic-bezier(.32,.72,0,1)), transform .26s var(--hy-ease, cubic-bezier(.32,.72,0,1)); }
+hy-tooltip[shown] { opacity: 1; }
+hy-tooltip[keys] { padding-right: 6px; }
+/* a long description wraps on a few lines instead of running off the window */
+hy-tooltip[long] { height: auto; min-height: 30px; padding-block: 6px; white-space: normal; line-height: 1.35; border-radius: 12px; }
+hy-tooltip .tt-s { color: var(--sub); font-weight: 400; }
+hy-tooltip .tt-k { display: inline-flex; align-items: center; gap: 3px; flex: none; }
+hy-tooltip .tt-k hy-kbd { margin: 0; vertical-align: 0; min-width: 19px; height: 19px; border: 0; border-radius: 5px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); font-size: 10.5px; }
+/* a step's pictures (the dock's Undo, round 21: «Имя шага над Undo с вещами»): 18 px tiles overlapped, then «+N» */
+hy-tooltip .tt-th { display: inline-flex; align-items: center; flex: none; }
+hy-tooltip .tt-th b { width: 18px; height: 18px; margin-left: -5px; border-radius: 4px; background: var(--raise) center / cover no-repeat; box-shadow: 0 0 0 2px var(--panel); }
+hy-tooltip .tt-th b:first-child { margin-left: 0; }
+hy-tooltip .tt-th em { margin-left: 5px; font-style: normal; color: var(--muted); font-weight: 400; }
+hy-tooltip .tt-or { color: var(--muted); font-weight: 400; margin: 0 1px; }
+/* the first time a thing is pointed at (data-first, Image Studio's mask thumbnail): at once, tinted with the selection's blue */
+hy-tooltip[first] { background: color-mix(in srgb, var(--sel) 30%, var(--panel)); border-color: color-mix(in srgb, var(--sel) 60%, transparent); }
+@media (prefers-reduced-motion: reduce) { hy-tooltip { transition: opacity .1s ease; } }

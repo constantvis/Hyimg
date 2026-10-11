@@ -18,6 +18,7 @@
   // the owner's review words, the library's Russian ones turned English (canvas.html CRIT_RU, VERDICT_RU, USE_RU, oldTag, ENGINE_TAG: the
   // json keeps the Russian words, so they stay beside the other data words of the board)
   const FILES = new Map();   // a plugin card's file (a scene's json, a page's html) -> what it says, or null while it is read
+  const RUNS = new Map();    // a file -> its run with the chain behind it (/api/meta "run", review/runmeta.py), or null while it is read
 
   // ---------- the parts every kind is made of ----------
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -44,6 +45,37 @@
     const pr = el("div", "prow"); pr.appendChild(el("div", "path", p)); s.appendChild(pr);
     const rv = el("button", "rv"); rv.title = T("Show in Finder"); rv.setAttribute("aria-label", T("Show in Finder")); rv.innerHTML = (window.HY_IC || {}).finder || "";
     rv.onclick = () => hyReveal([p], toast); pr.appendChild(rv); return pr;
+  }
+  // How long it took, the chain's whole time, what it cost, where it ran (owner 2026-10-11 on a LaMa clean-up's card: «вот тут нужно ещё
+  // обязательно затраченное время на генерацию или рендеринг, обязательный параметр, и количество токенов или кредитов потраченных при
+  // возможности, либо compute power какой-то условный»; «ну это для 3д генераций в том числе»). The server reads the json's many spellings
+  // into one view (review/runmeta.py: "run" of /api/items, /api/meta with the chain); here only the words. Time is always there for a
+  // generated file: a missing one says «not recorded», quietly, so the gap is seen; no time is made up from the file's dates.
+  const dur = s => { const r = Math.round(s);
+    if (s < 9.95) return T("{n} s", { n: Math.round(s * 10) / 10 }); if (r < 60) return T("{n} s", { n: r });
+    if (r < 3600) return T("{m} min {s} s", { m: Math.floor(r / 60), s: r % 60 });
+    return T("{h} h {m} min", { h: Math.floor(r / 3600), m: String(Math.floor(r % 3600 / 60)).padStart(2, "0") }); };
+  const money = c => { const t = (c && c.tokens) || {}, cr = c && c.credits, out = [];
+    if (t.in != null || t.out != null) out.push(T("{a} in / {b} out tokens", { a: t.in ?? "?", b: t.out ?? "?" }));
+    else if (t.total != null) out.push(T("{n} tokens", { n: t.total }));
+    if (cr) out.push(T("{n} credits", { n: cr.n }) + (cr.service ? " · " + cr.service : ""));
+    if (c && c.usd != null) out.push("$" + (c.usd > 0 && c.usd < 0.01 ? c.usd.toFixed(4) : c.usd.toFixed(2)));
+    if (c && c.note) out.push(c.note); return out.join(" · "); };
+  const quiet = text => el("span", "muted", text);
+  // the run of a file as /api/meta reads it, once (a later render shows it)
+  function runOf(p) {
+    if (!p) return {}; if (RUNS.has(p)) return RUNS.get(p) || {};
+    RUNS.set(p, null);
+    fetch("/api/meta?p=" + enc(p)).then(r => r.ok ? r.json() : {}).then(d => { RUNS.set(p, (d && d.run) || {}); render(); }).catch(() => RUNS.set(p, {}));
+    return {};
+  }
+  // the rows: Time (or «not recorded» when the file was made), Total of the chain, Cost, Compute
+  function runRows(run, full, made) {
+    const ch = full.chain || {}, secs = run.seconds ?? full.seconds;
+    return [[T("Time"), secs != null ? dur(secs) : made || run.made ? quiet(T("not recorded")) : ""],
+      ch.seconds != null && ch.steps > 1 ? [T("Total"), [dur(ch.seconds), T("{n} steps", { n: ch.steps }), ch.untimed ? T("{n} not recorded", { n: ch.untimed }) : ""]
+        .filter(Boolean).join(" · ")] : null,
+      [T("Cost"), money(run.cost || full.cost)], [T("Compute"), run.compute || full.compute || ""]];
   }
   // the pictures that went in: a small square each, its name and the model that made it (a second model shows here); a click opens it
   function sources(root, paths, title) {
@@ -101,7 +133,7 @@
     const k = mates.findIndex(x => x.path === it.path), made = sec(root, m.model || m.prompt ? T("Generation") : T("Made"));
     const nth = mates.length > 1 && k >= 0 ? T("{i} of {n}", { i: k + 1, n: mates.length }) : "";
     spec(made, [[vid ? T("Video") : T("Model"), m.model || ""], [T("Batch"), [m.start || "", nth].filter(Boolean).join(" · ")],
-      [T("When"), when(m.born || m.mtime)], m.pages ? [T("Pages"), String(m.pages)] : null]);
+      [T("When"), when(m.born || m.mtime)], m.pages ? [T("Pages"), String(m.pages)] : null, ...runRows(m.run || {}, runOf(it.path), !!(m.model || m.prompt))]);
     sources(root, m.refpaths || [], T("Sources"));
     review(root, f);
     notes(root, id, "lies on the frame");
@@ -187,14 +219,15 @@
     root.textContent = "";
     const kind = it.type === "model3d" ? "3d" : window.hyCardFav && hyCardFav.path(it) ? "html" : it.type, p = fileOf(it);
     if (Array.isArray(inf.spec) && inf.spec.length) inf.spec.forEach(x => x && spec(sec(root, x.title || ""), x.rows || []));   // the plugin's own sections
-    else if (kind === "3d" && p) scene(root, read(p, "3d") || {}, it);
+    else if (kind === "3d" && p) { scene(root, read(p, "3d") || {}, it); made3d(root, runOf(p)); }
     else if (kind === "html" && p) page(root, read(p, "html") || {});
     notes(root, id, "lies on the card");
     more(root, T("file, path"), box => {
       const s = sec(box, T("File")), who = s.appendChild(el("div", "muted", "")); window.hyEdited?.(who, BOARD, id, Object.values(it)); if (p) pathRow(s, p);
     });
-    // the plugin's own words (how to open it, what it is, «No plugin» on a stand-in): the body's quiet footnote, always shown, under More
-    if (inf.text) { const f = el("p", "ifoot hy-hint pfoot", inf.text); root.appendChild(f); }
+    // the plugin's own words as the body's quiet footnote, under More: only a stand-in's «No plugin» since round 20 (2026-10-11, panels
+    // audit P-22). The plugins' «Double-click to edit…», «Dev Studio in the dock…» said what Open ▾ and the Studio chip already say
+    if (inf.text && (PLG[it.type] || {}).standIn) { const f = el("p", "ifoot hy-hint pfoot", inf.text); root.appendChild(f); }
   }
   // a 3D scene: its objects (name, what it is made of), its cameras (the card's one marked), its lights; the files it uses
   function scene(root, d, it) {
@@ -211,6 +244,13 @@
     if (lights.length) spec(sec(root, T("Lights"), lights.length), lights.slice(0, 6).map(l => [l.name || T("Lights"), String(l.type || "")]));
     const files = [...new Set(obs.map(o => { const s = o.src || {}; return s.model ? `3d/models/${s.model}` : s.path || ""; }).filter(Boolean))];   // the 3D plugin's LIB (scene.js)
     if (files.length) { const s = sec(root, T("Source")); files.slice(0, 4).forEach(f => pathRow(s, f)); }
+  }
+  // a 3D card's run: the scene's own (a generated scene, a render) and its model files' (Meshy, Tripo, FreeCAD...), each with its time
+  function made3d(root, run) {
+    const parts = (run.chain && run.chain.parts) || [], rows = runRows(run, run, false);
+    parts.slice(0, 4).forEach(x => rows.push([baseName(x.path), [x.run.seconds != null ? dur(x.run.seconds) : x.run.made ? T("not recorded") : "",
+      money(x.run.cost), x.run.compute || ""].filter(Boolean).join(" · ")]));
+    if (rows.some(r => r && r[1] !== "" && r[1] != null)) spec(sec(root, T("Generation")), rows);
   }
   // an HTML page: its title and size of tree; the library's pictures it shows (a click opens one)
   function page(root, d) {

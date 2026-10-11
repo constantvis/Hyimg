@@ -9,11 +9,15 @@
 //                                    (ui/menu.js hyMenuItem), Image Studio's tool list look; o.fill(el) before it opens, o.pick(item) on a
 //                                    click on an item; Esc, a click elsewhere or the button again close it; ↑ ↓ ↵ are ui/menu.js's
 //   hyDock.steps({undo, redo, name}) the step's name (owner 2026-10-10: «Я бы вот эти элементы делал по наведению, то есть чтобы оно
-//                                    изначально не расширяло этот элемент. У всех доков»): over Undo or Redo under the pointer a small plate
-//                                    above the button says «Undo · Move Bracket ⌘Z»; after ⌘Z or ⇧⌘Z done(dir) shows the same plate for 2 s
-//                                    over the button of that direction. The plate floats over the dock and never widens it. name(dir) is the
-//                                    step that button would take now ("undo" | "redo"), "" or null when none
-//   hyDock.acts(open)                the dock's Actions button, «⌘ Actions ⌘K», Image Studio's (hyimg-image-studio imgframe.js)
+//                                    изначально не расширяло этот элемент. У всех доков»): over Undo or Redo under the pointer the app's
+//                                    tooltip (ui/hy/tooltip.js, round 20) says «Undo  Move Bracket  ⌘Z»; after ⌘Z or ⇧⌘Z done(dir) shows it
+//                                    for 2 s over the button of that direction, without the keys. It floats over the dock and never widens
+//                                    it. name(dir) is the step that button would take now ("undo" | "redo"), "" or null when none;
+//                                    things(dir), when given, its pictures { urls, more }: tiles after the name (round 21, owner 2026-10-11
+//                                    on r21/undo-config.html: «Имя шага над Undo с вещами (как в undo-b)»)
+//   hyDock.acts(open)                the dock's Actions button of every Studio: the icon alone, 36 × 34 as the dock's other buttons, its
+//                                    name and ⌘K in the tooltip (studios audit S-01, 2026-10-11: «⌘ Actions ⌘K» took 114 px and Image
+//                                    Studio's dock did not fit beside the library at 1440)
 (() => {
   if (window.hyDock) return;
   const t = (k, v) => (window.T ? window.T(k, v) : String(k).replace(/\{(\w+)\}/g, (m, x) => (v && x in v ? String(v[x]) : m)));
@@ -41,16 +45,7 @@
 .hy-dkmenu > button:not(:disabled, [aria-disabled=true]):is(:hover, :focus-visible) { background: var(--raise); color: var(--ink); outline: none; }
 .hy-dkmenu > button > svg { flex: none; opacity: .75; }
 :root[data-shape=pro] .hy-dkmenu { border-radius: 11px; }
-/* the step's name over Undo or Redo: the switch's tooltip plate (ui/modes.js #modetip), floating, so the dock keeps its width */
-#hydkstep { position: fixed; left: 0; top: 0; z-index: 79; display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; white-space: nowrap;
-  border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--panel) 86%, transparent); -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px); box-shadow: var(--plate-sh, 0 8px 24px rgba(0,0,0,.35)); color: var(--ink); font: 500 12px var(--sans); pointer-events: none; opacity: 0;
-  transition: opacity .16s ${EASE}, transform .26s ${EASE}; }
-#hydkstep.on { opacity: 1; }
-#hydkstep .sw { color: var(--sub); font-weight: 400; }
-#hydkstep hy-kbd { margin-left: 4px; }
-:root[data-shape=pro] #hydkstep { border-radius: 11px; }
-@media (prefers-reduced-motion: reduce) { .hy-dkmenu.open { animation: none; } #hydkstep { transition: none; } }`;
+@media (prefers-reduced-motion: reduce) { .hy-dkmenu.open { animation: none; } }`;
   const st = document.createElement("style"); st.id = "hy-dock-css"; st.textContent = css; (document.head || document.documentElement).appendChild(st);
 
   // ---- a list over a dock button ----------------------------------------------------------------------------------------------------
@@ -94,46 +89,27 @@
   addEventListener("keydown", e => { if (e.key === "Escape" && openMenu) { e.preventDefault(); e.stopImmediatePropagation(); openMenu.close(); } }, true);
   addEventListener("resize", () => { if (openMenu) openMenu.place(); });
 
-  // ---- the step's name over Undo and Redo --------------------------------------------------------------------------------------------
-  let plate = null, plateFor = null, plateT = 0, hoverT = 0;
+  // ---- the step's name over Undo and Redo: the app's tooltip, the step in its quiet line ----------------------------------------------
+  let holdT = 0;
   const KEY = { undo: "⌘Z", redo: "⇧⌘Z" };
-  function showPlate(btn, dir, name, keyed) {
-    if (!btn || !btn.isConnected || !btn.getClientRects().length) return;
-    if (!plate) { plate = document.createElement("div"); plate.id = "hydkstep"; plate.setAttribute("role", "status"); plate.setAttribute("aria-live", "polite"); document.body.appendChild(plate); }
-    plate.textContent = "";
-    const w = document.createElement("span"); w.className = "sw"; w.textContent = t(dir === "undo" ? "Undo" : "Redo") + (name ? " ·" : ""); plate.appendChild(w);
-    if (name) { const b = document.createElement("span"); b.className = "sn"; b.textContent = name; plate.appendChild(b); }
-    if (keyed) { const k = document.createElement("hy-kbd"); k.setAttribute("size", "s"); k.textContent = KEY[dir]; plate.appendChild(k); }   // the app's key cap (ui/hy)
-    const r = btn.getBoundingClientRect(), pw = plate.offsetWidth, ph = plate.offsetHeight;
-    const x = Math.max(8, Math.min(innerWidth - pw - 8, r.left + r.width / 2 - pw / 2)), y = Math.max(8, r.top - 10 - ph);
-    if (!plate.classList.contains("on")) { plate.style.transition = "none"; plate.style.transform = `translate(${x}px, ${y + 4}px)`; plate.offsetWidth; plate.style.transition = ""; }
-    plate.style.transform = `translate(${x}px, ${y}px)`; plate.classList.add("on"); plate.dataset.dir = dir; plateFor = btn;
-  }
-  function hidePlate(btn) {
-    if (btn && plateFor !== btn) return;
-    clearTimeout(plateT); plateT = 0; if (plate) plate.classList.remove("on"); plateFor = null;
-  }
-  function steps({ undo, redo, name }) {
+  function steps({ undo, redo, name, things }) {
     const nm = dir => { try { return String(name(dir) || "").trim(); } catch (e) { console.error("step name", e); return ""; } };
-    const btns = { undo, redo };
+    const th = dir => { try { return things ? things(dir) : null; } catch (e) { console.error("step things", e); return null; } };
+    const btns = { undo, redo }, word = dir => t(dir === "undo" ? "Undo" : "Redo");
     for (const [dir, b] of Object.entries(btns)) {
       if (!b) continue;
-      // the plate is the button's tooltip now: its words move to the screen reader, the key is on the plate
+      // the tooltip names the step: its words move to the screen reader (aria-label), the key is a cap on the tooltip
       if (b.title) { b.dataset.tipWas = b.title; b.removeAttribute("title"); }
-      b.addEventListener("pointerenter", () => {
-        clearTimeout(hoverT); clearTimeout(plateT); plateT = 0;
-        hoverT = setTimeout(() => { if (b.matches(":hover")) showPlate(b, dir, nm(dir), true); }, plate && plate.classList.contains("on") ? 0 : 300);
-      });
-      b.addEventListener("pointerleave", () => { clearTimeout(hoverT); if (!plateT) hidePlate(b); });
-      b.addEventListener("pointerdown", () => { clearTimeout(hoverT); });
+      b.hyTip = () => ({ t: word(dir), sub: nm(dir), things: th(dir), keys: KEY[dir] });
     }
     return {
-      // after ⌘Z (dir "undo") the step that went is the one Redo would bring back, after ⇧⌘Z the one Undo would take: its name for 2 s
+      // after ⌘Z (dir "undo") the step that went is the one Redo would bring back, after ⇧⌘Z the one Undo would take: its name for 2 s,
+      // said to VoiceOver too (live); then the button's own tooltip while the pointer is on it
       done(dir) {
-        const b = btns[dir]; if (!b) return;
-        const n = nm(dir === "undo" ? "redo" : "undo");
-        clearTimeout(hoverT); showPlate(b, dir, n, false);
-        clearTimeout(plateT); plateT = setTimeout(() => { plateT = 0; if (b.matches(":hover")) showPlate(b, dir, nm(dir), true); else hidePlate(b); }, 2000);
+        const b = btns[dir], H = window.hyTooltip; if (!b || !H) return;
+        const went = dir === "undo" ? "redo" : "undo";
+        H.show(b, { t: word(dir), sub: nm(went), things: th(went) }, { live: true });
+        clearTimeout(holdT); holdT = setTimeout(() => { if (H.target !== b) return; if (b.matches(":hover")) H.show(b); else H.hide(b); }, 2000);
       },
       name: nm,
     };
@@ -141,13 +117,13 @@
 
   // ---- the dock's Actions button ------------------------------------------------------------------------------------------------------
   function acts(open) {
-    const b = document.createElement("button"); b.type = "button"; b.className = "wide dkacts"; b.dataset.a = "acts";
-    b.title = t("Actions · ⌘K"); b.setAttribute("aria-label", t("Actions")); b.setAttribute("aria-pressed", "false");
-    b.innerHTML = (window.hyIcon ? window.hyIcon("actions", 16, 1.85) : "") + `<span>${t("Actions")}</span><kbd>⌘K</kbd>`;
+    const b = document.createElement("button"); b.type = "button"; b.className = "hy-dkb dkacts"; b.dataset.a = "acts";
+    b.title = t("Actions · ⌘K"); b.setAttribute("aria-label", t("Actions")); b.setAttribute("aria-keyshortcuts", "Meta+K"); b.setAttribute("aria-pressed", "false");
+    b.innerHTML = window.hyIcon ? window.hyIcon("actions", 17, 1.85) : t("Actions");
     b.addEventListener("pointerdown", e => e.stopPropagation());
     b.addEventListener("click", e => { e.stopPropagation(); if (open) open(); });
     return b;
   }
 
-  window.hyDock = { menu, steps, acts, plate: () => plate };
+  window.hyDock = { menu, steps, acts };
 })();

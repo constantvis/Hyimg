@@ -85,10 +85,10 @@
 
 /* the modules' sections: their title is the section's, each a card of its rows in the window (ui/people.js, macnotif.js, plugins.js, storage.js) */
 #sets.hy-setwin #hyPeopleSet { display: contents; }
-#sets.hy-setwin :is(#hyPeopleSet, #hyMacNotif, #hyPlugSet) > .sh, #sets.hy-setwin #hyStore > .sh > .hs-t { display: none; }
-#sets.hy-setwin :is(.hp-prof, .hp-team, #hyMacNotif, #hyPlugSet, #hyStore) { display: grid; align-content: start; gap: 2px; margin: 0; padding: 8px 14px 12px;
+#sets.hy-setwin :is(#hyPeopleSet, #hyMacNotif, #hyPlugSet) > .sh, #sets.hy-setwin :is(#hyStore, #hyImgModels) > .sh > .hs-t { display: none; }
+#sets.hy-setwin :is(.hp-prof, .hp-team, #hyMacNotif, #hyPlugSet, #hyStore, #hyImgModels) { display: grid; align-content: start; gap: 2px; margin: 0; padding: 8px 14px 12px;
   border: 1px solid var(--hy-pline); border-radius: var(--sw-card-r); background: var(--sw-card); }
-#sets.hy-setwin #hyStore > .sh { margin: 0 0 4px; }
+#sets.hy-setwin :is(#hyStore, #hyImgModels) > .sh { margin: 0 0 4px; }
 #sets.hy-setwin #hyStore .hs-list { max-height: none; }
 /* the dots' slider and a name typed in Profile and Team: wells too */
 #sets.hy-setwin .hy-slider { --hy-sl-h: 28px; --hy-sl-bg: var(--hy-well); --hy-sl-accent: var(--ink); }
@@ -110,26 +110,38 @@
    board beside it stays live and takes the pointer. Its header, the search, every section under its header, the footnote ---------- */
 #sets.hy-setwin.sw-side { display: block; pointer-events: none; }
 #sets.sw-side .sw-veil, #sets.sw-side .sw-rail, #sets.sw-side .sw-rz:not([data-rz=w]) { display: none; }
-#sets.sw-side .sw-box { position: absolute; top: var(--hy-row-under); right: var(--hy-row-gut); bottom: var(--hy-row-gut); width: var(--sw-sw, 412px); height: auto;
-  min-width: 0; min-height: 0; max-width: calc(100% - var(--hy-row-gut) * 2); transform: translateX(24px); transition: opacity .3s ease, transform .45s var(--hy-ease); }
+/* since round 20 (owner 2026-10-11) a side panel as every other (.hy-side, ui/hy/side.css): 340 wide, 18 corners, glass 97 %, as tall as its
+   content, the header 52 with its title, «Open as a window» square 24 and no × (Esc and the settings button close it), the search a field 32
+   as the «?» panel's, the footnote. Before: 412 px, 14 corners (11 Pro), the solid block --hy-blk, the header 40, a square 28 ×, a well 28 */
+#sets.sw-side .sw-box { position: absolute; top: var(--hy-side-top); right: var(--hy-side-gut); bottom: auto; width: var(--sw-sw, var(--hy-side-w)); height: auto;
+  min-width: 0; min-height: 0; max-width: calc(100% - var(--hy-row-gut) * 2); max-height: var(--hy-side-max); border-color: var(--hy-side-line);
+  border-radius: var(--hy-side-r); background: var(--hy-side-bg); -webkit-backdrop-filter: var(--hy-side-blur); backdrop-filter: var(--hy-side-blur);
+  box-shadow: var(--hy-sh-pop); transform: translateX(24px); transition: opacity .3s ease, transform .45s var(--hy-ease); }
+#sets.sw-side .sw-box.hy-side { overflow: visible; }   /* its left edge's grip stands 4 px outside it (.sw-rz), it must take the pointer there */
+#sets.sw-side .sw-pane { min-height: 0; }
 #sets.sw-side[data-sw-shown] .sw-box { pointer-events: auto; transform: none; }
 /* ⌘. hides the interface: the panel goes with it and takes no click while it is away */
 :root.hy-hideui #sets.sw-side .sw-box { pointer-events: none; }
 #sets.sw-side .sw-rz[data-rz=w] { top: 0; bottom: 0; left: -4px; width: 8px; }
 /* no rule under the header: a block's top meets its content without a line, the hairlines stand between sections (owner 2026-10-09 on
    round 13's headers: «Разделительную линию нужно точно убирать сверху»; DESIGN.md «Блоки») */
-#sets.sw-side .sw-hd { height: 40px; padding: 0 6px 0 14px; gap: 2px; border-bottom: 0; }
-#sets.sw-side .sw-hd h2 { gap: 8px; font: 500 13px var(--sans); }
-#sets.sw-side .sw-hd h2 > svg { color: var(--muted); }
+#sets.sw-side .sw-hd { height: var(--hy-side-hd); padding: 0 10px 0 14px; gap: 6px; border-bottom: 0; }
+#sets.sw-side .sw-hd h2 { font: 600 15px var(--sans); letter-spacing: -.005em; }
+#sets.sw-side .sw-hd h2 > svg, #sets.sw-side .sw-hb[data-sw-act=close] { display: none; }
 #sets.sw-side .sw-cnt { display: none; }
-#sets.sw-side .sw-q { flex: none; margin: 8px 10px 6px; }
+#sets.sw-side .sw-q { flex: none; margin: 0 10px 6px; }
+#sets.sw-side .sw-q > svg { width: 13px; height: 13px; }
+#sets.sw-side .sw-q > input { height: var(--hy-side-q) !important; border: 1px solid var(--line) !important; border-radius: var(--hy-side-q-r) !important;
+  background: var(--hy-side-q-bg); }
+#sets.sw-side .sw-q > input:hover { background: var(--hy-side-q-bg); }
+#sets.sw-side .sw-q > input:focus { border-color: color-mix(in srgb, var(--hy-sel) 70%, var(--line)) !important; }
 #sets.sw-side .sw-body { gap: 0; padding: 0 4px 10px; }
 /* a section's header: the one at the top sticks there while its rows scroll under it (settings-win.js heads), a hairline between
    sections; its chevron folds it, the words at its right end say what is chosen in it */
 #sets.sw-side .sw-body { position: relative; }
 #sets.sw-side .sw-sl.sw-stuck { position: sticky; top: 0; z-index: 3; }
 #sets.sw-side .sw-sl { position: relative; z-index: 2; flex: none; height: 34px; margin: 0; padding: 0 8px 0 6px; gap: 7px; border-radius: 0;
-  background: var(--hy-blk); color: var(--sub); font: 500 12.5px var(--sans); letter-spacing: 0; text-transform: none; }
+  background: var(--panel); color: var(--sub); font: 500 12.5px var(--sans); letter-spacing: 0; text-transform: none; }
 #sets.sw-side .sw-sl:not(.sw-first) { border-top: 1px solid var(--hy-pline); margin-top: 6px; }
 #sets.sw-side .sw-sl > svg { color: var(--muted); }
 #sets.sw-side .sw-sl .sw-st { color: var(--ink); }
@@ -143,8 +155,8 @@
 /* the groups at the side: no cards, the rows lie on the panel; a group's quiet heading */
 #sets.sw-side .sw-body > .sp > [data-sec], #sets.sw-side .sw-body > [data-sec] { flex: none; }
 #sets.sw-side .sw-body > .sp > [data-sec] + [data-sec] { margin-top: 4px; }
-#sets.sw-side .sp .sp-card, #sets.sw-side :is(.hp-prof, .hp-team, #hyMacNotif, #hyPlugSet, #hyStore) { border: 0; border-radius: 0; background: none; }
-#sets.sw-side :is(.hp-prof, .hp-team, #hyMacNotif, #hyPlugSet, #hyStore) { padding: 2px 10px 8px; }
+#sets.sw-side .sp .sp-card, #sets.sw-side :is(.hp-prof, .hp-team, #hyMacNotif, #hyPlugSet, #hyStore, #hyImgModels) { border: 0; border-radius: 0; background: none; }
+#sets.sw-side :is(.hp-prof, .hp-team, #hyMacNotif, #hyPlugSet, #hyStore, #hyImgModels) { padding: 2px 10px 8px; }
 #sets.sw-side .sp-card > .sp-row:not(.sw-miss, [hidden]) ~ .sp-row { border-top: 0; }
 #sets.sw-side .sh { margin: 6px 10px 0; font-size: 10px; font-weight: 600; }
 /* a row in a narrow panel: the name and the control on one line, what the choice does under both */
@@ -156,8 +168,7 @@
 #sets.sw-side .sp .sp-stack > .sp-c { grid-row: 3; margin-top: 5px; }
 #sets.sw-side { --sp-pvb: 104px; }
 #sets.sw-side .sp .sp-wide { padding: 6px 10px; min-height: 34px; }
-#sets.sw-side .sw-foot { flex: none; margin: 0; padding: 8px 14px 10px; border-top: 1px solid var(--hy-pline); }
-:root[data-shape=pro] #sets.sw-side .sw-box { border-radius: var(--hy-plate-r); }
+#sets.sw-side .sw-foot { margin: 0; }   /* the side panels' footnote (.hy-side-ft), the window keeps it in its rail */
 
 @media (prefers-reduced-motion: reduce) {
   .sw-veil, .sw-box, .sw-nv, #sets.sw-side .sw-box, #sets.sw-side .sw-sl .sw-cv { transition: none; }

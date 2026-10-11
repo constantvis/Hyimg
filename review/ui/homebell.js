@@ -97,14 +97,14 @@
   function draw() {
     const el = document.getElementById("ntf"); if (!el || !el.classList.contains("open")) return;
     const boards = ((DATA && DATA.projects) || []).filter(p => rows(p).length).sort((a, b) => lastOf(b) - lastOf(a));
-    const h = window.hyBellHead() + (boards.length ? boards.map(p => {
+    const h = window.hyBellHead() + window.hyBellBody(boards.map(p => {
       const L = rows(p), b = bellOf(p), shown = L.slice(0, PER_BOARD), more = L.length - shown.length;
       return `<div class="hb-b" data-hb-board="${esc(p.id)}"><button type="button" class="hb-h" data-hb-open="${esc(p.id)}" title="${esc(T("Open {name}", { name: p.name }))}">`
         + `${window.hyIcon ? hyIcon("board", 14, 1.8) : ""}<span class="hb-bn">${esc(p.name)}</span>${badge(newsN(p))}</button>`
         + shown.map(n => window.hyBellRow(n, { base: b ? b.base : "", attrs: ` data-hb="${esc(p.id)}"`, read: !FRESH.has(rowKey(p, n)),
           when: n.news ? (window.hyBellAgo ? hyBellAgo(n.t) : "") : "" })).join("")
         + (more > 0 ? `<button type="button" class="hb-more" data-hb-open="${esc(p.id)}">${esc(T("{n} more", { n: more }))}</button>` : "") + "</div>";
-    }).join("") : `<div class="none">${esc(T("Nothing new on the boards"))}</div>`);
+    }).join(""), T("Nothing new on the boards"), T("Every board on this Mac · <b>Esc</b> closes"));
     if (el._h !== h) el.innerHTML = el._h = h;
   }
 
@@ -149,7 +149,7 @@
     b.setAttribute("aria-expanded", "false");
     b.innerHTML = `<button type="button" aria-label="${l}" title="${l}" aria-haspopup="dialog" aria-expanded="false" aria-controls="ntf">`
       + `${window.hyIcon ? hyIcon("notifications", 18, 1.8) : ""}</button>`;
-    const el = document.createElement("div"); el.id = "ntf"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", T("Notifications"));
+    const el = document.createElement("div"); el.id = "ntf"; el.className = "hy-side"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", T("Notifications"));
     if (set) set.before(b, el); else document.body.append(b, el);
     b.addEventListener("click", e => { e.stopPropagation(); open(!el.classList.contains("open")); });
     el.addEventListener("click", e => {

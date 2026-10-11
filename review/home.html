@@ -27,7 +27,7 @@ addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) e.preventDefault();
 ["gesturestart", "gesturechange", "gestureend"].forEach(t => addEventListener(t, e => e.preventDefault(), { passive: false, capture: true }));</script>
 <script src="ui/dragband.js"></script>
 <script src="ui/icons.js"></script>   <!-- the app's icons, one per meaning (owner 2026-10-07); before the menus, which draw theirs from it -->
-<script src="ui/menu.js"></script>
+<script src="ui/menu.js"></script><script src="ui/hy/tooltip.js"></script>   <!-- the app's one tooltip, a classic script here (round 20, 2026-10-11) -->
 <script src="ui/switcher.js"></script>   <!-- ⌃Tab's cards over Home, the boards in front of it (owner 2026-10-08, «Вкладки со сном») -->
 <script src="ui/projicon.js"></script><script src="ui/toasts.js"></script><script src="ui/storage.js"></script><script src="ui/people.js"></script><script src="ui/avatar.js"></script>   <!-- Storage; who: profile, people, faces -->
 <script src="ui/seg.js"></script>   <!-- the app's one choice switch, a thumb sliding under the chosen option (owner 2026-10-06) -->
@@ -37,6 +37,7 @@ addEventListener("wheel", e => { if (e.ctrlKey || e.metaKey) e.preventDefault();
 <script src="ui/plugins.js"></script>   <!-- Settings › Plugins: which are on, add, remove (owner 2026-10-07) -->
 <script src="ui/dropbox.js"></script><link rel="stylesheet" href="ui/dropbox.css">   <!-- boards in Dropbox not on this Mac (owner 2026-10-08) -->
 <script src="ui/homeserver.js"></script><link rel="stylesheet" href="ui/homeserver.css">   <!-- a board's server: start or stop on its card (owner 2026-10-08) -->
+<script src="ui/side.js"></script>   <!-- a side panel's parts, the bell's too (round 20, 2026-10-11) -->
 <script src="ui/bellrow.js"></script><script src="ui/bellthumbs.js"></script><script src="ui/homebell.js"></script>   <!-- news by project, the bell (2026-10-08) -->
 <link rel="stylesheet" href="ui/bell.css"><link rel="stylesheet" href="ui/homebell.css">
 <script src="ui/homearchive.js"></script><link rel="stylesheet" href="ui/homearchive.css">   <!-- the standard Archive project (2026-10-08) -->
@@ -286,7 +287,8 @@ aside .nav .hrt { width: 16px; height: 16px; flex: none; color: #ff4d6d; }
 .empty .row { display: flex; gap: 10px; justify-content: center; }
 .none { color: var(--muted); padding: 30px 0; } .none .hy-hint { margin-top: 4px; }
 
-.menu { position: fixed; z-index: 50; min-width: 210px; padding: 5px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: var(--hy-sh-pop); display: none; }
+.menu { position: fixed; z-index: 50; min-width: 210px; padding: var(--hy-pop-pad); border: 1px solid var(--line); border-radius: var(--hy-pop-r); background: var(--hy-pop-bg);   /* P-17 */
+  -webkit-backdrop-filter: var(--hy-pop-blur); backdrop-filter: var(--hy-pop-blur); box-shadow: var(--hy-sh-pop); display: none; }
 .menu.open { display: block; }
 .menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 30px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
 .menu button:hover, .menu button:focus-visible { background: var(--raise2); outline: none; }
@@ -505,7 +507,7 @@ const SET_DEF = { "cv.dotsgl": "0", "cv.grain": "0", "cv.lod": "1", "cv.glass": 
 let DATA_ENGINE = { cef: false, engine: "webkit" };   // which engine draws the boards, from the app
 const sendSettings = change => { try { webkit.messageHandlers.hyimg.postMessage({ action: "settings", change }); } catch (e) { console.log("no native bridge", change); } };
 const SYS = matchMedia("(prefers-color-scheme: dark)");
-function applySettings() {
+function applySettings() { document.documentElement.dataset.tooltips = SET["cv.tooltips"] ?? "1";   // the tooltip's switch (ui/hy/tooltip.js)
   const t = SET["cv.theme"] || "auto", theme = t === "auto" ? (SYS.matches ? "dark" : "light") : t, kind = theme === "light" ? "light" : "graphite";
   document.documentElement.dataset.theme = theme;
   document.documentElement.dataset.shadow = SET["cv.shadow"] ?? SET_DEF["cv.shadow"]; document.documentElement.dataset.shape = SET["cv.shape"] ?? "round";   // ui/look.css

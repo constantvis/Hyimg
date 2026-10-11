@@ -25,6 +25,11 @@
 :root[data-theme="light"], [data-hy-theme=light] { --hy-red: #d70015; }
 :root { --hy-on-accent: #ffffff; }   /* words and marks on a solid accent (a count badge, a checked box) */
 :root { --hy-heart: #fb7185; }   /* a liked ♥: on a picture's or an HTML card's mark (canvas.html .mk-fav, ui/cardfav.js) */
+/* the keyboard's focus ring, only on :focus-visible (round 20, owner 2026-10-11 ★ on misc-b.html P-23): 2 px of the selection's blue */
+:root { --hy-focus-ring: 2px solid var(--hy-sel, var(--sel)); --hy-focus-off: 2px; }
+/* every pop-up, one surface (panels audit P-17, round 20, owner 2026-10-11): the right click, the pages, the library's view and filters, the
+   path's «…», Open ▾, Home's menus. Its shadow is --hy-sh-pop, so «No shadows» takes it off everywhere */
+:root { --hy-pop-r: 14px; --hy-pop-pad: 6px; --hy-pop-blur: blur(18px) saturate(1.4); } :root, [data-hy-theme] { --hy-pop-bg: color-mix(in srgb, var(--panel) 92%, transparent); }
 /* a person's avatar and the badge of the agent acting for him (ui/avatar.js, owner 2026-10-07): initials on the note colours, a colour per kind */
 :root { --hy-av-ink: #1d1d1f; --hy-ag-claude: #d9774f; --hy-ag-codex: #4f86e8; --hy-ag-gemini: #9b76e8; --hy-ag-kimi: #2fa57f; --hy-ag-opencode: #d39a26;
   --hy-ag-agent: #7c7c86; }
@@ -95,6 +100,16 @@
 /* A row of a tree list (ui/look.css): 28 px tall, 8 px corners, a grey hover; the selected row a fill and a line in the selection colour */
 :root, [data-hy-theme] { --hy-trow-h: 28px; --hy-trow-r: 8px; --hy-trow-hover: color-mix(in srgb, var(--raise) 85%, transparent);
   --hy-trow-on: color-mix(in srgb, var(--hy-sel) 14%, transparent); --hy-trow-ring: inset 0 0 0 1px color-mix(in srgb, var(--hy-sel) 55%, transparent); }
+/* A side panel, one anatomy for all of them (owner 2026-10-11, round 20's configurator r20/panels-config.html, his choice: «Ширина 340 (как
+   История и «?») · Угол 18 · Фон стекло 97 % · Высота по содержимому · Шапка 52, вкладки в шапке · Вкладки капсула 30 · без крестика (как
+   Библиотека, Esc) · Кнопки шапки квадрат 24 · Поиск поле 32 · Выбранное и новое синяя заливка и рамка (как дерево и версии) · Подвал сноска
+   у всех · Пустой список по центру 14»). ui/hy/side.css draws it, ui/side.js writes its parts. Under the top row at the right, as tall as
+   what it holds and never past 12 px over the window's bottom; the same in both themes and both shapes */
+:root { --hy-side-w: 340px; --hy-side-r: 18px; --hy-side-top: var(--hy-row-under); --hy-side-gut: var(--hy-row-gut); --hy-side-hd: 52px;
+  --hy-side-max: calc(100% - var(--hy-side-top) - var(--hy-side-gut)); --hy-side-btn: var(--hy-h-s); --hy-side-q: var(--hy-h-row); --hy-side-q-r: 9px;
+  --hy-side-blur: blur(24px) saturate(1.4); }
+:root, [data-hy-theme] { --hy-side-bg: color-mix(in srgb, var(--panel) 97%, transparent); --hy-side-line: var(--line);
+  --hy-side-q-bg: color-mix(in srgb, var(--raise) 80%, transparent); --hy-side-on: var(--hy-trow-on); --hy-side-ring: var(--hy-trow-ring); }
 /* a footnote's colour (owner 2026-10-06): --muted is too faint at 11 px on the light paper */
 :root, [data-hy-theme] { --hy-hint: var(--muted); } :root[data-theme=light], [data-hy-theme=light] { --hy-hint: var(--sub); }
 /* the paper (owner 2026-10-04): --paper-d / --paper-l are the settings cv.paperDark / cv.paperLight, put on the root by each page */

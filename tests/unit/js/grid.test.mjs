@@ -47,3 +47,22 @@ test("two edits of one grid merged: the merged order laid out again (as review/m
   g.merged(out, base, base);
   assert.deepEqual(xy(out, "c"), cells); assert.equal(out.grids[gid].rows, 2);
 });
+
+// round 21 (owner 2026-10-11, ♥ on r21/grid-b.html «Соседи отъезжают»): the grid stays where the selection was, what it covers moves down
+function crowd() {
+  const sq = (x, y, w = 100, ar = 1) => ({ path: `a/${x}-${y}.png`, x, y, w, ar });
+  const items = { n0: sq(0, 150, 200, 2), m0: sq(0, 300), n2: sq(600, 150), u: sq(130, 10, 50), p0: sq(260, 200), p1: sq(384, 200),
+    nt: { type: "note", text: "x", x: 130, y: 150, w: 100, fs: 20 } };
+  for (let k = 0; k < 6; k++) items["s" + k] = sq(k * 120, 0);
+  return { items, groups: {}, grids: { gp: { members: ["p0", "p1"], cols: 2, rows: 1, gap: 24, cell: "fit" } } };
+}
+test("room: the things a new grid covers move down below it, a grid among them whole, what lay under the selection stays", () => {
+  const g = G(), b = crowd(), B = JSON.parse(JSON.stringify(b)), ids = ["s0", "s1", "s2", "s3", "s4", "s5"];
+  g.make(b, ids, 3, true, newId);
+  assert.deepEqual(xy(b, "s3", "s5"), [[0, 124], [248, 124]]);   // the grid from the selection's top left
+  const moved = g.room(b, ids, B);
+  assert.deepEqual([...moved].sort(), ["m0", "n0", "p0", "p1"]);
+  assert.deepEqual(xy(b, "n0", "m0", "p0", "p1"), [[0, 248], [0, 372], [260, 248], [384, 248]]);   // just below, then what n0 covered
+  assert.deepEqual(xy(b, "n2", "u", "nt"), [[600, 150], [130, 10], [130, 150]]);   // apart, under the selection before, a note
+  assert.equal(g.said([]), "");
+});

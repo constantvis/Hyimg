@@ -14,8 +14,12 @@ A table (Arrange's A5 Table) is a grid whose first row and first column are head
 comes by itself. What put moves into a grid joins the group frame its cell is in, as a drop on the canvas does, so a table's headings
 move with their group; zone fits a note's dashed zone around its grid when the grid grew (2026-10-08, the sb06 tables on «Renderings»).
 
+A grid makes room (owner 2026-10-11, ♥ on r21/grid-b.html «Соседи отъезжают»): it stays where its things were, and what it now covers
+moves down just below it, a grid among them whole; what lay under or over its things before stays (room, the same rule as ui/grid.js room).
+
 Here: the record, the layout (reflow), what keeps a grid right after other edits (prune, merged), the commands for hy.py do (grid, put,
 ungrid) and the tables map, find and md show. ui/grid.js is the same model on the board, with the gestures. Nothing here reads files."""
+import json
 import math
 import random
 import string
@@ -23,7 +27,7 @@ import string
 import notelinks
 
 GAP = 24
-MAXCOLS = 8   # ⌥A's block is never wider than 8 (canvas.html MAXCOLS)
+MAXCOLS = 8   # ⌥A's default for a pile of unrelated things (canvas.html MAXCOLS); an explicit cols has no limit (owner 2026-10-11)
 KIND = {"htmlframe": "HTML", "html": "HTML", "model3d": "3D", "imgframe": "фрейм"}
 
 
@@ -131,6 +135,41 @@ def make(b, ids, cols=None, gap=GAP, order=True, gid=None):
     return gid
 
 
+def _covers(a, c):
+    return a[0] < c[0] + c[2] - .5 and a[0] + a[2] > c[0] + .5 and a[1] < c[1] + c[3] - .5 and a[1] + a[3] > c[1] + .5
+
+
+def _box_of(b, ids):
+    rs = [box(items(b)[i]) for i in ids]
+    x, y = min(r[0] for r in rs), min(r[1] for r in rs)
+    return (x, y, max(r[0] + r[2] for r in rs) - x, max(r[1] + r[3] for r in rs) - y)
+
+
+def room(b, ids, B=None):
+    """the things b's ids now cover move down below them, those they then cover too; a grid among them moves whole. B: the board before
+    (what lay under or over ids then stays). Notes and timelines keep their place. Returns the ids that moved (ui/grid.js room)"""
+    S = set(ids); fixed = [box(items(b)[i]) for i in ids if i in items(b)]; old = [box(items(B)[i]) for i in ids if B and i in items(B)]
+    units, seen = [], set()
+    for i, it in list(items(b).items()):
+        if i in S or i in seen or not gridable(it): continue
+        g = of(b, i); ms = [m for m in table(b)[g]["members"] if m in items(b) and m not in S] if g else [i]; seen.update(ms)
+        if B and all(m in items(B) for m in ms) and any(_covers(_box_of(B, ms), r) for r in old): continue   # it lay under or over them already
+        units.append({"ms": ms, "moved": False})
+    moved = []
+    for _ in range(200):
+        again = False
+        units.sort(key=lambda u: _box_of(b, u["ms"])[1])
+        for k, u in enumerate(units):
+            r = _box_of(b, u["ms"]); by = fixed + [_box_of(b, v["ms"]) for v in units[:k] if v["moved"]]
+            dy = max([o[1] + o[3] + GAP - r[1] for o in by if _covers(r, o)] or [0])
+            if dy < .5: continue
+            for m in u["ms"]: items(b)[m]["y"] = round(items(b)[m]["y"] + dy, 2)
+            if not u["moved"]: moved += u["ms"]
+            u["moved"] = again = True
+        if not again: break
+    return moved
+
+
 def regroup(b, ids):
     """as canvas.html regroup: a thing belongs to the smallest group frame holding its centre, or to none"""
     G = b.get("groups") or {}
@@ -190,6 +229,14 @@ def merged(out, ours, theirs):
         if g.get("members") not in (mine, other) and len([m for m in g["members"] if m in items(out)]) >= 2: reflow(out, gid)
     prune(out)
     if "grids" in out and not out["grids"]: del out["grids"]
+
+
+def wrap(rows, kv):
+    """hy.py block and arrange: (cols, whole). A row per argument is a set the owner compares (A over B, a series over the next) and never
+    wraps; one argument is a pile, MAXCOLS a row (or as wide as the group into=); cols=0 or cols=all: no wrap either; cols=N exactly N
+    (owner 2026-10-11: «можно убрать ограничение ... если у нас из-за этого всё переносится на другую строку»)"""
+    asked = kv.get("cols"); whole = asked in (0, "all") or (asked is None and len(rows) > 1)
+    return (max(1, max(len(r) for r in rows)) if whole else int(asked or MAXCOLS)), whole
 
 
 def made_rows(b, rows, cols, gap):
@@ -366,10 +413,12 @@ def _grid(b, ref):
 def op_grid(b, args, kv):
     if not args: raise SystemExit("grid REF... [cols=N]: что сложить в сетку")
     ids = [i for a in args for i in _ids(b, a)]
+    B = json.loads(json.dumps({"items": items(b), "grids": table(b)}))   # the page before: what lay under the things already stays
     try: gid = make(b, ids, cols=int(kv["cols"]) if "cols" in kv else None, gap=round(kv.get("gap", GAP)))
     except ValueError as e: raise SystemExit(f"grid: {e}")
+    moved = room(b, table(b)[gid]["members"], B)   # what it covers moves down, as ⌥A on the board (owner 2026-10-11)
     s = bbox(b, gid)
-    return f"{title(b, gid)} x {round(s['x'])} y {round(s['y'])}, {round(s['w'])}×{round(s['h'])}"
+    return f"{title(b, gid)} x {round(s['x'])} y {round(s['y'])}, {round(s['w'])}×{round(s['h'])}" + (f" · сдвинуто вниз: {len(moved)}" if moved else "")
 
 
 def op_put(b, args, kv):

@@ -11,6 +11,8 @@ the board makes a 3D card of it (the plugin's place.js). Nothing here reads or w
 import json
 import os
 
+import runmeta
+
 FRAME = {"model": "", "aspect": "1:1", "prompt": "", "refs": [], "refpaths": [], "owner_tags": [], "gate": None, "grid": "", "grid_feedback": {},
          "board_notes": [], "tags": []}   # what scan() gives a frame and a 3D entry has not: the pages read them without asking
 
@@ -25,6 +27,7 @@ def as_frames(models, real):
         if isinstance(meta, dict):
             if isinstance(meta.get("feedback"), dict): i["feedback"] = meta["feedback"]
             if isinstance(meta.get("questions"), list): i["questions"] = meta["questions"]
+            i["run"] = runmeta.of(meta)   # how long it took, its credits, where it ran (owner 2026-10-11: «это для 3д генераций в том числе»)
         out.append(i)
     return out
 

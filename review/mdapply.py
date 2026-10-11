@@ -36,7 +36,7 @@ import hymd
 GAP = 24
 ID = r"[A-Za-z0-9_-]+"
 TAIL = re.compile(r"\s*\[(" + ID + r")\]\s*$")
-MARKS = re.compile(r"\s*(?:💬|✎)\d+")
+MARKS = re.compile(r"\s*(?:(?:💬|✎)\d+|▭\d+(?:×\d+)?)")   # comments, drawings, a text's box (hymd.py, textdocs.mark)
 STAMP = re.compile(r"<!--\s*hyimg md\b(.*?)-->")
 GROUP = re.compile(r"^(#{2,6})\s+▣\s*Группа\s*«(.*)»\s*$")
 HEAD = re.compile(r"^(#{1,6})\s+(.*)$")

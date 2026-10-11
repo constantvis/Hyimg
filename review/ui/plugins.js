@@ -147,7 +147,7 @@
       note: T("Only its link in the plugins folder goes. The plugin's own folder stays where it is") };
     if (FILE) { toApp({ action: "plugins", op: "remove", name: p.name, confirm: true, ...o }); return; }   // Home: the app asks with these words
     if (!window.hyConfirm) { try { await import(new URL("confirm.js", SRC).href); } catch {} }
-    const yes = window.hyConfirm ? await new Promise(ok => window.hyConfirm({ ...o, icon: "trash", onOk: () => ok(true), onCancel: () => ok(false) })) : confirm(o.title);
+    const yes = window.hyConfirm ? await new Promise(ok => window.hyConfirm({ ...o, icon: "trash", onOk: () => ok(true), onCancel: () => ok(false) })) : false;   // no confirm() (P-21)
     if (!yes) return;
     const d = await fetch("/api/plugins/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: p.name }) })
       .then(r => r.json()).catch(() => ({ error: T("the server did not answer") }));

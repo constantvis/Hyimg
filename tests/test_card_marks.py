@@ -13,7 +13,8 @@ so you can right away write it there»).
 - the corner squares are 30 px with 7 px corners from 62 px wide; the selection bar is 44 px high
 - the far view draws the same geometry as the elements
 - the kind pills have an icon before their letters (layers for PSD, a page for PDF, ▶ for video)
-- the menu item names the app macOS opens the file with (here HYIMG_DEFAULT_APP stands in for LaunchServices) and `open`s the file
+- the menu item names the app macOS opens the file with (here HYIMG_DEFAULT_APP stands in for LaunchServices) and `open`s the file; on the
+  board it is «Open with ›» since round 20 (2026-10-11): the file's apps, the default first (HYIMG_OPEN_APPS), each runs `open -a`
 Runs in Chromium and WebKit where Playwright has them, on temporary libraries only."""
 import json
 import os
@@ -38,6 +39,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ENGINES = ["chromium", "webkit"]
 FFMPEG = shutil.which("ffmpeg")
 APP = {"name": "Test Viewer 2026", "path": "/Applications/Test Viewer 2026.app"}
+OTHER_APP = {"name": "Another Editor", "path": "/Applications/Another Editor.app"}
 W = 260
 
 
@@ -80,7 +82,8 @@ def server(tmp_path_factory):
     port = free_port()
     env = {k: v for k, v in os.environ.items() if not k.startswith(("HYIMG_", "REVIEW_"))}
     env.update(HYIMG_LIBRARY_ROOT=str(lib), HYIMG_STATE_ROOT=str(state), HYIMG_PROJECT_ID=str(uuid.uuid4()), HYIMG_SETTINGS=str(tmp / "settings.json"),
-               HYIMG_VIDEO_CACHE=str(tmp / "vcache"), HYIMG_DEFAULT_APP=json.dumps(APP), HYIMG_REVEAL_CMD=str(opener), PYTHONDONTWRITEBYTECODE="1")
+               HYIMG_VIDEO_CACHE=str(tmp / "vcache"), HYIMG_DEFAULT_APP=json.dumps(APP), HYIMG_REVEAL_CMD=str(opener), PYTHONDONTWRITEBYTECODE="1",
+               HYIMG_OPEN_APPS=json.dumps([OTHER_APP, dict(APP, default=True)]))
     log = open(tmp / "server.log", "w+")
     process = subprocess.Popen([sys.executable, str(ROOT / "review/server.py"), str(port)], env=env, stdout=log, stderr=log)
     try:
@@ -337,22 +340,27 @@ def test_kind_pills_have_their_icon_and_the_far_view_draws_the_same_geometry(ser
 
 
 @pytest.mark.parametrize("engine", ENGINES)
-def test_right_click_opens_the_file_in_its_default_app(server, engine):
+def test_right_click_opens_the_file_with_its_apps(server, engine):
     with playwright.sync_playwright() as p:
         browser, page, errors = open_board(p, engine, server["port"])
         cam(page, 1)
         r = page.evaluate("() => { const r = EL.get('p').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
-        page.mouse.click(*r, button="right")
-        page.wait_for_function("() => { const b = document.querySelector('#ctx [data-act=open] .ml'); return b && b.textContent === 'Open in Test Viewer 2026'; }")
-        first = page.evaluate("() => document.querySelector('#ctx button').dataset.act")
-        assert first == "open"   # the menu's default action, first
+        page.mouse.click(*r, button="right"); page.wait_for_selector("#ctx.open [role=menuitem]")
+        # the card's main row first (its Studio, or View without one), Crop, then «Open with ›» (round 20, 2026-10-11)
+        assert page.evaluate("() => [...document.querySelectorAll('#ctx > button')].slice(0, 3).map(b => b.dataset.act || b.dataset.sub)") == ["main", "crop", "openwith"]
+        page.locator("#ctx [data-sub=openwith]").hover()
+        page.wait_for_function("() => document.querySelectorAll('#ctx .hy-sub [data-openwith]').length === 3")
+        rows = page.evaluate("() => [...document.querySelectorAll('#ctx .hy-sub [data-openwith]')].map(b => b.textContent.trim())")
+        assert rows == ["Test Viewer 2026 default", "Another Editor", "Other…"], rows   # the default first
         before = server["opened"].read_text() if server["opened"].exists() else ""
-        page.click("#ctx [data-act=open]")
+        page.click("#ctx .hy-sub [data-openwith='1']")
         for _ in range(50):
             now = server["opened"].read_text() if server["opened"].exists() else ""
             if now != before: break
             time.sleep(0.1)
-        assert now[len(before):].strip().endswith("a/layers.psd"), now
+        got = now[len(before):].strip().split("\t")
+        assert got[:2] == ["-a", OTHER_APP["path"]] and got[2].endswith("a/layers.psd"), got
+        assert page.evaluate("() => !$('#ctx').classList.contains('open')")
         assert not errors, errors
         browser.close()
 
@@ -392,3 +400,9 @@ def test_default_app_endpoints_stay_inside_the_library(server):
         assert call("/api/openfile", {"path": bad})[0] == 403, bad
     assert call("/api/openfile", {"path": "a/none.psd"})[0] == 404
     assert call("/api/appicon?app=/System/Applications/Calculator.app")[0] == 404   # only an app the server itself named
+    # «Open with ›» (round 20): the file's apps, the default first; only a listed app opens it, only a library file
+    st, body = call("/api/openwith?p=a/layers.psd")
+    assert st == 200 and [a["name"] for a in json.loads(body)["apps"]] == ["Test Viewer 2026", "Another Editor"]
+    assert call("/api/openfile", {"path": "a/layers.psd", "app": "/System/Applications/Calculator.app"})[0] == 403
+    assert call("/api/openfile", {"path": "../state/settings.json", "app": OTHER_APP["path"]})[0] == 403
+    assert call(f"/api/openwith?p={urllib.parse.quote('../state/settings.json')}")[0] == 404

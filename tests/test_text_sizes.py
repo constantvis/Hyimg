@@ -18,7 +18,7 @@ def newest(page):
 
 def lit(page):
     return page.evaluate("() => [...document.querySelectorAll('.tidy.tsz .hx.on')].map(b => b.textContent).join() + '|'"
-                         " + ((document.querySelector('.tidy.tsz .tsl') || {}).textContent || '')")
+                         " + ((document.querySelector('.tidy.tsz .tsl .on') || {}).textContent || '')")   # the name shown (every name keeps its cell, ui/textbox.js)
 
 
 @pytest.mark.parametrize("zoom", [4, 1])

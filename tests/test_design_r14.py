@@ -3,7 +3,8 @@
 
 - Block tabs at the standard size everywhere: 24 px, words 12.5 / 500 (ui/hy/block.css .hy-bh-tab); no bigger tab on any panel
   (note ntfghcp4 on round 13: «я бы все равно склонялся к стандартному размеру оставить»). The annotations list's Open | Resolved were
-  28 px on a blue tint.
+  28 px on a blue tint. Since round 20 (2026-10-11) a side panel's header holds its tabs as a pill of 30 px tabs (ui/hy/side.css): the
+  bell, «?», History and the annotations' list.
 - No line where a block's header meets its content (the same note: «Разделительную линию нужно точно убирать сверху»); the hairlines
   between sections stay. Settings at the side had one under its header.
 - In a Studio the top row's right end is the Studio's own: the board's round buttons (bell, ?, history, settings) and Image Studio's gear
@@ -23,7 +24,7 @@ WIDTH = 1440
 # every visible tab of a block header or a panel's tab row: [where, height, font size, weight]
 TABS = r"""() => { const vis = e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e);
     return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
-  return [...document.querySelectorAll('.hy-bh .hy-bh-tab, .hy-bh hy-segmented[variant=tabs] > button, .cm-tabs > button, [role=tablist] > [role=tab]')]
+  return [...document.querySelectorAll('.hy-bh .hy-bh-tab, .hy-bh hy-segmented[variant=tabs] > button, .hy-side-hd hy-segmented > button, [role=tablist] > [role=tab]')]
     .filter(vis).map(t => { const s = getComputedStyle(t);
       return [(t.closest('[id]') || t).id + ' ' + t.textContent.trim().slice(0, 20), Math.round(t.getBoundingClientRect().height), s.fontSize, s.fontWeight,
         !!t.closest('hy-segmented[variant=pill]')]; }); }"""
@@ -32,12 +33,12 @@ TABS = r"""() => { const vis = e => { const r = e.getBoundingClientRect(), s = g
 RULES = r"""() => { const out = [], vis = e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e);
     return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0; };
   const line = (w, st) => parseFloat(w) > 0 && st !== 'none' && st !== 'hidden';
-  for (const h of [...document.querySelectorAll('.hy-bh, #sets.sw-side .sw-hd')].filter(vis)) {
+  for (const h of [...document.querySelectorAll('.hy-bh, .hy-side-hd, #sets.sw-side .sw-hd')].filter(vis)) {
     const hb = h.getBoundingClientRect(), hs = getComputedStyle(h), who = (h.closest('[id]') || h).id + ' .' + h.className.toString().split(' ')[0];
     if (line(hs.borderBottomWidth, hs.borderBottomStyle)) out.push(who + ': its bottom border');
     if (/inset[^,]*-1px|0px -1px 0px[^,]*inset/.test(hs.boxShadow)) out.push(who + ': an inset line at its bottom');
     const blk = h.parentElement;
-    for (const e of blk.querySelectorAll('*')) { if (h.contains(e) || !vis(e)) continue;
+    for (const e of blk.querySelectorAll('*')) { if (h.contains(e) || !vis(e) || e.matches('input, textarea')) continue;   // a field's own edge is no line
       const r = e.getBoundingClientRect(), s = getComputedStyle(e), across = Math.min(r.right, hb.right) - Math.max(r.left, hb.left) > hb.width * .5;
       if (!across) continue;
       if (line(s.borderTopWidth, s.borderTopStyle) && r.top >= hb.bottom - 1 && r.top <= hb.bottom + 10) out.push(who + ': the top border of ' + e.tagName + '.' + e.className);
@@ -47,7 +48,7 @@ ROUND = """() => ['#bntf', '#bkeys', '#bhist', '#bset'].filter(q => { const e = 
   return e && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden'; })"""
 ACTS = "(q) => { const a = document.querySelector(q), r = a.getBoundingClientRect(); return [Math.round(r.top), Math.round(innerWidth - r.right)]; }"
 STUDIOS = [("image", "p2", "() => window.__frames && __frames.ED && __frames.ED.win", "hyimg-image-studio"),
-           ("3d", "m1", "() => document.body.classList.contains('m3edit') && document.querySelector('.m3title')", "hyimg-3d-studio"),
+           ("3d", "m1", "() => document.body.classList.contains('m3edit') && document.querySelector('#cStudio')", "hyimg-3d-studio"),
            ("dev", "h1", "() => window.__dev && __dev.D && __dev.D.tree", "hyimg-dev-studio")]
 
 

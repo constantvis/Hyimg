@@ -3,6 +3,7 @@
 hyLang({
   en: {
     "{n} pages": ["{n} page", "{n} pages"],
+    "{n} steps": ["{n} step", "{n} steps"], "{n} tokens": ["{n} token", "{n} tokens"], "{n} credits": ["{n} credit", "{n} credits"],   // Info's run (2026-10-11)
     "{n} empty files stay in the library: there is nothing to place": ["{n} empty file stays in the library: there is nothing to place", "{n} empty files stay in the library: there is nothing to place"],
     "Split into {n} pages?": ["Split into {n} page?", "Split into {n} pages?"],
     "library::{n} frames": ["{n} frame", "{n} frames"],
@@ -173,6 +174,8 @@ hyLang({
     "Project on Home": "Проект на главной",
     "All collections": "Все коллекции",
     "Show or hide the library · \\": "Показать или скрыть библиотеку · \\",
+    "Show or hide the library · ⌘M": "Показать или скрыть библиотеку · ⌘M", "the library: open, close": "библиотека: открыть, закрыть",   // round 20
+    "kp::Show": "Показывать",   // the «?» panel's switches: Tooltips, Key hints (round 20, 2026-10-11)
     "Like macOS: light by day, dark in the evening, if the system is set that way": "Как в macOS: днем светлая, вечером темная, если так настроено в системе",
     "Paper color": "Цвет бумаги",
     "Canvas settings": "Настройки холста",
@@ -224,7 +227,7 @@ hyLang({
     "a copy": "копия",
     "crop; a video: crop and trim": "кроп; у видео кроп и обрезка",
     "double-click": "двойной клик",
-    "an image: Image Studio; a video: crop and trim": "картинка: Image Studio; видео: кроп и обрезка",
+    "an image or a PDF: Image Studio; a video: crop and trim": "картинка или PDF: Image Studio; видео: кроп и обрезка",
     "⤢ in a video's pill": "⤢ на плашке видео",
     "full screen,": "во весь экран,",
     "leaves it": "выход",
@@ -376,6 +379,7 @@ hyLang({
     "Tidy": "Причесать",
     // Arrange makes a grid (ui/grid.js, owner 2026-10-08)
     "Grid {c} × {r}": "Сетка {c} × {r}",
+    "Moved down to make room: {what}": "Сдвинуто вниз, чтобы освободить место: {what}",   // ⌥A and Make grid make room (round 21, ui/grid.js)
     "As a square block": "Квадратным блоком",
     "Make grid": "Сделать сеткой",
     "Remove grid": "Убрать сетку",
@@ -602,6 +606,14 @@ hyLang({
     "No frames in the area, nothing to fit to": "В области нет кадров, подгонять не к чему",
     "crop::Free frame": "Свободная рамка",
     "Turn the ratio · X": "Повернуть пропорцию · X",
+    // Open ▾ and the right click, round 20 (2026-10-11): Hyimg's viewer, the apps (ui/infohead.js, ui/ctxmain.js)
+    "open::View": "Просмотр", "Open with": "Открыть в программе",
+    "Split": "Разделить",   // «Split into 40 pages?» asks with the app's dialog now, not confirm() (panels audit P-21)
+    // the crop's bar, round 20 (2026-10-11): its Cancel and Done, the formats' names over the pills (ui/cropframe.js)
+    "Cancel the crop · Esc": "Отменить кадрирование · Esc", "Apply the crop · ↵": "Применить кадрирование · ↵",
+    "Print 10 × 8": "Печать 10 × 8", "Instagram grid · iPad": "Сетка Instagram · iPad", "iPhone photo · iPad": "Фото iPhone · iPad", "35 mm photo": "Фото 35 мм",
+    "Tall banner": "Высокий баннер", "Facebook · LinkedIn · X link": "Ссылка в Facebook · LinkedIn · X", "Ultrawide, upright": "Ультраширокий, стоя",
+    "Cinema · Ultrawide": "Кино · ультраширокий",
     "With sound · Space": "Со звуком · Пробел",
     "Play with sound": "Играть со звуком",
     "Drag: seek": "Потяни: перемотка",
@@ -787,6 +799,11 @@ hyLang({
     "Tips": "Советы",
     "All keys": "Все клавиши",
     "Search tips and keys": "Поиск по советам и клавишам",
+    // the side panels' footnotes (round 20, 2026-10-11, ui/side.js): «?», History, the annotations' list
+    "Every key: the <b>All keys</b> tab · <b>Esc</b> closes": "Все клавиши: вкладка <b>Все клавиши</b> · <b>Esc</b> закрывает",
+    "Changes of this page · <b>Esc</b> closes": "Изменения этой страницы · <b>Esc</b> закрывает",
+    "Annotations on this page · <b>Esc</b> closes": "Аннотации этой страницы · <b>Esc</b> закрывает",
+    "<b>↵</b> {what} · <b>Esc</b> lets it go": "<b>↵</b> {what} · <b>Esc</b> снимает выделение", "<b>Esc</b> lets it go": "<b>Esc</b> снимает выделение",   // Info
     "Here · Board": "Здесь · Доска",
     "Keys here": "Клавиши здесь",
     "All {n}": "Все {n}",
@@ -837,7 +854,8 @@ hyLang({
     "removes it)": "убирает)",
     "in crop": "в кропе",
     "apply, cancel": "применить, отменить",
-    "turn the ratio, the last change back": "повернуть пропорцию, отменить последнее изменение",
+    "turn the ratio, the frame's change back and again, as the dock's Undo and Redo": "повернуть пропорцию, отменить и вернуть шаг рамки, как Undo и Redo в доке",
+    "a new frame; a drag inside the frame moves it": "новая рамка; перетаскивание внутри рамки ее двигает",
     "a copy: of a picture for a second crop, of a group with its cards": "копия: картинки для второго кропа, группы вместе с карточками",
     "remove the selection, a selected arrow or a timeline's dot (Undo in the note)": "убрать выделенное, выделенную стрелку или точку таймлайна (отмена в уведомлении)",
     // the Info card's body and Open ▾, the bell's tabs (round 18, owner 2026-10-10)
@@ -864,5 +882,21 @@ hyLang({
     "on the card": "на карточке",
     "Lights": "Свет",
     "{lens} mm": "{lens} мм",
+    // how long it took, what it cost, where it ran (owner 2026-10-11, ui/infobody.js runRows)
+    "Time": "Время", "Total": "Всего", "Cost": "Стоимость", "Compute": "Где считалось", "not recorded": "не записано",
+    "{m} min {s} s": "{m} мин {s} с", "{h} h {m} min": "{h} ч {m} мин", "{n} not recorded": "без времени: {n}",
+    "{n} steps": ["{n} шаг", "{n} шага", "{n} шагов"], "{n} tokens": ["{n} токен", "{n} токена", "{n} токенов"],
+    "{n} credits": ["{n} кредит", "{n} кредита", "{n} кредитов"], "{a} in / {b} out tokens": "токены: {a} на входе, {b} на выходе",
+    // the Text tool and a text's box (ui/textbox.js, owner 2026-10-11)
+    "Auto width": "Автоширина", "Auto height": "Автовысота", "Fixed size": "Фиксированный размер", "Text box": "Блок текста",
+    "Reset the box": "Сбросить размер блока",
+    "Reset the box: a heading grows with its words, a document wraps at its width": "Сбросить размер: заголовок растет по словам, документ переносится по своей ширине",
+    "step::Auto width": "Автоширина", "step::Auto height": "Автовысота", "step::Fixed size": "Фиксированный размер", "step::Text box size": "Размер блока текста",
+    "hint::Click: a text · drag: a text box": "Клик: текст · тянуть: блок текста",
+    "Drag: a fixed height": "Тянуть: фиксированная высота",
+    "click or drag, double-click on empty space": "клик или протянуть, двойной клик по пустому",
+    "a text; dragged: a box of that width and height": "текст; протянули: блок такой ширины и высоты",
+    "size (a group from every side, a frame by a corner; a text: sides its width, top and bottom a fixed height, a corner its type)":
+      "размер (у группы со всех сторон, у кадра за угол; у текста: бока ширина, верх и низ фиксированная высота, угол размер шрифта)",
   },
 });

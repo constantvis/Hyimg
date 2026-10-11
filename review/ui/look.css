@@ -128,9 +128,14 @@ body.lwide #tlibR[aria-pressed=true] > .lbi .pane { transform: scaleX(2.17); }
    library's panel and the window under them. --paper-d / --paper-l are the settings cv.paperDark / cv.paperLight, put on the root
    by each page; --paper is the one of the theme in use. Its two colours are in the settings panel (ui/setpanel.js). */
 
-/* No focus rings anywhere (owner 2026-10-05: «убери эти уебищные focus выделения»): a clicked or tabbed-to control shows no outline;
-   menus keep their row highlight for the arrow keys, text fields their border colour while typing */
-:focus, :focus-visible { outline: none !important; }
+/* No focus ring under the mouse (owner 2026-10-05: «убери эти уебищные focus выделения»): a clicked control shows no outline, menus keep
+   their row highlight for the arrow keys, text fields their border colour while typing. Since round 20 (owner 2026-10-11, ★ on misc-b.html,
+   panels audit P-23: «кольцо только с клавиатуры (Tab), мышь его не вызывает») a control reached by the keyboard shows a 2 px ring of the
+   selection's blue, as Apple's HIG and Figma do: before, a Tab through the top row moved the focus where no one could see it. The browser's
+   :focus-visible tells the keyboard from the mouse; menu rows, tree rows and fields keep their own light */
+:focus { outline: none !important; }
+:is(button, a[href], summary, [role=button], [role=tab], [role=switch], [role=checkbox], [role=radio]):not([role=menuitem], [role=option], [role=treeitem]):focus-visible {
+  outline: var(--hy-focus-ring) !important; outline-offset: var(--hy-focus-off); }
 
 /* The one chevron (owner 2026-10-04: «the arrow differs at the end and between the steps; it must be the same everywhere, in the 3D
    studio, the library, the crumb, the folders»): ui/menu.js HY_CHEV, 12 px, a 1.2 px line, the muted colour; turned down (.dn) it opens a

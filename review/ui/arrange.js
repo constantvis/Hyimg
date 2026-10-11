@@ -78,7 +78,8 @@
     if (how === "grid" || how === "row" || how === "smart") { sel = new Set(all); ({ grid: tidy, row: tidyRow, smart: smartTidy })[how](); return true; }
     if (how === "make") {
       const before = HY.snap(), gid = hyGrid.make(board, all, null, false, HY.uid), g = gid && board.grids[gid];
-      if (g) HY.commit(before, T("Grid {c} × {r}", { c: Math.min(g.cols, g.members.length), r: g.rows }));
+      const moved = g ? hyGrid.room(board, g.members, JSON.parse(before)) : [];   // what it covers makes room, as ⌥A (round 21)
+      if (g) HY.commit(before, [T("Grid {c} × {r}", { c: Math.min(g.cols, g.members.length), r: g.rows }), hyGrid.said(moved)].filter(Boolean).join(" · "));
     }
     if (how === "remove") {
       const before = HY.snap();

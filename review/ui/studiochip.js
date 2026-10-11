@@ -4,7 +4,8 @@
 // Make frame. A click or ↵ opens it the way the dock's switch and a double click do: ui/modes.js enter. Nothing selected, several cards, a
 // card no Studio opens or a Studio already open: no chip. The dock's switch stays as it is (the owner has not decided on round 19's A).
 // It replaces 3D Studio's own «3D Studio ↵» button on that bar (2026-10-07), which only 3D cards had.
-//   hyStudioChip.html(ids)   the chip and the hairline after it, or ""      hyStudioChip.enter()   ↵ on the board: true when it opened one
+//   hyStudioChip.html(ids)   the chip, or ""      hyStudioChip.enter()   ↵ on the board: true when it opened one
+// The hairline after it is the bar's (ui/selbar.js join, round 20: it brought its own, and an HTML card's bar had two in a row)
 (() => {
   if (window.hyStudioChip) return;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -21,7 +22,7 @@
     const s = studio(ids); if (!s) return "";
     const tip = T("Open {studio} · ↵ or a double click", { studio: s.name });
     return `<button data-studiochip="${esc(s.key)}" class="hy-schip" style="--hy-mode-c:${esc(s.color || "var(--sel)")}" title="${esc(tip)}" aria-label="${esc(tip)}">`
-      + `<span class="hy-dot"></span>${esc(s.name)}<hy-kbd size="s">↵</hy-kbd></button><span class="sep"></span>`;
+      + `<span class="hy-dot"></span>${esc(s.name)}<hy-kbd size="s">↵</hy-kbd></button>`;
   }
   function enter() {
     if (typeof sel === "undefined") return false;

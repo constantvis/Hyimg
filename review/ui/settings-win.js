@@ -1,8 +1,9 @@
 // The settings of the whole app, Home's and every board's, in two ways (owner 2026-10-08, round 11 of Concepts/html/editors-concepts:
 // r11/settings-side.html and r11/settings-full.html, «В обеих вроде все нравится, кроме вот этого комментария»).
 //
-// At the side (a board's default): a panel docked at the right edge, full height under the top row, the board live and working beside it,
-// so every change shows on it at once. Its header «Settings» with «Open as a window» and close, the search, then every section one under
+// At the side (a board's default): a panel docked at the right edge under the top row, the board live and working beside it, so every
+// change shows on it at once. Since round 20 (2026-10-11) a side panel as every other (ui/hy/side.css): 340 wide, as tall as its content,
+// its header «Settings» with «Open as a window» and no close (Esc and the settings button), the search, then every section one under
 // the other, each under its header (a chevron folds it, the words at its right end say what is chosen in it). The strip of the sections'
 // icons the concept had under the search is not there (the owner's comment c43bcc5daff on it: «Так вот этот элемент можно убрать. Он тут
 // лишний»). Its left edge sets its width, the viewer's.
@@ -17,8 +18,8 @@
 // down, so a panel at its side would only hide a column of them: Home keeps the window (its #sets carries data-sw-window).
 //
 // Both: the search finds rows in every section by their names, options and hints, marks the words found (the CSS highlight API) and
-// counts them; Esc closes it (the first one clears the search; at the side only while the panel has the keyboard, else Esc is the
-// board's); the settings button and close close it, and the veil the window. It opens and closes with the app's curve, at once with
+// counts them; Esc closes it (the first one clears the search; at the side from the board too, by the board's Esc order); the settings
+// button closes it, the window's close and veil the window. It opens and closes with the app's curve, at once with
 // «Reduce motion». The controls lie in dark wells, the chosen thing on a grey plate (ui/hy variant=well; round 11 keeps the grey, the
 // blue ring of the selection is still the owner's open question).
 //
@@ -34,16 +35,19 @@
   const ic = (n, s = 16, w = 1.85) => (window.hyIcon ? window.hyIcon(n, s, w) : "");
   const store = { get(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-  // the sections in the rail's order (a null is its hairline); Profile is the face at the top of the rail
+  // the sections in the rail's order (a null is its hairline, the only one: the rail drew one more after Team, two lines in a row, panels
+  // audit P-20, 2026-10-11); Profile is the face at the top of the rail
   const SECS = [["profile", "Profile", "person"], ["team", "Team & agents", "team"], null, ["appearance", "Appearance", "palette"], ["board", "set::Board", "board"],
-    ["notifications", "set::Notifications", "notifications"], ["plugins", "Plugins", "plugin"], ["storage", "Storage", "drive"], null,
+    ["notifications", "set::Notifications", "notifications"], ["plugins", "Plugins", "plugin"], ["imagestudio", "Image Studio", "image"],
+    ["storage", "Storage", "drive"], null,
     ["interface", "Interface", "keyboard"], ["performance", "Performance", "gauge"]];
+  const OPTIONAL = new Set(["imagestudio"]);   // drawn by a plugin on a board (hyimg-image-studio models.js), not on Home
   const LIST = SECS.filter(Boolean), NAME = Object.fromEntries(LIST.map(([id, n, i]) => [id, [n, i]]));
   const MODULE = { hyMacNotif: "notifications", hyPlugSet: "plugins", hyStore: "storage" };   // the modules' sections, by their id
   const ROW = ".sp-row, .mn-row, .hpl-row, .hs-row";
-  const MIN_W = 640, MIN_H = 420, SIZE = "hy.sets.size", SEC = "hy.sets.sec", SIDE_W = "hy.sets.side", SHUT = "hy.sets.shut";
+  const MIN_W = 640, MIN_H = 420, SIZE = "hy.sets.size", SEC = "hy.sets.sec", SIDE_W = "hy.sets.sidew", SHUT = "hy.sets.shut";
   const DOCK = "cv.setsdock";   // the app's setting (server.py APP_KEYS): "window", or nothing for the side
-  const SW_MIN = 320, SW_DEF = 412;
+  const SW_MIN = 320, SW_DEF = 340;   // the side panels' width (round 20, 2026-10-11; 412 before, kept under «hy.sets.side», now left behind)
   const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
   const cap = s => s ? s[0].toUpperCase() + s.slice(1) : "";
 
@@ -60,7 +64,7 @@
       + `spellcheck="false" autocomplete="off"><span class="sw-qn" aria-live="polite"></span></label>`
       + `<button type="button" class="sw-nv sw-me" data-go="profile"><span class="sw-av"></span><span class="sw-mt"><b></b><span>${esc(T("Profile, folders"))}</span></span>`
       + `<span class="sw-n"></span></button><button type="button" class="sw-nv" data-go="team">${ic("team")}<span class="sw-nt">${esc(T("Team & agents"))}</span>`
-      + `<span class="sw-n"></span></button><div class="sw-sep" role="presentation"></div>${nav}`
+      + `<span class="sw-n"></span></button>${nav}`
       + `<div class="hy-hint sw-foot">${T("For <b>the whole app</b>: Home and every board")}</div></div>`
       + `<div class="sw-pane"><header class="sw-hd"><h2 id="sw-h"></h2><span class="hy-hint sw-cnt"></span>`
       + (dockable ? hb("mode", "dockSide", "Dock to the side") : "") + hb("close", "close", "Close · Esc") + "</header>"
@@ -86,6 +90,10 @@
     const want = () => { if (!dockable) return false; try { return localStorage.getItem(DOCK) !== "window"; } catch { return true; } };
     function mode(s) {
       el.classList.toggle("sw-side", s);
+      // at the side a side panel as every other (ui/hy/side.css, round 20): its footnote, its header's button square 24, no ×
+      box.classList.toggle("hy-side", s); foot.classList.toggle("hy-side-ft", s);
+      el.querySelectorAll(".sw-hb").forEach(b => { b.setAttribute("size", s ? "s" : "m"); if (s) { b.setAttribute("shape", "square"); b.setAttribute("variant", "ghost"); }
+        else { b.removeAttribute("shape"); b.removeAttribute("variant"); } });
       if (s) { pane.insertBefore(qLabel, body); pane.appendChild(foot); } else { rail.prepend(qLabel); rail.appendChild(foot); }
       const m = el.querySelector("[data-sw-act=mode]");
       if (m) {
@@ -153,6 +161,8 @@
         const id = b.dataset.go, n = hits[id] || 0, on = !Q && id === cur;
         b.classList.toggle("on", on); b.toggleAttribute("aria-current", on); if (on) b.setAttribute("aria-current", "page");
         b.classList.toggle("dim", !!Q && !n); b.querySelector(".sw-n").textContent = Q && n ? String(n) : "";
+        // a plugin's section (Image Studio's models): its rail entry only where the plugin drew it (.sw-nv's display: flex outranks [hidden])
+        if (OPTIONAL.has(id)) { b.hidden = !has.has(id); b.style.display = b.hidden ? "none" : ""; }
       });
       const total = Object.values(hits).reduce((a, b) => a + b, 0);
       head.innerHTML = S ? `${ic("settings", 15)}<span>${esc(T("set::Settings"))}</span>`
@@ -209,6 +219,7 @@
         return m.hasAttribute("checked") ? T("{n} of {m} on", { n, m: all }) : T("Off");
       },
       plugins: () => { const [n, all] = onOf("hy-switch[data-pl-sw]"); return all ? T("{n} of {m} on", { n, m: all }) : ""; },
+      imagestudio: () => { const s = body.querySelector("#hyImgModels"); return s ? s.dataset.sum || "" : ""; },   // the plugin's words (models.js)
       storage: () => { const r = [...body.querySelectorAll("#hyStore .hs-row")].find(x => x.firstElementChild && x.firstElementChild.textContent === T("Boards"));
         return r && r.querySelector(":scope > b") ? `${T("Boards")} ${r.querySelector(":scope > b").textContent}` : ""; },
       interface: () => chosen("hideui") ? T("{hide} · key hints: {keys}", { hide: chosen("hideui"), keys: chosen("keyhint").toLowerCase() }) : "",
@@ -292,8 +303,8 @@
       const a = e.target.closest("[data-sw-act][role=button]"); if (!a || (e.key !== "Enter" && e.key !== " ")) return;
       e.preventDefault(); a.click();
     });
-    // Esc closes it, unless something over it has the key (a plugin's «…» menu, a question, the picture being placed); at the side only
-    // while the panel has the keyboard: the board beside it keeps its own Esc
+    // Esc closes it, unless something over it has the key (a plugin's «…» menu, a question, the picture being placed); at the side here
+    // only while the panel has the keyboard, else the board's Esc order closes it (ui/boardkeys.js, round 20: a side panel has no ×)
     addEventListener("keydown", e => {
       if (e.key !== "Escape" || !el.classList.contains("open") || e.defaultPrevented || e.cancelBubble) return;
       if (document.querySelector(".hpl-menu, #hyCrop, #hyConfirm")) return;

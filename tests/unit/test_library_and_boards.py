@@ -103,6 +103,12 @@ class TestRefs:
         meta = {"refs": ["r1.png", "none.png"], "inputs": ["in.png", "../../outside/o.png"], "images": ["sub/img.png", "in.png"]}
         assert server.refpaths(meta, str(lib / "a")) == ["refs/r1.png", "a/in.png", "a/sub/img.png"]
 
+    def test_inputs_written_as_roles_do_not_break_the_list(self, lib):
+        # 2026-10-11: one sidecar with [{role, path}] made /api/items fail for the whole board
+        put(lib, "a/in.png"); put(lib, "a/m.png")
+        assert server.refpaths({"inputs": [{"role": "target", "path": "in.png"}, {"role": "x"}]}, str(lib / "a")) == ["a/in.png"]
+        assert server.refpaths({"inputs": {"pose": "m.png", "n": 3}, "images": 5, "refs": None}, str(lib / "a")) == ["a/m.png"]
+
     def test_a_cut_frame_shows_its_grids_references(self, lib):
         put(lib, "a/r.png"); put(lib, "a/grid.png", meta={"inputs": ["r.png"]})
         assert server.inherited_refs({"grid": "grid.png"}, str(lib / "a")) == ["a/r.png"]

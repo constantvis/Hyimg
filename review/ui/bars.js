@@ -11,7 +11,12 @@
 // top over the selection; bars marked data-up (the frame bar and a plugin's bar of a card in its editor) never go under the card. A
 // selection wholly out of the window takes its bars and its Info card (#info) with it (owner 2026-10-08: a woken board's opacity bar
 // stood alone at the top and its Info card at the right with nothing selected in view), they come back with it; one under the library is
-// still pushed to the free part's edge.
+// still pushed to the free part's edge. The crop's ratio bar (#crop .cratio, ui/cropframe.js) is one of them, over the whole picture.
+//
+// A bar under the pointer does not move (board audit 2026-10-11, B-10: a click on H1 moved the text's bar 509 px, the bar of a note went
+// 224 px up on «Area», and the second click of A− fell on the board and lost the selection). While the pointer is over a bar, the bars of
+// the selection keep their place on screen, even when a click draws them again wider or narrower (the bar is found again by its class
+// and place); once the pointer leaves, they are placed by the rules above. FigJam's floating bars do the same.
 //   hyBars.free(stage, inset, band)   {l, r, t, b}: the free part; with band {t, b} the side panels count only where they reach it
 //   hyBars.clamp(o)                   o: {stage, inset, cam, sel: {l, r, t, b} on screen or null}
 (() => {
@@ -33,10 +38,20 @@
   }
   // a bar that grows after it was placed (its slider, a key cap, a font coming in) is placed again: the Studio chip made a bar measured
   // narrow at first lie over the Info card once it had its width (2026-10-10)
-  let last = null, watched = [];
+  const BARS = "#handles .tidy, #crop .tidy";
+  let last = null, watched = [], held = null;   // held: { cls, i, l, t } the bar under the pointer and where it stood on screen
+  const barAt = el => (el && el.closest ? el.closest(BARS) : null), again = () => { if (last) (typeof clampBars === "function" ? clampBars() : clamp(last)); };
+  addEventListener("pointermove", e => {
+    const b = barAt(e.target);
+    if (!b) { if (held) { held = null; requestAnimationFrame(again); } return; }
+    const bars = [...document.querySelectorAll(BARS)], i = bars.indexOf(b);
+    if (held && held.cls === b.className && held.i === i) return;   // the same bar, or the one drawn again in its place
+    const r = b.getBoundingClientRect(); held = { cls: b.className, i, l: r.left, t: r.top };
+  }, true);
+  document.documentElement.addEventListener("pointerleave", () => { if (held) { held = null; requestAnimationFrame(again); } });
   const ro = window.ResizeObserver ? new ResizeObserver(() => { if (last) requestAnimationFrame(() => (typeof clampBars === "function" ? clampBars() : clamp(last))); }) : null;
   function clamp(o) {
-    const bars = [...document.querySelectorAll("#handles .tidy")], S = o.sel, st = o.stage.getBoundingClientRect(), info = document.getElementById("info");
+    const bars = [...document.querySelectorAll(BARS)], S = o.sel, st = o.stage.getBoundingClientRect(), info = document.getElementById("info");
     last = o;
     if (ro) { watched = watched.filter(t => t.isConnected || (ro.unobserve(t), false)); bars.forEach(t => { if (!watched.includes(t)) { watched.push(t); ro.observe(t); } }); }
     const out = !!S && (S.r < st.left || S.l > st.right || S.b < st.top || S.t > st.bottom);
@@ -74,11 +89,16 @@
       }
     }
     const mid = !S ? null : wide > room ? f.l + wide / 2 : Math.min(Math.max((S.l + S.r) / 2, f.l + wide / 2), f.r - wide / 2);
-    bars.forEach((t, i) => {
-      const r = rs[i]; if (!r.width) return;
+    const d = bars.map((t, i) => {
+      const r = rs[i]; if (!r.width) return null;
       const left = mid != null ? mid - r.width / 2 : r.width > room ? f.l : Math.min(Math.max(r.left, f.l), f.r - r.width);
-      const dx = left - r.left;
-      if (Math.abs(dx) > 0.25 || dy[i]) t.style.translate = `${dx / o.cam.z}px ${dy[i] / o.cam.z}px`;   // in the board's units: the parent is scaled
+      return [left - r.left, dy[i]];
+    });
+    // the bar under the pointer stays where it stood, the others of the selection move with it (B-10)
+    const h = held ? bars.findIndex((t, i) => i === held.i && t.className === held.cls) : -1, k = h >= 0 ? h : held ? bars.findIndex(t => t.className === held.cls) : -1;
+    if (k >= 0 && d[k]) { const ex = held.l - rs[k].left - d[k][0], ey = held.t - rs[k].top - d[k][1]; d.forEach(p => { if (p) { p[0] += ex; p[1] += ey; } }); }
+    bars.forEach((t, i) => {
+      const p = d[i]; if (p && (Math.abs(p[0]) > 0.25 || Math.abs(p[1]) > 0.25)) t.style.translate = `${p[0] / o.cam.z}px ${p[1] / o.cam.z}px`;   // in the board's units: the parent is scaled
     });
   }
   window.hyBars = { free, clamp };

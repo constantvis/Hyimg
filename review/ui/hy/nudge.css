@@ -1,0 +1,19 @@
+/* <hy-nudge>: the one thing worth learning about what is picked, under it at its left edge (owner 2026-10-11, round 21 row 24, ♥ A,
+   r21/hints-a.html): the bulb of the tips (ui/hy/tip.css), the keys as caps, the words with the main ones in <b>, × at the end. Glass a
+   little denser than the key hint's, 28 px; it takes the pointer only on its ×, so a click on the board under it still lands. Placed by
+   ui/hy/nudge.js. z 50, the overlay layer of the hints. */
+hy-nudge { position: fixed; left: 0; top: 0; z-index: 50; display: inline-flex; align-items: center; gap: 7px; box-sizing: border-box; height: 28px;
+  padding: 0 4px 0 10px; border: 1px solid var(--line); border-radius: var(--hy-row-r, 999px); white-space: nowrap; pointer-events: none; user-select: none;
+  background: color-mix(in srgb, var(--panel) 82%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  color: var(--sub); font: 400 12px var(--sans); opacity: 0; translate: 0 0;
+  transition: opacity .22s var(--hy-ease, cubic-bezier(.32,.72,0,1)); }
+hy-nudge[shown] { opacity: 1; }
+hy-nudge > svg { width: 13px; height: 13px; flex: none; color: var(--hy-tip-ic, #e6c13b); }
+hy-nudge .ng-k { display: inline-flex; gap: 3px; }
+hy-nudge .ng-k hy-kbd { margin: 0; vertical-align: 0; border: 0; background: color-mix(in srgb, var(--ink) 12%, transparent); color: var(--ink); }
+hy-nudge b { color: var(--ink); font-weight: 500; }
+hy-nudge .ng-x { pointer-events: auto; display: grid; place-items: center; width: 20px; height: 20px; margin-left: 2px; padding: 0; border: 0; border-radius: 99px;
+  background: none; color: var(--muted); cursor: pointer; }
+hy-nudge .ng-x:hover { color: var(--ink); background: var(--hy-hov, var(--raise)); }
+hy-nudge .ng-x svg { width: 9px; height: 9px; }
+@media (prefers-reduced-motion: reduce) { hy-nudge { transition: opacity .1s ease; } }

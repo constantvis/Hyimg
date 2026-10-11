@@ -28,3 +28,6 @@
 #info #iTrim .tr { position: relative; flex: 1; height: 4px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 12%, transparent); }
 #info #iTrim .tr i { position: absolute; top: 0; bottom: 0; border-radius: 99px; background: color-mix(in srgb, var(--ink) 40%, transparent); }
 #info #iTrim .tr b { position: absolute; top: -4px; width: 2px; height: 12px; margin-left: -1px; border-radius: 1px; background: var(--ink); }
+/* the side panels' footnote at Info's foot (round 20, 2026-10-11: «Подвал сноска у всех»), what ↵ does and that Esc lets the card go;
+   it stays at the foot while a long body scrolls */
+#info > #iFt { position: sticky; bottom: 0; z-index: 2; margin: 16px -16px 0; background: var(--hy-side-bg); }

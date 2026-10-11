@@ -12,7 +12,7 @@ Round 18 (owner 2026-10-10, r18-info.html and r18-info-tabs.html):
 - 6: the body is the «Spec sheet» (version 3 ★) for every kind: a picture's Prompt with Copy, Generation (model, batch and its place in it,
   when), Sources with each one's model, Notes; a 3D scene's cameras; an HTML page's title and the library's pictures it uses; «More · file,
   tags, path» folds the rest
-- 7: Open has an arrow ▾, the app's one split button (<hy-split>, the same element as «Open in <Browser> ▾»): Preview ↵, Open in its app,
+- 7: Open has an arrow ▾, the app's one split button (<hy-split>, the same element as «Open in <Browser> ▾»): View (Preview before round 20) ↵, Open with ›,
   Show in Finder, Copy path, Copy as image ⇧⌘C; a card's Studio ↵; an HTML page's browsers
 - 8: no annotations in Info («Аннотации нам тут точно не нужны»): the frame's marks are gone from the Rating section; the «…» button is gone
   («Можно по правой кнопке просто это делать»): the right-click menu has what it offered
@@ -58,8 +58,8 @@ def board():
 
 
 @contextmanager
-def world(tmp):
-    """a temporary library and its server: (port, lib)"""
+def world(tmp, **extra):
+    """a temporary library and its server: (port, lib); extra: more of the server's environment (test_open_r20.py)"""
     lib, state, plugins = tmp / "lib", tmp / "state", tmp / "plugins"
     for d in (lib / "a", lib / "site", lib / "3d/scenes/s1", state / "boards", plugins, tmp / "home"): d.mkdir(parents=True)
     (lib / "a/form.png").write_bytes(png(1122, 1402)); (lib / "a/x.png").write_bytes(png(64, 64)); (lib / "a/ref.png").write_bytes(png(32, 32))
@@ -84,7 +84,7 @@ def world(tmp):
     env = {k: v for k, v in os.environ.items() if not k.startswith(("HYIMG_", "REVIEW_"))}
     env.update(HOME=str(tmp / "home"), HYIMG_LIBRARY_ROOT=str(lib), HYIMG_STATE_ROOT=str(state), HYIMG_PROJECT_ID=str(uuid.uuid4()),
                HYIMG_SETTINGS=str(tmp / "settings.json"), HYIMG_PLUGINS=str(plugins), HYIMG_VIDEO_CACHE=str(tmp / "vcache"), PYTHONDONTWRITEBYTECODE="1",
-               PLAYWRIGHT_BROWSERS_PATH=os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or str(Path.home() / "Library/Caches/ms-playwright"))
+               PLAYWRIGHT_BROWSERS_PATH=os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or str(Path.home() / "Library/Caches/ms-playwright"), **extra)
     log = open(tmp / "server.log", "w+")
     proc = subprocess.Popen([sys.executable, str(ROOT / "review/server.py"), str(port)], env=env, stdout=log, stderr=log)
     try:
@@ -193,7 +193,7 @@ def test_info_header_buttons(tmp_path):
         assert json.loads((lib / "a/form.json").read_text())["feedback"]["fav"] is True
         assert json.loads((lib / "a/form.json").read_text())["model"] == "Test model"   # the json keeps the rest
         page.click("#iFav"); until(page, "() => !$('#iFav').classList.contains('on')")
-        # Open's Preview shows the picture (its main part is Image Studio, round 19)
+        # Open's View shows the picture (its main part is Image Studio, round 19; «View» since round 20)
         page.click("#iOpen .oi-more"); page.click(".hy-oi-menu [role=menuitem]:nth-child(2)"); until(page, "() => __opened.length === 1")
         assert page.evaluate("() => __opened[0]") == "/img?p=a%2Fform.png"
         # Open on an HTML page and on a 3D scene: their Studio
@@ -246,7 +246,13 @@ def test_info_body_is_the_spec_sheet(tmp_path):   # round 18, question 6 (versio
         until(page, "() => { sel = new Set(['h']); render(); return !!document.querySelector('#iNotes .src'); }")
         h = page.evaluate(BODY)
         assert h["rows"]["Title"] == "Site" and "x.png" in dict(h["secs"])["Uses"], h
-        assert "Double-click" in page.inner_text("#iNotes .pfoot")   # the plugin's own words, the body's quiet footnote
+        # no «Double-click…» footnote under a card Open ▾ and the chip already tell how to open (round 20, 2026-10-11, panels audit P-22);
+        # a card without its plugin keeps its words, they are all it has
+        assert page.locator("#iNotes .pfoot").count() == 0, page.inner_text("#iNotes")
+        page.evaluate("() => { board.items.u = { type: 'gone-kind', x: 1400, y: 0, w: 200, h: 150 }; render(); }")
+        until(page, "() => PLG['gone-kind'] && PLG['gone-kind'].standIn")
+        until(page, "() => { sel = new Set(['u']); render(); return !!document.querySelector('#iNotes .pfoot'); }")
+        assert "not installed" in page.inner_text("#iNotes .pfoot")
         shot(page, "9-spec-html.png")
         assert not page.errors, page.errors
         browser.close()
@@ -262,11 +268,11 @@ def test_info_open_has_its_menu(tmp_path):   # round 18, question 7 (★ yes) an
         page.evaluate("() => { sel = new Set(['p']); render(); }")
         until(page, "() => customElements.get('hy-split') && $('#iOpen').querySelector('.oi-more')")
         assert page.evaluate("() => $('#iOpen').localName") == "hy-split" and page.locator("#iMore").count() == 0
-        # the arrow: the ways to open a picture, its Studio first on ↵ (round 19, switch-b.html), Preview, a line, the file's rows
+        # the arrow: the ways to open a picture, its Studio first on ↵ (round 19, switch-b.html), View, a line, the file's rows; the apps
+        # are one «Open with ›» since round 20 (2026-10-11, open-b.html), Hyimg's viewer «View», no longer «Preview» beside «Open in Preview»
         page.click("#iOpen .oi-more"); page.wait_for_selector(".hy-oi-menu")
         rows = page.evaluate(MENU)
-        assert rows[:2] == ["Image Studio ↵", "Preview"] and rows[3:] == ["Show in Finder", "Copy path", "Copy as image ⇧ ⌘ C"], rows
-        assert rows[2].startswith("Open in"), rows   # its app, named once macOS answers
+        assert rows == ["Image Studio ↵", "View", "Open with", "Show in Finder", "Copy path", "Copy as image ⇧ ⌘ C"], rows
         assert page.locator(".hy-oi-menu .oi-sep").count() == 1 and page.locator(".hy-oi-menu .oi-dot").count() == 1
         m, b = page.evaluate("() => [document.querySelector('.hy-oi-menu').getBoundingClientRect().top, $('#iOpen').getBoundingClientRect().bottom]")
         assert m >= b, (m, b)

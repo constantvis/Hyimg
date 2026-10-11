@@ -138,8 +138,7 @@
   });
   function cancelPull() { if (!pull) return false; outline(pull.el, false); pull = null; renderLinks(); return true; }   // Esc mid-drag (P4 B-44)
   function remove(id) {
-    if (!table(board)[id]) return; const before = snap(); delete board.links[id]; prune(board); commit(before);
-    toast(T("Arrow removed"), "info", { actions: [{ label: T("Undo"), fn: () => { if (past[past.length - 1] === before) undo(); } }] });
+    if (!table(board)[id]) return; const before = snap(); delete board.links[id]; prune(board); commit(before, T("Arrow removed"));   // with Undo (ui/undofx.js)
   }
 
   // ---- the words, the line and the colour of one arrow ----

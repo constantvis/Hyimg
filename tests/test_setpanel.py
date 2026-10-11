@@ -120,7 +120,8 @@ def test_the_same_panel_on_home_and_on_a_board(browser, board):
     assert [x.split(" ")[0] for x in b if x[0] not in "@#"] == ["lang", "theme", "shape", "shadow", "glass", "paper", "grain", "dotsv", "sleep", "applinks",
                                                                 "hideui", "keyhint", "engine", "lod", "dotsgl", "perflog"]
     # the rail: the same sections on both, in E1's order; the modules' sections stand in the window too
-    RAIL = "() => [...document.querySelectorAll('#sets .sw-rail [data-go]')].map(b => b.dataset.go)"
+    # (Image Studio's section, «imagestudio», only where the frames plugin draws it: hidden here, the plugins are not loaded)
+    RAIL = "() => [...document.querySelectorAll('#sets .sw-rail [data-go]:not([hidden])')].map(b => b.dataset.go)"
     assert bp.evaluate(RAIL) == hp.evaluate(RAIL) == ["profile", "team", "appearance", "board", "notifications", "plugins", "storage", "interface", "performance"]
     for pg in (bp, hp):
         pg.wait_for_function("() => ['hyMacNotif', 'hyPlugSet', 'hyStore'].every(id => document.getElementById(id) && document.getElementById(id).closest('.sw-body'))", timeout=10000)
@@ -382,12 +383,14 @@ def test_a_board_opens_them_at_its_side(browser, board):
     page, errors = open_board(browser, port, "side")
     page.wait_for_function("() => ['hyMacNotif', 'hyPlugSet', 'hyStore', 'hyPeopleSet'].every(id => document.getElementById(id))", timeout=10000)
     page.wait_for_timeout(300)
-    # docked at the right edge under the top row, 412 px wide, down to 12 px above the bottom; no veil, the page under it takes the pointer
-    assert page.evaluate(SIDEBOX) == [1300 - 12 - 412, 58, 412, 1000 - 58 - 12], page.evaluate(SIDEBOX)
+    # docked at the right edge under the top row, a side panel 340 px wide (round 20, 2026-10-11; 412 before), as tall as its sections, never
+    # past 12 px above the bottom; no veil, the page under it takes the pointer
+    assert page.evaluate(SIDEBOX) == [1300 - 12 - 340, 58, 340, 1000 - 58 - 12], page.evaluate(SIDEBOX)
     assert page.evaluate("() => getComputedStyle(document.querySelector('#sets .sw-veil')).display") == "none"
     assert page.evaluate("() => document.documentElement.classList.contains('hy-sets-dock') && getComputedStyle(document.querySelector('#sets')).pointerEvents === 'none'")
-    # its header with «Open as a window» and close, the search, the sections, the footnote: no strip of the sections' icons between
-    assert page.evaluate("() => [...document.querySelector('#sets .sw-pane').children].map(e => e.className)") == ["sw-hd", "hy-search sw-q", "sw-body", "hy-hint sw-foot"]
+    # its header with «Open as a window» (no close since round 20), the search, the sections, the footnote: no strip of the sections' icons between
+    assert page.evaluate("() => [...document.querySelector('#sets .sw-pane').children].map(e => e.className)") == ["sw-hd", "hy-search sw-q", "sw-body", "hy-hint sw-foot hy-side-ft"]
+    assert not page.evaluate("() => !!document.querySelector('#sets [data-sw-act=close]').getClientRects().length")
     assert page.locator("#sets [role=tablist], #sets .snav").count() == 0 and not page.evaluate("() => !!document.querySelector('#sets .sw-rail').offsetParent")
     assert page.inner_text("#sets .sw-hd h2") == "Settings" and page.get_attribute("#sets [data-sw-act=mode]", "label") == "Open as a window"
     # every section under its header, in the rail's order; Profile and Team folded at first; the words at a header's end say what is chosen
@@ -404,24 +407,26 @@ def test_a_board_opens_them_at_its_side(browser, board):
     go(page, "shadow"); page.click("#sets hy-segmented[data-set=shadow] > button[value=panels]")
     assert page.evaluate("() => document.documentElement.dataset.shadow") == "panels"
     page.wait_for_timeout(100); assert page.inner_text("#sets .sw-sl[data-for=appearance] .sw-sum").endswith("Panels only")
-    # the board keeps working beside it: a click selects a picture and the settings stay; Esc there is the board's
+    # the board keeps working beside it: a click selects a picture and the settings stay; Esc there closes them first, as every side panel
+    # (round 20, 2026-10-11: no ×; before it Esc on the board was the board's), the picture stays selected
     xy = page.evaluate("() => { const r = EL.get('i0').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
-    assert xy[0] < 1300 - 12 - 412
+    assert xy[0] < 1300 - 12 - 340
     page.mouse.click(*xy); page.wait_for_timeout(200)
     assert page.evaluate("() => sel.has('i0')") and page.evaluate("() => document.querySelector('#sets').classList.contains('open')")
     page.keyboard.press("Escape"); page.wait_for_timeout(200)
-    assert page.evaluate("() => document.querySelector('#sets').classList.contains('open')")
+    assert not page.evaluate("() => document.querySelector('#sets').classList.contains('open')") and page.evaluate("() => sel.has('i0')")
+    page.click("#bset"); page.wait_for_selector("#sets.open"); page.wait_for_timeout(500)
     # its left edge sets its width, kept for the viewer
     x, y = page.evaluate("() => { const r = document.querySelector('#sets .sw-rz[data-rz=w]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
     page.mouse.move(x, y); page.mouse.down(); page.mouse.move(x - 100, y, steps=6); page.mouse.up(); page.wait_for_timeout(100)
     w = page.evaluate(SIDEBOX)[2]
-    assert abs(w - 512) <= 1 and page.evaluate("localStorage.getItem('hy.sets.side')") == str(w), w
+    assert abs(w - 440) <= 1 and page.evaluate("localStorage.getItem('hy.sets.sidew')") == str(w), w
     page.mouse.move(x - 100, y); page.mouse.down(); page.mouse.move(x - 2000, y, steps=4); page.mouse.up()   # never most of the window
     assert page.evaluate(SIDEBOX)[2] == 760
     page.mouse.move(*page.evaluate("() => { const r = document.querySelector('#sets .sw-rz[data-rz=w]').getBoundingClientRect(); return [r.left + 4, r.top + 300]; }"))
     page.mouse.down(); page.mouse.move(1290, 300, steps=4); page.mouse.up()
     assert page.evaluate(SIDEBOX)[2] == 320   # nor less than 320
-    page.evaluate("() => localStorage.removeItem('hy.sets.side')")
+    page.evaluate("() => localStorage.removeItem('hy.sets.sidew')")
     # the settings' own Esc: with the keyboard in the panel it closes it
     page.click("#sets .sw-q input"); page.keyboard.press("Escape"); page.wait_for_timeout(500)
     assert not page.evaluate("() => document.querySelector('#sets').classList.contains('open')") and not page.evaluate("() => document.documentElement.classList.contains('hy-sets-dock')")
@@ -441,8 +446,8 @@ def test_a_board_opens_them_at_its_side(browser, board):
         if "cv.setsdock" not in json.loads(settings.read_text()): break
         time.sleep(0.1)
     assert "cv.setsdock" not in json.loads(settings.read_text())
-    # the close key
-    page.click("#sets [data-sw-act=close]"); page.wait_for_timeout(500)
+    # the settings button closes them (no close key at the side since round 20)
+    page.click("#bset"); page.wait_for_timeout(500)
     assert not page.evaluate("() => document.querySelector('#sets').classList.contains('open')")
     assert not errors, errors
     page.close()
@@ -481,7 +486,7 @@ def test_the_window_in_russian_and_without_motion(browser):
     page.click("#bset"); page.wait_for_selector("#sets.open")
     # with «Reduce motion» it is there at once
     assert page.evaluate("() => getComputedStyle(document.querySelector('#sets .sw-box')).opacity") == "1"
-    rail = page.evaluate("() => [...document.querySelectorAll('#sets .sw-rail [data-go] .sw-nt')].map(e => e.textContent)")
+    rail = page.evaluate("() => [...document.querySelectorAll('#sets .sw-rail [data-go]:not([hidden]) .sw-nt')].map(e => e.textContent)")
     assert rail == ["Команда и агенты", "Вид", "Доска", "Уведомления", "Плагины", "Хранилище", "Интерфейс", "Производительность"], rail
     assert page.get_attribute("#sets .sw-q input", "placeholder") == "Поиск"
     page.keyboard.press("Escape"); page.wait_for_timeout(50)

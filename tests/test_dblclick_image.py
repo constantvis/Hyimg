@@ -1,7 +1,8 @@
 """A double click on a picture enters the dock's Image mode instead of the crop (owner 2026-10-07: «давай при двойном нажатии на картинку
 мы будем в режим картинки переходить, а не trim, trim добавим в меню сверху, которое появляется»). The core asks the mode switch to enter
 "image" for the picture (ui/modes.js enter); a fake plugin stands in for the frames plugin, which has its own test of the studio
-(hyimg-image-studio tests/test_picture_dblclick.py). With no Image mode that takes the picture the crop opens, as before; a PDF keeps its crop.
+(hyimg-image-studio tests/test_picture_dblclick.py). With no Image mode that takes the picture the crop opens, as before; a PDF opens the
+Studio too since round 20 (2026-10-11, board audit B-14), ⌥ crops it.
 The crop of a picture is «Crop» on the bar over it. The video's double click (crop and trim) is in test_video.py. Chromium and WebKit."""
 import json, os, socket, subprocess, sys, time, urllib.request, uuid
 from pathlib import Path
@@ -75,10 +76,28 @@ def test_double_click_on_a_picture_enters_image_and_the_crop_is_on_the_bar(serve
         page.wait_for_function("() => (window.ENTERED || []).join() === 'i0'")
         assert page.evaluate("() => !cropState && [...sel].join()") == "i0" and pressed() == ["image"]
         page.click("#modes [data-mode=board]"); page.wait_for_function("() => !document.getElementById('dock').classList.contains('plg-mode')")
-        # a PDF keeps its double click: the crop
+        # back on the board the camera is a camera: a Studio without its own camera flew to NaN on a picture (no h), the board vanished
+        page.wait_for_timeout(600); assert page.evaluate("() => [cam.x, cam.y, cam.z].every(Number.isFinite)"), page.evaluate("() => [cam.x, cam.y, cam.z]")
+        # ⌥ with the double click: the crop, not the studio (owner 2026-10-10: «option + double click будет crop там где он есть»)
+        # the library comes back after a Studio: the picture right of it, in view
+        page.evaluate("() => { const L = document.getElementById('lib').getBoundingClientRect().right; const r = document.querySelector('.it[data-id=i0]').getBoundingClientRect();"
+                      " cam.x -= (L + 60 - r.left) / cam.z; renderCam(); render(); }")
+        page.wait_for_timeout(300)
+        page.keyboard.down("Alt"); page.mouse.dblclick(*center(page, "i0")); page.keyboard.up("Alt")
+        page.wait_for_function("() => cropState && cropState.id === 'i0' && !cropState.vid")
+        assert page.evaluate("() => (window.ENTERED || []).join()") == "i0" and pressed() == ["board"], "⌥ double-click opened the studio"
+        assert page.evaluate("() => Object.keys(HY.board.items).filter(k => HY.board.items[k].path === 'a/one.png').length") == 1, "⌥ left a copy"
+        page.keyboard.press("Escape"); page.wait_for_function("() => !cropState")
+        # a PDF: the Studio its chip names, as a picture (round 20, 2026-10-11, board audit B-14: it cropped before); ⌥ crops it
+        def leave():
+            page.click("#modes [data-mode=board]"); page.wait_for_function("() => !document.getElementById('dock').classList.contains('plg-mode')")
         page.mouse.dblclick(*center(page, "p0"))
+        page.wait_for_function("() => (window.ENTERED || []).join() === 'i0,p0'")
+        assert page.evaluate("() => !cropState")
+        leave()
+        page.keyboard.down("Alt"); page.mouse.dblclick(*center(page, "p0")); page.keyboard.up("Alt")
         page.wait_for_function("() => cropState && cropState.id === 'p0'")
-        assert page.evaluate("() => (window.ENTERED || []).join()") == "i0" and pressed() == ["board"]
+        assert page.evaluate("() => (window.ENTERED || []).join()") == "i0,p0" and pressed() == ["board"]
         page.keyboard.press("Escape"); page.wait_for_function("() => !cropState")
         # no Image mode that takes the picture (no frames plugin): the crop, as before
         page.evaluate("() => { window.NO_IMAGE = true; sel = new Set(); render(); }")
@@ -93,6 +112,6 @@ def test_double_click_on_a_picture_enters_image_and_the_crop_is_on_the_bar(serve
         page.keyboard.press("Escape")
         # the shortcuts panel tells the double click and C apart
         keys = page.evaluate("() => document.getElementById('keys').textContent.replace(/\\s+/g, ' ')")
-        assert "double-click an image: Image Studio; a video: crop and trim" in keys and "⇧C crop; a video: crop and trim" in keys, keys
+        assert "double-click an image or a PDF: Image Studio; a video: crop and trim" in keys and "⇧C, ⌥ double-click crop; a video: crop and trim" in keys, keys
         assert not errors, errors
         browser.close()

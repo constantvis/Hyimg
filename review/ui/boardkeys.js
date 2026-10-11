@@ -12,11 +12,11 @@
     if (k === " ") { if (!e.repeat && !SPACE) SPACE = { t: performance.now(), used: !!drag }; space = true; stage.classList.add("space"); e.preventDefault(); return; }   // key: Space
     if (MODES && MODES.open !== "board" && k !== "\\") return;   // a Studio is open: the board's keys wait, the app's (⌘. ⌘M ⌘K, \\) stay (P4 S-06)
     if (cropState) {   // key: ↵ Esc R X ⌘Z (in a crop)
-      const u = cropState.undo, keep = () => u.push([...cropState.c]);
       if (k === "Enter") applyCrop(); else if (k === "Escape") endCrop();
-      else if (mod && (k === "z" || k === "я")) { e.preventDefault(); if (u.length) { cropState.c = u.pop(); drawCrop(); } }   // ⌘Z: the crop's last change back (P4 B-46)
-      else if (k === "r" || k === "R" || k === "к" || k === "К") { keep(); cropReset(); }
-      else if (!mod && (e.code === "KeyX" || ["x", "ч"].includes(k.toLowerCase()))) { keep(); cropRatio("flip"); }
+      // ⌘Z ⇧⌘Z: the crop's own steps (P4 B-46), as the dock's Undo and Redo while it is open (board audit B-06, ui/cropframe.js)
+      else if (mod && (k === "z" || k === "я" || k === "Z" || k === "Я")) { e.preventDefault(); cropStep(e.shiftKey ? 1 : -1); }
+      else if (k === "r" || k === "R" || k === "к" || k === "К") { cropKeep(); cropReset(); }
+      else if (!mod && (e.code === "KeyX" || ["x", "ч"].includes(k.toLowerCase()))) { cropKeep(); cropRatio("flip"); }
       return;
     }
     if (mod && (k === "z" || k === "я")) { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }   // key: ⌘Z ⇧⌘Z
@@ -42,6 +42,7 @@
     }
     // ⌘A: the groups no group holds and every card outside them (P4 B-21: the cards without their groups left empty frames on ⌫ and a drag)
     if (mod && (k === "a" || k === "ф")) { e.preventDefault(); sel = new Set(hySel.tops()); selArrow = null; render(); return; }   // key: ⌘A
+    if (hyBoardZoom.key(e)) return;   // key: ⇧1 ⇧2 ⇧0 ⌘+ ⌘−, the zoom: to fit, to the selection, 100 %, in, out (ui/boardzoom.js, round 20)
     if (mod) return;
     // the library's collection above, below (round 18, owner 2026-10-10): the library beside the board steps, as its path row's arrows (ui/libpanel.js)
     if (e.altKey && !mod && !e.shiftKey && (k === "ArrowUp" || k === "ArrowDown") && EMBED) {   // key: ⌥↑ ⌥↓
@@ -63,10 +64,10 @@
       if (e.repeat) { e.preventDefault(); return; } const ids = hySel.pick(sel).filter(id => hyCardFav.path(board.items[id])); e.preventDefault();
       if (ids.length) toggleFav(ids); else if (sel.size) hyWhy(T("♥ is for pictures and pages"));   // a group's pictures too (P4 B-23), a note says why (B-48)
     }
+    else if (is("KeyT", "t", "е")) { e.preventDefault(); hyTextBox.tool(); }   // key: T, the Text tool: a click a text, a drag a box (ui/textbox.js)
     else if (is("KeyN", "n", "т")) { e.preventDefault(); newNote(true); }   // key: N; the note's field takes focus right away: without this the "n" itself was typed into it (owner 2026-10-01)
     else if (k === "Escape") { sel.clear(); tlSel = null; selArrow = null; render(); }   // key: Esc, the last: the selection, a selected arrow too (P4 B-20)
     else if (k === "Enter" && !e.shiftKey && !e.altKey && sel.size === 1 && (hyStudioChip.enter() || hyInfoHead.open())) e.preventDefault();   // key: ↵ the card's Studio (its chip), else Info's Open
-    else if (k === "!" || (e.shiftKey && e.code === "Digit1")) fit();   // key: ⇧1
     else if (k === "\\") EMBED ? parent.postMessage({ type: "toggleCanvasFull" }, location.origin) : toggleLib();   // key: \ in the app ⌘M's, never the old library (P4 B-13)
   }
   // One order for Esc on the board (P4 B-16, B-17, B-44): a drag, a resize or a selection frame in progress stops and everything goes back
@@ -99,7 +100,9 @@
     if (C && C.escape()) return take(() => {});   // the mention list, then the open thread: its words stay as a draft (ui/comments.js)
     if (open("#cmlist")) return take(() => $("#cmlist").classList.remove("open"));
     if (PREV) return take(exitPreview);
-    for (const q of ["#hist", "#ntf", "#keys"]) if (open(q)) return take(() => { closeSide(); side(); });
+    // a side panel has no × since round 20 (owner 2026-10-11, «без крестика ... Esc»): Esc closes each, Settings at the side too (before
+    // it, Settings closed only by its own Esc while it had the keyboard, and the board kept Esc)
+    for (const q of ["#hist", "#ntf", "#keys", "#sets"]) if (open(q)) return take(() => { closeSide(); side(); });
     if (open("#pages")) return take(closePages);
   }
   addEventListener("keydown", onEsc, true);

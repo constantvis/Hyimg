@@ -117,7 +117,7 @@ def board_states(page, frame):
     frame.click('#hist [data-tab="ev"]'); frame.wait_for_timeout(300); yield "history: activity"
     frame.click('#hist [data-tab="ver"]'); frame.wait_for_timeout(300); yield "history: versions"
     frame.fill("#histLabel", "v one"); frame.click("#histSave"); frame.wait_for_timeout(500); yield "version saved toast"
-    frame.click("#histClose"); frame.wait_for_timeout(150)
+    frame.click("#bhist"); frame.wait_for_timeout(150)   # its button closes it (no × since round 20, 2026-10-11)
     frame.click("#cPage"); frame.wait_for_timeout(250); yield "pages list"
     ev("""() => { const r = document.querySelector('#pages .row'); r && r.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 300, clientY: 300 })); }""")
     frame.wait_for_timeout(200); yield "page menu"

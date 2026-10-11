@@ -168,7 +168,7 @@ def test_the_keys_help_and_the_app_menu_name_them(server):
     with playwright.sync_playwright() as p:
         browser, page, frame, errors = open_app(p, server, "canvas")
         text = frame.inner_text("#keys")
-        assert re.search(r"⌘\s*M\s*the media library", text) and re.search(r"⌘\s*\.\s*hide all the interface", text), text
+        assert re.search(r"⌘\s*M\s*\\\s*the library: open, close", text) and re.search(r"⌘\s*\.\s*hide all the interface", text), text
         assert "Library · ⌘M" == page.get_attribute("#tlibR", "title")
         browser.close()
     main = (ROOT / "native/main.swift").read_text()

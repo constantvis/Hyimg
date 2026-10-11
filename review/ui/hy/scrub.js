@@ -6,6 +6,8 @@
 // outside the window, the capture lost) ends at the next move without a button or at the capture's loss: a hover never moves the number
 // (owner 2026-10-10). One drag is one change for the page's history: begin before the first move,
 // end after the last.
+// The handle is a letter or an icon, never a word (studios audit S-03, 2026-10-11: Dev Studio's «Зазор24», the Russian word ran under the
+// number): the word is the handle's tooltip and the field's name for a screen reader (aria-label, else title, else the letter).
 //
 // Two ways in:
 //   <hy-scrub label="X" icon="opacity" value="24" min="0" max="100" step="1" dec="0" unit="px">: a whole field, the handle, the number
@@ -213,6 +215,7 @@ export class HyScrub extends HyElement {
     i.disabled = this.flag("disabled");
     const name = this.getAttribute("aria-label") || this.getAttribute("title") || l;
     if (name) i.setAttribute("aria-label", name);
+    if (name && name !== l) h.title = name; else h.removeAttribute("title");   // the word, over the letter or icon
     this.#show();
   }
 }

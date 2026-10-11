@@ -1,0 +1,36 @@
+/* A side panel (owner 2026-10-11, round 20's configurator r20/panels-config.html, DESIGN.md «Боковая панель»): one anatomy for the
+   bell, «?», History, Settings at the side, the annotations' list, Info, Home's bell and the Library beside the board. Before it each
+   panel had its own width (300 to 412), corner (14, 18), glass (66, 92, 97 % or a solid block), header (34, 40, 52, 58 px), close (round
+   30, square 24, square 28 or none) and empty list (four sizes). Tokens: ui/tokens.css --hy-side-*; the parts' markup: ui/side.js.
+
+     .hy-side       the panel: 340 wide, 18 corners, glass 97 %, a hairline, as tall as its content up to 12 px over the window's bottom
+     .hy-side-hd    its header, 52 px: the tabs in it (<hy-segmented variant=pill>, 30 px tabs) or its title, then its buttons, square 24
+                    (<hy-icon-button size=s shape=square>); no ×: Esc and the top row's round button close it
+     .hy-side-t     a title (when the panel has one view), 15 / 600, its count in <em>
+     .hy-side-q     the search, a field 32 px, 9 px corners, a hairline, the glass 13 px at its left
+     .hy-side-body  what scrolls
+     .hy-side-ft    the footnote at its foot, as Settings' («For the whole app: Home and every board»)
+     .hy-side-none  an empty list: its words in the middle, 14 px, as the Library's «Nothing matches these filters»
+     .hy-side-on    the chosen row (and a new one): the selection's blue fill and line, as the Library's tree and History's version
+   A page keeps only its panel's own place (Home's bell is fixed, the Library stands at the left) and its open state. */
+.hy-side { position: absolute; top: var(--hy-side-top); right: var(--hy-side-gut); width: var(--hy-side-w); max-height: var(--hy-side-max); box-sizing: border-box;
+  display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid var(--hy-side-line); border-radius: var(--hy-side-r);
+  background: var(--hy-side-bg); -webkit-backdrop-filter: var(--hy-side-blur); backdrop-filter: var(--hy-side-blur); box-shadow: var(--hy-sh-pop);
+  color: var(--ink); font: 400 13px/1.35 var(--sans); }
+.hy-side-hd { flex: none; box-sizing: border-box; display: flex; align-items: center; gap: 6px; height: var(--hy-side-hd); min-width: 0; padding: 0 10px 0 8px; }
+.hy-side-hd > .hy-side-sp { flex: 1; min-width: 0; }
+.hy-side-hd > hy-segmented { flex: none; min-width: 0; }
+.hy-side-t { min-width: 0; padding-left: 6px; overflow: hidden; color: var(--ink); font: 600 15px var(--sans); letter-spacing: -.005em; text-overflow: ellipsis; white-space: nowrap; }
+.hy-side-t > em { margin-left: 6px; color: var(--muted); font: 400 11.5px var(--sans); font-style: normal; font-variant-numeric: tabular-nums; }
+.hy-side-q { flex: none; position: relative; display: block; margin: 0 10px 6px; }
+.hy-side-q > svg { position: absolute; left: 10px; top: 50%; width: 13px; height: 13px; translate: 0 -50%; color: var(--muted); pointer-events: none; }
+.hy-side-q > input { display: block; width: 100%; height: var(--hy-side-q); box-sizing: border-box; margin: 0; padding: 0 10px 0 31px; border: 1px solid var(--line);
+  border-radius: var(--hy-side-q-r); outline: none; background: var(--hy-side-q-bg); color: var(--ink); font: 400 12.5px var(--sans); }
+.hy-side-q > input:focus { border-color: color-mix(in srgb, var(--hy-sel) 70%, var(--line)); }
+.hy-side-q > input::placeholder { color: var(--muted); }
+.hy-side-q > input::-webkit-search-cancel-button { display: none; }
+.hy-side-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.hy-side-ft { flex: none; box-sizing: border-box; padding: 10px 14px; border-top: 1px solid var(--hy-pline); color: var(--hy-hint); font: 400 11px/1.4 var(--sans); }
+.hy-side-ft b { color: var(--ink); font-weight: 500; }
+.hy-side-none { display: grid; place-items: center; box-sizing: border-box; min-height: 96px; padding: 24px 16px; color: var(--sub); font: 400 14px/1.4 var(--sans); text-align: center; }
+.hy-side-on, .hy-side-on:hover { background-color: var(--hy-side-on); box-shadow: var(--hy-side-ring); }

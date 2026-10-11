@@ -11,13 +11,15 @@ ways the owner wants an agent's work laid out, as building blocks an agent picks
   hy.py do 'pattern review "batch/*" near="Group" title="Review P7"'         Picked (his ♥) · To decide · Rejected, he drags between
   hy.py do 'pattern flow "Brief" "Refs" "Generate" "Pick" labels="…;…"'     steps joined by arrows; a missing step: a new frame
   hy.py do 'pattern glossary html/glossary/*.html title="Glossary"'          term cards 640 wide, 6 a row
+  hy.py do 'pattern table GROUP rows=note cols="Original=^added/;Pose=pose"'  series × steps, variants stacked in a cell (keytable.py)
   hy.py do 'pattern mark "Name" REF' | 'pattern unmark REF'                  an invented layout tagged «new pattern» for the owner (s4)
   hy.py check --pattern [REF]                                                every pattern on the page against its own rules
   hy.py patterns                                                             this catalogue: when, how the owner answers, the command
 
 The owner's fixed rules (a-rules) are checked after every do as hy.py's other problems are (problems(), only what is new is reported):
 an agent's note is short (headings and captions, no long notes), a caption has 4 words at most, a row has 8 at most, a choice grid has
-numbers, a group is a broad theme (not a batch's stamp), an agent's note is blue. Defaults the agent may change: cards 320 in batches
+numbers, a group is a broad theme (not a batch's stamp), an agent's note is blue. «8 at most» is for a pile that wraps (two rows and more):
+a single row of related things and a table by keys have no column limit (owner 2026-10-11, the Batch 2 table). Defaults the agent may change: cards 320 in batches
 and 720 in docs, gaps 24 in a row and 80 between, headings 160 · 80 · 40.
 
 A pattern leaves a light mark: "pattern": <name> on its note (or its group, or its heading), and a choice grid's "num": "seq" (1…N),
@@ -52,10 +54,12 @@ CATALOGUE = [   # id, when, how the owner answers, the command; the order of the
     ("review", "после партии", "перетаскивает между колонками", 'pattern review "batch/*" near="Группа" title="Разбор P7"'),
     ("flow", "конвейер шагов", "слово на шаге", 'pattern flow "Бриф" "Рефы" "Генерация" "Выбор" labels="…;…"'),
     ("glossary", "имена и термины", "переименовать, ? чтобы решить", 'pattern glossary html/glossary/*.html title="Термины"'),
+    ("table", "сравнить одно и то же по сериям и шагам", "клеткой: B2 · кропы",
+     'pattern table <группа|id,id|маска> rows=note cols="Оригинал=^added/;Поза=pose;Макет=mockup;Маска макета=mockup.*mask" [--dry]'),
 ]
 ALIAS = {"variants-grid": "variants", "grid": "variants", "a/b": "ab", "abtest": "ab", "batches": "timeline", "rows": "directions",
          "documentation": "docs", "beforeafter": "before-after", "before/after": "before-after", "moods": "moodboard", "process": "flow",
-         "terms": "glossary"}
+         "terms": "glossary", "series": "table", "matrix": "table"}
 _hy = {}
 
 
@@ -538,9 +542,16 @@ def p_unmark(b, args, kv):
     return f"pattern unmark {connectors.name(b, i)}: было {was or 'без отметки'}, меток убрано {len(tags)}"
 
 
+def p_table(b, args, kv):
+    """p11 series × steps: things on the page as a table by two keys, variants stacked in their cell (keytable.py)"""
+    import keytable
+    return keytable.run(b, args, kv)
+
+
 RUN = {"variants": p_variants, "moodboard": lambda b, a, kv: p_variants(b, a, kv, "moodboard"), "ab": p_ab,
        "before-after": lambda b, a, kv: p_ab(b, a, kv, "before-after"), "directions": p_directions, "timeline": p_timeline, "docs": p_docs,
-       "glossary": lambda b, a, kv: p_docs(b, a, kv, "glossary"), "review": p_review, "flow": p_flow, "mark": p_mark, "unmark": p_unmark}
+       "glossary": lambda b, a, kv: p_docs(b, a, kv, "glossary"), "review": p_review, "flow": p_flow, "table": p_table, "mark": p_mark,
+       "unmark": p_unmark}
 
 
 def op_pattern(b, args, kv):
@@ -572,7 +583,7 @@ def rules(b):
     for gid, g in grids.table(b).items():
         ms = [m for m in g.get("members", []) if m in I]; cols = min(int(g.get("cols") or 1), len(ms) or 1)
         lead = 1 if g.get("head", {}).get("col") or (ms and I[ms[0]].get("type") == "text" and g.get("num") == "col") else 0
-        if cols - lead > ROW_MAX: out[("wide", gid)] = f"сетка {gid}: {cols - lead} в ряд, больше {ROW_MAX}"
+        if cols - lead > ROW_MAX and len(ms) > cols: out[("wide", gid)] = f"сетка {gid}: {cols - lead} в ряд, больше {ROW_MAX}"
     for k, it in list(I.items()) + list(G.items()):
         p = it.get("pattern")
         if p in CHOICE and not _numbered(b, k): out[("nonum", k)] = f"выбор «{_title(b, k)}» ({p}) без номеров на клетках: владелец отвечает номером"
@@ -582,7 +593,7 @@ def rules(b):
     return out
 
 
-NAMES = {"words": "длинные заметки", "blue": "заметки агента не синие", "caption": "длинные подписи", "wide": "больше 8 в ряд",
+NAMES = {"words": "длинные заметки", "blue": "заметки агента не синие", "caption": "длинные подписи", "wide": "куча шире 8 в ряд",
          "nonum": "выбор без номеров", "stamp": "группа на партию"}
 
 
@@ -611,6 +622,9 @@ def check_one(b, k):
     """(ok, words) for one pattern on the page"""
     I, G = b["items"], b["groups"]; it = I.get(k) or G.get(k); p = it["pattern"]
     if str(p).startswith("new:"): return None, f"новый расклад «{p[4:]}»: ждет ответа владельца (оставить → в библиотеку, нет → pattern unmark)"
+    if p == "table":
+        import keytable
+        return keytable.check(b, k)
     bad, gs = [], zone_grids(b, k)
     T = grids.table(b)
     if p in ("variants", "moodboard", "timeline", "ab", "before-after", "directions", "docs", "glossary") and not gs and p not in ("docs", "glossary"):
@@ -659,7 +673,7 @@ def check_patterns(b, ref=None):
 
 
 def catalogue():
-    out = ["Шаблоны раскладки (карточки «Agent layouts» p01–p10): выбери по задаче, не придумывай. Команда внутри hy.py do."]
+    out = ["Шаблоны раскладки (карточки «Agent layouts» p01–p10, p11 table): выбери по задаче, не придумывай. Команда внутри hy.py do."]
     for k, (pid, when, ans, cmd) in enumerate(CATALOGUE, 1):
         out.append(f"{k:>2}. {pid:<13} когда: {when}; владелец отвечает: {ans}\n      {cmd}")
     out.append("Свой расклад: собери, потом pattern mark \"Название\" <группа|заметка> и спроси владельца; после проверки: hy.py check --pattern")

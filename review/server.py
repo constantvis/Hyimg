@@ -25,8 +25,9 @@ import notifplace, notifsince   # every notification has a place on the board; t
 import feedthumbs, favread, copyimg   # pictures in the bell: an area's crop, a card's still, the board around (2026-10-08); ♥ read by path; ⇧⌘C
 import people, comments, boardid   # who wrote what (profile, stamps, shared or private boards); drawings and comments on the board (2026-10-07)
 import plugins_admin   # Settings › Plugins: where plugins are, which are on, a page's hold on one, add and remove (owner 2026-10-07)
-import added   # what is pasted or dropped onto the board from outside: pictures, videos, PDFs (owner 2026-10-10)
+import added, runmeta   # what is pasted or dropped onto the board from outside (owner 2026-10-10); time, cost, compute of a file (2026-10-11)
 import arrange, boardclip   # right click › Arrange runs the agents' layout patterns (owner 2026-10-09); ⌘C ⌘V from board to board (P4 B-05)
+import openwith   # «Open with ›»: the apps that open a file, the default first (round 20, owner 2026-10-11)
 tags.configure(RULES)   # the board's theme tags, from its rules
 
 THUMBS = thumbcache.THUMBS   # ~/Library/Caches/Hyimg/<board>/thumbs, outside Dropbox, capped; moved from <state>/_thumbs (thumbcache.py)
@@ -110,11 +111,16 @@ def refpaths(meta, root):
     # reference images given with the prompt, as workroom paths (2026-09-29). Batches wrote them three ways:
     # "refs" = names inside refs/, "inputs" = paths relative to the frame's folder, "images" = paths relative to the frame's folder
     out = []
-    for r in meta.get("refs") or []:
+    def strs(v):   # agents sometimes write {role: path} or [{role, path}]; one bad sidecar used to break /api/items for the whole board
+        if isinstance(v, str): return [v]
+        if isinstance(v, dict): v = list(v.values())
+        if not isinstance(v, list): return []
+        return [x.get("path") if isinstance(x, dict) else x for x in v if isinstance(x, (str, dict)) and (isinstance(x, str) or isinstance(x.get("path"), str))]
+    for r in strs(meta.get("refs")):
         for cand in (os.path.join(W, "refs", r), os.path.join(root, r)):
             if os.path.isfile(cand):
                 out.append(os.path.relpath(cand, W)); break
-    for r in (meta.get("inputs") or []) + (meta.get("images") or []):
+    for r in strs(meta.get("inputs")) + strs(meta.get("images")):
         cand = os.path.normpath(os.path.join(root, r))
         if os.path.isfile(cand) and cand.startswith(W + os.sep):
             out.append(os.path.relpath(cand, W))
@@ -319,7 +325,7 @@ def scan():
                 "born": int(getattr(os.stat(os.path.join(root, f)), "st_birthtime", os.path.getmtime(os.path.join(root, f)))),
                 "model": meta.get("model") or (source_meta(meta, root)[0] or {}).get("model", ""),   # a cut strip without a model has its grid's (2026-10-03)
                 "aspect": meta.get("aspect", ""),
-                "prompt": meta.get("prompt", ""),
+                "prompt": meta.get("prompt", ""), "run": runmeta.of(meta),   # how long it took, its cost, where it ran (owner 2026-10-11)
                 "refs": meta.get("refs", []),
                 "refpaths": refpaths(meta, root) or inherited_refs(meta, root),
                 "owner_tags": meta.get("owner_tags", []) if isinstance(meta, dict) else [],   # the owner's own groupings (former _favs subfolders)
@@ -1261,12 +1267,12 @@ def html_still(rel, w, h, port):
     out_rel = (d + "/" if d else "") + f".stills/{os.path.splitext(base)[0]}-{w}x{h}.png"
     out = os.path.join(W, out_rel); os.makedirs(os.path.dirname(out), exist_ok=True)
     with _STILL:
-        tmp = out + ".tmp.png"
+        tmp, t0, how = out + ".tmp.png", time.time(), "Chromium (Playwright)"   # the json beside the still: how long, by what (owner 2026-10-11)
         try:
             subprocess.run([sys.executable, os.path.join(CODE_DIR, "render_html.py"), f"http://127.0.0.1:{port}/lib/" + urllib.parse.quote(rel), str(w), str(h), tmp],
                            capture_output=True, timeout=90, check=True)
         except (OSError, subprocess.SubprocessError):
-            qd = tempfile.mkdtemp(dir=os.path.dirname(out))
+            how = "Quick Look"; qd = tempfile.mkdtemp(dir=os.path.dirname(out))
             try:
                 subprocess.run(["qlmanage", "-t", "-s", str(max(w, h)), "-o", qd, full], capture_output=True, timeout=60)
                 made = next((os.path.join(qd, n) for n in os.listdir(qd) if n.endswith(".png")), None)
@@ -1275,7 +1281,8 @@ def html_still(rel, w, h, port):
             finally:
                 shutil.rmtree(qd, ignore_errors=True)
         os.replace(tmp, out)
-    return {"path": out_rel, "mtime": os.path.getmtime(out)}
+        run = runmeta.record(out, time.time() - t0, "local · " + how, model=how, prompt=f"a still of {rel} at {w} × {h}", inputs=["../" + base])
+    return {"path": out_rel, "mtime": os.path.getmtime(out), **run}
 
 
 # Settings of the whole app (owner 2026-10-04: «the theme must not change with the project, the settings are one for the whole app»).
@@ -1288,7 +1295,7 @@ SETTINGS = os.environ.get("HYIMG_SETTINGS") or os.path.join(HERE, "app-settings.
 PEOPLE = people.root_dir(SETTINGS)   # profile.json and the address book beside the app's settings (people.py)
 APP_KEYS = r"^cv\.(lang|theme|ui|bg|grain|dotsv|dotsgl|sleep|lod|glass|shadow|shape|hideui|applinks|keyhint|keyhintUsed|perflog|plugoff|paperDark|paperLight|paperv|notesize|notecolor|nolib|histTab|m3\..+)$|^(view|lw|fw|ftree|notesOn|autonext|rej|lwide|lmode|lsize)$"
 APP_KEYS += r"|^cv\.mac(\.(agent|comment|reply|mention|note|bg))?$"   # Settings › Notifications, the Mac's banners (ui/macnotif.js)
-APP_KEYS += r"|^cv\.setsdock$"   # the settings at a board's side or as a window, the same on every board (ui/settings-win.js)
+APP_KEYS += r"|^cv\.(setsdock|tooltips|keyhintLast)$"   # the settings at a side or as a window (ui/settings-win.js), tooltips, hints forgotten
 
 
 def settings_read():
@@ -1792,7 +1799,7 @@ def default_app(full):
 def app_icon(app_path):
     """the PNG of an app that default_app named (no other path is drawn), or None"""
     if app_path in APP_ICONS: return APP_ICONS[app_path]
-    if app_path not in {a.get("path") for a in DEFAULT_APPS.values()} or not app_path.endswith(".app") or not os.path.isdir(app_path): return None
+    if (app_path not in {a.get("path") for a in DEFAULT_APPS.values()} and not openwith.known(app_path)) or not app_path.endswith(".app") or not os.path.isdir(app_path): return None
     png = None
     with tempfile.TemporaryDirectory() as d:
         out = os.path.join(d, "icon.png")
@@ -1813,9 +1820,11 @@ def library_file(p):
     return full
 
 
-def open_file(p):
-    """the file opens in its default app (`open <file>`, as a double click in Finder would)"""
+def open_file(p, app=None, choose=False):
+    """the file opens in its default app (`open <file>`, as a double click in Finder would), in one of its apps, or in one macOS asks for"""
     full = library_file(p)
+    if app: return openwith.open_with(full, app, REVEAL_CMD)   # «Open with › <App>» (round 20)
+    if choose: return openwith.choose(full, REVEAL_CMD)   # «Open with › Other…»
     subprocess.run([REVEAL_CMD, full], capture_output=True, timeout=20)   # an argument list, no shell
     return {"opened": p}
 
@@ -2029,10 +2038,11 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, json.dumps(aliases(), ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/meta":   # where a frame came from, from its <name>.json, also for frames outside the library (refs/): the card shows the link
                 rel = resolve(q["p"][0]); full = safe(rel)
-                try: d = json.load(open(os.path.splitext(full)[0] + ".json", encoding="utf-8"))
+                try: d = json.load(open(runmeta.sidecar_of(full) or os.path.splitext(full)[0] + ".json", encoding="utf-8"))   # x.png.json, x.glb.json, scene.json
                 except (OSError, ValueError): d = {}
                 keep = ("source_url", "image_url", "link", "url", "site", "channel", "timestamp", "author", "caption", "what", "colour", "model", "chat", "source", "prompt")
-                return self.send(200, json.dumps({k: d[k] for k in keep if k in d and isinstance(d[k], (str, int, float))}, ensure_ascii=False).encode(), "application/json")
+                return self.send(200, json.dumps({**{k: d[k] for k in keep if k in d and isinstance(d[k], (str, int, float))}, **runmeta.view(d, full, W, _sidecar)},
+                                                 ensure_ascii=False).encode(), "application/json")   # run: Info's Time, Total, Cost, Compute (runmeta.py)
             if u.path == "/thumb":
                 rel = resolve(q["p"][0]); safe(rel); size = int(q.get("s", ["640"])[0])
                 try: pg = max(1, int(q.get("pg", ["1"])[0]))   # a PDF's page (2026-10-06)
@@ -2048,6 +2058,8 @@ class H(BaseHTTPRequestHandler):
             if u.path == "/api/copyimage": return self.send(*copyimg.http(sys.modules[__name__], q, self.server.server_port))   # ⇧⌘C: a video's frame, a page
             if u.path == "/api/defaultapp":   # {name, path}: the app macOS opens this library file with ({} when none), for «Open in <App>»
                 return self.send(200, json.dumps(default_app(library_file(q["p"][0])), ensure_ascii=False).encode(), "application/json")
+            if u.path == "/api/openwith":   # {"apps": [{name, path, default}]}: the apps that open this library file (openwith.py)
+                return self.send(200, json.dumps({"apps": openwith.apps(library_file(q["p"][0]))}, ensure_ascii=False).encode(), "application/json")
             if u.path == "/api/appicon":   # that app's icon, a 64 px PNG
                 png = app_icon(q["app"][0])
                 if not png: return self.send(404, b"no icon", "text/plain")
@@ -2208,14 +2220,15 @@ class H(BaseHTTPRequestHandler):
                 return self.send(403, b"outside the library", "text/plain")
             except FileNotFoundError:
                 return self.send(404, b"no such file", "text/plain")
-        if self.path == "/api/openfile":   # {"path"}: the library file opens in its default app (owner 2026-10-06, «Open in <App>»)
+        if self.path == "/api/openfile":   # {"path", "app"?, "choose"?}: the library file opens in its default app (owner 2026-10-06), or one of its apps
             n = int(self.headers.get("Content-Length", 0))
             try:
-                path = json.loads(self.rfile.read(n) or b"{}").get("path")
+                body = json.loads(self.rfile.read(n) or b"{}"); path = body.get("path")
             except (ValueError, AttributeError):
                 return self.send(400, b"bad open", "text/plain")
             try:
-                return self.send(200, json.dumps(open_file(path), ensure_ascii=False).encode(), "application/json")
+                return self.send(200, json.dumps(open_file(path, body.get("app") if isinstance(body.get("app"), str) else None, body.get("choose") is True),
+                                                 ensure_ascii=False).encode(), "application/json")
             except PermissionError:
                 return self.send(403, b"outside the library", "text/plain")
             except FileNotFoundError:

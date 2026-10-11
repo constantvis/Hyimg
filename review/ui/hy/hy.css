@@ -15,6 +15,8 @@
 @import url("block.css");   /* a block, its header and tabs, its sections and its wells: round 12 «A · Line» (owner 2026-10-09) */
 @import url("keyhint.css");   /* <hy-keyhint>: the keys of what the person is doing now (owner 2026-10-08) */
 @import url("tip.css");   /* <hy-tip>: one line about one thing you can do here, for someone only looking (owner 2026-10-09) */
+@import url("tooltip.css");   /* <hy-tooltip>: the one tooltip of the app, words and key caps (owner 2026-10-11, round 20) */
+@import url("nudge.css");   /* <hy-nudge>: what to learn about what is picked, under it (owner 2026-10-11, round 21) */
 @import url("actions.css");   /* <hy-studio-actions>: a Studio's Save, Cancel, Done … top right (owner 2026-10-09) */
 @import url("openin.css");   /* <hy-open-in>: «Open in <Browser>», a split button with the browsers of this Mac */
 @import url("minitoggle.css");   /* round 15's micro UI (owner 2026-10-09, r15-micro.html): <hy-minitoggle>, <hy-scope>, <hy-led>, */
@@ -24,3 +26,4 @@
 @import url("micro.css");
 @import url("scrub.css");   /* round 16's scrub a number: <hy-scrub> and scrub() on a page's own label (owner 2026-10-10) */
 @import url("avatar.css");   /* <hy-avatar>, defined by ui/avatar.js (a classic script: Home loads no modules) */
+@import url("side.css");   /* a side panel, one anatomy for all (owner 2026-10-11, round 20): .hy-side and its parts, ui/side.js */

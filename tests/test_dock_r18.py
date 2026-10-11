@@ -5,7 +5,7 @@ owner's changes): ui/dock.js, ui/boarddock.js, ui/palette.js and the plugins bes
   ONE DOCK    every icon button of the four docks 36 × 34 with no plate; the groups between hairlines in one order: create | tools |
               Undo, Redo | view % | the Studio's own | the switch of Studios
   «+»         the board's create buttons under one «+» (owner: «Вот эта иконка мне вообще не нравится» of the timeline's): Note, Text,
-              Timeline (the icon of a line with phases), the plugins' 3D scene; Text makes a text on the board with its field open
+              Timeline (its one icon, two dots, a line, an arrow, round 21), the plugins' 3D scene; Text makes a text on the board with its field open
   G           G alone groups no more on the board, ⌘G does; the «?» panel says ⌘G only
   ⌘K          Actions in 3D Studio and Dev Studio, as in Image Studio: a search over the Studio's commands, ↵ runs one
   STEP NAME   over Undo or Redo under the pointer a plate names the step, and after ⌘Z for 2 s; the dock never gets wider (owner: «Я бы вот
@@ -38,7 +38,8 @@ ICONS = """() => [...document.querySelectorAll('#dock :is(button.ic, button.hy-d
 # the dock's width without the board's save status, whose words change with every save («saving…», «✓ 21:04»)
 WIDTH = """() => { const s = document.getElementById('status'), w = s && s.getClientRects().length ? s.getBoundingClientRect().width : 0;
   return Math.round((document.getElementById('dock').getBoundingClientRect().width - w) * 10) / 10; }"""
-PLATE = "() => { const p = document.getElementById('hydkstep'); return p && p.classList.contains('on') ? p.textContent : ''; }"
+# the step's name over Undo or Redo: the app's one tooltip since round 20 (ui/hy/tooltip.js), «Undo», the step, the caps «⌘» «Z»
+PLATE = "() => { const p = document.getElementById('hytip'); return p && p.hasAttribute('shown') ? p.textContent : ''; }"
 BOARD = [["bplus"], ["bann"], ["bundo", "bredo"], ["bfit", "status"], ["switch"]]
 IMAGE = [["tool"] * 6 + ["ann"], ["colors"], ["undo", "redo"], ["ifZoom"], ["acts"], ["switch"]]
 D3 = [["plus"], ["select", "translate", "rotate", "scale", "smart", "ann"], ["undo", "redo", "reset"], ["bfit"], ["shot", "acts"], ["switch"]]
@@ -89,9 +90,9 @@ def test_plus_lists_what_the_board_makes_and_text_makes_a_text(tmp_path):
         page.wait_for_selector("#bplusm.open")
         rows = page.evaluate("() => [...document.querySelectorAll('#bplusm [role=menuitem]')].map(b => [b.dataset.mk, b.querySelector('.ml').textContent])")
         assert [r[1] for r in rows] == ["Sticky note", "Text", "Timeline", "3D scene"], rows
-        # the timeline wears the icon of a line with its phases (ui/icons.js layoutTimeline), not the dots on a line it had
+        # the timeline wears its one icon, two dots, a line, an arrow (round 21, ui/icons.js timeline; tests/test_r21_undo_grid.py)
         assert page.evaluate("() => document.querySelector('#bplusm [data-mk=timeline] svg').innerHTML === document.createRange()"
-                             ".createContextualFragment(hyIcon('layoutTimeline', 16, 1.85)).firstElementChild.innerHTML")
+                             ".createContextualFragment(hyIcon('timeline', 16, 1.85)).firstElementChild.innerHTML")
         # the list stands over the dock, the dock keeps its width
         assert page.evaluate("() => document.getElementById('bplusm').getBoundingClientRect().bottom <= document.getElementById('dock').getBoundingClientRect().top")
         n0 = page.evaluate("() => Object.values(board.items).filter(i => i.type === 'text').length")
@@ -162,30 +163,30 @@ def test_the_step_name_over_undo_never_widens_a_dock(tmp_path):
         b = page.locator(".it[data-id=a1], .plg[data-id=a1]").first.bounding_box(); x, y = b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
         page.mouse.move(x, y); page.mouse.down(); page.mouse.move(x + 60, y + 30, steps=6); page.mouse.up()
         w0 = page.evaluate(WIDTH)
-        assert hover_plate(page, "#bundo") == "Undo ·Move⌘Z", page.evaluate(PLATE)
+        assert hover_plate(page, "#bundo") == "UndoMove⌘Z", page.evaluate(PLATE)
         assert page.evaluate(WIDTH) == w0
         assert page.evaluate("() => !document.getElementById('bundo').title")   # no second, native tooltip
         page.mouse.move(5, 5); blur(page); page.keyboard.press("Meta+z")
-        assert plate_after(page, w0, "Undo") == "Undo ·Move"
-        assert hover_plate(page, "#bredo") == "Redo ·Move⇧⌘Z"
+        assert plate_after(page, w0, "Undo") == "UndoMove"
+        assert hover_plate(page, "#bredo") == "RedoMove⇧⌘Z"
         page.mouse.move(5, 5)
         # Image Studio: a step of the studio, Undo in the dock
         st = Image(page).open(); st.change("x"); page.wait_for_timeout(300); w0 = page.evaluate(WIDTH)
-        assert hover_plate(page, "#dock [data-a=undo]").startswith("Undo ·Opacity Change"), page.evaluate(PLATE)
+        assert hover_plate(page, "#dock [data-a=undo]").startswith("UndoOpacity Change"), page.evaluate(PLATE)
         page.locator("#dock [data-a=undo]").click(); page.mouse.move(5, 5)
-        assert plate_after(page, w0, "Undo") == "Undo ·Opacity Change"
+        assert plate_after(page, w0, "Undo") == "UndoOpacity Change"
         st.close()
         # 3D Studio: a renamed object, ⌘Z
         st = Studio3D(page, lib).open(); st.change("Crate"); page.wait_for_timeout(600); w0 = page.evaluate(WIDTH)
-        text = hover_plate(page, "#dock [data-a=undo]"); assert text.startswith("Undo ·") and "Crate" in text, text
+        text = hover_plate(page, "#dock [data-a=undo]"); assert text.startswith("Undo") and "Crate" in text, text
         page.mouse.move(5, 5); blur(page); page.keyboard.press("Meta+z")
         assert "Crate" in plate_after(page, w0, "Undo")
         st.close()
         # Dev Studio: a text typed in the tree, ⌘Z
         st = Dev(page, lib).open(); st.change("Hi there"); w0 = page.evaluate(WIDTH)
-        text = hover_plate(page, "#dock [data-a=undo]"); assert text.startswith("Undo ·") and len(text) > len("Undo ·⌘Z"), text
+        text = hover_plate(page, "#dock [data-a=undo]"); assert text.startswith("Undo") and len(text) > len("Undo⌘Z"), text
         page.mouse.move(5, 5); blur(page); page.keyboard.press("Meta+z")
-        assert len(plate_after(page, w0, "Undo")) > len("Undo ·")
+        assert len(plate_after(page, w0, "Undo")) > len("Undo")
         st.close()
         assert not errors, errors
         br.close()

@@ -280,8 +280,8 @@
   }
  ],
  "focus": {
-  "ring": "none",
-  "why": "owner 2026-10-05: «убери эти уебищные focus выделения»; look.css `:focus, :focus-visible { outline: none !important }`; menus keep their row highlight, text fields their border colour"
+  "ring": "keyboard only",
+  "why": "owner 2026-10-05: «убери эти уебищные focus выделения»; look.css `:focus { outline: none !important }`, menus keep their row highlight, text fields their border colour. Since 2026-10-11 (round 20, P-23 ★: «кольцо только с клавиатуры (Tab), мышь его не вызывает») a control reached by the keyboard wears var(--hy-focus-ring) on :focus-visible, the mouse never"
  },
  "runtime": {
   "prose": {

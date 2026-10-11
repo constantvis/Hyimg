@@ -69,6 +69,7 @@
   const viewer = () => typeof VBIG !== "undefined" && !!VBIG;
   function step(s) { const st = ST(); st.done.push({ ...s, pastLen: past.length, at: place() }); st.undone = []; if (st.done.length > 200) st.done.shift(); draw(); }
   const mineNext = redo => { const st = ST(), s = redo ? st.undone[st.undone.length - 1] : st.done[st.done.length - 1];
+    if (typeof cropState !== "undefined" && cropState) return false;   // an open crop has its own steps, keys and dock alike (board audit B-06)
     return !!s && !viewer() && s.at === place() && (redo ? future.length <= s.futureLen : past.length <= s.pastLen); };
   // a step moves to the other stack once the server has taken it (P4 B-51): one the server refused stays where it was; a second ⌘Z
   // while the first is on its way waits for it
@@ -201,6 +202,7 @@
     if (window.hyComments) hyComments.draw();
     if (A.ext && A.ext.paint) A.ext.paint();
     const st = ST(), bu = $("#bundo"), br = $("#bredo");   // the dock's undo and redo stay on while a step of ours waits (render greys them by the board's)
+    if (typeof cropState !== "undefined" && cropState) return;   // a crop's own steps rule them (ui/cropframe.js)
     if (bu && st.done.length) bu.disabled = false;
     if (br && st.undone.length) br.disabled = false;
   }

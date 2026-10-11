@@ -414,12 +414,11 @@
     let el = document.getElementById("cmlist");
     if (el && el.classList.contains("open") && !refresh) { el.classList.remove("open"); return; }
     if (!el) {
-      el = document.createElement("div"); el.id = "cmlist"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", T("Annotations")); stage.appendChild(el);
+      el = document.createElement("div"); el.id = "cmlist"; el.className = "hy-side"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", T("Annotations")); stage.appendChild(el);
       ["pointerdown", "wheel"].forEach(k => el.addEventListener(k, e => e.stopPropagation(), { passive: true }));
       el.addEventListener("click", e => {
-        const f = e.target.closest("[data-cf]"); if (f) { C.filter = f.dataset.cf; list(true); return; }
+        const f = e.target.closest(".cm-tabs > button[value]"); if (f) { C.filter = f.value; list(true); return; }
         const p = e.target.closest("[data-cp]"); if (p) { C.person = C.person === p.dataset.cp ? "" : p.dataset.cp; list(true); return; }
-        if (e.target.closest("[data-cm=closelist]")) { el.classList.remove("open"); return; }
         const r = e.target.closest("[data-go]"); if (r) go(r.dataset.go);
       });
     }
@@ -428,10 +427,10 @@
     const people = new Map(); all.forEach(t => people.set(AN().who(t.by), t.by));
     const pick = all.filter(t => (C.filter === "open" ? !t.resolved : !!t.resolved) && (!C.person || AN().who(t.by) === C.person));
     const nOpen = all.filter(t => !t.resolved).length, nDone = all.length - nOpen;
-    el.innerHTML = `<div class="cm-lh"><b>${esc(T("Annotations"))}</b><span class="cm-sp"></span>`
-      + `<hy-icon-button icon="close" size="s" label="${esc(T("Close"))}" data-cm="closelist"></hy-icon-button></div>`
-      + `<div class="cm-tabs"><button data-cf="open" aria-pressed="${C.filter === "open"}">${esc(T("comments::Open"))} ${nOpen}</button>`
-      + `<button data-cf="done" aria-pressed="${C.filter === "done"}">${esc(T("comments::Resolved"))} ${nDone}</button></div>`
+    // a side panel (ui/side.js, round 20, 2026-10-11): Open | Resolved the pill in the 52 px header, no × (Esc and the bar's list button),
+    // the footnote, the empty list in the middle; before it the title «Annotations», a × and the block's 24 px tabs (round 14)
+    const tabs = hySide.tabs([["open", T("comments::Open"), nOpen], ["done", T("comments::Resolved"), nDone]], C.filter, { cls: "cm-tabs", label: T("Annotations") });
+    el.innerHTML = hySide.head({ tabs }) + `<div class="hy-side-body cm-lb">`
       + (people.size > 1 ? `<div class="cm-ppl">${[...people].map(([k, b]) => `<button data-cp="${esc(k)}" aria-pressed="${C.person === k}"`
         + ` title="${esc(window.hyWhoText ? hyWhoText({ by: b }) : "")}">${face(b, 24)}</button>`).join("")}</div>` : "")
       + (pick.length ? pick.map(t => { const last = t.messages[t.messages.length - 1];
@@ -439,7 +438,8 @@
           + `<time>${esc(ago(last.created))}</time></span>${t.area && t.anchor ? `<span class="cm-ra">${esc(T("Area"))} ${pctR(t.area)}</span>` : ""}`
           + `${t.anchor && !board.items[t.anchor.obj] ? `<span class="cm-ra">${esc(T("object gone"))}</span>` : ""}<span class="cm-rt">${esc(t.messages[0].text)}</span>`
           + `${t.messages.length > 1 ? `<span class="cm-rr">${esc(T("{n} replies", { n: t.messages.length - 1 }))}</span>` : ""}</span></button>`; }).join("")
-        : `<div class="none">${esc(C.filter === "open" ? T("No open annotations on this page") : T("No resolved annotations"))}</div>`);
+        : hySide.none(C.filter === "open" ? T("No open annotations on this page") : T("No resolved annotations")))
+      + `</div>${hySide.foot(T("Annotations on this page · <b>Esc</b> closes"))}`;
     el.classList.add("open");
   }
   function go(id) {   // the camera to the pin, the thread open beside it

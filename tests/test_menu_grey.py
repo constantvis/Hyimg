@@ -117,7 +117,9 @@ def test_each_kind_its_own_list_grey_within(server, engine):
         fr = server["frames"]
         pic = menu(page, on(page, "p"))
         plugin = ["Make frame", "Frame each", "Mask from alpha", "Clear mask", "—"] if fr else []
-        assert LABELS(pic) == ["Open in default app", "—", "Cut", "Copy", "Paste", "Duplicate", "—", *plugin, "Group", "Move to page", "Order", "Arrange", "—",
+        # the card's main row first, as its Open ▾ and ↵ (its Studio, or View), Crop ⇧C, «Open with ›» (round 20, 2026-10-11)
+        assert LABELS(pic) == ["Image Studio" if fr else "View", "Crop", "Open with", "—", "Cut", "Copy", "Paste", "Duplicate", "—", *plugin,
+                               "Group", "Move to page", "Order", "Arrange", "—",
                                "Copy properties", "Paste properties", "Clear properties", "—", "Copy as", "Show in Finder", "—", "Remove from the board"], LABELS(pic)
         r = rows(page)
         assert r["Paste"] == "The clipboard is empty" and r["Paste properties"] == "The clipboard is empty" and r["Clear properties"] == "Nothing to clear"
@@ -151,8 +153,9 @@ def test_each_kind_its_own_list_grey_within(server, engine):
         assert LABELS(gr) == ["Cut", "Copy", "Paste", "—", *(["Make frame", "Frame each", "—"] if fr else []), "Ungroup", "Move to page", "Order", "Arrange", "—",
                               "Paste properties", "Clear properties", "—", "Copy as", "—", "Remove from the board"], LABELS(gr)
         page.keyboard.press("Escape")
-        # the empty board: only its own
-        assert LABELS(menu(page, [1300, 900])) == ["Paste here", "—", "Hide annotations", "Annotations on this page", "—", "Copy app link to this view", "Copy browser link to this view"]
+        # the empty board: only its own, first what «+» makes, at the click (round 20, board audit B-18)
+        assert LABELS(menu(page, [1300, 900])) == ["Sticky note", "Text", "Timeline", "—", "Paste here", "—", "Hide annotations", "Annotations on this page", "—",
+                                                   "Copy app link to this view", "Copy browser link to this view"]
         assert not errors, errors
         browser.close()
 

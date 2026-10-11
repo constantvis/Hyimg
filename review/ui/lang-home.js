@@ -68,6 +68,7 @@ hyLang({
     "Only new": "Только с новым",
     "Only the boards where something changed without you": "Только доски, где без вас что-то менялось",
     "Nothing new on the boards": "На досках ничего нового",
+    "Every board on this Mac · <b>Esc</b> closes": "Все доски этого Mac · <b>Esc</b> закрывает",   // the bell's footnote (round 20, 2026-10-11)
     // the bell on Home: every board's news (ui/homebell.js)
     "Notifications": "Уведомления",
     "{n} more": "еще {n}",

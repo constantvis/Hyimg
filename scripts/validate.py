@@ -37,7 +37,7 @@ RULES = {
     "js-syntax": "every .js and every inline <script> parses (node --check); a `//` comment that swallowed code broke a page twice (2026-10-06)",
     "comment-swallow": "a `//` comment after code on a line whose rest is code, or a `//` inside CSS or HTML text, silently eats what follows",
     "easing": "transitions and animations use the contract's curves (owner: «везде easing-анимации», one curve cubic-bezier(.32,.72,0,1))",
-    "focus-ring": "no outline or box-shadow ring on :focus / :focus-visible (owner 2026-10-05: «убери эти уебищные focus выделения»)",
+    "focus-ring": "no outline or box-shadow ring on :focus / :focus-visible (owner 2026-10-05: «убери эти уебищные focus выделения»), but the keyboard's one ring, outline: var(--hy-focus-ring) on :focus-visible (owner 2026-10-11, round 20 P-23)",
     "range-input": "an <input type=range> lives only inside .hy-slider, mounted by ui/slider.js (owner 2026-10-06: «Свои ползунки не рисовать»)",
     "row-radius": "a row control (select, field, slider, chip, option) takes var(--hy-row-r), not a radius of its own (owner 2026-10-06: «одни круглые другие квадратные»)",
     "icon-stroke": "an icon's stroke-width is one of the contract's lines (the editors' family 1.85, menus 1.9, chevron 2.4 ...)",
@@ -56,10 +56,12 @@ RULES = {
     "icon-inline": "an icon is drawn only by ui/icons.js (owner 2026-10-07: «одно значение, одна иконка»): hyIcon(name, size, line), <svg data-ic=name> in static markup, hyIconPath(name) on a canvas, the --hy-ic-* CSS images; a page, a plugin or a stylesheet writes no <path>, <circle>, <rect> ... of its own; a drawing that is not an icon (the board's arrows, a cursor, a chart) says so with hy-allow: icon-inline <what it is>",
     "icon-registry": "the registry (ui/icons.js HY_TOOL_IC) has one glyph per name and one name per glyph, each with its meaning (the comment after it); every name a page asks for (hyIcon, data-ic, hyMarkIcon, a table marked hy-icon-names) is in it",
     "icon-color": "an icon is drawn in currentColor: a glyph's fill and stroke are none or currentColor, the colour comes from CSS; the one exception is Raw Editor's «on» disc (hyGradeIcon), outside the registry",
+    "native-dialog": "the core asks with its own dialogs (ui/confirm.js hyConfirm, canvas.html hyAsk), never the browser's confirm(), alert() or prompt(): in the app they come up as WebKit's system box with the page's address in its title, without the app's Esc, ⌘↵ and focus rules (panels audit P-21, round 20, 2026-10-11)",
     "css-color": "colours only by tokens (owner 2026-10-07: «консистентные цвета»): a hex, rgb() or hsl() in a CSS declaration is written only as a token's value (--name: #...) or a var() fallback; a mask's alpha is not a colour (contract colors.not_colour_props)",
 }
 
 CYR = re.compile(r"[А-Яа-яЁё]")
+NATIVE_DIALOG = re.compile(r"(?<![\w.$])(?<!function )(?:window\.)?(confirm|alert|prompt)\s*\(")
 ALLOW = re.compile(r"hy-allow:\s*([\w-]+(?:\s*,\s*[\w-]+)*)")
 ALLOW_BEGIN = re.compile(r"hy-allow-begin:\s*([\w-]+(?:\s*,\s*[\w-]+)*)")
 
@@ -334,6 +336,10 @@ def check_js(src, report, C):
                 else:
                     check_lang_string(src, report, t, txt, toks)
         if lang_file: continue
+        if "hyimg/review/" in src.rel:   # the core's pages and modules (a plugin's own dialogs are its own)
+            code = masked(src.text, toks, ("line", "block", "str", "tpl", "re"))
+            for m in NATIVE_DIALOG.finditer(code, a, b):
+                report.add(src, m.start(), "native-dialog", f"{m.group(1)}() is the browser's box: ask with hyConfirm or hyAsk")
     if not lang_file:
         for kind, a, b, _ in src.parts:
             if kind == "html":
@@ -492,6 +498,8 @@ def check_css(src, report, C):
                 for m in re.finditer(r"(?<![\w-])(outline(?:-width|-style|-color)?|box-shadow)\s*:\s*([^;]+)", body):
                     v = m.group(2).replace("!important", "").strip().lower()
                     if v in ("none", "0", "0px", "transparent", "inherit", "unset", "initial") or v.startswith("none") or (m.group(1) == "box-shadow" and "var(--hy-trow-ring)" in v):
+                        continue
+                    if m.group(1) == "outline" and v == "var(--hy-focus-ring)" and ":focus-visible" in lowered:   # the keyboard's one ring (round 20, P-23)
                         continue
                     field = re.search(r"\b(input|textarea|select)\b|\.gta\b|search", lowered)
                     if m.group(1) == "box-shadow" and "inset" in v and "0 0 0 1px" in v.replace("  ", " ") and ("var(--line" in v or field):   # a field's border colour while typing (look.css), not a ring

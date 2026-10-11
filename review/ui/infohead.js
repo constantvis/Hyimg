@@ -6,7 +6,10 @@
 // Round 18 (owner 2026-10-10): Open has an arrow ▾ (question 7, ★ yes: «Preview, в приложении, в Finder, по типу файла»), the app's one
 // split button <hy-split> (ui/hy/split.js), each kind its own rows and its main one on ↵, then a line and the file's rows: a picture its
 // Image Studio and Preview (round 19, switch-b.html), a video Preview, a 3D scene or HTML page its Studio, an HTML page also its browsers;
-// then Open in its app, Show in Finder, Copy path, Copy as image. The «…» button is gone (question
+// then Open in its app, Show in Finder, Copy path, Copy as image. Round 20 (owner 2026-10-11, open-b.html: «да вот так лучше»): the main row
+// is the Studio chip's (ui/studiochip.js) and the double click's, a PDF's Image Studio too; Hyimg's viewer is «View», not «Preview» beside
+// «Open in Preview»; the apps are one «Open with ›» (ui/menu.js hyOpenWith); the board's right click starts with the same main row
+// (ui/ctxmain.js through hyInfoHead.rows); Open's tooltip is its main row's («View · ↵»). The «…» button is gone (question
 // 8: «А это тогда можно убрать. Зачем она здесь? Можно по правой кнопке просто это делать»): it only opened the card's right-click menu.
 // Where the facts come from: a picture's size in px from the file's header (POST /api/sizes, once a file), its bytes and format from the
 // library's list (byPath); a video's size, length, fps and codecs from the server's ffprobe (server.py video_probe); a plugin's card from
@@ -33,9 +36,19 @@
   const wxh = wh => wh && wh[0] ? `${wh[0]} × ${wh[1]}` : "";
   const show = (s, on) => { $(s).style.display = on ? "" : "none"; };
 
+  // the side panels' footnote at Info's foot (owner 2026-10-11, round 20: «Подвал сноска у всех (как у Настроек)»): what ↵ does with this
+  // card and that Esc lets it go, Info's only way out (it has no close). Not how to open a plugin's card: 00d3fb4 took those words away
+  function foot() {
+    const b = $("#info"); let f = $("#iFt");
+    if (!f) { f = document.createElement("div"); f.id = "iFt"; f.className = "hy-side-ft"; }
+    if (f !== b.lastElementChild) b.append(f);
+    const w = act ? String(act.label).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]) : "";
+    f.innerHTML = w ? T("<b>↵</b> {what} · <b>Esc</b> lets it go", { what: w }) : T("<b>Esc</b> lets it go");
+  }
   // a sticky note: the header as it was, without the new buttons
   function plain(kind) {
     const b = $("#info"); b.dataset.kind = kind; b.classList.remove("hx"); if ($("#iOpen").close) $("#iOpen").close(); $("#iN").title = $("#iM").title = ""; trim(null); cur = null; act = null;
+    foot();
   }
   function set(kind, id, name, facts, o) {
     const b = $("#info"); b.dataset.kind = kind; b.classList.add("hx");
@@ -45,8 +58,8 @@
     const line = facts.filter(Boolean).join(" · "); $("#iM").textContent = line; $("#iM").title = line;
     // every Open says ↵, which runs its main row on the one selected card (P4 B-36); the arrow has the rest
     const rows = o.open || [], op = $("#iOpen"); act = rows.find(r => r.main) || null; show("#iOpen", !!act);
-    if (act) { op.items = rows; op.title = (act.title || act.label).replace(/ · ↵$/, "") + " · ↵"; op.setAttribute("tip", op.title); op.setAttribute("label", T("More ways to open")); }
-    $("#iE").textContent = "";
+    if (act) { op.items = rows; op.title = act.label + " · ↵"; op.setAttribute("tip", op.title); op.setAttribute("label", T("More ways to open")); }
+    $("#iE").textContent = ""; foot();
   }
 
   // a picture, a video, a PDF, or a copy of one of them (the first one on the page is the original: canvas.html origOf)
@@ -61,27 +74,41 @@
       const fps = m.fps ? T("{n} fps", { n: +(+m.fps).toFixed(2) }) : "", codec = m.vcodec ? CODEC[m.vcodec] || String(m.vcodec).toUpperCase() : "";
       facts = [wxh(wh) || (m.duration ? "" : T("video")), m.duration ? vtime(m.duration) : "", fps, codec, m.acodec ? T("sound") : "", size];
     } else facts = [wxh(wh), m.pages ? T("{n} pages", { n: m.pages }) : "", ext, size, wh ? ratio(wh[0], wh[1]) : ""];
-    const view = () => EMBED ? parent.postMessage({ type: "openFrame", path: it.path }, location.origin) : open(`/img?p=${encodeURIComponent(it.path)}`, "_blank");
-    // a picture (not a copy, a video or a PDF) opens Image Studio first, as its double click does (owner 2026-10-10, round 19 switch-b.html:
-    // «Тоже все отлично. Очень нравится. Делаем.»): «Image Studio ↵», then Preview, a line, the file's rows
-    const img = !copy && !m.kind && studioOf("image"), pv = { label: T("Preview"), short: T("Open"), icon: "eye", title: T("Open the frame to view and rate it"), run: view };
-    const head = copy ? [{ label: T("To the original"), icon: "goTo", main: true, run: () => goTo(o, id) }, pv]
-      : img ? [{ label: img.name, short: T("Open"), icon: img.icon, main: true, run: () => { if (!MODES.enter("image", [id])) view(); } }, pv] : [{ ...pv, main: true }];
-    set(kind, id, name, facts, { open: [...head, { sep: true }, ...fileRows(id, it.path, true)] });
+    set(kind, id, name, facts, { open: picRows(id, it) });
     // a copy is the same file: its ♥ is the original's, shown and set here too (owner decision 2026-10-10, P4 B-37 a)
     show("#iFav", true); $("#iFav").classList.toggle("on", !!f.fav); $("#iFav").title = f.fav ? T("Remove ♥ · F") : T("♥ Like · F");
     trim(vid && m.duration ? { id, it, d: m.duration } : null);
   }
 
-  // a plugin's card: its own name and line (info()), Open is what a double click does (its Studio)
-  function card(id, it, inf) {
+  // a picture, a video, a PDF or a copy: its main row is what the Studio chip over it says and its double click does (round 20), the
+  // chip's Studio (Image Studio for a picture, a PDF, a PSD), else Hyimg's viewer «View» (a video); a copy goes «To the original»
+  function picRows(id, it) {
+    const o = origOf(id), copy = !!o && o !== id, ch = !copy && window.MODES && MODES.studioFor ? MODES.studioFor([id]) : null, st = ch && studioOf(ch.key);
+    const view = () => EMBED ? parent.postMessage({ type: "openFrame", path: it.path }, location.origin) : open(`/img?p=${encodeURIComponent(it.path)}`, "_blank");
+    const pv = { label: T("open::View"), short: T("Open"), icon: "view", run: view };
+    const head = copy ? [{ label: T("To the original"), icon: "goTo", main: true, run: () => goTo(o, id) }, pv]
+      : st ? [{ label: st.name, short: T("Open"), icon: st.icon, main: true, run: () => { if (!MODES.enter(ch.key, [id])) view(); } }, pv] : [{ ...pv, main: true }];
+    return [...head, { sep: true }, ...fileRows(id, it.path, true)];
+  }
+  // a plugin's card: its main row is what a double click does (its Studio, named as the dock's switch names it: 3D Studio, Dev Studio)
+  function cardRows(id, it) {
     const P = PLG[it.type] || {}, can = !!P.dblclick && !P.standIn, page = hyCardFav.path(it);
     const kind = it.type === "model3d" ? "3d" : page ? "html" : it.type, file = it.scene || page || "";
-    // the main row is the card's Studio, named as the dock's switch names it (3D Studio, Dev Studio), else «Open»
     const st = studioOf(kind === "html" ? "dev" : kind);
-    const main = can ? { label: st ? st.name : T("Open"), icon: st ? st.icon : "open", main: true, title: T("Open · ↵"),
+    const main = can ? { label: st ? st.name : T("Open"), icon: st ? st.icon : "open", main: true,
       run: () => { if (!(window.hyPlugBoard && hyPlugBoard.open(it.type, id))) P.dblclick && P.dblclick(id); } } : null;
-    set(kind, id, inf.name || it.type, [inf.meta], { open: main ? [main, { sep: true }, ...(page ? browsers(page) : []), ...fileRows(id, file, false)] : [] });
+    return main ? [main, { sep: true }, ...(page ? browsers(page) : []), ...fileRows(id, file, false)] : [];
+  }
+  // the rows of Open ▾ for any card on the board, [] when it has none (a note, a heading, a group): the right click's first row
+  function rowsOf(id) {
+    const it = board.items[id]; if (!it || isNote(it) || isText(it) || isTl(it)) return [];
+    return it.type ? cardRows(id, it) : isPic(it) ? picRows(id, it) : [];
+  }
+
+  // a plugin's card: its own name and line (info()), Open is what a double click does (its Studio)
+  function card(id, it, inf) {
+    const page = hyCardFav.path(it), kind = it.type === "model3d" ? "3d" : page ? "html" : it.type;
+    set(kind, id, inf.name || it.type, [inf.meta], { open: cardRows(id, it) });
     hyCardFav.info($("#iFav"), it); trim(null);
     window.hyEdited?.($("#iE"), BOARD, id, Object.values(it));
   }
@@ -102,10 +129,12 @@
     const c = seg.style.getPropertyValue("--hy-mode-c") || "var(--sel)";
     return { name: seg.dataset.name, icon: `<span class="oi-ic oi-dot" style="--oi-c:${c.replace(/"/g, "")}"></span>` };
   }
-  // the rows every file has: its app (named as macOS names it, ui/menu.js hyOpenFill), Finder, its path, its picture on the clipboard (⇧⌘C)
+  // the rows every file has: «Open with ›» its apps, the default first (round 20, ui/menu.js hyOpenWith; asked now, so the submenu has
+  // them when it opens), Finder, its path, its picture on the clipboard (⇧⌘C)
   function fileRows(id, path, app) {
     if (!path) return [];
-    return [...(app ? [{ label: T("Open in default app"), icon: "open", row: b => window.hyOpenFill && hyOpenFill(b, path), run: () => hyOpenFile(path, toast) }] : []),
+    if (app && window.hyOpenWith) hyOpenWith.ask(path);
+    return [...(app && window.hyOpenWith ? [{ label: T("Open with"), icon: "open", sub: () => hyOpenWith.rows(path) }] : []),
       { label: T("Show in Finder"), icon: "folder", run: () => hyReveal([path], toast) },
       { label: T("Copy path"), icon: "copy", run: () => copyText(path, T("Path copied")) },
       { label: T("Copy as image"), icon: "image", keys: ["⇧", "⌘", "C"], run: () => hyCopyImage.key([id]) }];
@@ -119,5 +148,5 @@
   // ↵ on the board with one card selected: what Open's main row does (canvas.html's keys, ui/boardkeys.js); false when it has none
   // (not «open»: the picture's Open calls the window's open() from this same scope)
   const openNow = () => { if (!act || !cur || $("#info").style.display === "none" || $("#iOpen").style.display === "none") return false; act.run(); return true; };
-  window.hyInfoHead = { pic, card, plain, ratio, open: openNow };
+  window.hyInfoHead = { pic, card, plain, ratio, open: openNow, rows: rowsOf };
 })();

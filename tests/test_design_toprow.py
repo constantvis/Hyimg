@@ -119,7 +119,7 @@ def test_image_studio(world, theme, shape, lang):
 @pytest.mark.parametrize("theme,shape,lang", LOOKS)
 def test_3d_studio(world, theme, shape, lang):
     if not (REPOS / "hyimg-3d-studio/manifest.json").is_file(): pytest.skip("no hyimg-3d-studio beside hyimg")
-    page, frame = studio(world, theme, shape, lang, "m1", "3d", "() => document.body.classList.contains('m3edit') && document.querySelector('.m3title')")
+    page, frame = studio(world, theme, shape, lang, "m1", "3d", "() => document.body.classList.contains('m3edit') && document.querySelector('#cStudio')")
     check(page, f"3d-{theme}-{shape}-{lang}"); page.close()
 
 

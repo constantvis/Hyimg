@@ -40,7 +40,7 @@
   function tile(d, large, base) {
     const wide = d.k === "crop" || d.k === "region", src = (/^\/(?!\/)/.test(d.src || "") ? base : "") + d.src + (d.k === "region" ? `&th=${theme()}` : "");
     return `<span class="bt${wide ? (large ? " l" : " w") : ""}" data-k="${esc(d.k)}"><img alt="" loading="lazy" decoding="async" draggable="false"`
-      + ` src="${esc(src)}" onerror="this.style.visibility='hidden'">${mark(d)}</span>`;
+      + ` src="${esc(src)}" onerror="hyBellThumbs.gone(this)">${mark(d)}</span>`;
   }
   // the strip of one row: its tiles, or (a server not restarted yet) the pictures it named; base: the board's server when the page is not
   // (Home, a file page, lists every board's bell: ui/homebell.js)
@@ -50,5 +50,11 @@
     const shown = L.slice(0, 4), more = Math.max(0, (n.pvn || L.length) - shown.length);
     const large = shown.length === 1 && shown[0].k !== "pic";   // one crop alone: large enough to read
     return `<span class="pv">${shown.map(d => tile(d, large, base)).join("")}${more ? `<span class="bmore">+${more}</span>` : ""}</span>`;
+  };
+  // a tile whose picture is not there (a 3D card without a still answers 404): the whole tile goes, not only its picture, and a strip
+  // left without tiles goes with it (panels audit P-19, 2026-10-11: an empty grey 144 × 96 plate stayed in the bell's row)
+  window.hyBellThumbs.gone = img => {
+    const t = img.closest(".bt"), pv = t && t.parentElement; if (!t) return;
+    t.remove(); if (pv && pv.classList.contains("pv") && !pv.querySelector(".bt")) pv.remove();
   };
 })();

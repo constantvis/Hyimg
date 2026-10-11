@@ -11,6 +11,10 @@
 //   hyTyping.global(e) ⌘M (the library), ⌘. (hide the interface) and ⌘F (the library's search): the app's own keys, the only ones that act
 //                      while you type too (P4 B-35, the documented allow-list); every other shortcut asks hyTyping(e) and waits
 //   hyTyping.keys(el, o) Esc, ↵ and Tab of one field, the same rule in every field of the board and of a Studio (owner 2026-10-10, below)
+//   hyTyping.hold(el)  a field opened to name or write a thing (a group's title, a note, a heading, a timeline's label, a page): until it
+//                      closes or the next press elsewhere hyTyping() is true, so no shortcut fires even when the focus did not reach the
+//                      field, and a key that comes to the page puts the focus into it first (board audit 2026-10-11, B-09: zoomed in,
+//                      ⌘G opened the name in a hidden title, «Final look» ran F (♥ on three pictures) and N (a note))
 //
 // Esc in a field (owner decision 2026-10-10, П4 B-15, option (b), Figma's split): what you write on the canvas keeps its text, Esc applies
 // it as ↵ does (a note, a heading, a text document, a group's title, a timeline's label, an arrow's words; an annotation keeps its words as
@@ -38,8 +42,12 @@
     }
     return a;
   }
+  let held = null;
+  const holding = () => !!held && held.isConnected;
+  const inHeld = el => !!el && (el === held || (held.contains && held.contains(el)));
   function typing(e) {
     if (e && e.isComposing) return true;   // an input method still composing a letter
+    if (holding()) return true;
     const path = e && e.composedPath ? e.composedPath() : [];
     if (path.length && field(path[0])) return true;
     if (e && e.target && field(e.target)) return true;
@@ -77,7 +85,13 @@
     el.addEventListener("keydown", h);
     return h;
   }
-  typing.field = field; typing.active = active; typing.ownKey = ownKey; typing.global = global; typing.keys = keys; typing.toBoard = toBoard;
+  function hold(el) { held = el || null; }
+  addEventListener("pointerdown", e => { if (held && !inHeld(e.target)) held = null; }, true);
+  addEventListener("keydown", e => {   // before every other listener: the key goes where the name is written (Chromium types it there)
+    if (!holding() || global(e) || inHeld(active())) return;
+    const f = held.matches("textarea, input") ? held : held.querySelector("textarea, input"); if (f) f.focus({ preventScroll: true });
+  }, true);
+  typing.field = field; typing.active = active; typing.ownKey = ownKey; typing.global = global; typing.keys = keys; typing.toBoard = toBoard; typing.hold = hold;
   window.hyTyping = typing;
   // a control touched with the mouse gives the keys back (P4 S-15, П4 audit 2026-10-10: after a checkbox, a slider or a Studio's control
   // the board's and the Studio's keys were dead until a click on the canvas): let go, it loses the focus unless its click moved the focus

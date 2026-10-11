@@ -15,20 +15,23 @@
   const ICON = { "N": "note", "C": "comment", "P": "pen", "⌘M": "library", "⌘.": "eyeoff", "⌘G": "group", "⇧⌘G": "ungroup", "⌘]⌘[": "orderForward",
     "⌥⌘]⌥⌘[": "orderFront", "⇧C": "crop", "⌘C⌘X": "copy", "⌘V": "paste", "⌘D": "duplicate", "⌥A": "tidyBlock", "⌥S": "tidyRow", "⌥D": "tidy", "⌫": "trash",
     "⌘Z⇧⌘Z": "undo", "⌘A": "select", "Esc": "close", "↵": "open", "F": "heart", "L": "timeline", "190": "opacity", "⌥P": "split", "⇧⌘C": "image",
-    "⌘F": "search", "\\": "library", "X⌘Z": "crop", "⇧1": "fit", "⌘X⌘V": "toPage", "←↑→↓": "move", "↵Esc": "check", "R": "frame", "⌘B⌘I": "editText", "Space": "hand", "⌘": "zoomIn", "⌥": "copy" };
+    "⌘F": "search", "⌘M\\": "library", "X⌘Z": "crop", "←↑→↓": "move", "↵Esc": "check", "R": "fit", "⌘B⌘I": "editText", "Space": "hand", "⌘": "zoomIn", "⌥": "copy" };
   ICON["⌥↑⌥↓"] = "library";   // the library's collection above, below (round 18)
+  ICON["⇧C⌥"] = ICON["X⌘Z⇧⌘Z"] = ICON["⇧"] = "crop";   // the crop's rows had none (round 20, P-14): «⇧C, ⌥ double-click», «in crop X ⌘Z ⇧⌘Z», «in crop ⇧ drag»
+  ICON.T = "drawText";   // the Text tool (ui/textbox.js, 2026-10-11)
+  ICON.L = "timeline";   // the timeline's one icon, as «+» shows it (round 21, 2026-10-11, ui/icons.js timeline)
   // a row without keys of its own, by its first words (English, as canvas.html writes them; compared in the page's language)
   const WORDS = { "drag": "library", "scroll wheel, trackpad": "hand", "marquee,": "select", "double-click on empty space": "heading",
     "a note over frames": "link", "a note inside a group, linked to nothing": "group", "the note's yellow dot": "drawArrow", "small and big": "editText",
     "colored dots above a note": "palette", "“Area” above a note": "marquee", "in a note": "note", "double-click": "image", "⤢ in a video's pill": "expand",
-    "pointer over a video": "play", "▶ in the video's corner,": "play", "the line at the bottom of a video": "play", "corner or edge": "resize", "pages": "board",
+    "pointer over a video": "play", "▶ in the video's corner,": "play", "the line at the bottom of a video": "play", "corner or edge": "resize",
     "right click › Arrange": "gridMake", "⌘ while dragging": "guide", "Arrange › Layout patterns": "layouts", "on the bar": "layouts" };
   // round 15's two lists: what to do here, the main keys (the keys and the icons are the code's: canvas.html, ui/anncore.js, ui/arrange.js)
   const TIPS = [["copy", "<kbd>⌥</kbd> drag a picture: a copy"], ["image", "<b>Double click</b> an image: Image Studio"],
     ["note", "<kbd>N</kbd> drops a note under the pointer, type at once"], ["tidyBlock", "<kbd>⌥</kbd><kbd>A</kbd> lays the picked pictures out as a block"],
     ["library", "<b>Drag a folder</b> from the Library: it lands as a block"]];
   const KEYS = [["note", "Note", "N"], ["comment", "Annotation", "C"], ["group", "Group", "⌘G"], ["tidyBlock", "Arrange as a block", "⌥A"],
-    ["fit", "Show all", "⇧1"], ["library", "Library", "⌘M"], ["eyeoff", "Hide the interface", "⌘."], ["undo", "Undo", "⌘Z"], ["redo", "Redo", "⇧⌘Z"]];
+    "fit", ["library", "Library", "⌘M"], ["eyeoff", "Hide the interface", "⌘."], ["undo", "Undo", "⌘Z"], ["redo", "Redo", "⇧⌘Z"]];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const svg = n => (n && window.HY_IC ? window.HY_IC[n] || "" : "");
   const caps = (keys, size) => [...keys].map(k => `<hy-kbd${size ? ` size="${size}"` : ""}>${esc(k)}</hy-kbd>`).join("");
@@ -36,6 +39,7 @@
   let P = null;   // the panel's parts once built
 
   function iconOf(row) {
+    if (row.dataset.icon) return row.dataset.icon;   // a row that says its icon itself (the zoom's, ui/boardzoom.js)
     if (row.hasAttribute("data-arrange-keys")) {
       if (row.querySelector(".k svg")) return "";   // the row that draws its button itself
       const i = [...row.parentElement.querySelectorAll("[data-arrange-keys]")].indexOf(row);
@@ -60,31 +64,31 @@
 
   function build(panel) {
     const legacy = [...panel.children].filter(r => r.tagName === "DIV" && r.querySelector(":scope > .k"));
-    // the tabs: <hy-segmented variant=pill>, the same control as the bell's All | Notifications | Comments (owner 2026-10-10)
-    panel.innerHTML = `<div class="kp-in"><div class="kp-bh"><hy-segmented class="kp-tabs" variant="pill" value="tips">
-        <button type="button" class="kp-tab on" value="tips" role="tab" aria-selected="true" data-kt="tips"><span></span></button>
-        <button type="button" class="kp-tab" value="all" role="tab" aria-selected="false" data-kt="all"><span></span><em></em></button></hy-segmented>
-        <span class="sp"></span><button type="button" class="kp-x">${svg("close")}</button></div>
-      <label class="kp-s">${svg("search")}<input type="search" autocomplete="off" spellcheck="false"></label>
-      <div class="kp-body"><section data-kt="tips"><div class="kp-lb" data-l="here"><span></span><em></em></div><div class="kp-tips"></div>
+    // a side panel (ui/side.js, round 20, 2026-10-11): the tabs in the 52 px header, the bell's pill (owner 2026-10-10); no × since round 20,
+    // Esc and the top row's ? close it; the search 32; the footnote; «Nothing found» in the middle
+    panel.classList.add("hy-side");
+    panel.innerHTML = window.hySide.head({ cls: "kp-bh", tabs: window.hySide.tabs([["tips", t("Tips")], ["all", t("All keys"), ""]], "tips", { cls: "kp-tabs" }) })
+      + window.hySide.search(t("Search tips and keys"), { cls: "kp-s" }) + `
+      <div class="kp-body hy-side-body"><section data-kt="tips"><div class="kp-lb" data-l="here"><span></span><em></em></div><div class="kp-tips"></div>
         <div class="kp-lb" data-l="keys"><span></span><em></em><span class="sp"></span><button type="button" class="kp-lnk" data-kt="all"></button></div><div class="kp-rows kp-main"></div></section>
-        <section data-kt="all" hidden><div class="kp-rows kp-all"></div></section><div class="kp-none" hidden></div></div></div>`;
+        <section data-kt="all" hidden><div class="kp-rows kp-all"></div></section><div class="kp-none hy-side-none" hidden></div></div>${window.hySide.foot("")}`;
+    panel.querySelectorAll(".kp-tabs > button").forEach(b => {
+      b.classList.add("kp-tab"); b.dataset.kt = b.value; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", b.value === "tips"); });
     const $ = s => panel.querySelector(s);
-    P = { panel, all: $(".kp-all"), main: $(".kp-main"), tips: $(".kp-tips"), q: $(".kp-s input"), none: $(".kp-none") };
-    $('[data-kt="tips"].kp-tab span').textContent = t("Tips"); $('[data-kt="all"].kp-tab span').textContent = t("All keys");
-    const x = $(".kp-x"); x.title = t("Close · Esc"); x.setAttribute("aria-label", t("Close"));
-    P.q.placeholder = t("Search tips and keys"); P.q.setAttribute("aria-label", t("Search tips and keys"));
+    P = { panel, all: $(".kp-all"), main: $(".kp-main"), tips: $(".kp-tips"), q: $(".kp-s input"), none: $(".kp-none"), foot: $(".hy-side-ft") };
     $('[data-l="here"] span').textContent = t("Here · Board"); $('[data-l="here"] em').textContent = TIPS.length;
     $('[data-l="keys"] span').textContent = t("Keys here"); $('[data-l="keys"] em').textContent = KEYS.length;
     P.tips.innerHTML = TIPS.map(([ic, h]) => `<div class="kp-tip"><span class="kpi" data-icon="${ic}" aria-hidden="true">${svg(ic)}</span>`
       + `<span>${t(h).replace(/<kbd>(.*?)<\/kbd>/g, (_, k) => caps(k, "m"))}</span></div>`).join("");
-    P.main.innerHTML = KEYS.map(([ic, w, k]) => `<div class="kp-row"><span class="kpi" data-icon="${ic}" aria-hidden="true">${svg(ic)}</span>`
+    const keys = KEYS.map(r => (typeof r === "string" ? zoomKey(r) : r)).filter(Boolean);   // a zoom row by its id
+    P.main.innerHTML = keys.map(([ic, w, k]) => `<div class="kp-row"><span class="kpi" data-icon="${ic}" aria-hidden="true">${svg(ic)}</span>`
       + `<span class="t">${esc(t(w))}</span><span class="k">${caps(k)}</span></div>`).join("");
     legacy.forEach(r => { P.all.append(r); dress(r); });
+    zoomRows().forEach(r => { P.all.append(r); dress(r); });
+    shows();
     count();
     panel.addEventListener("click", e => {
       const tab = e.target.closest("[data-kt]"); if (tab && tab.tagName === "BUTTON") { show(tab.dataset.kt); return; }
-      if (e.target.closest(".kp-x")) { const b = document.getElementById("bkeys"); if (b) b.click(); }
     });
     P.q.addEventListener("input", filter);
     // Esc in the search: its words first, then the panel closes (P4 B-16, the board's one Esc order)
@@ -95,6 +99,7 @@
     const n = P.all.querySelectorAll(".kp-row").length;
     P.panel.querySelector('[data-kt="all"].kp-tab em').textContent = n;
     P.panel.querySelector(".kp-lnk").textContent = t("All {n}", { n });
+    P.foot.innerHTML = t("Every key: the <b>All keys</b> tab · <b>Esc</b> closes");
   }
   function show(which) {
     const tabs = P.panel.querySelector(".kp-tabs"); tabs.setAttribute("value", which);   // the primitive marks the chosen tab (before it is defined: these marks)
@@ -108,6 +113,42 @@
     sec.querySelectorAll(".kp-row, .kp-tip").forEach(r => { const hit = !q || r.textContent.toLowerCase().includes(q); r.hidden = !hit; shown += hit; });
     sec.querySelectorAll(".kp-lb").forEach(l => { const list = l.nextElementSibling; l.hidden = !!q && !list.querySelector(":scope > :not([hidden])"); });
     P.none.hidden = shown > 0; P.none.textContent = t("Nothing found");
+  }
+  // «Show» at the end of Tips (owner 2026-10-11, round 20 question 11: «возможность их отключить в Tips and shortcuts и в настройках тоже, при
+  // этом у нас 2 вида»): the tooltips (cv.tooltips) and the hints, the key hints, the Hint bar, the tips and the nudges (cv.keyhint), the same
+  // settings as Settings › Interface. The hints' switch turns them off or back to Until learned; Always stays a choice of the Settings.
+  const SHOW = [["tooltips", "info", "Tooltips", () => localStorage.getItem("cv.tooltips") !== "0", on => (on ? "1" : "0")],
+    ["keyhint", "tip", "Key hints", () => localStorage.getItem("cv.keyhint") !== "off", on => (on ? (localStorage.getItem("cv.keyhint") === "always" ? "always" : "learn") : "off")]];
+  function shows() {
+    const sec = P.panel.querySelector('section[data-kt="tips"]'); if (!sec || sec.querySelector(".kp-show")) return;
+    const lb = document.createElement("div"); lb.className = "kp-lb"; lb.dataset.l = "show"; lb.innerHTML = `<span>${esc(t("kp::Show"))}</span>`;
+    const rows = document.createElement("div"); rows.className = "kp-rows kp-show";
+    rows.innerHTML = SHOW.map(([k, ic, w]) => `<label class="kp-row kp-sw" data-kpset="${k}"><span class="kpi" data-icon="${ic}" aria-hidden="true">${svg(ic)}</span>`
+      + `<span class="t">${esc(t(w))}</span><hy-minitoggle class="kp-tg" label="${esc(t(w))}"></hy-minitoggle></label>`).join("");
+    sec.append(lb, rows); sync();
+    new MutationObserver(sync).observe(P.panel, { attributes: true, attributeFilter: ["class"] });   // opened: what the Settings say now
+    rows.addEventListener("hy-change", e => {
+      const row = e.target.closest("[data-kpset]"), d = row && SHOW.find(x => x[0] === row.dataset.kpset); if (!d) return;
+      try { localStorage.setItem("cv." + d[0], d[4](!!e.detail.checked)); } catch {}   // an app setting: ui/settings.js sends it on to every page
+      if (d[0] === "keyhint" && e.detail.checked && window.hyNudge) hyNudge.open("sel");   // the tips × closed under a selection come back
+      if (typeof window.renderSets === "function") window.renderSets();   // the Settings, when open, show it too
+    });
+  }
+  function sync() {
+    if (!P) return;
+    P.panel.querySelectorAll(".kp-show [data-kpset]").forEach(row => {
+      const d = SHOW.find(x => x[0] === row.dataset.kpset), tg = row.querySelector("hy-minitoggle"); let on = true;
+      try { on = d[3](); } catch {}
+      if (tg) tg.toggleAttribute("checked", on);
+    });
+  }
+  // The zoom's rows (round 20, owner 2026-10-11, board audit B-21, P-14): its table, the one its menu and its keys are built from
+  // (ui/boardzoom.js ROWS: id, icon, words, caps), so the «?» panel has no row of its own to go stale. KEYS names one of them by id (still nine rows, round 15).
+  const ZOOM = () => (window.hyBoardZoom ? hyBoardZoom.ROWS : []);
+  const zoomKey = id => { const z = ZOOM().find(r => r[0] === id); return z ? [z[1], z[2], z[3].join("")] : null; };
+  function zoomRows() {
+    return ZOOM().map(([id, ic, w, k]) => { const d = document.createElement("div"); d.dataset.icon = ic; d.dataset.zoom = id;
+      d.innerHTML = `<span class="k">${k.map(c => `<kbd>${esc(c)}</kbd>`).join("")}</span> ${esc(t(w))}`; return d; });
   }
   // a row another module adds to #keys: into All keys (Arrange's after ⌥D, as before)
   function adopt(row) {
@@ -125,5 +166,5 @@
       if (n) { count(); filter(); } }).observe(panel, { childList: true });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
-  window.hyKeysPanel = { ICON, dress, show, get parts() { return P; } };
+  window.hyKeysPanel = { ICON, dress, show, sync, get parts() { return P; } };
 })();

@@ -3,6 +3,7 @@
 новенькое появилось», and the card's line as data only: «Зачем мне эта писанина? On canvas туда-сюда. Мне главное данные: сколько
 гигабайт, сколько чего, frames достаточно». Home opened as a file with a fake app bridge (ui/homebell.js asks it {action: "homeBell"},
 the test answers as the app would with hyimgHomeBell), Chromium, dark theme. HY_SHOTS=<folder> keeps screenshots."""
+import base64
 import json
 import os
 import time
@@ -106,6 +107,9 @@ def test_sidebar_counts_the_news_of_each_project():
 def test_bell_lists_every_boards_news_and_opens_the_place():
     with playwright.sync_playwright() as p:
         browser, page, errors, sent = home(p)
+        # the board's server answers the tile's picture (a tile whose picture fails goes whole since 2026-10-11, panels audit P-19)
+        dot = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==")
+        page.route("http://127.0.0.1:4999/thumb**", lambda r: r.fulfill(body=dot, content_type="image/png"))
         # the bell: a plate of the top row, the row's gap from «New board» and from the settings
         bell, sets, new = (page.evaluate(BOX, s) for s in ("#hbell", "#bset", ".top .btn.primary"))
         assert (bell["t"], bell["w"], bell["h"]) == (12, 38, 38) and abs(sets["l"] - bell["r"] - 8) < .5 and abs(bell["l"] - new["r"] - 8) < .5, (bell, sets, new)
@@ -179,7 +183,7 @@ def test_bell_and_counts_in_russian():
         browser, page, errors, sent = home(p, lang="ru")
         assert page.get_attribute("#hbell button", "title") == "Уведомления"
         page.click("#hbell")
-        assert page.inner_text("#ntf .nh0") == "Уведомления"
+        assert page.inner_text("#ntf .hy-side-t") == "Уведомления"   # a side panel's title (round 20, 2026-10-11)
         # the page first, its name as written: «Renderings: +24 картинки», the unnamed first page «Страница 1: +2 картинки»
         assert page.locator("#ntf .hb-b[data-hb-board=a] .nt b").first.inner_text() == "Renderings: +24 картинки"
         assert page.locator("#ntf .hb-b[data-hb-board=d] .nt b").inner_text() == "Страница 1: +2 картинки"
@@ -187,7 +191,7 @@ def test_bell_and_counts_in_russian():
         assert page.locator("aside [data-folder=f1] .hb-n").get_attribute("title") == "17 новых"
         page.keyboard.press("Escape"); push(page, [])
         assert page.locator("aside .hb-n").count() == 0 and page.locator("#hbell.dot").count() == 0
-        page.click("#hbell"); assert page.inner_text("#ntf .none") == "На досках ничего нового"
+        page.click("#hbell"); assert page.inner_text("#ntf .hy-side-none") == "На досках ничего нового"
         assert page.evaluate("window.__tMiss") == [], page.evaluate("window.__tMiss")
         assert not errors, errors
         browser.close()

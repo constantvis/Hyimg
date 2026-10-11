@@ -21,7 +21,11 @@
 import { HyElement, define } from "./base.js";
 
 export const DELAY = 300, QUIET = 3, LEARNED = 5;
-const USED = "cv.keyhintUsed", MODE = "cv.keyhint";
+// Forgotten (owner 2026-10-11, round 20 question 15: «если человек забывает и часто не использует, можно снова начать показывать, это будет
+// наш дефолтный режим»): a count whose last use is older than FORGET days counts as none, so its hint, tip or nudge shows again. The day
+// of the last use stands beside the counts in cv.keyhintLast, an app setting too; a count with no day (before 2026-10-11) is kept.
+export const FORGET = 30;
+const USED = "cv.keyhintUsed", MODE = "cv.keyhint", LAST = "cv.keyhintLast";
 const GLYPH = /** @type {Record<string, string>} */ ({ mod: "⌘", cmd: "⌘", meta: "⌘", shift: "⇧", alt: "⌥", option: "⌥", ctrl: "⌃", enter: "↵",
   escape: "Esc", esc: "Esc", backspace: "⌫", delete: "⌫", tab: "⇥", up: "↑", down: "↓", left: "←", right: "→" });
 const KEY = /** @type {Record<string, string>} */ ({ enter: "Enter", escape: "Escape", esc: "Escape", space: " ", backspace: "Backspace",
@@ -45,17 +49,29 @@ export function mode() {
   let v = null; try { v = localStorage.getItem(MODE); } catch {}
   return v === "always" || v === "off" ? v : "learn";
 }
-/** @returns {Record<string, number>} */
-export function counts() { try { const o = JSON.parse(localStorage.getItem(USED) || "{}"); return o && typeof o === "object" ? o : {}; } catch { return {}; } }
+/** @param {string} k @returns {Record<string, number>} */
+const read = k => { try { const o = JSON.parse(localStorage.getItem(k) || "{}"); return o && typeof o === "object" ? o : {}; } catch { return {}; } };
+const today = () => Math.floor(Date.now() / 864e5);
+/** The day of a key's last use is today (a place's state, «…@at», has none). @param {string} key */
+function stamp(key) {
+  if (key.includes("@")) return;
+  try { const l = read(LAST); l[key] = today(); localStorage.setItem(LAST, JSON.stringify(l)); } catch {}
+}
+/** The counts as they hold now: one last used more than FORGET days ago is gone. @returns {Record<string, number>} */
+export function counts() {
+  const o = read(USED), l = read(LAST), d = today();
+  for (const k of Object.keys(l)) if (k in o && d - (+l[k] || 0) > FORGET) delete o[k];
+  return o;
+}
 /** @param {string} key */
 export function usedCount(key) { return +(counts()[key] || 0); }
-/** @param {string} key */
+/** One more use, counted up to LEARNED; the day is kept every time, so a key in use is never forgotten. @param {string} key */
 function bump(key) {
-  try { const o = counts(); if ((o[key] || 0) >= LEARNED) return; o[key] = (o[key] || 0) + 1; localStorage.setItem(USED, JSON.stringify(o)); } catch {}
+  try { const o = counts(); stamp(key); if ((o[key] || 0) >= LEARNED) return; o[key] = (o[key] || 0) + 1; localStorage.setItem(USED, JSON.stringify(o)); } catch {}
 }
 /** One count set as it is (the tips keep their place's state beside the counts, ui/hy/tip.js). @param {string} key @param {number} n */
 export function setCount(key, n) {
-  try { const o = counts(); if (n) o[key] = n; else delete o[key]; localStorage.setItem(USED, JSON.stringify(o)); } catch {}
+  try { const o = counts(); if (n) { o[key] = n; stamp(key); } else delete o[key]; localStorage.setItem(USED, JSON.stringify(o)); } catch {}
 }
 
 /** The canvas that measures a field's words (where its last line ends). @type {CanvasRenderingContext2D | null} */
@@ -178,6 +194,10 @@ export function show(anchor, ctx, items, opts = {}) {
           if (e.id !== "obar" && o.height < vh * 0.35) return;   // a side panel is tall; a short thing elsewhere on the line is not in the way
           if ((o.left + o.right) / 2 < vw / 2) from = Math.max(from, o.right + gap); else to = Math.min(to, o.left - gap);
         });
+        // and clear of the library: the page lies over the board, whose --inset says how far the library reaches (2026-10-11: Image
+        // Studio's bar began under it, «…брать | C Аннотация»)
+        try { const fe = frameElement; if (fe) { const pi = parseFloat(parent.document.documentElement.style.getPropertyValue("--inset")) || 0;
+          if (pi) from = Math.max(from, pi - fe.getBoundingClientRect().left + gap); } } catch { /* not the board's frame */ }
       }
       x = from + (to - from - w) / 2; y = 0;
       quiet("hush", toasted());   // a toast stands on the same line: the bar steps back while it is there
@@ -238,4 +258,4 @@ function toasted() {
 export function hide() { if (current) current.hide(); }
 
 // the classic scripts of the pages (canvas.html, the studios) reach it as window.hyKeyHint
-/** @type {any} */ (window).hyKeyHint = { show, hide, caps, matches, mode, usedCount, DELAY, QUIET, LEARNED };   // the tips: ui/hy/tip.js, window.hyTip
+/** @type {any} */ (window).hyKeyHint = { show, hide, caps, matches, mode, usedCount, DELAY, QUIET, LEARNED, FORGET };   // the tips: ui/hy/tip.js, window.hyTip

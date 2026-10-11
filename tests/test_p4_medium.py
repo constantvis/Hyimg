@@ -221,8 +221,8 @@ def test_a_heart_is_an_undo_step(tmp_path):
 # ---- B-16, B-17, B-18, B-44, B-45: Esc's one order -------------------------------------------------------------------------------------
 def test_esc_closes_the_open_panel_before_the_selection(tmp_path):   # B-16, B-45
     def go(page, ev, port):
-        for btn, panel in (("#bntf", "() => $('#ntf').classList.contains('open')"), ("#bkeys", "() => $('#keys').style.display === 'block'"),
-                           ("#bhist", "() => $('#hist').classList.contains('open')")):
+        for btn, panel in (("#bntf", "() => $('#ntf').classList.contains('open')"), ("#bkeys", "() => $('#keys').classList.contains('open')"),
+                           ("#bhist", "() => $('#hist').classList.contains('open')"), ("#bset", "() => $('#sets').classList.contains('open')")):
             pick(ev, "i0"); page.click(btn); page.wait_for_timeout(150)
             assert ev(panel) and ev(f"() => document.activeElement !== $('{btn}')"), btn + " kept the focus"   # B-45
             page.keyboard.press("Escape"); page.wait_for_timeout(100)
@@ -458,7 +458,9 @@ def test_crop_pans_with_space_ignores_a_press_beside_and_undoes(tmp_path):
         x0 = ev("() => cam.x"); page.keyboard.down(" "); page.mouse.move(1000, 700); page.mouse.down(); page.mouse.move(900, 700, steps=4); page.mouse.up(); page.keyboard.up(" ")
         assert ev("() => cam.x") > x0 and ev("() => !!cropState")
         page.mouse.click(1400, 880); assert ev("() => !!cropState && !board.items.i0.crop")   # beside the picture: nothing applied, still cropping
-        r = box(page, "#crop"); page.mouse.move(r["x"] + 40, r["y"] + 40); page.mouse.down(); page.mouse.move(r["x"] + 200, r["y"] + 260, steps=4); page.mouse.up()
+        # ⇧ draws a new frame inside the whole picture (a plain drag inside the frame moves it, board audit 2026-10-11 B-04)
+        r = box(page, "#crop"); page.mouse.move(r["x"] + 40, r["y"] + 40); page.keyboard.down("Shift"); page.mouse.down(); page.mouse.move(r["x"] + 200, r["y"] + 260, steps=4)
+        page.mouse.up(); page.keyboard.up("Shift")
         c1 = ev("() => cropState.c.join()"); assert c1 != "0,0,1,1"
         page.keyboard.press("Meta+z"); assert ev("() => cropState.c.join()") == "0,0,1,1"
         page.keyboard.press("Escape"); assert ev("() => cropState === null && !board.items.i0.crop")

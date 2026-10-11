@@ -90,7 +90,10 @@ def test_new_note_follows_zoom(server):
         assert t["fs"] == 40
         cam(page, 20000, 20000, 2)
         page.mouse.move(700, 450); page.keyboard.press("l"); tl = page.evaluate(NEWEST, "timeline"); page.keyboard.press("Escape")
-        assert tl["fs"] == 36 and tl["len"] == 1296
+        # its length: 36 type sizes, at most 80 % of the board's free width on screen (board audit 2026-10-11, B-11: at 2× the 1296 units
+        # were 2592 px, wider than the window, and the first label was typed into off screen)
+        room = page.evaluate("() => { const f = hyBars.free(stage, INSET); return Math.round(Math.min(1296, (f.r - f.l) * 0.8 / 2)); }")
+        assert tl["fs"] == 36 and tl["len"] == room < 1296
         assert not errors, errors
         browser.close()
 

@@ -12,13 +12,17 @@
    is drawn closed only, so a click opens the app's filter window as before, under the search, and filters on show as the app showed them
    (the ink plate and the count). Only the library over the canvas (body.cv-on); the library alone (?view=lib) keeps its own page. */
 
-body.cv-on { --lp-head: 52px; --lp-sfw: 32px; --lp-top: calc(var(--lp-head) + var(--lp-sfw) + 6px);
-  --lp-bg: color-mix(in srgb, var(--panel) 97%, transparent); --lp-solid: var(--panel); --lp-well: color-mix(in srgb, var(--ink) 6%, var(--panel));
+/* Round 20 (owner 2026-10-11, DESIGN.md «Боковая панель»): the side panels' tokens (ui/tokens.css --hy-side-*): the corner, the glass,
+   the header 52, its buttons square 24 (were round 30), the search and «Find folder» fields 32 (that one was a pill), the chosen folder the
+   side panels' blue, the footnote at its foot. It keeps its own width (560, dragged from 240, full width) and its height to the bottom:
+   it is the board's column, not a panel over it (the board lays itself out beside it), and its pictures fill it. */
+body.cv-on { --lp-head: var(--hy-side-hd); --lp-sfw: var(--hy-side-q); --lp-top: calc(var(--lp-head) + var(--lp-sfw) + 6px); --lp-foot: 36px;
+  --lp-bg: var(--hy-side-bg); --lp-solid: var(--panel); --lp-well: color-mix(in srgb, var(--ink) 6%, var(--panel));
   --lp-field: color-mix(in srgb, var(--raise) 80%, transparent); }
 
 /* ---------- the panel: the board's dark side panels (canvas.html #hist) ---------- */
-body.cv-on main { background: var(--lp-bg) !important; border: 1px solid var(--line); border-radius: 18px;
-  -webkit-backdrop-filter: blur(24px) saturate(1.4); backdrop-filter: blur(24px) saturate(1.4); padding: calc(var(--lp-top) + 4px) 10px 16px; }
+body.cv-on main { background: var(--lp-bg) !important; border: 1px solid var(--hy-side-line); border-radius: var(--hy-side-r);
+  -webkit-backdrop-filter: var(--hy-side-blur); backdrop-filter: var(--hy-side-blur); padding: calc(var(--lp-top) + 4px) 10px calc(16px + var(--lp-foot)); }
 /* its shadow is the side panels' token (ui/ui.css --hy-sh-pop on body.cv-on main), as History's */
 body.cv-on .grid { gap: 6px; }
 body.cv-on .grid .card { border-radius: 6px; }
@@ -49,12 +53,12 @@ body.cv-on header.hy-dock:not(#_) { box-shadow: none !important; border-radius: 
 body.cv-on header.hy-dock .lfb:not(#_) { border-radius: 7px !important; }
 header.hy-dock .lph { display: none; }
 body.cv-on header.hy-dock :is(h1, h1 + a, .updown, #coll, #vf, .chk, #reset, .progress, .bar) { display: none !important; }
-body.cv-on header.hy-dock .lph { display: block; grid-row: 1; grid-column: 1 / -1; align-self: center; min-width: 0; padding: 0 76px 0 2px; overflow: hidden; white-space: nowrap;
+body.cv-on header.hy-dock .lph { display: block; grid-row: 1; grid-column: 1 / -1; align-self: center; min-width: 0; padding: 0 66px 0 4px; overflow: hidden; white-space: nowrap;
   text-overflow: ellipsis; color: var(--ink); font: 600 15px var(--sans); letter-spacing: -.005em; }
 body.cv-on header.hy-dock .lph em { margin-left: 6px; font: 400 11.5px var(--sans); font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* the search: one field the width of the panel, r15's .sfw, the History panel's field (canvas.html #hist input) */
 body.cv-on header.hy-dock #q { grid-row: 2; grid-column: 1 / -1; order: 0; width: 100%; height: var(--lp-sfw); box-sizing: border-box; margin: 0; cursor: text;
-  padding: 0 var(--lp-qr, 76px) 0 31px !important; border: 1px solid var(--line); border-radius: 9px !important; color: var(--ink); font: 400 12.5px var(--sans);
+  padding: 0 var(--lp-qr, 76px) 0 31px !important; border: 1px solid var(--line); border-radius: var(--hy-side-q-r) !important; color: var(--ink); font: 400 12.5px var(--sans);
   background: var(--lp-field) var(--hy-ic-search-sub) no-repeat 10px center / 13px; transition: border-color .2s ease; }
 body.cv-on header.hy-dock #q:placeholder-shown:not(:focus) { width: 100%; padding: 0 var(--lp-qr, 76px) 0 31px !important; color: var(--ink); cursor: text; }
 body.cv-on header.hy-dock #q::placeholder, body.cv-on header.hy-dock #q:placeholder-shown:not(:focus)::placeholder { color: var(--muted); }
@@ -76,10 +80,14 @@ header.hy-dock .lpf { display: none; }
 .lfb:is(.act, .open), .lfb:is(.act, .open):hover { background: var(--ink); color: var(--panel); }
 .lfb:focus-visible { outline: none; }
 
-/* the expand and the view buttons stand in the header, round as the dark skin's (r15 .hb 30 px, 9 px from the edge) */
-body.cv-on #lwide, body.cv-on #lviewBtn { top: calc(var(--lt) + 1px + (var(--lp-head) - 30px) / 2); border-radius: 999px; color: var(--sub); }
-body.cv-on #lwide { left: calc(12px + var(--lw, 560px) - 39px); }
-body.cv-on #lviewBtn { left: calc(12px + var(--lw, 560px) - 73px); }
+/* the expand and the view buttons stand in the header, a side panel's header buttons: square 24, 10 px from the edge (round 20; were
+   round 30, r15's .hb) */
+body.cv-on :is(#lwide, #lviewBtn) { top: calc(var(--lt) + 1px + (var(--lp-head) - var(--hy-side-btn)) / 2); width: var(--hy-side-btn); height: var(--hy-side-btn);
+  border-radius: var(--hy-ctl-r); color: var(--sub); }
+body.cv-on :is(#lwide, #lviewBtn):is(:hover, [aria-expanded=true]) { background: var(--hy-hov); }
+body.cv-on :is(#lwide, #lviewBtn) svg { width: 14px; height: 14px; }
+body.cv-on #lwide { left: calc(12px + var(--lw, 560px) - 35px); }
+body.cv-on #lviewBtn { left: calc(12px + var(--lw, 560px) - 65px); }
 body.cv-on #lview:not(.inl) { top: calc(var(--lt) + var(--lp-head) - 4px); }
 body.cv-on.lv-inline header.hy-dock .lph { padding-right: 40px; }
 body.cv-on #lview.inl { margin-right: 0; }   /* in the wide library's path, its buttons are in the header now */
@@ -118,7 +126,11 @@ body.fdock.cv-on .fbar { left: calc(13px + var(--fw, 268px) + 6px); width: calc(
 body.cv-on .fdrawer:not(.open) { display: none; }
 body.cv-on .fdrawer { clip-path: none !important; visibility: visible; transition: none; top: auto; bottom: auto; left: 13px; width: calc(var(--lw, 560px) - 2px);
   padding: 0 6px 4px; border: 0; border-radius: 0; background: var(--lp-solid) !important; -webkit-backdrop-filter: none; backdrop-filter: none; overflow: auto; }
-body.fdock.cv-on .fdrawer { bottom: 13px; width: var(--fw, 268px); padding: 0 6px 12px; border-right: 1px solid var(--hy-pline); border-radius: 0 0 0 17px; }
+body.fdock.cv-on .fdrawer { bottom: calc(13px + var(--lp-foot)); width: var(--fw, 268px); padding: 0 6px 12px; border-right: 1px solid var(--hy-pline); border-radius: 0; }
+/* «Find folder» in the wide form: the side panels' field 32, as the search over it (it was a pill, a second look in one panel, audit P-06) */
+body.cv-on .fdhead .hy-search > svg { left: 10px; width: 13px; height: 13px; }
+body.cv-on .fdhead .hy-search > input { height: var(--hy-side-q) !important; padding: 0 10px 0 31px !important; border-radius: var(--hy-side-q-r) !important;
+  background: var(--hy-side-q-bg) !important; font: 400 12.5px var(--sans) !important; }
 body.cv-on:not(.fdock):not(.fsect) .fdrawer { left: 19px; width: calc(var(--lw, 560px) - 14px); padding: 4px; border-radius: 10px; background: var(--lp-well) !important; }
 body.cv-on:not(.fdock) .fdhead { display: none; }
 body.fdock.cv-on .fdhead { margin: 0 0 4px; padding: 0 0 4px; top: 0; }
@@ -141,7 +153,13 @@ body.cv-on .frow .fx { width: 12px; }
 body.cv-on .frow .fx svg { width: 9px; height: 9px; }
 body.cv-on .frow .fi { color: var(--sub); opacity: 1; }
 body.cv-on .frow:hover { background: var(--hy-hov); color: var(--ink); }
-body.cv-on .frow.on { background: color-mix(in srgb, var(--hy-sel) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hy-sel) 50%, transparent); }
+body.cv-on .frow.on { background: var(--hy-side-on); box-shadow: var(--hy-side-ring); }   /* the side panels' chosen row (round 20) */
+/* the footnote at the panel's foot (ui/libpanel.js), a layer as the header is; the list ends over it */
+.lpft { display: none; }
+body.cv-on:not(.cv-only) .lpft { display: block; position: fixed; z-index: 12; left: 13px; bottom: 13px; width: calc(var(--lw, 560px) - 2px); height: var(--lp-foot);
+  overflow: hidden; border-radius: 0 0 calc(var(--hy-side-r) - 1px) calc(var(--hy-side-r) - 1px); background: var(--lp-solid); white-space: nowrap; text-overflow: ellipsis; --hx: -16px; }
+:root.lib-wait body.cv-on .lpft { opacity: 0; }
+:root.hy-hideui body.cv-on .lpft { animation: hyUiOut .36s cubic-bezier(.32,.72,0,1) both; pointer-events: none !important; }
 
 /* ---------- the filters: the app's window (v2.html #tfPanel), placed under the search by ui/libpanel.js ---------- */
 body.cv-on .tfpanel.lp-in { bottom: auto; transform: none; }

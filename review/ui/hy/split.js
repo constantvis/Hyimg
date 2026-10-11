@@ -10,13 +10,15 @@
 //     sep     a line between rows instead of a row (round 19's switch-b.html: the Studio and Preview, a line, the file's rows)
 //     off     the reason it does not apply now: the row stays, grey, with the reason as its tooltip (as the app's menus, ui/menu.js)
 //     run     what it does; row(el, it) optional: called with the row once drawn (a row whose words come later, «Open in Preview»)
+//     sub     () => markup: the row opens a submenu beside the menu, the app's one (ui/menu.js hyMenuSub), whose rows act by themselves
+//             («Open with ›», round 20, 2026-10-11: ui/menu.js hyOpenWith); the menu is then one of the app's menus (data-hymenu)
 //   variant  plate (the top row's glass plate, the default) or solid (the ink pill of the Info card, 30 px)
 // Keys in the open menu: ↑ ↓ walk it, ↵ or Space runs the row, Esc closes the menu and nothing else; a press elsewhere closes it.
 // Events: hy-run { index } after a row or the main part ran.
 import { HyElement, define, oneOf, t } from "./base.js";
 
 /** @typedef {{ label?: string, sep?: boolean, short?: string, icon?: string, keys?: string[], main?: boolean, off?: string, run?: () => void,
- *   row?: (el: HTMLElement, it: SplitItem) => void }} SplitItem */
+ *   row?: (el: HTMLElement, it: SplitItem) => void, sub?: () => string }} SplitItem */
 /** @typedef {"plate" | "solid"} SplitVariant */
 /** @type {readonly SplitVariant[]} */
 export const SPLIT_VARIANTS = ["plate", "solid"];
@@ -84,12 +86,13 @@ export class HySplit extends HyElement {
   runItem(it) { const i = this.list().indexOf(it); if (it.run) it.run(); this.emit("hy-run", { index: i }); }
 
   /** A row of the open menu was chosen. @param {HTMLElement} row */
-  choose(row) { const it = this.list()[Number(row.dataset.i)]; this.close(); if (it && !it.off) this.runItem(it); }
+  choose(row) { const it = row.dataset.i == null ? null : this.list()[Number(row.dataset.i)]; this.close(); if (it && !it.off && !it.sub) this.runItem(it); }
 
   openMenu() {
     if (this._menu) return;
     const m = this._menu = document.createElement("div");
     m.className = "hy-oi-menu"; m.setAttribute("role", "menu"); m.setAttribute("aria-label", this.menuLabel());
+    m.dataset.hymenu = "open";   // one of the app's menus: its submenus (ui/menu.js) open in it, ↑ ↓ → ← walk them
     m.addEventListener("click", e => {
       const r = /** @type {HTMLElement} */ (e.target).closest("button"); if (r instanceof HTMLElement && r.getAttribute("aria-disabled") !== "true") this.choose(r);
     });
@@ -120,6 +123,8 @@ export class HySplit extends HyElement {
       if (it.sep) return `<div class="oi-sep" role="separator"></div>`;
       const keys = it.keys && it.keys.length ? it.keys : it.main ? ["↵"] : [];
       const icon = it.icon ? (it.icon[0] === "<" ? it.icon : ic(it.icon, 15, 1.9, "oi-ic")) : `<span class="oi-ic"></span>`;
+      const sub = /** @type {any} */ (window).hyMenuSub;
+      if (it.sub && sub) return sub(`data-sub="${i}"`, icon, esc(it.label || ""), it.sub, null, { off: it.off });
       return `<button type="button" role="menuitem" data-i="${i}"${it.off ? ` aria-disabled="true" title="${esc(it.off)}"` : ""}>${icon}`
         + `<span class="oi-n ml">${esc(it.label || "")}</span>${keys.length ? `<span class="oi-k">${keys.map(k => `<hy-kbd size="m">${esc(k)}</hy-kbd>`).join("")}</span>` : ""}</button>`;
     }).join("");

@@ -557,8 +557,8 @@ body.cv-on.lrows .grid .card { aspect-ratio: auto; height: var(--ls, 150px); wid
 #lviewBtn:hover, #lviewBtn[aria-expanded=true] { background: var(--raise); color: var(--ink); }
 body.cv-on:not(.cv-only) #lviewBtn { display: grid; }
 #lview { position: fixed; top: calc(var(--lt, 12px) + 46px); left: calc(12px + var(--lw, 560px) - 244px); z-index: 20; width: 220px; box-sizing: border-box; padding: 10px;
-  display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--panel) 94%, transparent);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: var(--plate-sh);
+  display: grid; gap: 8px; border: 1px solid var(--line); border-radius: var(--hy-pop-r); background: var(--hy-pop-bg);   /* a pop-up (P-17): it was 94 % */
+  backdrop-filter: var(--hy-pop-blur); -webkit-backdrop-filter: var(--hy-pop-blur); box-shadow: var(--hy-sh-pop);
   opacity: 0; transform: translateY(-6px) scale(.97); transform-origin: 85% 0; pointer-events: none; visibility: hidden;
   transition: opacity .2s ease, transform .3s cubic-bezier(.3, .8, .25, 1), visibility 0s .3s; }
 #lview.open { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .2s ease, transform .3s cubic-bezier(.3, .8, .25, 1), visibility 0s; }
@@ -639,8 +639,8 @@ body.cv-on .pickbar { left: calc(12px + var(--lw, 560px) / 2); top: calc(var(--l
 .tfbtn[aria-expanded=true], .tfbtn.on { background: var(--ink); color: var(--panel); }
 .tfbtn hy-badge { position: absolute; top: -5px; right: -5px; }   /* the count of filters on: the app's badge (ui/hy/badge.css), placed here */
 .tfpanel { position: fixed; z-index: 17; bottom: 96px; left: 50%; transform: translateX(-50%); width: min(620px, calc(100vw - 32px)); max-height: 62vh; overflow: auto;
-  padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: 20px; background: color-mix(in srgb, var(--panel) 92%, transparent);
-  backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 16px 48px rgba(0,0,0,.4); }
+  padding: 10px; border: 1px solid var(--line); border-radius: var(--hy-pop-r); background: var(--hy-pop-bg);   /* a pop-up (P-17): it was 20 px round, 14/16 in */
+  backdrop-filter: var(--hy-pop-blur); -webkit-backdrop-filter: var(--hy-pop-blur); box-shadow: var(--hy-sh-pop); }
 .tfpanel:not([hidden]) { animation: tfIn .32s cubic-bezier(.32,.72,0,1); }
 @keyframes tfIn { from { opacity: 0; translate: 0 10px; } }
 .tfpanel[hidden] { display: none; }
@@ -816,8 +816,8 @@ html:has(.viewer.open), body:has(.viewer.open) { overflow: hidden; overscroll-be
 #iP a, #vPrompt a { color: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; -webkit-user-select: text; user-select: text; word-break: break-all; }
 #iP a:hover, #vPrompt a:hover { color: var(--ink); }
 /* right click on a card (owner 2026-10-03): the same menu as on the canvas */
-#lctx { position: fixed; z-index: 70; min-width: 210px; padding: 6px; display: none; border: 1px solid var(--line); border-radius: 14px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+#lctx { position: fixed; z-index: 70; min-width: 210px; padding: var(--hy-pop-pad); display: none; border: 1px solid var(--line); border-radius: var(--hy-pop-r);   /* a pop-up (P-17) */
+  background: var(--hy-pop-bg); backdrop-filter: var(--hy-pop-blur); -webkit-backdrop-filter: var(--hy-pop-blur); box-shadow: var(--hy-sh-pop); }
 #lctx.open { display: block; }
 #lctx button { display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: 9px; background: none; color: var(--sub); font: 500 13px var(--sans); text-align: left; cursor: default; white-space: nowrap; }
 #lctx button:hover:not(:disabled), #lctx button:focus-visible { background: var(--raise); color: var(--ink); outline: none; }
@@ -1557,7 +1557,7 @@ function render() {
   const emptyNote = emptyN ? `<p class="emptynote">${c0 ? T("{n} files here are empty", { n: emptyN }) : T("{n} files in all folders are empty", { n: emptyN })}</p>` : "";
   $("#list").innerHTML = emptyNote + (view.length ? [...groups.entries()].map(([k, arr]) =>
     `<section><h2>${arr[0][0].title} <span>${k} · ${arr.length}</span><i class="lqh"><b>${quiet(k, arr[0][0].title)}</b><em>${arr.length}</em></i></h2>${batchHtml(arr)}</section>`).join("")
-    : `<p class="empty">${T("Nothing matches these filters")}</p>`);
+    : `<p class="empty hy-side-none">${T("Nothing matches these filters")}</p>`);
   // counter (owner 2026-09-29): frames shown now / frames in the chosen collection; filters and search make the left number shrink
   const c = $("#coll").value;
   const main = pool().filter(i => { const top = i.folder.split("/")[0]; return c && !acrossOn() ? inFolder(i.folder, c) : top !== "_rejected"; });   // ♥, Металл, Точный count against everything
@@ -2162,7 +2162,7 @@ function inset(to) {   // tell the canvas how much of the screen the library cov
 }
 // The library's panel uncovered from its left part to its right edge, or covered back (libReveal): a mask (clip-path) moving on the
 // panel's parts, which keep their width, so nothing is laid out again while it moves. from/to: the visible right edge, in px.
-const LIB_PARTS = () => ["main", ".fbar", "header.hy-dock", "#lwide", "#lviewBtn", "#lgrip", ".fdrawer.open"].map(q => $(q)).filter(Boolean);
+const LIB_PARTS = () => ["main", ".fbar", "header.hy-dock", "#lwide", "#lviewBtn", "#lgrip", ".fdrawer.open", ".lpft"].map(q => $(q)).filter(Boolean);
 function libReveal(from, to, ms, done) {
   cancelAnimationFrame(libReveal.raf);
   const parts = LIB_PARTS(), rs = parts.map(e => e.getBoundingClientRect()), t0 = performance.now(), ease = k => 1 - Math.pow(1 - k, 3);

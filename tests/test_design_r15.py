@@ -12,7 +12,8 @@ The Library beside the board (ui/libpanel.css, ui/libpanel.js, v2.html):
 - no Pages block in the library («Pages выбирается сверху, отдельного Pages блока не делаем»)
 
 The ? panel, Tips (ui/keyspanel.css, ui/keyspanel.js): 340 px as History (it was up to 1000 px wide with uneven columns), the tabs Tips and
-All keys in r15's 58 px header (a pill of 30 px tabs), «Here · Board» tips and «Keys here» rows: each row the action's icon, its words and its keys, one cap per key, at the right end.
+All keys in a side panel's 52 px header (a pill of 30 px tabs; r15 drew 58, round 20 made it 52 on 2026-10-11), «Here · Board» tips and
+«Keys here» rows: each row the action's icon, its words and its keys, one cap per key, at the right end.
 
   python3 -m pytest tests/test_design_r15.py
 """
@@ -64,13 +65,14 @@ def test_library_panel_is_the_dark_side_panel(world):
     hist = frame.evaluate(SKIN, "#hist")
     assert lib == hist, f"the library wears History's skin: {lib} vs {hist}"
     assert lib["r"] == "18px" and "blur(24px)" in lib["blur"]
-    # the header: «Library 16», 600 15 px, in the panel's first 52 px; the expand button round, 9 px from the edge
+    # the header: «Library 16», 600 15 px, in the panel's first 52 px; the expand button a side panel's header button since round 20
+    # (2026-10-11): square 24, 10 px from the edge (r15 drew it round, 30 px, 9 from the edge)
     head = page.evaluate("() => { const h = document.querySelector('header.hy-dock .lph'), r = h.getBoundingClientRect(), s = getComputedStyle(h);"
                          " return { text: h.textContent, mid: (r.top + r.bottom) / 2, font: s.fontWeight + ' ' + s.fontSize }; }")
     assert re.fullmatch(r"Library\d+", head["text"]) and head["font"] == "600 15px", head
     assert 59 + 26 - 3 <= head["mid"] <= 59 + 26 + 3, head
     x = page.evaluate(GEO, "#lwide")
-    assert x[2:] == [30, 30] and 12 + 320 - (x[0] + 30) == 9 and x[1] == 59 + 11, x
+    assert x[2:] == [24, 24] and 12 + 320 - 1 - (x[0] + 24) == 10 and x[1] == 59 + 14, x   # 10 px inside the panel's edge
     # the search: 32 px under the header, 11 px in from the panel's sides; ⌘F and the Filter button at its end
     q = page.evaluate(GEO, "#q")
     assert q == [23, 111, 298, 32], q
@@ -206,22 +208,23 @@ def test_tips_panel_as_drawn(world):
       return { text: b.textContent.trim(), ic: s && s.dataset.ic, paths: s ? s.querySelectorAll('path').length : 0,
         w: s ? Math.round(s.getBoundingClientRect().width) : 0, bell: Math.round(document.querySelector('#bntf svg').getBoundingClientRect().width) }; }""")
     assert btn["text"] == "" and btn["ic"] == "tip" and btn["paths"] >= 3 and btn["w"] == btn["bell"], btn
-    assert frame.evaluate(GEO, "#keys") == [1088, 58, 340, 830], "History's place and size (it was up to 1000 px wide)"
+    k = frame.evaluate(GEO, "#keys")   # History's place and width (it was up to 1000 px wide); as tall as its rows since round 20 (2026-10-11)
+    assert k[:3] == [1088, 58, 340] and k[3] <= 830, k
     assert frame.evaluate(SKIN, "#keys") == frame.evaluate("() => { const h = document.querySelector('#hist'); h.classList.add('open');"
                                                           " const s = getComputedStyle(h), o = { bg: s.backgroundColor, r: s.borderTopLeftRadius,"
                                                           " b: s.borderTopWidth + ' ' + s.borderTopStyle, blur: s.backdropFilter }; h.classList.remove('open'); return o; }")
-    assert frame.evaluate(GEO, "#keys .kp-bh") == [1089, 59, 338, 58], "r15's 58 px header"
+    assert frame.evaluate(GEO, "#keys .kp-bh") == [1089, 59, 338, 52], "a side panel's 52 px header (round 20; r15 drew 58)"
     tabs = frame.evaluate("""() => [...document.querySelectorAll('#keys .kp-tab')].map(t => [t.textContent.trim(), t.getAttribute('aria-selected'),
       Math.round(t.getBoundingClientRect().height), getComputedStyle(t).fontSize, !!t.querySelector('svg')])""")
     assert tabs[0][0] == "Tips" and tabs[1][0].startswith("All keys") and tabs[0][1] == "true", tabs
     assert all(t[2] == 30 and t[3] == "13.5px" and not t[4] for t in tabs), tabs
-    assert frame.evaluate(GEO, "#keys .kp-x")[2:] == [30, 30]
+    assert frame.evaluate(GEO, "#keys .kp-x") is None, "no × since round 20: Esc and the ? button close it"
     s = frame.evaluate(GEO, "#keys .kp-s input")
-    assert s == [1099, 117, 318, 32], s
+    assert s == [1099, 111, 318, 32], s
     labels = frame.evaluate("() => [...document.querySelectorAll('#keys .kp-body > section:not([hidden]) .kp-lb')].map(l => l.innerText.replace(/\\s+/g, ' ').trim())")
     assert re.match(r"(?i)here · board 5", labels[0]) and re.match(r"(?i)keys here 9 All \d+", labels[1]), labels
     lb, tip = frame.evaluate(GEO, "#keys .kp-lb"), frame.evaluate(GEO, "#keys .kp-tip")
-    assert lb[1] == 155 and lb[3] == 30 and tip[0] == 1099 and tip[2] == 318, (lb, tip)
+    assert lb[1] == 149 and lb[3] == 30 and tip[0] == 1099 and tip[2] == 318, (lb, tip)
     # the tips: each its icon and its keys or main words
     tips = frame.evaluate(ROWS, "#keys .kp-tip")
     assert len(tips) == 5 and all(t["svg"] for t in tips) and all(t["caps"] or "Double click" in t["words"] or "Drag a folder" in t["words"] for t in tips), tips
@@ -253,7 +256,7 @@ def test_tips_all_keys_and_search(world):
     assert hits
     assert frame.evaluate("() => [...document.querySelectorAll('#keys .kp-all .kp-row')].filter(r => !r.hidden).every(r => r.textContent.toLowerCase().includes('group'))")
     assert len(hits) < len(rows)
-    frame.click("#keys .kp-x"); settle(frame, 300)
-    assert frame.evaluate("() => document.getElementById('keys').style.display") == "none"
+    frame.click("#bkeys"); settle(frame, 300)   # its button closes it (no × since round 20)
+    assert not frame.evaluate("() => document.getElementById('keys').classList.contains('open')")
     assert not page.errors, page.errors
     page.close()

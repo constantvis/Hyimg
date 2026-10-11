@@ -169,12 +169,13 @@ def audit_once(target, only=None):
 
 
 def focus_rings(target):
-    """every control of the chrome focused as the keyboard focuses it (focusVisible): what ring shows"""
+    """every control of the chrome focused as a click focuses it (focusVisible false): what ring shows. Since round 20 (owner 2026-10-11,
+    P-23 ★) the keyboard's focus has its one ring (look.css :focus-visible, tests/test_misc_r20.py); the mouse's has none"""
     target.evaluate(AUDIT_JS)
     return target.evaluate("""(C) => { const out = [];
       const els = [...document.querySelectorAll(C.chrome.join(','))].filter(hyAudit.vis).flatMap(p => [...p.querySelectorAll('button, select, input:not([type=hidden]), [tabindex]')])
         .filter((e, i, a) => a.indexOf(e) === i && hyAudit.vis(e.closest('.hy-slider') || e)).slice(0, 60);
-      for (const e of els) { const before = getComputedStyle(e).boxShadow; try { e.focus({ focusVisible: true, preventScroll: true }); } catch { continue; }
+      for (const e of els) { const before = getComputedStyle(e).boxShadow; try { e.focus({ focusVisible: false, preventScroll: true }); } catch { continue; }
         if (document.activeElement !== e) continue;
         const s = getComputedStyle(e), host = e.closest('.hy-slider'), hs = host ? getComputedStyle(host) : null;
         const ring = (s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0) ? 'outline ' + s.outlineWidth

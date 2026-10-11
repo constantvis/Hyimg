@@ -50,16 +50,17 @@
     const notes = items.filter(id => isNote(b.items[id])), rest = items.filter(id => b.items[id] && !isNote(b.items[id]));
     return [rest.length && hyNoteLink.what(b, rest), notes.length && T("{n} notes", { n: notes.length }), groups.length && T("{n} groups", { n: groups.length })].filter(Boolean).join(", ");
   }
-  // every delete says what went, with Undo (P4 B-47: a picture said «went to the archive» without Undo, a note said nothing); one step
+  // every delete says what went, with Undo (P4 B-47: a picture said «went to the archive» without Undo, a note said nothing); one step.
+  // Undo and the pictures come with every step's note (ui/undofx.js note, round 21)
   function deleted(before, items, groups, what) {
     const w = what || words(JSON.parse(before), items, groups) || T("1 object");
-    commit(before, tr => T("Deleted: {what}", { what: w }) + (tr.gone ? " · " + T("{n} pictures went to the archive", { n: tr.gone }) : ""),
-      { key: "del", actions: [{ label: T("Undo"), fn: () => { if (past[past.length - 1] === before) undo(); } }] });
+    commit(before, tr => T("Deleted: {what}", { what: w }) + (tr.gone ? " · " + T("{n} pictures went to the archive", { n: tr.gone }) : ""), { key: "del" });
   }
   window.hySel = { carry, pick, tops, clone, holds, words, deleted };
   // one question before something big happens, the app's own dialog, not the system's (P4 B-57): ui/confirm.js ask
   window.hyAsk = async o => (await import(new URL("confirm.js", SRC).href)).ask({ cancel: T("Cancel"), ...o });
   // a command that has nothing to act on says why, in one short note that the next one replaces (P4 B-48: ⌘D, ⌘G, ⌥A on a group,
   // ⇧C with several cards, F on a note did nothing and said nothing)
-  window.hyWhy = text => { if (typeof toast === "function") toast(text, "info", { key: "why" }); return false; };
+  // a refusal is yellow (round 21, owner 2026-10-11: «Акцент по смыслу (синий, зеленый, желтый)»; round 20 B-20: it was blue as «Deleted»)
+  window.hyWhy = text => { if (typeof toast === "function") toast(text, "warn", { key: "why" }); return false; };
 })();

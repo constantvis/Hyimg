@@ -285,8 +285,9 @@ def open_crop(p, server, w=1600, h=1000, lang=None):
 
 def test_crop_bar_stays_over_the_whole_picture_and_names_the_platforms(server):
     """Owner 2026-10-06: the ratio bar jumped around because it sat over the crop window; it stands above the whole picture, centred on
-    it, and neither dragging or resizing the window nor picking a ratio moves it. A ratio says which format it is: on hover its button
-    widens and shows the platform names (brand names, the same in both languages), which are also its title and aria-label."""
+    it, and neither dragging or resizing the window nor picking a ratio moves it. A ratio says which format it is (brand names, the same in
+    both languages) on a plate over its button under the pointer, and in its aria-label. Until 2026-10-11 the button widened to show the
+    names, and the centred bar moved every button under the pointer (board audit B-01): the buttons keep their width now."""
     with playwright.sync_playwright() as p:
         browser, page, errors = open_crop(p, server)
         page.evaluate("() => { const id = Object.keys(board.items).find(k => board.items[k].x === 340 && board.items[k].y === 520); cam.x = 100; cam.y = 100; cam.z = 1; renderCam(); startCrop(id); }")   # the whole picture on screen: nothing to scroll into view
@@ -303,27 +304,23 @@ def test_crop_bar_stays_over_the_whole_picture_and_names_the_platforms(server):
         page.mouse.move(x, y); page.mouse.down(); page.mouse.move(x + 15, y + 20, steps=5); page.mouse.up(); same("the window moved")
         for label in ("1:1", "4:5", "3:4", "2:3", "9:16", "Свободно"):
             page.locator("#crop .cratio button", has_text=label).first.click(); same("ratio " + label)
-        # the platforms: hovering widens the button, eased, and shows the names; the title and aria-label say the same
+        # the platforms: a plate over the button under the pointer says it, the button keeps its width
         names = {"1:1": "Instagram post", "4:5": "Instagram post", "2:3": "Pinterest", "9:16": "Reels · Stories · TikTok · Shorts", "3:4": None}
+        tip = "() => { const t = document.querySelector('#crop .cratio .rtip.on'); return t ? t.textContent : null; }"
         for k, name in names.items():
             b = page.locator(f"#crop .cratio button[data-ratio='{k}']")
-            w0 = b.bounding_box()["width"]; b.hover()
-            if name:
-                page.wait_for_function("([k, w0]) => document.querySelector(`#crop .cratio button[data-ratio='${k}']`).getBoundingClientRect().width > w0 + 20", arg=[k, w0], timeout=10000)
-            page.wait_for_timeout(700)
-            if name:
-                assert b.get_attribute("title") == name and name in b.get_attribute("aria-label") and b.locator(".rn").inner_text() == name, k
-                assert b.bounding_box()["width"] > w0 + 20, (k, w0)
-            else:
-                assert b.get_attribute("title") is None and b.locator(".rn").count() == 0 and abs(b.bounding_box()["width"] - w0) < 1, k
+            w0 = b.bounding_box()["width"]; b.hover(); page.wait_for_timeout(300)
+            assert page.evaluate(tip) == name, k
+            assert abs(b.bounding_box()["width"] - w0) < 0.5, (k, w0)
+            if name: assert name in b.get_attribute("aria-label") and b.get_attribute("title") is None, k
+            else: assert b.get_attribute("aria-label") is None, k
             same("hover " + k)
-        page.mouse.move(5, 5)
-        page.wait_for_function("() => document.querySelector(\"#crop .cratio button[data-ratio='9:16']\").getBoundingClientRect().width < 60", timeout=10000)   # compact again
+        page.mouse.move(5, 5); page.wait_for_function(f"() => ({tip})() === null")
         page.keyboard.press("x")   # turned landscape: 16:9 is YouTube, 5:4 / 4:3 / 3:2 are no platform's
-        assert page.locator("#crop .cratio button[data-ratio='9:16']").get_attribute("title") == "YouTube"
+        assert page.locator("#crop .cratio button[data-ratio='9:16']").get_attribute("data-n") == "YouTube"
         for k in ("4:5", "3:4", "2:3"):
-            assert page.locator(f"#crop .cratio button[data-ratio='{k}']").get_attribute("title") is None, k
-        assert page.locator("#crop .cratio button[data-ratio='1:1']").get_attribute("title") == "Instagram post"
+            assert page.locator(f"#crop .cratio button[data-ratio='{k}']").get_attribute("data-n") is None, k
+        assert page.locator("#crop .cratio button[data-ratio='1:1']").get_attribute("data-n") == "Instagram post"
         page.keyboard.press("Escape")
         assert not errors, errors
         browser.close()

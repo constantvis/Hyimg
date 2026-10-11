@@ -152,6 +152,9 @@ def run(g, page, ref, ops, dry=False, out=None, gridded=False, timeout=240):
         finally:
             browser.close()
     for i, r in enumerate(res.get("results", [])):
+        for k, v in list(r.items()):   # a picture a command gives back (matte.export as png: the alpha, the cut-out) goes to a file
+            if isinstance(v, str) and v.startswith("data:image/png;base64,"):
+                r[k] = _out(f"{i + 1}-{r['op']}-{k}"); open(r[k], "wb").write(base64.b64decode(v.split(",", 1)[1]))
         bits = [f"{k}={json.dumps(v, ensure_ascii=False)}" for k, v in r.items() if k not in ("op", "layers", "history", "res") and v is not None]
         print(f"{i + 1}. {r['op']}  " + "  ".join(bits))
     if not res.get("ok"):

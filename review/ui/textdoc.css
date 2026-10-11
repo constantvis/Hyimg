@@ -45,3 +45,24 @@
 .tx .td-m .td-cd { background: color-mix(in srgb, var(--ink) 9%, transparent); border-radius: .25em; }
 .tx .td-m .td-ln { color: var(--sel); text-decoration: underline; text-decoration-thickness: .06em; }
 .tx .td-m .td-cb { color: var(--sel); } .tx .td-m .td-dn { color: var(--sub); text-decoration: line-through; } .tx .td-m .td-qq { color: var(--sub); }
+
+/* the text's box (owner 2026-10-11, as Figma's text; ui/textdoc.js frame): Auto height and Fixed size wrap at tw, border-box so the
+   element is exactly tw (× th) wide; a Fixed box keeps its height and what does not fit shows below it, its outline the box; a document
+   in Auto width keeps every line on one line, as wide as the longest */
+.tx.wrap { box-sizing: border-box; }
+.tx.wrap:not(.doc) { white-space: pre-wrap; overflow-wrap: break-word; }
+.tx.wrap:not(.doc) .td-ed textarea.td-t { white-space: pre-wrap; overflow-wrap: break-word; }
+.tx.doc.tm-w { width: max-content; }
+.tx.doc.tm-w :is(.td-t, .td-b > *, .td-ed textarea.td-t, .td-w .td-m, .td-w textarea) { white-space: pre; overflow-wrap: normal; }
+
+/* the Text tool (T, ui/textbox.js): a text cursor over the board, the box being drawn in the selection's blue */
+#stage.ttool, #stage.ttool #world :not(.tidy, .tidy *) { cursor: text !important; }
+#ttbox { position: fixed; z-index: 7; box-sizing: border-box; border: 1px solid var(--sel); background: color-mix(in srgb, var(--sel) 6%, transparent); pointer-events: none; }
+
+/* the text bar's end (ui/textbox.js bar): the size's name in a cell as wide as the widest name, so the bar keeps its width whatever the
+   size (DESIGN.md «Полоса под указателем не двигается»); the box's three modes as micro segments and the reset */
+.tidy.tsz .tsl.tsn { display: inline-grid; }
+.tidy.tsz .tsl.tsn > span { grid-area: 1 / 1; visibility: hidden; }
+.tidy.tsz .tsl.tsn > span.on { visibility: visible; }
+.tidy.tsz hy-segmented { margin: 0 4px; }
+.tidy.tsz hy-segmented > button:hover { background: transparent; }

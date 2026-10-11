@@ -320,6 +320,7 @@ hyLang({
     "Next page · PageDown": "Следующая страница · PageDown",
     // the Library beside the board, round 15 (ui/libpanel.js, 2026-10-10)
     "Filter": "Фильтр",
+    "Files of this board's folder · <b>Esc</b> closes": "Файлы папки этой доски · <b>Esc</b> закрывает",   // the footnote beside the board (round 20)
     "Fold into the path": "Свернуть в путь",
     "Filters on: {n}": "Включено фильтров: {n}",
     "Search {n} items": "Поиск среди {n}",

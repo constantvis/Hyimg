@@ -3,9 +3,14 @@
 // another, the top one does not leave at once»): the newest stands in front, the older ones tuck in behind it a little lower and smaller,
 // the pointer on the stack fans it out into a list and holds every timer; each leaves after its own time, the oldest first.
 // Glass with blur like the panels; the colour says what it is: error red, news or a note blue, success green; light and dark themes.
-// hyToast(text, kind?, {sticky, actions, key}?) — key: one action's note, a later one with the same key takes its place, words and buttons
-// (P4 B-42: a cut said «Copied» and then «Cut», copy as image left «Copying…» beside «Copied»).
-// kind "error" | "info" | "success" | "warn" (amber: a clash of two edits, ui/merge.js); without it the words decide. A sticky one (something to act on,
+// hyToast(text, kind?, {sticky, actions, key, things, more}?) — key: one action's note, a later one with the same key takes its place, words and
+// buttons (P4 B-42: a cut said «Copied» and then «Cut», copy as image left «Copying…» beside «Copied»). things: the step's pictures
+// (thumbnail addresses, three at most are drawn) and more the count after them, «+3» (ui/undofx.js note gives them to every board step).
+// kind "error" | "info" | "success" | "warn" (amber: a clash of two edits, ui/merge.js; a command that refuses, hyWhy in ui/boardsel.js);
+// without it the words decide.
+// Round 21 (owner 2026-10-11 on r21/undo-config.html: «Цвет текста белый (как в undo-b) · Акцент по смыслу (синий, зеленый, желтый) · Вещи
+// шага миниатюрами», the rest «как сейчас»): the words are the ink, the kind's colour is the dot and the Undo word; blue says what happened,
+// green that it is done, yellow a refusal or a clash, red a failure. A sticky one (something to act on,
 // owner 2026-10-04: «key notes that matter in the moment can stay, with a × on the right to close») stays until its × is pressed. The canvas inside the library page sends its
 // notes up here, so one stack shows everything. They stand in the window's middle, an open library or not (owner 2026-10-04); --toast-x on <html> can move them, 50% by default.
 // They stand IN the top row, at its centre, over whatever is there for their few seconds (owner 2026-10-09, again: «должно быть на уровне
@@ -17,7 +22,7 @@
   width: var(--ht-w, 320px); max-width: calc(100vw - 32px); height: var(--ht-h, 0px); transition: top .3s cubic-bezier(.32,.72,0,1); }
 #hyToasts:not(:empty) { pointer-events: auto; }
 #hyToasts .ht { --k: var(--ht-info); position: absolute; transform-origin: 50% 0; left: 0; right: 0; top: 0; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: var(--hy-plate-h, 38px); padding: 9px 16px 9px 14px; border-radius: var(--ht-r, 999px);
-  font: 500 13px/1.4 var(--sans, -apple-system, system-ui, sans-serif); color: var(--k); cursor: default;   /* the words in the kind's colour, as its dot (owner 2026-10-06) */
+  font: 500 13px/1.4 var(--sans, -apple-system, system-ui, sans-serif); color: var(--ink, #fafafa); cursor: default;   /* the words white, the kind in the dot (round 21) */
   /* light (owner 2026-10-06: «the outline is too bright, it takes the attention; the colour more muted and see-through»): the kind is
      the dot, the plate barely tinted, the edge the panels' hairline */
   /* 86% of the panel under the blur (was 74%): over the board's frame WebKit does not blur what lies in another document, and a bar's
@@ -33,7 +38,11 @@
 #hyToasts .ht.error { --k: var(--ht-error); } #hyToasts .ht.success { --k: var(--ht-success); } #hyToasts .ht.warn { --k: var(--ht-warn); }
 #hyToasts .ht .x { flex: none; width: 22px; height: 22px; margin: -3px -6px -3px 2px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: inherit; opacity: .6;
   display: grid; place-items: center; cursor: pointer; font: inherit; } #hyToasts .ht .x:hover { opacity: 1; background: color-mix(in srgb, currentColor 12%, transparent); }
-#hyToasts .ht.act > span { flex: 1; min-width: 0; }
+#hyToasts .ht.act > span:first-of-type { flex: 1; min-width: 0; }
+#hyToasts .ht .th { flex: none; display: inline-flex; align-items: center; margin: -4px 0 -4px 2px; }   /* the step's things: 22 px tiles, overlapped */
+#hyToasts .ht .th b { width: 22px; height: 22px; margin-left: -6px; border-radius: 5px; background: var(--raise, #27272a) center / cover no-repeat; box-shadow: 0 0 0 2px var(--panel, #18181b); }
+#hyToasts .ht .th b:first-child { margin-left: 0; }
+#hyToasts .ht .th em { margin-left: 5px; font: 500 11.5px/22px var(--sans, -apple-system, system-ui, sans-serif); font-style: normal; color: var(--muted, #71717a); }
 #hyToasts .ht .ab { flex: none; height: 24px; margin: -3px -4px -3px 0; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: var(--k); font: 600 12.5px var(--sans, -apple-system, system-ui, sans-serif);
   cursor: pointer; white-space: nowrap; transition: background .15s cubic-bezier(.32,.72,0,1); } #hyToasts .ht .ab:hover { background: color-mix(in srgb, var(--k) 16%, transparent); }
 :root { --ht-info: #0a84ff; --ht-success: #30d158; --ht-error: #ff453a; --ht-warn: #fbbf24; }
@@ -46,6 +55,15 @@
   // the words in the app's language (ui/i18n.js; its Russian in ui/lang-common.js, owner 2026-10-06); a page without i18n.js: English
   const t = (k, v) => window.T ? window.T(k, v) : String(k).replace(/^\w+::/, "").replace(/\{(\w+)\}/g, (m, x) => (v && x in v ? String(v[x]) : m));
   const kindOf = t => ERR.test(t) ? "error" : OK.test(t) ? "success" : "info";
+  // the step's things as tiles after the words: three at most, then «+N» (round 21); none when the note has no pictures
+  const thingsOf = (el, opt) => {
+    const old = el.querySelector(".th"); if (old) old.remove();
+    const urls = (opt.things || []).filter(Boolean), more = (opt.more || 0) + Math.max(0, urls.length - 3); if (!urls.length) return;
+    const th = document.createElement("span"); th.className = "th"; th.setAttribute("aria-hidden", "true");
+    urls.slice(0, 3).forEach(u => { const b = document.createElement("b"); b.style.backgroundImage = `url("${String(u).replace(/["\\]/g, "")}")`; th.appendChild(b); });
+    if (more > 0) { const m = document.createElement("em"); m.textContent = "+" + more; th.appendChild(m); }
+    el.querySelector("span").after(th);
+  };
   let box = null;
   const ensure = () => {
     if (box && box.isConnected) return box;
@@ -99,12 +117,12 @@
     });
     if (same) {   // the same action's note: its words, kind and buttons now, its time again
       same.className = "ht " + kind + (opt.actions && opt.actions.length ? " act" : ""); same._text = text; same.querySelector("span").textContent = text;
-      same.querySelectorAll(".ab").forEach(x => x.remove()); buttons(same); same._ms = opt.actions && opt.actions.length ? 6500 : kind === "error" ? 5200 : 3200;
+      same.querySelectorAll(".ab").forEach(x => x.remove()); thingsOf(same, opt); buttons(same); same._ms = opt.actions && opt.actions.length ? 6500 : kind === "error" ? 5200 : 3200;
       if (!same._sticky) life(same); requestAnimationFrame(lay); return same;
     }
     const el = document.createElement("div"); el.className = "ht " + kind; el._text = text; el._key = opt.key || null; el._ms = kind === "error" ? 5200 : 3200;
     el.innerHTML = "<i></i><span></span>"; el.lastChild.textContent = text; el._sticky = !!opt.sticky;
-    buttons(el);
+    thingsOf(el, opt); buttons(el);
     if (opt.actions && opt.actions.length) { el._ms = 6500; el.classList.add("act"); }   // time to read it and reach a button
     if (el._sticky) {   // it stays: only its × takes it away
       const x = document.createElement("button"); x.className = "x"; x.type = "button"; x.title = t("Close"); x.setAttribute("aria-label", t("Close notification"));

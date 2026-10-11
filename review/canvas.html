@@ -5,13 +5,13 @@
 <meta charset="utf-8">
 <script src="/ui/settings.js"></script>   <!-- the app's settings, the same in every project (owner 2026-10-04); first, before anything reads them -->
 <script src="/ui/i18n.js"></script>   <!-- English or Russian, the app's setting cv.lang (owner 2026-10-06); its words in lang-*.js -->
-<script src="/ui/lang-common.js"></script>
+<script src="/ui/lang-common.js"></script><script src="/ui/boardzoom.js"></script>   <!-- the zoom: ⇧1 ⇧2 ⇧0 ⌘+ ⌘−, the menu at the % (2026-10-11) -->
 <script src="/ui/lang-board.js"></script><script src="/ui/dock.js"></script><script src="/ui/palette.js"></script><script src="/ui/boarddock.js"></script><script src="/ui/studiochip.js"></script>
-<script src="/ui/paper.js"></script>
+<script src="/ui/paper.js"></script><script src="/ui/textbox.js"></script>   <!-- the Text tool T, a text's box (2026-10-11) -->
 <script src="/ui/stars.js"></script><script src="/ui/switchin.js"></script>   <!-- the loading stars; coming in through ⌃Tab (2026-10-08) -->
 <script src="/ui/dragband.js"></script><script src="/ui/copyimage.js"></script>   <!-- ⇧⌘C: any card as a PNG (2026-10-09) -->
 <script src="/ui/typing.js"></script><script src="/ui/keyhints.js"></script><script src="/ui/keyspanel.js"></script>   <!-- key caps under ⌘ (2026-10-05); the ? panel's icons (2026-10-09) -->
-<script src="/ui/menu.js"></script><script src="/ui/arrange.js"></script>   <!-- the menus; Arrange ›: tidy, grid and table, layout patterns -->
+<script src="/ui/menu.js"></script><script src="/ui/ctxmain.js"></script><script src="/ui/selbar.js"></script><script src="/ui/arrange.js"></script>   <!-- menus, bars, Arrange › -->
 <script src="/ui/video.js"></script>   <!-- which address a video plays from: the original, or a WebM copy for an engine without H.264 (owner 2026-10-05) -->
 <script src="/ui/projicon.js"></script><script src="/ui/storage.js"></script><script src="/ui/people.js"></script><script src="/ui/avatar.js"></script>   <!-- who: faces -->
 <script src="/ui/dotsgl.js"></script><script src="/ui/applink.js"></script>   <!-- hyimg:// links that open the app, and the browser's (owner 2026-10-07) -->
@@ -28,10 +28,11 @@
 <script src="/ui/merge.js"></script><script src="/ui/undorebase.js"></script><script src="/ui/grid.js"></script>   <!-- merged saves (review/merge.py), ⌘Z over them; Arrange's grids -->
 <script src="/ui/pagesleep.js"></script><script src="/ui/topage.js"></script><link rel="stylesheet" href="/ui/noteglass.css">   <!-- pages asleep; Move to page; glass notes -->
 <script src="/ui/bellrow.js"></script><script src="/ui/bellthumbs.js"></script><link rel="stylesheet" href="/ui/bell.css">   <!-- the bell: rows, pictures, look -->
+<script src="/ui/side.js"></script>   <!-- a side panel's parts: header, search, footnote, empty list (round 20, 2026-10-11) -->
 <script src="/ui/perflog.js"></script><script src="/ui/undonew.js"></script><script src="/ui/boardclip.js"></script>   <!-- the log of frame drops (Settings › Diagnostics); ⌘Z in a field -->
 <script src="/ui/boardhints.js"></script><script src="/ui/cardfav.js"></script><script src="/ui/boardkeys.js"></script><script src="/ui/undofx.js"></script><script src="/ui/boardsel.js"></script><script src="/ui/snap.js"></script>   <!-- hints; ♥; keys; ⌘Z of ♥; groups; snapping -->
 <script src="/ui/outer.js"></script>   <!-- pictures, videos and PDFs dropped or pasted from outside (owner 2026-10-10) -->
-<script src="/ui/textsize.js"></script><script src="/ui/textdoc.js"></script><link rel="stylesheet" href="/ui/textdoc.css">   <!-- a text: a title and a Markdown body (2026-10-09) -->
+<script src="/ui/textsize.js"></script><script src="/ui/textdoc.js"></script><link rel="stylesheet" href="/ui/textdoc.css"><script src="/ui/cropframe.js"></script>   <!-- a text (2026-10-09); crop -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hyimg canvas</title>
 <!-- ИИ-агенту: инструкция к этому проекту по адресу /agent на этом же сервере (например http://localhost:4180/agent). -->
@@ -143,18 +144,14 @@ button { cursor: pointer; }
 /* its dot, the list and its rows: ui/bell.css, Home's bell too (ui/homebell.js) */
 /* version history (owner 2026-09-30: closer to Figma, in our look): a glass panel like the dock, the versions as a timeline by day,
    long runs of autosaves folded, the one on the board lit in blue, the restore button only where you point */
-#hist { position: absolute; top: 58px; bottom: 12px; right: 12px; z-index: 31; width: 340px; display: none; flex-direction: column; overflow: hidden;
-  border: 1px solid var(--line); border-radius: 18px; font-size: 13px;
-  background: color-mix(in srgb, var(--panel) 97%, transparent); backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4); box-shadow: 0 16px 48px rgba(0,0,0,.4); }
-#hist.open { display: flex; }
+#hist { z-index: 31; display: none; } #hist.open { display: flex; }   /* a side panel (ui/hy/side.css .hy-side, round 20, 2026-10-11) */
 #stage.side-open #info { display: none !important; }
-#hist .hh { justify-content: space-between; }   /* its header is a block's (ui/hy/block.css .hy-bh, round 12 «A · Line», owner 2026-10-09) */
 #hist .save { display: flex; gap: 6px; padding: 6px 12px 12px; border-bottom: 1px solid var(--line); }
 #hist input { flex: 1; min-width: 0; height: 32px; border: 1px solid var(--line); border-radius: 9px; background: color-mix(in srgb, var(--raise) 80%, transparent); padding: 0 10px; color: var(--ink); font: 13px var(--sans); outline: none; }
 #hist input:focus { border-color: color-mix(in srgb, #0a84ff 70%, var(--line)); }
 #hist input::placeholder { color: var(--muted); }
 #histSave { height: 32px; padding: 0 14px; border: 0; border-radius: 9px; background: var(--ink); color: var(--panel); font: 600 12px var(--sans); cursor: pointer; white-space: nowrap; }
-#histList { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 4px 8px 16px; }
+#histList { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 4px 8px 16px; }
 #histList .hday { position: sticky; top: 0; z-index: 2; margin: 0 -8px; padding: 12px 18px 6px; font: 600 10.5px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
   background: linear-gradient(color-mix(in srgb, var(--panel) 96%, transparent) 70%, transparent); }
 #histList .hv { position: relative; display: grid; grid-template-columns: 22px 1fr; padding: 8px 10px 9px 4px; border-radius: 11px; cursor: pointer; }
@@ -179,19 +176,19 @@ button { cursor: pointer; }
 #histList .hx { margin-top: 5px; display: flex; gap: 6px; align-items: flex-start; font-size: 11.5px; color: #e8a33d; }
 /* no restore button in the rows (owner 2026-09-30: it appeared on hover, pushed the list down and sat right under the pointer):
    a click only shows the version, "work in it" lives in the banner over the canvas */
-#histList .hv.viewing { background: color-mix(in srgb, #0a84ff 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, #0a84ff 55%, transparent); }
+#histList .hv.viewing { background: var(--hy-side-on); box-shadow: var(--hy-side-ring); }
 #histList .hv.viewing .dot { box-shadow: 0 0 0 3px color-mix(in srgb, #0a84ff 35%, transparent); }
 #histList .hgrp { position: relative; display: grid; grid-template-columns: 22px 1fr; align-items: center; width: 100%; height: 30px; padding: 0 10px 0 4px; border: 0; border-radius: 9px; background: transparent;
   color: var(--muted); font: 500 12px var(--sans); text-align: left; cursor: pointer; }
 #histList .hgrp::before { content: ""; position: absolute; left: 14.5px; top: 0; bottom: 0; width: 1px; background: var(--line); }
 #histList .hgrp:hover { color: var(--ink); background: color-mix(in srgb, var(--raise) 70%, transparent); }
 #histList .hgrp span:first-child { justify-self: center; position: relative; z-index: 1; font-size: 9px; background: var(--panel); border-radius: 99px; width: 13px; text-align: center; }
-#histList .empty { padding: 24px 14px; color: var(--muted); line-height: 1.5; } #histList .empty .hy-hint { margin-top: 2px; }
+#histList .hy-side-none .hy-hint { margin-top: 2px; }
 /* the event timeline (owner 2026-10-02): what was added, grouped, written, moved, with the pictures themselves; a click goes there */
 /* #hist .htabs: Activity | Versions, the app's choice as tabs (<hy-segmented variant=tabs>, ui/hy/segmented.css) */
 #hist:not(.ver) .save, #hist:not(.ver) #histList { display: none; }
 #hist.ver #evList { display: none; }
-#evList { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 4px 8px 16px; }
+#evList { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 4px 8px 16px; }
 #evList .hday { position: sticky; top: 0; z-index: 2; margin: 0 -8px; padding: 12px 18px 6px; font: 600 10.5px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
   background: linear-gradient(color-mix(in srgb, var(--panel) 96%, transparent) 70%, transparent); }
 #evList .ev { position: relative; display: grid; grid-template-columns: 22px 1fr; padding: 8px 10px 10px 4px; border-radius: 11px; cursor: pointer; }
@@ -216,7 +213,6 @@ button { cursor: pointer; }
 #evList .egroup .thumbs { margin-top: 0; }
 #evList .etext { margin-top: 6px; font: 700 15px/1.2 var(--sans); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #evList .more-ev { display: block; width: 100%; height: 32px; margin-top: 6px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--sub); font: 500 12px var(--sans); cursor: pointer; }
-#evList .empty { padding: 24px 14px; color: var(--muted); line-height: 1.5; }
 /* looking at a saved version (owner 2026-09-30): the board shows it read-only under a banner; nothing is saved until "work in it" */
 #pv { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 32; display: none; align-items: center; gap: 8px;
   padding: 6px 6px 6px 16px; border-radius: 999px; background: #0a84ff; color: #fff; font: 500 13px var(--sans); white-space: nowrap; box-shadow: 0 12px 36px rgba(0,0,0,.4); }
@@ -231,7 +227,6 @@ button { cursor: pointer; }
 #hist .v .miss { grid-column: 1 / -1; color: #e8a33d; font-size: 12px; }
 #hist .v button { grid-row: 1 / span 2; grid-column: 2; background: transparent; color: var(--sub); border: 1px solid var(--line); height: 28px; }
 #hist .v button:hover { color: var(--ink); border-color: var(--ink); }
-#hist .empty { color: var(--muted); padding: 6px 2px; }
 /* a picture whose file is gone from disk (moved, renamed, deleted): a striped card that says so */
 .it.missing { background: repeating-linear-gradient(135deg, #3a1f1f 0 calc(12px / var(--z)), #2a1717 0 calc(24px / var(--z))); }
 .it.missing img { display: none; }
@@ -538,12 +533,7 @@ html[data-bench~="nogrp"] #groups { display: none; }
 #jump svg { flex: 0 0 auto; opacity: .7; }
 #marq { position: absolute; border: 1px solid var(--sel); background: color-mix(in srgb, var(--sel) 10%, transparent); pointer-events: none; display: none; z-index: 10; }
 
-/* crop mode */
-#crop { position: absolute; display: none; z-index: 20; }
-#crop img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: .35; pointer-events: none; }
-#crop .win { position: absolute; overflow: hidden; outline: calc(2px / var(--z)) solid #fff; box-shadow: 0 0 0 calc(1px / var(--z)) rgba(0,0,0,.5); cursor: move; }
-#crop .win img { opacity: 1; }
-#crop .h { background: #fff; border-color: #111; margin: 0; scale: none; }
+/* crop mode: the frame, its handles and the ratio bar are ui/cropframe.js's */
 /* crop & trim of a video (owner 2026-10-05/06): the picture's crop frame with the clip playing inside it, and over its bottom a strip
    of frames with the in and out handles and the playhead; the file never changes, the card keeps trim: [in, out] */
 #crop .win video { position: absolute; max-width: none; display: block; object-fit: fill; pointer-events: none; opacity: 0; transition: opacity .2s cubic-bezier(.32,.72,0,1); }
@@ -580,24 +570,6 @@ html[data-bench~="nogrp"] #groups { display: none; }
 :root.hy-hideui[data-hideui=zoom] :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #gsticky, [data-hyui]) { animation-name: hyUiZoom; }
 :root.hy-ui-in:not(.hy-hideui) :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #gsticky, [data-hyui]) { animation: hyUiBack .2s cubic-bezier(.32,.72,0,1); }
 @media (prefers-reduced-motion: reduce) { :root.hy-hideui :is(#crumb, #bset, #bhist, #bkeys, #bntf, #dock, #info, #sets, #keys, #hist, #ntf, #pages, #gsticky, [data-hyui]) { animation-duration: .01s; } }
-#hint .hv { display: none; } #hint.vid .hp { display: none; } #hint.vid .hv { display: inline; }
-/* proportions over the crop frame (owner 2026-10-02): Свободно by default, a ratio locks the frame to it, ⇄ turns it */
-.cratio button { padding: 0 10px; gap: 0; font-variant-numeric: tabular-nums; }
-/* a ratio says which format it is (owner 2026-10-06): the numbers stay compact, and under the pointer the button widens, eased, with the platform names beside them */
-.cratio .rn { display: inline-block; max-width: 0; margin-left: 0; opacity: 0; overflow: hidden; white-space: nowrap; font-weight: 500; transition: max-width .38s cubic-bezier(.32,.72,0,1), margin .38s cubic-bezier(.32,.72,0,1), opacity .25s cubic-bezier(.32,.72,0,1); }
-.cratio button:hover .rn, .cratio button:focus-visible .rn { max-width: 22em; margin-left: 7px; opacity: .72; }
-@media (prefers-reduced-motion: reduce) { .cratio .rn { transition: opacity .1s; } }
-.cratio button.on { background: var(--ink); color: var(--panel); }
-.cratio .flip { width: 30px; padding: 0; justify-content: center; }
-/* the turn button is the frame itself (owner 2026-10-06: «portrait / landscape, it just turns, a rectangle with rounded corners») */
-.cratio .flip svg { transition: transform .32s cubic-bezier(.32,.72,0,1); }
-.cratio .flip.land svg { transform: rotate(90deg); }
-.cratio .flip:disabled { opacity: .3; cursor: default; }
-.cratio .flip:disabled:hover { background: transparent; }
-#crop .h[data-c=nw] { left: 0; top: 0; transform: translate(-50%, -50%); cursor: nwse-resize; }
-#crop .h[data-c=ne] { right: 0; top: 0; transform: translate(50%, -50%); cursor: nesw-resize; }
-#crop .h[data-c=sw] { left: 0; bottom: 0; transform: translate(-50%, 50%); cursor: nesw-resize; }
-#crop .h[data-c=se] { right: 0; bottom: 0; transform: translate(50%, 50%); cursor: nwse-resize; }
 
 /* keys look like keycaps (owner 2026-09-29): ui/hy/kbd.css, the key cap of the whole app */
 .bar button { display: inline-flex !important; align-items: center; gap: 0; white-space: nowrap; }
@@ -605,7 +577,6 @@ html[data-bench~="nogrp"] #groups { display: none; }
 /* no focus ring on the dock after a click (owner 2026-09-29); the canvas keeps the keyboard */
 .bar button:focus, .bar button:focus-visible { outline: none !important; box-shadow: none !important; }
 .bar kbd { height: 18px; min-width: 18px; font-size: 10px; margin-left: 6px; background: var(--panel); color: var(--sub); }
-#hint kbd { margin: 0 2px; }
 /* chrome: one dock at the bottom, same look as the library dock (owner 2026-09-29) */
 .bar { position: absolute !important; left: calc(var(--inset, 0px) + (100% - var(--inset, 0px)) / 2) !important; top: auto !important; bottom: 18px; transform: translateX(-50%);
   display: flex !important; align-items: center; gap: 6px !important; padding: 6px; border: 1px solid var(--line); border-radius: 999px; z-index: 30;
@@ -657,9 +628,12 @@ body.embed #tlib { display: none !important; }
 #status.old { position: absolute; right: 12px; bottom: 12px; z-index: 30; font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 4px 10px; }
 #status.err { color: #e11d48; border-color: #e11d48; }
 /* frame details on the right, like Figma's properties panel, floating (owner 2026-09-29); below the view switch of the review page */
-#info { position: absolute; right: 12px; top: 60px; width: 300px; max-height: calc(100% - 150px); overflow: auto; overscroll-behavior: contain; z-index: 30; border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: 18px; padding: 16px 16px 32px; display: none;   /* roomier, the bottom twice the sides (owner 2026-09-29) */
-  /* light glass, like the docks (owner 2026-09-29): the board stays visible through it */
-  background: color-mix(in srgb, var(--panel) 66%, transparent); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+/* the side panels' width, corner, place and glass (round 20, 2026-10-11, ui/tokens.css --hy-side-*; was 300 px at 66 %), its own header (the
+   file, ui/infohead.js) and no close: it goes with the selection; at its foot the side panels' footnote (ui/infohead.css #iFt), where the
+   bottom twice the sides was (owner 2026-09-29) */
+#info { position: absolute; right: var(--hy-side-gut); top: var(--hy-side-top); width: var(--hy-side-w); box-sizing: border-box; max-height: calc(100% - 150px); overflow: auto;
+  overscroll-behavior: contain; z-index: 30; border: 1px solid var(--hy-side-line); border-radius: var(--hy-side-r); padding: 16px 16px 0; display: none;
+  background: var(--hy-side-bg); backdrop-filter: var(--hy-side-blur); -webkit-backdrop-filter: var(--hy-side-blur); box-shadow: var(--hy-sh-pop); }
 /* just come up for a click on a card: clicks pass through it for a double click's time, so the second click of a double click reaches the
    card under it (infoFresh) */
 #info.fresh, #info.fresh * { pointer-events: none !important; }
@@ -697,9 +671,9 @@ body.embed #tlib { display: none !important; }
 .bar button.pg { max-width: 190px; gap: 6px !important; padding: 0 10px 0 14px !important; color: var(--ink) !important; }
 .bar .pg span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar .pg svg { flex: 0 0 auto; opacity: .55; }
-#pages { position: absolute; z-index: 35; width: 240px; max-height: 50vh; overflow: auto; overscroll-behavior: contain; padding: 6px; display: none;
-  border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, var(--panel) 82%, transparent);
-  backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+#pages { position: absolute; z-index: 35; width: 240px; max-height: 50vh; overflow: auto; overscroll-behavior: contain; padding: var(--hy-pop-pad); display: none;
+  border: 1px solid var(--line); border-radius: var(--hy-pop-r); background: var(--hy-pop-bg);   /* a pop-up (P-17): it was 82 % and 16 px */
+  backdrop-filter: var(--hy-pop-blur); -webkit-backdrop-filter: var(--hy-pop-blur); box-shadow: var(--hy-sh-pop); }
 #pages.open { display: block; }
 /* where I am (owner 2026-10-04: «Home > File > Page, on a plate like the buttons on the right»): the house goes to the app's home, the
    project's name is cut at 100 px and shows whole under the mouse, the page is the switch of pages. Top left, past the window's buttons */
@@ -766,8 +740,8 @@ body.embed #tlib { display: none !important; }
 #pages.top { border-radius: 14px; }
 #ctx button svg { flex: none; opacity: .75; } #ctx button.danger { color: #e5484d; } #ctx button.danger:hover { background: color-mix(in srgb, #e5484d 14%, transparent); color: #e5484d; }
 /* right-click menu (owner 2026-10-01): copy a link to a frame, group, note or text, or to the current view */
-#ctx { position: fixed; z-index: 60; min-width: 230px; padding: 6px; display: none; border: 1px solid var(--line); border-radius: 14px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+#ctx { position: fixed; z-index: 60; min-width: 230px; padding: var(--hy-pop-pad); display: none; border: 1px solid var(--line); border-radius: var(--hy-pop-r);   /* a pop-up (P-17) */
+  background: var(--hy-pop-bg); backdrop-filter: var(--hy-pop-blur); -webkit-backdrop-filter: var(--hy-pop-blur); box-shadow: var(--hy-sh-pop); }
 #ctx.open { display: block; }
 #ctx button { display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: 9px; background: none; color: var(--sub); font: 500 13px var(--sans); text-align: left; cursor: default; white-space: nowrap; }
 #ctx button:hover, #ctx button:focus-visible { background: var(--raise); color: var(--ink); outline: none; }
@@ -792,7 +766,6 @@ body.embed #tlib { display: none !important; }
 #pages .row.drag { position: relative; z-index: 2; background: var(--raise); color: var(--ink); box-shadow: 0 8px 24px rgba(0,0,0,.28); cursor: grabbing; }
 #pages .add { display: flex; align-items: center; gap: 6px; width: 100%; height: 32px; margin-top: 4px; padding: 0 8px; border: 0; border-top: 1px solid var(--line); border-radius: 0 0 10px 10px; background: transparent; color: var(--sub); }
 #pages .add:hover { color: var(--ink); }
-#hint { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 30; font-size: 12px; color: var(--sub); background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 6px 12px; display: none; }
 #empty { position: absolute; inset: 0; display: grid; place-items: center; color: color-mix(in srgb, var(--sub) 50%, transparent); pointer-events: none; text-align: center; font: 13px/22px var(--sans); }
 /* the same text as the loading steps, as dim as the done ones (their .5; the opacity itself is the entrance's, so the colour carries it) */
 #keys { display: none; }   /* the ? panel, round 15's Tips: ui/keyspanel.css (2026-10-10) */
@@ -827,12 +800,12 @@ body.embed #tlib { display: none !important; }
     <div id="vbig" role="dialog" aria-label="Video" aria-hidden="true"><div class="vbox"><div class="vhd"><b id="vbName"></b><span id="vbMeta"></span><span class="vpg"><button id="vbPrev" title="Previous page · ←" aria-label="Previous page"><svg data-ic="prev" width="14" height="14" stroke-width="2.4"></svg></button><span id="vbPg"></span><button id="vbNext" title="Next page · →" aria-label="Next page"><svg data-ic="next" width="14" height="14" stroke-width="2.4"></svg></button></span><button id="vbClose" title="Close · Esc" aria-label="Close"><svg data-ic="close" width="14" height="14" stroke-width="2.2"></svg></button></div><video id="vbV" controls loop playsinline preload="metadata" disablepictureinpicture></video><img id="vbI" class="vbi" alt="" draggable="false"></div></div>
     <div class="bar" id="dock">
       <button id="bpage" class="pg" title="Pages · double-click to rename"><span id="pgName">Page 1</span><svg data-ic="popup" width="12" height="12" stroke-width="2.4"></svg></button>
-      <button id="tlib" title="Show or hide the library · \">Library</button>
+      <button id="tlib" title="Show or hide the library · ⌘M">Library</button>
       <button id="bplus" class="ic" title="Create: a note, a text, a timeline…" aria-label="Create"><svg data-ic="plus" width="18" height="18" stroke-width="1.85"></svg></button>
       <span class="sep"></span><span id="dtools" class="dgrp"></span><span class="sep"></span>   <!-- one dock: create | tools | history | view % (ui/boarddock.js) -->
       <button id="bundo" class="ic" title="Undo · ⌘Z" aria-label="Undo"><svg data-ic="undo" width="16" height="16" stroke-width="2" style="display:block"></svg></button>
       <button id="bredo" class="ic" title="Redo · ⇧⌘Z" aria-label="Redo"><svg data-ic="redo" width="16" height="16" stroke-width="2" style="display:block"></svg></button>
-      <span class="sep"></span><button id="bfit" class="zlb wide" title="Show all · ⇧1" aria-label="Show all"><span class="zl" id="zl">100%</span></button>
+      <span class="sep"></span><button id="bfit" class="zlb wide" title="View zoom" aria-label="View zoom"><span class="zl" id="zl">100%</span></button>
       <span class="st" id="status">loading…</span>
 
     </div>
@@ -842,13 +815,14 @@ body.embed #tlib { display: none !important; }
     <button id="bset" class="hy-pop" title="App settings" aria-label="App settings" aria-expanded="false"><svg data-ic="settings" width="18" height="18" stroke-width="1.8"></svg></button>
     <button id="bkeys" title="Tips and shortcuts" aria-label="Tips and shortcuts" aria-expanded="false"><svg data-ic="tip" width="18" height="18" stroke-width="1.8"></svg></button>
     <button id="bntf" class="hy-bell" title="Notifications: what agents put on the boards" aria-label="Notifications" aria-expanded="false"><svg data-ic="notifications" width="18" height="18" stroke-width="1.8"></svg></button>
-    <div id="ntf" role="dialog" aria-label="Notifications"></div>
+    <div id="ntf" class="hy-side" role="dialog" aria-label="Notifications"></div>
     <button id="bhist" title="Version history" aria-label="Version history" aria-expanded="false"><svg data-ic="history" width="18" height="18" stroke-width="1.8"></svg></button>
-    <div id="hist" role="dialog" aria-label="Version history">
-      <div class="hh hy-bh"><hy-segmented class="htabs" variant="tabs" value="ev"><button value="ev" data-tab="ev">Activity</button><button value="ver" data-tab="ver">Versions</button></hy-segmented><button id="histClose" class="hclose hy-bh-btn" aria-label="Close history" title="Close · Esc"><svg data-ic="close" width="14" height="14" stroke-width="2.2"></svg></button></div>
+    <div id="hist" class="hy-side" role="dialog" aria-label="Version history">
+      <div class="hy-side-hd"><hy-segmented class="htabs" variant="pill" value="ev"><button value="ev" data-tab="ev">Activity</button><button value="ver" data-tab="ver">Versions</button></hy-segmented></div>
       <div class="save"><input id="histLabel" placeholder="Name the current version…" aria-label="Version name"><button id="histSave" title="Save the current state as a separate version · Enter">Save</button></div>
       <div id="histList"></div>
       <div id="evList"></div>
+      <div class="hy-side-ft" data-th="Changes of this page · &lt;b&gt;Esc&lt;/b&gt; closes">Changes of this page · <b>Esc</b> closes</div>
     </div>
     <div id="sets" role="dialog" aria-label="App settings"></div>
     <div id="keys">
@@ -866,10 +840,9 @@ body.embed #tlib { display: none !important; }
       <div><span class="k"><kbd>⌥</kbd><kbd>P</kbd></span> split a PDF into pages</div>
       <div><span class="k"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd></span> copy as a picture</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>F</kbd></span> the library's search</div>
-      <div><span class="k"><kbd>\</kbd></span> the library, as ⌘M</div>
       <div><span class="k"><kbd>⌥</kbd><kbd>↑</kbd> <kbd>⌥</kbd><kbd>↓</kbd></span> the library's collection above, below</div>
       <div><span class="k"><kbd>⌘</kbd> while dragging</span> no snapping to the edges and centres around</div>
-      <div><span class="k">double-click on empty space</span> a heading in large type</div>
+      <div><span class="k"><kbd>T</kbd> click or drag, double-click on empty space</span> a text; dragged: a box of that width and height</div>
       <div><span class="k"><kbd>N</kbd>, the note button</span> sticky note: under the pointer, type right away</div>
       <div><span class="k">a note over frames</span> is linked to every frame under it</div>
       <div><span class="k">a note inside a group, linked to nothing</span> belongs to the whole group</div>
@@ -879,24 +852,25 @@ body.embed #tlib { display: none !important; }
       <div><span class="k">“Area” above a note</span> a dashed zone: every frame inside is linked, the edges stretch</div>
       <div><span class="k">in a note <kbd>⌘</kbd><kbd>B</kbd> <kbd>⌘</kbd><kbd>I</kbd></span> bold, italic; <kbd>-</kbd> or <kbd>1.</kbd> at the start of a line: a list, <kbd>#</kbd> heading</div>
       <div><span class="k">in a note <kbd>↵</kbd> <kbd>Esc</kbd></span> apply (⇧↵: new line)</div>
-      <div><span class="k"><kbd>⌘</kbd><kbd>M</kbd></span> the media library: open, close</div>
+      <div><span class="k"><kbd>⌘</kbd><kbd>M</kbd> <kbd>\</kbd></span> the library: open, close</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>.</kbd></span> hide all the interface, again: bring it back</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>G</kbd></span> group</div>
       <div><span class="k"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd></span> ungroup</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>]</kbd> <kbd>⌘</kbd><kbd>[</kbd></span> bring forward, send backward</div>
       <div><span class="k"><kbd>⌥</kbd><kbd>⌘</kbd><kbd>]</kbd> <kbd>⌥</kbd><kbd>⌘</kbd><kbd>[</kbd></span> to the front, to the back</div>
       <div><span class="k"><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></span> move the selection a little, with <kbd>⇧</kbd> more</div>
-      <div><span class="k">double-click</span> an image: Image Studio; a video: crop and trim</div>
-      <div><span class="k"><kbd>⇧</kbd><kbd>C</kbd></span> crop; a video: crop and trim</div>
+      <div><span class="k">double-click</span> an image or a PDF: Image Studio; a video: crop and trim</div>
+      <div><span class="k"><kbd>⇧</kbd><kbd>C</kbd>, <kbd>⌥</kbd> double-click</span> crop; a video: crop and trim</div>
       <div><span class="k">⤢ in a video's pill</span> full screen, <kbd>Esc</kbd> leaves it</div>
       <div><span class="k">pointer over a video</span> plays muted; pointer away: the still again</div>
       <div><span class="k">▶ in the video's corner, <kbd>Space</kbd></span> with sound, and pause (Space: for one selected video)</div>
       <div><span class="k">the line at the bottom of a video</span> drag: seek</div>
       <div><span class="k">in crop <kbd>↵</kbd> <kbd>Esc</kbd></span> apply, cancel</div>
       <div><span class="k"><kbd>↵</kbd> <kbd>Esc</kbd> while typing</span> what you write on the canvas: Esc applies it (a note, a heading, a title, a label); a name or a value: Esc gives the old one back</div>
-      <div><span class="k">corner or edge</span> size (a group from every side, a heading and a frame by a corner)</div>
+      <div><span class="k">corner or edge</span> size (a group from every side, a frame by a corner; a text: sides its width, top and bottom a fixed height, a corner its type)</div>
       <div><span class="k"><kbd>R</kbd>, double-click in crop</span> the whole frame</div>
-      <div><span class="k">in crop <kbd>X</kbd> <kbd>⌘</kbd><kbd>Z</kbd></span> turn the ratio, the last change back</div>
+      <div><span class="k">in crop <kbd>X</kbd> <kbd>⌘</kbd><kbd>Z</kbd> <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd></span> turn the ratio, the frame's change back and again, as the dock's Undo and Redo</div>
+      <div><span class="k">in crop <kbd>⇧</kbd> drag</span> a new frame; a drag inside the frame moves it</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>C</kbd> <kbd>⌘</kbd><kbd>X</kbd></span> copy, cut</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>V</kbd></span> paste under the pointer</div>
       <div><span class="k"><kbd>⌥</kbd> + drag</span> a copy</div>
@@ -906,11 +880,7 @@ body.embed #tlib { display: none !important; }
       <div><span class="k"><kbd>⌥</kbd><kbd>D</kbd></span> tidy: rows stay, gaps even</div>
       <div><span class="k"><kbd>⌫</kbd></span> remove the selection, a selected arrow or a timeline's dot (Undo in the note)</div>
       <div><span class="k"><kbd>⌘</kbd><kbd>Z</kbd> <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd></span> undo, redo</div>
-      <div><span class="k"><kbd>⇧</kbd><kbd>1</kbd></span> show all</div>
-      <div><span class="k">pages</span> the first button of the bar, double-click to rename</div>
-      <div><span class="k"><kbd>⌘</kbd><kbd>X</kbd>, another page, <kbd>⌘</kbd><kbd>V</kbd></span> move frames</div>
     </div>
-    <div id="hint"><span class="hp">Crop: drag the frame · <kbd>X</kbd> turn the ratio · <kbd>↵</kbd> apply · <kbd>Esc</kbd> cancel · <kbd>R</kbd> the whole frame</span><span class="hv">Crop and trim: the yellow handles set the start and the end · <kbd>↵</kbd> apply · <kbd>Esc</kbd> cancel</span></div>
     <div id="info"><div class="ih"><div><div class="n" id="iN"></div><div class="m" id="iM"></div></div><div class="ia"><button id="iFav" title="♥ Like · F" aria-label="Like"><svg data-ic="heart" width="16" height="16" stroke-width="2.2"></svg></button><hy-split id="iOpen" variant="solid"></hy-split></div></div><div id="iTrim"></div><div class="p" id="iP"></div><div class="m" id="iE"></div><div class="rf" id="iR"></div><div id="iNotes"></div></div>
     <div id="empty" style="padding-left:var(--inset,0px)">Drag frames from the library on the left</div>
   </main>
@@ -1331,7 +1301,7 @@ function newTimeline(atPointer) {
   if (hyPrevNo()) return; const before = snap(), vr = stage.getBoundingClientRect();
   const c = atPointer && lastPt ? lastPt : toWorld(vr.left + INSET + (vr.width - INSET) / 2, vr.top + vr.height / 2);
   let size = 2; while (size < TSIZE.length - 1 && TSIZE[size].fs * cam.z < 12) size++;
-  const ts = hyTextSize.make(size, cam.z), fs = ts.fs, len = Math.round(fs * 36), id = uid("l");   // zoomed in: as on screen at 100 %, in its own scale
+  const ts = hyTextSize.make(size, cam.z), fs = ts.fs, len = hyNewSize.line(fs * 36, cam.z), id = uid("l");   // zoomed in: as on screen at 100 %, in its own scale
   const it = { type: "timeline", dir: "h", ...ts, len, x: Math.round(c.x - len / 2), y: 0, w: 0, h: 0, points: [0, 1, 2, 3].map(k => ({ id: uid("p"), t: Math.round(len * k / 3), text: "" })) };
   tlSize(it); it.y = Math.round(c.y - it.h / 2); board.items[id] = it; sel = new Set([id]); render();
   editTlLabel(id, it.points[0].id, before);
@@ -1350,7 +1320,7 @@ function editTlLabel(id, pid, before0) {
   const before = before0 || snap(), ta = document.createElement("textarea"); ta.rows = 1; ta.value = pt.text; ta.placeholder = pt.t === 0 ? T("Start") : T("Label");
   el.textContent = ""; el.appendChild(ta); el.classList.add("editing");
   const fit = () => { ta.style.width = "0"; ta.style.height = "0"; ta.style.width = Math.max(ta.scrollWidth, it.fs * 3) + 4 + "px"; ta.style.height = ta.scrollHeight + "px"; };
-  fit(); ta.focus(); ta.select(); sel = new Set([id]); const kh = hyHint("heading", el);
+  if (before0) hyNewSize.reveal(el); fit(); ta.focus(); hyTyping.hold(ta); ta.select(); sel = new Set([id]); const kh = hyHint("heading", el);
   let closed = false;
   const done = () => {
     if (closed) return; closed = true; openEditor = null; kh.hide();
@@ -1414,8 +1384,7 @@ function setNoteColor(name) {
 function removeArrow() {
   if (selArrow && selArrow.startsWith("cn:")) { const id = selArrow.slice(3); selArrow = null; hyConn.remove(id); return; }   // a connector
   if (!selArrow) return; const [nid, t] = selArrow.split("|"), n = board.items[nid]; selArrow = null; if (!n) return;
-  const before = snap(); n.to = (n.to || []).filter(x => x !== t); commit(before);
-  toast(T("Arrow removed"), "info", { actions: [{ label: T("Undo"), fn: () => { if (past[past.length - 1] === before) undo(); } }] });
+  const before = snap(); n.to = (n.to || []).filter(x => x !== t); commit(before, T("Arrow removed"));   // with Undo (ui/undofx.js note)
 }
 
 /* ---------- board background ---------- */
@@ -1542,7 +1511,6 @@ async function useVersion(id) {
   renderHist(); toast(T("You're working in this version. The previous state is saved as the first line of the history"), "success");
 }
 $("#pvBack").onclick = exitPreview;
-$("#histClose").onclick = () => { $("#hist").classList.remove("open"); exitPreview(); side(); };
 $("#pvUse").onclick = () => { if (PREV) useVersion(PREV.id); };
 ["#pv"].forEach(q => $(q).addEventListener("pointerdown", e => e.stopPropagation()));
 const HEXP = new Set();   // day+run keys of folded autosave runs the owner opened
@@ -1563,7 +1531,7 @@ async function renderHist() {
         ${e.missing ? `<div class="hx">${hyIcon("warn", 13, 2.2, "", { attrs: "style=\"flex:0 0 auto;margin-top:1px\"" })}<span>${T("{n} frames of this version are no longer on disk", { n: e.missing })}</span></div>` : ""}
       </div></div>`;
   let html = `<div class="hday">${T("Now")}</div><div class="hv now ${PREV ? "" : "viewing"} first last" data-id=""><span class="dot"></span><div class="hb"><div class="hl"><b>${T("Current version")}</b>${board.saved ? `<time>${board.saved.slice(11, 16)}</time>` : ""}</div><div class="hm">${T("what you're working with")}</div></div></div>`;
-  if (!L.length) html += `<div class="empty">${T("No versions yet")}<p class="hy-hint">${T("An autosave with the first change, then <b>every 10 min</b>")}</p></div>`;
+  if (!L.length) html += `<div class="hy-side-none">${T("No versions yet")}<p class="hy-hint">${T("An autosave with the first change, then <b>every 10 min</b>")}</p></div>`;
   // by day; three or more autosaves in a row fold into one line, unless the one on the board is among them
   const days = []; L.forEach(e => { const d = dayOf(e.t); if (!days.length || days[days.length - 1].d !== d) days.push({ d, es: [] }); days[days.length - 1].es.push(e); });
   days.forEach(({ d, es }) => {
@@ -1582,11 +1550,11 @@ async function renderHist() {
 }
 // One panel on the right at a time (owner 2026-10-04: «what I press turns the previous one off, so they do not lie on each other»):
 // notifications, keys, history, settings. The frame card under the buttons hides while any of them is open.
-const SIDE = { ntf: ["#bntf", () => $("#ntf").classList.contains("open")], keys: ["#bkeys", () => $("#keys").style.display === "block"],
+const SIDE = { ntf: ["#bntf", () => $("#ntf").classList.contains("open")], keys: ["#bkeys", () => $("#keys").classList.contains("open")],
   hist: ["#bhist", () => $("#hist").classList.contains("open")], sets: ["#bset", () => $("#sets").classList.contains("open")] };
 function closeSide(except) {
   if (except !== "ntf") $("#ntf").classList.remove("open");
-  if (except !== "keys") $("#keys").style.display = "none";
+  if (except !== "keys") $("#keys").classList.remove("open");
   if (except !== "hist" && $("#hist").classList.contains("open")) { $("#hist").classList.remove("open"); exitPreview(); }
   if (except !== "sets") $("#sets").classList.remove("open");
 }
@@ -1611,7 +1579,7 @@ async function pollNtf() {
     $("#bntf").classList.toggle("dot", NTF.unread > 0); if ($("#ntf").classList.contains("open")) drawNtf(); } catch {}
 }
 function drawNtf() {   // written again only when a row changed: every poll (8 s) rewrote the list and loaded and decoded its pictures again
-  const el = $("#ntf"), L = hyBellTabs.rows(NTF.items), h = hyBellTabs.head(NTF.items) + (L.length ? L.map(n => hyBellRow(n)).join("") : `<div class="none">${T("Nothing yet")}</div>`);
+  const el = $("#ntf"), h = hyBellTabs.panel(NTF.items, hyBellTabs.rows(NTF.items).map(n => hyBellRow(n)).join(""));   // a side panel (ui/side.js)
   if (el._h !== h) el.innerHTML = el._h = h;   // the tabs All | Notifications | Comments: ui/bellrow.js hyBellTabs (owner 2026-10-10)
 }
 // A click never does nothing (owner 2026-10-08): another board's notification opens that board; one that named nothing asks the server
@@ -1692,7 +1660,7 @@ async function renderEvents(more) {
       <div class="el"><b>${title}</b><time>${e.since && e.since.slice(0, 10) === e.t.slice(0, 10) ? e.since.slice(11, 16) + "–" : ""}${e.t.slice(11, 16)}</time></div>
       <div class="em">${window.hyWho?.(e, "w") || `<span class="w">${e.who === "ai" ? T("AI") : T("You")}</span>`}${e.label ? " · " + esc(/^(возврат к версии|restored a version)$/.test(e.label) ? T("restored a version") : e.label) : ""}</div>${body}</div></div>`;
   });
-  if (!EVS.length) html = `<div class="empty">${T("No changes yet")}</div>`;
+  if (!EVS.length) html = hySide.none(T("No changes yet"));
   else if (evMore) html += `<button class="more-ev">${T("Show earlier")}</button>`;
   box.innerHTML = html; box.scrollTop = top;   // a refresh keeps the place the owner scrolled to
 }
@@ -2213,25 +2181,25 @@ function placeGBar() {
 }
 // the stuck title renamed in place (owner 2026-10-06: «by double click, rename as usual»): a field in the plate takes its first line,
 // Enter, Esc or a click away save it, as on the title itself
-function renamePlate(b) {
+function renamePlate(b, made) {   // made: a new group's name, as renameGroup's
   const id = b.dataset.gid, g = board.groups[id]; if (!g || b._edit) return;
   const lines = (g.title || "").split("\n"), inp = document.createElement("input");
   inp.value = lines[0]; inp.spellcheck = false; inp.setAttribute("aria-label", T("Group name"));
   b._edit = true; b.textContent = ""; b.appendChild(inp); b.classList.add("edit");
   const fit = () => { inp.style.width = "0"; inp.style.width = Math.max(40, inp.scrollWidth + 2) + "px"; b._w = 0; stickTitles(); };
-  fit(); inp.focus(); inp.select(); const kh = hyHint("rename", b);
+  fit(); inp.focus(); inp.select(); hyTyping.hold(inp); const kh = hyHint("rename", b);
   let closed = false;
   const done = () => {
     if (closed) return; closed = true; openEditor = null; kh.hide();
     const v = inp.value.trim(), next = [v, ...lines.slice(1)].join("\n");
     b._edit = false; b.classList.remove("edit"); inp.remove(); b.textContent = ""; b._w = 0;
-    if (v && next !== g.title) { const before = snap(); g.title = next; commit(before); } else render();
+    if (v && next !== g.title) { const before = snap(); g.title = next; commit(before); if (made) past.pop(); } else render();
   };
   inp.addEventListener("input", fit);
   hyTyping.keys(inp, { esc: "apply", enter: "line", apply: done });   // a group's title: Esc applies (ui/typing.js)
   inp.addEventListener("blur", done, { once: true });
   ["pointerdown", "click", "dblclick"].forEach(t => inp.addEventListener(t, e => e.stopPropagation()));
-  openEditor = done;
+  openEditor = done; if (made) hyUndoNew.watch(inp, made, done);
 }
 function glide(b) { b.classList.add("glide"); clearTimeout(b._gt); b._gt = setTimeout(() => b.classList.remove("glide"), 320); }
 // the crumb grows (its name opens under the pointer) or moves (the library opens): the plates after it glide along
@@ -2350,7 +2318,7 @@ function render() {
     if (it.type && !isText(it) && !isTl(it) && !isNote(it)) { if (window.hyPlugBoard) hyPlugBoard.missing(it.type); return; }   // its plugin off or gone: a still
     if (isText(it)) {   // big titles written on the board (owner 2026-09-29)
       if (!el) { el = document.createElement("div"); el.className = "tx"; el.dataset.id = id; iEl.appendChild(el); EL.set(id, el); }
-      const k = `${it.x},${it.y},${it.fs},${it.size},${it.tw},${n}|${it.text}`, editing = !!el.querySelector("textarea");
+      const k = `${it.x},${it.y},${it.fs},${it.size},${it.tw},${it.th},${it.tm},${n}|${it.text}`, editing = !!el.querySelector("textarea");
       if (el._k !== k || (!editing && !el.firstChild)) {
         Object.assign(el.style, { left: it.x + "px", top: it.y + "px", fontSize: it.fs + "px", zIndex: WRITE + n + 1, fontWeight: Number.isInteger(it.size) && TSIZE[it.size] ? TSIZE[it.size].wt : "" });   // titles made before the sizes stay bold
         if (!editing) { hyTextDoc.paint(el, it); el._k = k; }   // a heading as before, or a document: title and Markdown body (ui/textdoc.js)
@@ -2422,7 +2390,7 @@ function render() {
   });
   renderHandles(); renderInfo(); infoFresh(); renderJump(); cull(); if (MODES) MODES.sync();
   $("#empty").style.display = ids.length ? "none" : "grid";
-  $("#bundo").disabled = !past.length; $("#bredo").disabled = !future.length;
+  if (cropState) drawCrop(); else { $("#bundo").disabled = !past.length; $("#bredo").disabled = !future.length; }   // a crop: its own steps
 }
 // the opacity plate of the bar over the selection: a picture's, and a plugin card's that has def.opacity (an image frame, owner 2026-10-06)
 // the app's standard slider, label and number inside, as in the 3D editor and the settings (owner 2026-10-07: «почему слайдер узкий, он должен быть как стандартные»)
@@ -2435,7 +2403,7 @@ const tidyBtns = () => hyArrange.bar();   // ⌥A ⌥S ⌥D and the button of th
 function renderHandles() {
   const h = $("#handles"); h.innerHTML = "";
   let nb = 0;
-  for (const id of sel) {   // selected pictures get their frame here, over every picture (see .selbox); at most 400, a huge selection shows the first ones
+  for (const id of cropState ? [] : sel) {   // selected pictures get their frame here (.selbox), not in a crop; at most 400, a huge selection shows the first ones
     const it = board.items[id]; if (!it || !isPic(it) || ++nb > 400) continue;
     const r = rectOf(id), f = document.createElement("div"); f.className = "selbox";
     Object.assign(f.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" }); h.appendChild(f);
@@ -2453,21 +2421,22 @@ function renderHandles() {
     const op = Math.round(100 * (board.items[many[0]].opacity ?? 1));
     const opHtml = opPlate(op);
     // one picture: «Crop», one video: «Crop & Trim» (owner 2026-10-06), the key cap a direct child as on the bar's other buttons
-    const one = !several && many.length === 1 ? board.items[many[0]] : null, cropB = chip + (!one ? "" : `<button data-crop title="${isVid(one) ? T("Crop the picture, trim the start and the end · ⇧C") : T("Crop · ⇧C")}">${IC_CROP}${isVid(one) ? T("Crop & Trim") : T("Crop")}<kbd>⇧C</kbd></button><span class="sep"></span>`);
-    const splitB = !one || !splitable(one) ? "" : `<button data-split title="${T("Split into pages · ⌥P")}">${IC_SPLIT}${T("Split into pages ({n})", { n: pdfPages(one.path) })}<kbd>⌥P</kbd></button><span class="sep"></span>`;
-    if (!several) t.innerHTML = cropB + splitB + (pbHtml ? pbHtml + `<span class="sep"></span>` : "") + opHtml; else t.innerHTML = tidyBtns() + (pbHtml ? `<span class="sep"></span>` + pbHtml : "")
-      // ♥ for the whole selection right here (owner 2026-10-01): pink when every selected frame is already liked, a click then takes it off
-      + (() => { const on = hyCardFav.allOn([...sel]);   // the pictures and HTML pages selected (ui/cardfav.js)
-        return `<span class="sep"></span><button data-fav class="fv${on ? " on" : ""}" title="${on ? T("Remove ♥ from the selected") : T("♥ on all selected")} · F" aria-label="${T("Like")}">${hyIcon("heart", 15, 2.2)}<kbd>F</kbd></button>`; })() + `<span class="sep"></span>` + opHtml;
+    const one = !several && many.length === 1 ? board.items[many[0]] : null, cropB = !one ? "" : `<button data-crop title="${isVid(one) ? T("Crop the picture, trim the start and the end · ⇧C") : T("Crop · ⇧C")}">${IC_CROP}${isVid(one) ? T("Crop & Trim") : T("Crop")}<kbd>⇧C</kbd></button>`;
+    const splitB = !one || !splitable(one) ? "" : `<button data-split title="${T("Split into pages · ⌥P")}">${IC_SPLIT}${T("Split into pages ({n})", { n: pdfPages(one.path) })}<kbd>⌥P</kbd></button>`;
+    // one order, a hairline only between groups that have something (ui/selbar.js, board audit B-17): the Studio | the kind's actions |
+    // ♥ (owner 2026-10-01: pink when every selected one is liked; one picture too since round 20) | opacity
+    t.innerHTML = hySelBar.join(chip, cropB, splitB, several ? tidyBtns() : "", pbHtml, hySelBar.fav([...sel]), opHtml);
     const below = (b.y - cam.y) * cam.z < 56;   // selection touches the top edge: show the button under it
     Object.assign(t.style, { left: b.x + b.w / 2 + "px", top: (below ? b.y + b.h : b.y) + "px" });
     if (below) t.style.transform = "scale(calc(1 / var(--z))) translate(-50%, 12px)";
     h.appendChild(t); t.querySelectorAll(".hy-slider").forEach(hySlider.mount);   // the opacity's slider (ui/slider.js)
   } else if (!cropState && (chip || pbar.length || cards.length >= 2 || [...sel].some(i => { const it = board.items[i]; return !!(it && it.type && opOk(it)); })) && !(drag && drag.moved) && !(sel.size === 1 && frameEdit([...sel][0]))) {   // groups, plugin cards: the plugins' buttons alone
-    const b = bbox([...sel].filter(id => rectOf(id))), t = document.createElement("div"); t.className = "tidy"; t.innerHTML = chip + (cards.length >= 2 ? tidyBtns() + (pbHtml ? `<span class="sep"></span>` : "") : "") + pbHtml;   // 3D, HTML, Dev cards: «Arrange» too
+    // 3D, HTML, Dev cards: «Arrange» too; plugin cards that take opacity (def.opacity: an image frame) get the pictures' opacity plate after
+    // their buttons (owner 2026-10-06); an HTML page its ♥ (B-17); one order and its hairlines (ui/selbar.js)
+    const b = bbox([...sel].filter(id => rectOf(id))), t = document.createElement("div"), opc = [...sel].map(i => board.items[i]); t.className = "tidy";
+    const opB = opc.length && opc.every(opOk) ? opPlate(Math.round(100 * (opc[0].opacity ?? 1))) : "";
+    t.innerHTML = hySelBar.join(chip, cards.length >= 2 ? tidyBtns() : "", pbHtml, hySelBar.fav([...sel]), opB);
     if (sel.size === 1 && board.groups[[...sel][0]]) { t.classList.add("gbar"); t.dataset.gid = [...sel][0]; }
-    // plugin cards that take opacity (def.opacity: an image frame) get the pictures' opacity plate after their buttons (owner 2026-10-06)
-    const opc = [...sel].map(i => board.items[i]); if (opc.length && opc.every(opOk)) t.innerHTML += (t.innerHTML ? `<span class="sep"></span>` : "") + opPlate(Math.round(100 * (opc[0].opacity ?? 1)));
     const below = (b.y - cam.y) * cam.z < 56;
     Object.assign(t.style, { left: b.x + b.w / 2 + "px", top: (below ? b.y + b.h : b.y) + "px" });
     if (below) t.style.transform = "scale(calc(1 / var(--z))) translate(-50%, 12px)";
@@ -2536,21 +2505,7 @@ function renderHandles() {
     h.appendChild(t);
     return;
   }
-  if (isText(n)) {   // the five text sizes above the selected text; the active one is the size it has (a text scaled by its corner has none lit)
-    hyTextDoc.edges(h, id, r, n, handlesOn(r.w * cam.z, r.h * cam.z));   // a document's side strips: its width (ui/textdoc.js)
-    const t = document.createElement("div"), cur = hyTextSize.cur(n); t.className = "tidy tsz";
-    // H1 and H2 jump to the two headlines, the small and big A step one size down or up through all five, as on a note (owner 2026-09-30),
-    // all in the text's own scale (ui/textsize.js, 2026-10-10)
-    const at = hyTextSize.near(n);
-    t.innerHTML = `<button class="hx ${cur === 4 ? "on" : ""}" data-tsize="4" title="${T("Big heading")}">H1</button><button class="hx ${cur === 3 ? "on" : ""}" data-tsize="3" title="${T("Heading")}">H2</button><span class="sep"></span>`
-      + `<button class="fz" data-tsize="${Math.max(0, cur >= 0 ? at - 1 : at)}" title="${T("Smaller text")}" ${cur === 0 ? "disabled" : ""}><span style="font-size:11px">A</span></button>`
-      + `<button class="fz" data-tsize="${Math.min(4, cur >= 0 ? at + 1 : at)}" title="${T("Bigger text")}" ${cur === 4 ? "disabled" : ""}><span style="font-size:18px">A</span></button>`
-      + (cur >= 0 ? `<span class="tsl">${T(TSIZE[cur].name)}</span>` : "");   // a size made by the corner has no label (owner 2026-10-06: «удали "свой размер"»)
-    const below = (r.y - cam.y) * cam.z < 56;
-    Object.assign(t.style, { left: r.x + r.w / 2 + "px", top: (below ? r.y + r.h : r.y) + "px" });
-    if (below) t.style.transform = "scale(calc(1 / var(--z))) translate(-50%, 12px)";
-    h.appendChild(t);
-  }
+  if (isText(n)) hyTextBox.bar(h, id, r, n);   // its sizes, its box (Auto width, Auto height, Fixed) and its strips (ui/textbox.js)
   if (frameEdit(id)) {   // the frame bar over a plugin card in its editor, the same proportions as the crop of a picture
     const t = document.createElement("div"), land = n.w > n.h + 0.5; t.className = "tidy cratio";
     t.innerHTML = `<button data-frame="free" class="${n.lock ? "" : "on"}" title="${T("Free frame: drag the edges and corners")}">${T("Free")}</button>`
@@ -2577,7 +2532,7 @@ function renderHandles() {
 // Every bar over the selection is kept where it can be pressed, centred on the selection and moving with it: ui/bars.js
 const freeArea = band => hyBars.free(stage, INSET, band);
 function clampBars() {
-  const st = stageBox(), ids = [...sel].filter(id => rectOf(id)), b = ids.length ? bbox(ids) : null;
+  const st = stageBox(), ids = [...sel].filter(id => rectOf(id)), b = cropState ? cropState.full : ids.length ? bbox(ids) : null;   // a crop: its whole picture
   const X = x => (x - cam.x) * cam.z + st.left, Y = y => (y - cam.y) * cam.z + st.top;
   hyBars.clamp({ stage, inset: INSET, cam, sel: b && { l: X(b.x), r: X(b.x + b.w), t: Y(b.y), b: Y(b.y + b.h) } });
 }
@@ -2917,10 +2872,10 @@ stage.addEventListener("contextmenu", e => {
   // the kinds of the selection (a picture, a video, a PDF, a plugin's card, a note, a heading, a timeline, a group), every item says which
   // kinds it is for and shows when one selected thing is of them; in a fixed order. The empty board has only its own. A plugin gives its
   // items for the kinds it knows (HY.menuOff: its grey ones keep their reason)
-  const acts = [], pacts = [], openP = ids.length === 1 && it && it.path ? it.path : "", off = (a, why) => (why ? Object.assign(a, { off: why }) : a);
+  const acts = [], pacts = [], off = (a, why) => (why ? Object.assign(a, { off: why }) : a);
   const K = new Set(ids.flatMap(i => { const x = board.items[i]; return board.groups[i] ? ["group"] : !x ? [] : isNote(x) ? ["note"] : isText(x) ? ["text"] : isTl(x) ? ["timeline"]
     : isPic(x) ? [isPdf(x) ? "pdf" : isVid(x) ? "video" : "image", "file"] : ["card", ...(fileOf(x) || picsOf(x).length ? ["file"] : [])]; }));
-  const has = (...ks) => ks.some(k => K.has(k)), pics = has("image", "pdf", "video"), items = [...K].some(k => k !== "group");
+  const has = (...ks) => ks.some(k => K.has(k)), items = [...K].some(k => k !== "group");
   const files = [...new Set(ids.flatMap(i => { const x = board.items[i]; return !x ? [] : fileOf(x) ? [fileOf(x)] : picsOf(x); }))];   // a frame's pictures too (owner 2026-10-05)
   const oneFile = ids.length > 1 ? T("Select one file") : !fileOf(it) ? T("Only for a file") : "";
   CTXP.forEach(f => { try { (f(ids, id) || []).forEach(a => pacts.push(a)); } catch (er) { console.error("plugin menu", er); } });
@@ -2932,8 +2887,7 @@ stage.addEventListener("contextmenu", e => {
   const bigSel = ids.length && pausedSel() ? T("Zoom out: the group is bigger than the screen") : "", cards = clipIds().items.length;
   const block = (...xs) => { const ok = xs.filter(Boolean); if (ok.length) acts.push(...ok, null); };
   if (ids.length) {
-    // the file in its own app first, the menu's default action (owner 2026-10-06): «Open in Preview», named as soon as the server knows (ui/menu.js)
-    block(pics && off(["open", "open", T("Open in default app")], oneFile));
+    block(...hyCtxMain.top(ids, id));   // the card's main row as Open ▾ and ↵, Crop ⇧C, Open with › (round 20, ui/ctxmain.js)
     block(off(["cut", "cut", T("Cut"), ["⌘", "X"]], bigSel || (cards ? "" : T("Nothing to copy"))), off(["copy", "copy", T("verb::Copy"), ["⌘", "C"]], cards ? "" : T("Nothing to copy")), pasteHere,
       items && ["dup", "dup", T("Duplicate"), ["⌘", "D"]]);
     block(...pacts.map((a, i) => off(["plg" + i, a.icon || "", a.label, a.keys], a.off)));
@@ -2954,16 +2908,15 @@ stage.addEventListener("contextmenu", e => {
     // last, red: off the board (the file stays; a picture on no page any more is the archive, owner 2026-09-29)
     acts.push(Object.assign(off(["del", "del", T("Remove from the board"), ["⌫"]], bigSel), bigSel ? {} : { danger: true }));
   } else {
-    block(pasteHere); block(...pacts.map((a, i) => off(["plg" + i, a.icon || "", a.label, a.keys], a.off)));
+    block(...hyCtxMain.empty()); block(pasteHere); block(...pacts.map((a, i) => off(["plg" + i, a.icon || "", a.label, a.keys], a.off)));   // «+»'s things
     acts.push(...hyLink.viewActs());   // the app's link to this view, the browser's (ui/applink.js)
   }
   const m = $("#ctx");
   m.innerHTML = acts.map(a => !a ? `<div class="sep"></div>` : a.sub ? hyMenuSub(`data-sub="${a[0]}"${a.act ? ` data-act="${a[0]}"` : ""}${a.pv ? ` data-pv="${a.pv}"` : ""}`, a[1], a[2], a.sub, a[3], { act: !!a.act, off: a.off })
     : hyMenuItem(`data-act="${a[0]}"`, a[1], a[2], a[3], a.off ? hyMenuOff(a.off) : a.danger ? ' class="danger"' : "")).join("");
-  if (openP) hyOpenFill(m.querySelector('[data-act="open"]'), openP);
   m.onclick = ev => {
     const b = ev.target.closest("[data-act]"); if (!b || b.getAttribute("aria-disabled") === "true") return; ctxClose();
-    if (b.dataset.act === "open") hyOpenFile(openP, toast);
+    if (hyCtxMain.act(b, ids, id, p)) {}
     else if (b.dataset.act.startsWith("plg")) { const a = pacts[+b.dataset.act.slice(3)]; if (a && a.fn) a.fn(); }
     else if (b.dataset.act === "group") makeGroup();
     else if (b.dataset.act === "ungroup") ungroup();
@@ -3021,13 +2974,15 @@ const favVer = new Map();   // path -> number of the latest press: an answer to 
 function toggleFav(ids) {
   const paths = [...new Set(ids.map(id => hyCardFav.path(board.items[id])).filter(Boolean))]; if (!paths.length) return;   // a picture, an HTML page
   const want = !paths.every(p => ((byPath.get(p) || {}).feedback || {}).fav), flip = paths.filter(p => !((byPath.get(p) || {}).feedback || {}).fav === want);
-  setFav(paths, want); hyUndoFx.push({ undo: () => setFav(flip, !want), redo: () => setFav(flip, want), label: "♥" });
+  const said = setFav(paths, want, true); hyUndoFx.push({ undo: () => setFav(flip, !want), redo: () => setFav(flip, want), label: "♥" });
+  hyUndoFx.note(said, { kind: "success", paths });   // its note with Undo, as every step's (round 20 B-12: green and without Undo)
 }
-function setFav(paths, want) {
+function setFav(paths, want, quiet) {
   if (!paths.length) return; const was = new Map(paths.map(p => [p, (byPath.get(p) || {}).feedback])), ver = new Map(paths.map(p => [p, (favVer.get(p) || 0) + 1]));
   ver.forEach((v, p) => { favVer.set(p, v); favAt.set(p, Date.now()); }); const latest = p => favVer.get(p) === ver.get(p);
   for (const p of paths) { const m = byPath.get(p) || { path: p }, fb = { ...(m.feedback || {}) }; if (want) fb.fav = true; else delete fb.fav; m.feedback = fb; byPath.set(p, m); }
-  render(); if (LOD.on) lodDots(); toast(want ? (paths.length === 1 ? T("♥ set") : T("♥ on {frames}", { frames: frames(paths.length) })) : T("♥ removed"), "success");
+  const said = want ? (paths.length === 1 ? T("♥ set") : T("♥ on {frames}", { frames: frames(paths.length) })) : T("♥ removed");
+  render(); if (LOD.on) lodDots(); if (!quiet) toast(said, "success");
   const tell = (p, fb) => { if (EMBED) parent.postMessage({ type: "feedback", path: p, feedback: fb }, location.origin); };
   favTail = favTail.then(async () => {
     try {
@@ -3047,7 +3002,7 @@ function setFav(paths, want) {
       for (const [p, fb] of was) { const m = byPath.get(p); if (m && latest(p)) m.feedback = fb; }
       render(); toast(T("Not saved: the server didn't answer, ♥ is back as it was"), "error");
     }
-  });
+  }); return said;
 }
 // a short note at the top centre of the free part of the board (owner 2026-09-29), one stack with the library's (ui/toasts.js, 2026-10-04);
 // kind "error" | "info" | "success", or the words decide. Under the top row in every mode (ui/toasts.js, the row's --hy-row-under line).
@@ -3067,15 +3022,17 @@ function commit(before, note, opt) { if (window.hyGrid) hyGrid.settle(before); h
     toast(T("This is a version preview. To change it, press “Restore this version”")); return;
   }
   const tr = trackRemoved(before); if (typeof note === "function") note = note(tr);   // note(tr): words that say what went to the archive
-  if (note) toast(note, opt && opt.kind, opt);
-  else if (tr.gone) toast(T("{n} pictures went to the archive", { n: tr.gone }));
-  else if (tr.back) toast(T("{frames} back on the canvas", { frames: frames(tr.back) }), "success"); past.push(before); if (past.length > 200) past.shift(); future = []; dirty = true; queueSave(); render(); renderLibMarks(); tellLibrary(); }
+  past.push(before); if (past.length > 200) past.shift(); future = []; dirty = true; queueSave(); render(); renderLibMarks(); tellLibrary();
+  const said = note || (tr.gone ? T("{n} pictures went to the archive", { n: tr.gone }) : tr.back ? T("{frames} back on the canvas", { frames: frames(tr.back) }) : "");
+  hyUndoFx.note(said, { kind: !note && !tr.gone && tr.back ? "success" : undefined, ...opt }); }   // with Undo and its pictures; opt.step names it (ui/undofx.js)
 function restore(s) { const o = JSON.parse(s); board.items = o.items; board.groups = o.groups; board.removed = o.removed || {}; board.grids = o.grids; board.links = o.links; if (o.sel) sel = new Set(o.sel); tellLibrary(); [...sel].forEach(id => { if (!board.items[id] && !board.groups[id]) sel.delete(id); }); dirty = true; queueSave(); render(); renderLibMarks(); }
 function histFlush() { HISTP.forEach(f => { try { f(); } catch (e) { console.error("plugin history", e); } }); }
 // a step brought up to date with what others changed since (ui/undorebase.js): s to restore, o the string as it was pushed (XMOVE's key)
-function undo() { histFlush(); if (PREV || !past.length) return; const [s, o] = hyUndo.take(past, board); if (!s) return; future.push(snap()); restore(s); xmoveStep(o, future, "undo");
+function undo() { if (cropState) return cropStep(-1);   // an open crop: its own steps (board audit B-06, ui/cropframe.js)
+  histFlush(); if (PREV || !past.length) return; const [s, o] = hyUndo.take(past, board); if (!s) return; future.push(snap()); restore(s); xmoveStep(o, future, "undo");
   restored("undo"); }
-function redo() { histFlush(); if (PREV || !future.length) return; const [s, o] = hyUndo.take(future, board); if (!s) return; past.push(snap()); restore(s); xmoveStep(o, past, "redo");
+function redo() { if (cropState) return cropStep(1);
+  histFlush(); if (PREV || !future.length) return; const [s, o] = hyUndo.take(future, board); if (!s) return; past.push(snap()); restore(s); xmoveStep(o, past, "redo");
   restored("redo"); }
 function renderLibMarks() { const on = new Set(Object.values(board.items).flatMap(i => i.path ? [i.path] : picsOf(i))); document.querySelectorAll("#grid .th").forEach(t => t.classList.toggle("on", on.has(t.dataset.p))); $("#lcount").textContent = $("#lcount").textContent.replace(/ · (?:на холсте [\d\s\u00a0\u202f]+|[\d,]+ on the canvas)|$/, on.size ? " · " + T("{n} on the canvas", { n: on.size }) : ""); }
 // what the canvas is busy with right now; the thumbnails of newly shown frames count too, but only when many are waiting
@@ -3530,7 +3487,7 @@ function onMove(e) {
         const kk = !L && !R ? Math.max(.05, (T ? r0.h - dy * m : r0.h + dy * m) / r0.h) : k;
         it.w = Math.max(80, drag.it0.w * kk); it.h = drag.it0.h * it.w / drag.it0.w;
       }
-      else if (isNote(it)) it.w = Math.max(60, drag.it0.w * k); else hyTextDoc.resize(it, drag.it0, c, k, (L ? -dx : dx) * m);   // a side: a document's width
+      else if (isNote(it)) it.w = Math.max(60, drag.it0.w * k); else hyTextDoc.resize(it, drag.it0, c, k, (L ? -dx : dx) * m, (T ? -dy : dy) * m);   // a strip: its box (ui/textdoc.js)
       render();   // measures the new width and height
       if (alt) { it.x = cx - it.w / 2; it.y = cy - it.h / 2; }
       else { it.x = L ? r0.x + r0.w - it.w : r0.x; it.y = T ? r0.y + r0.h - it.h : r0.y; }
@@ -3622,11 +3579,10 @@ stage.addEventListener("dblclick", e => {
   const it = under.find(el => el.classList.contains("it")), fid = it ? it.dataset.id : lodHit(toWorld(e.clientX, e.clientY));
   // a video: crop & trim on the card itself (owner 2026-10-06; the large player opens from ⤢ in its pill now)
   if (fid && isVid(board.items[fid])) { if (!under.some(el => el.closest && el.closest(".vp, .vbar, .kd"))) { sel = new Set([fid]); render(); startCrop(fid); } return; }
-  // a picture: the Image mode, its studio, as the dock's Image does (owner 2026-10-07: «при двойном нажатии на картинку мы будем в режим
-  // картинки переходить, а не trim»); the crop is «Crop» on the bar over it and C. Without the frames plugin there is no Image mode: the crop
-  if (fid && isImgFile(board.items[fid])) { sel = new Set([fid]); render(); if (!(MODES && MODES.enter("image", [fid]))) startCrop(fid); return; }
-  // a PDF and the other files the library draws (PSD, TIFF, HEIC, SVG): the crop, as before
-  if (fid) { sel = new Set([fid]); startCrop(fid); return; }
+  // a picture: its studio (owner 2026-10-07: «при двойном нажатии на картинку мы будем в режим картинки переходить, а не trim»); ⌥ with the
+  // double click crops it (owner 2026-10-10: «option + double click будет crop там где он есть»). One rule since round 20 (2026-10-11, board
+  // audit B-14): a double click opens what the Studio chip names and Open's main row runs, a PDF's Image Studio too (it cropped before)
+  if (fid) { sel = new Set([fid]); render(); const s = !e.altKey && MODES && MODES.studioFor([fid]); if (!(s && MODES.enter(s.key, [fid]))) startCrop(fid); return; }
   hyTextDoc.create(toWorld(e.clientX, e.clientY));   // empty board (or inside a group frame): a new big title right here (ui/textdoc.js)
 });
 // character under the pointer in a title (read before the text is swapped for the editor)
@@ -3654,7 +3610,7 @@ function editNote(id, before0, at) {
   // the field fills the whole square, not just the lines written so far: a click anywhere on the note keeps typing instead of closing it
   const cs = getComputedStyle(el), inner = it.w - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
   const fit = () => { ta.style.height = "0"; ta.style.height = Math.max(ta.scrollHeight, inner) + "px"; };
-  fit(); ta.focus(); selectWordAt(ta, at); sel = new Set([id]); const kh = hyHint("note", el);
+  if (before0) hyNewSize.reveal(el); fit(); ta.focus(); hyTyping.hold(ta); selectWordAt(ta, at); sel = new Set([id]); const kh = hyHint("note", el);
   let closed = false;
   const done = () => {   // ↵, ⌘↵ and Esc apply, ⇧↵ is a new line (lists continue), a click outside applies too
     if (closed) return; closed = true; openEditor = null; kh.hide();
@@ -3733,13 +3689,15 @@ function ungroup() {
   gs.forEach(g => { board.groups[g].members.forEach(m => sel.add(m)); delete board.groups[g]; });
   commit(before);
 }
-function renameGroup(id, at, made) {
-  const el = document.querySelector(`.grp[data-id="${id}"] .gt`); if (!el) return;
+function renameGroup(id, at, made) {   // its title stuck at the top: named there; off screen: the board brings it in (audit B-09)
+  const el = document.querySelector(`.grp[data-id="${id}"] .gt`), pl = document.querySelector(`#gsticky .gst[data-gid="${id}"]`); if (!el) return;
+  if (pl && !pl._out) return renamePlate(pl, made);
+  if (pl) { clearTimeout(pl._out); pl.remove(); el._st = false; el.classList.remove("stuck"); } hyNewSize.reveal(el);   // a plate gliding back: the title now
   // Enter or Esc save, Shift+Enter starts a new line; the field grows with the text
   const g = board.groups[id], inp = document.createElement("textarea"); inp.rows = 1; inp.value = g.title || "";
   el.textContent = ""; el.appendChild(inp);
   const fit = () => { inp.style.height = "auto"; inp.style.height = inp.scrollHeight + "px"; };
-  fit(); inp.focus(); selectWordAt(inp, at); const kh = hyHint("heading", el);
+  fit(); inp.focus(); hyTyping.hold(inp); selectWordAt(inp, at); const kh = hyHint("heading", el);
   let closed = false;
   const done = ok => {
     if (closed) return; closed = true; openEditor = null; kh.hide();
@@ -3854,7 +3812,7 @@ function tidy() {
     it.y = b.y + rowH.slice(0, r).reduce((a, v) => a + v + GAP, 0);
   });
   // group frames stay as they are and so does membership (owner 2026-09-29): the backing of a group is sized only by hand
-  if (window.hyGrid) hyGrid.arranged(rs.map(x => x.id), cols, true); commit(before);   // the block is a grid now (ui/grid.js)
+  hyGrid.arrange(rs.map(x => x.id), cols, true, before, T("step::Arrange as a grid"));   // a grid now, the things it covers move down (ui/grid.js)
 }
 // one row: tops aligned to the highest frame, equal gaps, left-to-right order kept, sizes and groups untouched.
 // ALL the selected frames in one row, however many (owner 2026-10-02: "if there are 100, all 100 in a row"); the 8-wide limit is ⌥A's
@@ -3865,7 +3823,7 @@ function tidyRow() {
   ids.map(id => ({ id, r: rectOf(id) })).sort((a, c) => a.r.x - c.r.x || a.r.y - c.r.y).forEach(({ id, r }) => {
     board.items[id].x = x; board.items[id].y = b.y; x += r.w + GAP;
   });
-  if (window.hyGrid) hyGrid.arranged(ids, ids.length); commit(before);   // the row is a grid of one row
+  hyGrid.arrange(ids, ids.length, false, before, T("step::Arrange in a row"));   // the row is a grid of one row
 }
 // "Причесать" (owner 2026-09-29): keep the structure the owner made and only even out the spacing.
 // The selection is cut recursively at empty strips (first into rows or columns, whichever has the wider gap, then inside each),
@@ -3906,49 +3864,16 @@ function smartTidy() {
     return n.ax === "y" ? { w: cross, h: off } : { w: off, h: cross };
   };
   const b = bbox(ids); lay(build(rs), b.x, b.y);
-  if (window.hyGrid) hyGrid.arranged(ids, null); commit(before);   // a grid when what it laid out is one
+  hyGrid.arrange(ids, null, false, before, T("step::Tidy"));   // a grid when what it laid out is one
 }
 function duplicate() {   // ⌘D: a group with its cards and the groups in its frame, the arrows among them (ui/boardsel.js, P4 B-23, B-29)
   const ids = [...sel].filter(id => board.items[id] || board.groups[id]); if (!ids.length) return;
   const before = snap(), { map, out } = hySel.clone(ids, 24, 24);
   if (window.hyGrid) ids.forEach(id => { if (board.items[id]) hyGrid.dup(id, map[id]); });
-  sel = out; commit(before);
+  sel = out; commit(before, "", { step: T("step::Duplicate") });   // the dock's Undo says «Duplicate», not «New card» (round 20 B-12)
 }
 
-/* ---------- crop: the item shows a rectangle of the full image; the file is never cut ---------- */
-function startCrop(id) {
-  const it = board.items[id]; if (!it) return;
-  if (isVid(it)) { vidHover(null); vidKill(id); }   // its card hides under the crop; the clip plays in the crop window instead
-  const c = cropOf(it), fw = it.w / (c[2] - c[0]), fh = fw / it.ar;
-  // ratio: null is free, else width:height in pixels; land: the bar shows 4:3 instead of 3:4 (starts from how the frame stands now)
-  cropState = { id, full: { x: it.x - c[0] * fw, y: it.y - c[1] * fh, w: fw, h: fh }, c: [...c], act: null, ratio: null, key: "free", land: (c[2] - c[0]) * fw > (c[3] - c[1]) * fh, undo: [] };
-  if (window.hyAnnot && hyAnnot.active) hyAnnot.exit();   // one tool at a time (P4 B-30)
-  const box = $("#crop"), src = thumbUrl(pgKey(it), 1280);
-  box.innerHTML = `<img src="${src}" alt=""><div class="win"><img src="${src}" alt=""><span class="h" data-c="nw"></span><span class="h" data-c="ne"></span><span class="h" data-c="sw"></span><span class="h" data-c="se"></span></div>`
-    + `<div class="tidy cratio"><button data-ratio="free" title="${T("crop::Free frame")}">${T("Free")}</button>${CROP_RATIOS.map(([a, b]) => `<button data-ratio="${a}:${b}">${ratioInner(`${a}:${b}`)}</button>`).join("")}`
-    + `<button class="flip${cropState.land ? " land" : ""}" data-ratio="flip" title="${T("Turn the ratio · X")}">${hyIcon("orientation", 15, 2)}</button></div>`;
-  if (isVid(it)) trimStart(id);
-  $("#hint").classList.toggle("vid", isVid(it));
-  box.style.display = "block"; $("#hint").style.display = "block"; drawCrop(); render();
-}
-function drawCrop() {
-  const s = cropState, f = s.full, c = s.c, box = $("#crop");
-  Object.assign(box.style, { left: f.x + "px", top: f.y + "px", width: f.w + "px", height: f.h + "px" });
-  const win = box.querySelector(".win");
-  Object.assign(win.style, { left: c[0] * f.w + "px", top: c[1] * f.h + "px", width: (c[2] - c[0]) * f.w + "px", height: (c[3] - c[1]) * f.h + "px" });
-  win.querySelectorAll("img, video").forEach(wi => Object.assign(wi.style, { width: f.w + "px", height: f.h + "px", left: -c[0] * f.w + "px", top: -c[1] * f.h + "px" }));
-  // the trim strip lies over the bottom of the whole clip, and the ratio bar stands above the whole picture, centred on it (owner 2026-10-06:
-  // «the bar jumps around»): neither follows the crop window, so a drag or a ratio never moves them; near the screen's top it goes below
-  const vt = box.querySelector(".vtrim"); if (vt) Object.assign(vt.style, { left: "0px", top: f.h + "px", width: f.w + "px" });
-  const bar = box.querySelector(".cratio"); if (!bar) return;
-  const below = (f.y - cam.y) * cam.z < 120;
-  Object.assign(bar.style, { left: f.w / 2 + "px", top: (below ? f.h : 0) + "px", transform: below ? "scale(calc(1 / var(--z))) translate(-50%, 12px)" : "" });
-  bar.querySelectorAll("button[data-ratio]").forEach(b => {
-    const k = b.dataset.ratio; if (k === "flip") { b.disabled = s.key === "1:1"; return; }
-    if (k !== "free") { const [a, d] = k.split(":"), k2 = s.land && a !== d ? `${d}:${a}` : k; if (b.dataset.k !== k2) { b.dataset.k = k2; b.innerHTML = ratioInner(k2); const nm = RATIO_NAMES[k2]; if (nm) { b.title = nm; b.setAttribute("aria-label", `${k2} ${nm}`); } else { b.removeAttribute("title"); b.removeAttribute("aria-label"); } } }
-    b.classList.toggle("on", k === s.key);
-  });
-}
+/* ---------- crop: the item shows a rectangle of the full image; the file is never cut (the frame, its bar and steps: ui/cropframe.js) ---------- */
 // A plugin card in its editor (a 3D view) changes its frame the way a picture does in crop (owner 2026-10-03: "why can't I change the
 // size like a picture, 1:1, free and so on"): edges and corners move freely, a ratio from the bar locks it, ⇄ turns it. The card keeps
 // about the same area and its centre. it.lock is the locked ratio ("4:5", width:height); without it the frame is free.
@@ -3964,87 +3889,6 @@ function setFrame(id, k) {
 }
 // the card is drawn again with its new frame (during a drag it only stretches) and the plugin hears about it
 function framed(id) { const el = EL.get(id), it = board.items[id], P = it && PLG[it.type]; if (el) el._k = ""; render(); if (P && P.resized) P.resized(id); }
-// standard proportions, portrait way round; ⇄ (or X) turns them (owner 2026-10-02: "1:1 or 3:4 or flip to 4:3, and others")
-const CROP_RATIOS = [[1, 1], [4, 5], [3, 4], [2, 3], [9, 16]];
-// which platform's format a ratio is (owner 2026-10-06); brand names, the same in both languages. 3:4, 5:4, 4:3 and 3:2 are no one's own.
-const RATIO_NAMES = { "1:1": "Instagram post", "4:5": "Instagram post", "2:3": "Pinterest", "9:16": "Reels · Stories · TikTok · Shorts", "16:9": "YouTube" };
-const ratioInner = k => `<span class="rk">${k}</span>${RATIO_NAMES[k] ? `<span class="rn">${RATIO_NAMES[k]}</span>` : ""}`;
-const ratioAttrs = k => RATIO_NAMES[k] ? ` title="${RATIO_NAMES[k]}" aria-label="${k} ${RATIO_NAMES[k]}"` : "";
-function cropFit(r) {   // the crop turned to r (width:height in pixels): the same centre and area, kept inside the image
-  const s = cropState, c = s.c, rn = r * s.full.h / s.full.w, A = (c[2] - c[0]) * (c[3] - c[1]);
-  let w = Math.sqrt(A * rn), h = w / rn; const k = Math.min(1, 1 / w, 1 / h); w *= k; h *= k;
-  const cx = Math.min(1 - w / 2, Math.max(w / 2, (c[0] + c[2]) / 2)), cy = Math.min(1 - h / 2, Math.max(h / 2, (c[1] + c[3]) / 2));
-  s.c = [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2];
-}
-function cropRatio(k) {
-  const s = cropState; if (!s) return;
-  if (k === "flip") {   // free: the frame itself turns; a ratio: 3:4 becomes 4:3
-    s.land = !s.land; const fb = $("#crop .flip"); if (fb) fb.classList.toggle("land", s.land);   // the rectangle turns with it
-    if (s.ratio) s.ratio = 1 / s.ratio;
-    cropFit(s.ratio || ((s.c[3] - s.c[1]) * s.full.h) / ((s.c[2] - s.c[0]) * s.full.w));
-  } else if (k === "free") { s.ratio = null; s.key = "free"; }
-  else { const [a, b] = k.split(":").map(Number); s.key = k; s.ratio = s.land ? b / a : a / b; cropFit(s.ratio); }
-  drawCrop();
-}
-function cropReset() { const s = cropState; s.c = [0, 0, 1, 1]; s.act = null; if (s.ratio) cropFit(s.ratio); drawCrop(); }   // R, double click: the whole frame, or the biggest piece in the ratio
-// a frame locked to a ratio grows from an anchor (the opposite corner, the press point, or the centre with ⌥) toward the pointer,
-// as far as the image allows; the size follows the axis the pointer moved further on (w0: the width when the drag began)
-function ratioRect(ax, ay, sx, sy, n, alt, min, w0 = 0) {
-  const s = cropState, rn = s.ratio * s.full.h / s.full.w;
-  const roomX = alt ? Math.min(ax, 1 - ax) : (sx > 0 ? 1 - ax : ax), roomY = alt ? Math.min(ay, 1 - ay) : (sy > 0 ? 1 - ay : ay);
-  const wx = Math.max(0, sx * (n[0] - ax)), wy = Math.max(0, sy * (n[1] - ay) * rn);
-  let w = Math.abs(wx - w0) >= Math.abs(wy - w0) ? wx : wy; w = Math.max(min, Math.min(w, roomX, roomY * rn)); const h = w / rn;
-  return alt ? [ax - w, ay - h, ax + w, ay + h] : [Math.min(ax, ax + sx * w), Math.min(ay, ay + sy * h), Math.max(ax, ax + sx * w), Math.max(ay, ay + sy * h)];
-}
-function norm(p) { const f = cropState.full; return [Math.min(1, Math.max(0, (p.x - f.x) / f.w)), Math.min(1, Math.max(0, (p.y - f.y) / f.h))]; }
-function cropDown(e) {
-  const at = document.elementFromPoint(e.clientX, e.clientY), rb = (e.target.closest && e.target.closest("#crop .cratio button")) || (at && at.closest("#crop .cratio button"));
-  if (rb) { cropState.undo.push([...cropState.c]); cropRatio(rb.dataset.ratio); return; }
-  if ((e.target.closest && e.target.closest("#crop .cratio")) || (at && at.closest("#crop .cratio"))) return;
-  if ((e.target.closest && e.target.closest("#crop .vtin")) || (at && at.closest("#crop .vtin"))) return trimDown(e);
-  stage.setPointerCapture(e.pointerId);
-  // the crop box may be redrawn by the time this runs (focus, render): its handle is then a detached node, so ask the node itself
-  // (the event then lands on #crop itself): find the handle under the pointer by its box
-  const t = e.target, own = q => (t.classList && t.classList.contains(q)) || !!t.closest("#crop ." + q);
-  const under = [...document.querySelectorAll("#crop .h")].find(h => { const r = h.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; });
-  const p = toWorld(e.clientX, e.clientY), n = norm(p), hc = (own("h") && t.dataset.c) || (under && under.dataset.c), s = cropState; s.undo.push([...s.c]);   // ⌘Z
-  if (hc) s.act = { kind: "corner", c: hc, c0: [...s.c] };
-  // on a frame that is not cropped yet the window is the whole image: a drag draws a new rectangle instead of moving it
-  else if (own("win") && !(s.c[0] <= 0 && s.c[1] <= 0 && s.c[2] >= 1 && s.c[3] >= 1)) s.act = { kind: "move", n, c0: [...s.c] };
-  else if (inside(p, s.full)) s.act = { kind: "new", n };
-  else s.undo.pop();   // a press beside the picture changes nothing (P4 B-46: it applied the crop); ↵ applies, Esc cancels
-}
-function cropMove(e) {
-  const s = cropState; if (s.tact) return trimMove(e); if (!s.act) return;
-  const n = norm(toWorld(e.clientX, e.clientY)), a = s.act, MIN = 0.03;
-  // ⌥ works from the centre here too, as when resizing anything (owner 2026-10-02: "why does alt not work in crop"); it can be pressed
-  // or let go in the middle of a drag
-  if (s.ratio && a.kind === "new") s.c = ratioRect(a.n[0], a.n[1], n[0] >= a.n[0] ? 1 : -1, n[1] >= a.n[1] ? 1 : -1, n, e.altKey, 0);
-  else if (s.ratio && a.kind === "corner") {
-    const c0 = a.c0, alt = e.altKey, sx = a.c.includes("w") ? -1 : 1, sy = a.c.includes("n") ? -1 : 1;
-    s.c = ratioRect(alt ? (c0[0] + c0[2]) / 2 : (sx > 0 ? c0[0] : c0[2]), alt ? (c0[1] + c0[3]) / 2 : (sy > 0 ? c0[1] : c0[3]), sx, sy, n, alt, alt ? MIN / 2 : MIN, (c0[2] - c0[0]) / (alt ? 2 : 1));
-  }
-  else if (a.kind === "new" && e.altKey) {
-    const hw = Math.min(Math.abs(n[0] - a.n[0]), a.n[0], 1 - a.n[0]), hh = Math.min(Math.abs(n[1] - a.n[1]), a.n[1], 1 - a.n[1]);
-    s.c = [a.n[0] - hw, a.n[1] - hh, a.n[0] + hw, a.n[1] + hh];
-  } else if (a.kind === "new") s.c = [Math.min(a.n[0], n[0]), Math.min(a.n[1], n[1]), Math.max(a.n[0], n[0]), Math.max(a.n[1], n[1])];
-  else if (a.kind === "corner" && e.altKey) {
-    const c0 = a.c0, cx = (c0[0] + c0[2]) / 2, cy = (c0[1] + c0[3]) / 2, c = s.c;
-    if (/[we]/.test(a.c)) { const hw = Math.max(MIN / 2, Math.min(Math.abs(n[0] - cx), cx, 1 - cx)); c[0] = cx - hw; c[2] = cx + hw; } else { c[0] = c0[0]; c[2] = c0[2]; }
-    if (/[ns]/.test(a.c)) { const hh = Math.max(MIN / 2, Math.min(Math.abs(n[1] - cy), cy, 1 - cy)); c[1] = cy - hh; c[3] = cy + hh; } else { c[1] = c0[1]; c[3] = c0[3]; }
-  }
-  else if (a.kind === "move") {
-    const w = a.c0[2] - a.c0[0], h = a.c0[3] - a.c0[1];
-    const x = Math.min(1 - w, Math.max(0, a.c0[0] + n[0] - a.n[0])), y = Math.min(1 - h, Math.max(0, a.c0[1] + n[1] - a.n[1]));
-    s.c = [x, y, x + w, y + h];
-  } else {
-    const c = s.c;
-    if (a.c.includes("w")) c[0] = Math.min(n[0], c[2] - MIN); if (a.c.includes("e")) c[2] = Math.max(n[0], c[0] + MIN);
-    if (a.c.includes("n")) c[1] = Math.min(n[1], c[3] - MIN); if (a.c.includes("s")) c[3] = Math.max(n[1], c[1] + MIN);
-  }
-  drawCrop();
-}
-function cropUp() { const s = cropState; if (!s) return; if (s.tact) return trimUp(); if (s.undo.length && s.undo[s.undo.length - 1].join() === s.c.join()) s.undo.pop(); if (s.act && s.act.kind === "new" && (s.c[2] - s.c[0] < 0.03 || s.c[3] - s.c[1] < 0.03)) s.c = [...cropOf(board.items[s.id])]; s.act = null; drawCrop(); }
 function applyCrop() {
   const s = cropState; if (!s) return;
   const it = board.items[s.id], before = snap(), c = s.c.map(v => Math.round(v * 10000) / 10000);
@@ -4060,7 +3904,7 @@ function applyCrop() {
 }
 function endCrop() {
   const s = cropState; if (s && s.v) { s.v.pause(); s.v.removeAttribute("src"); s.v.load(); }
-  cropState = null; $("#crop").style.display = "none"; $("#crop").innerHTML = ""; $("#crop").classList.remove("vready"); $("#hint").style.display = "none"; $("#hint").classList.remove("vid"); render();
+  cropState = null; $("#crop").style.display = "none"; $("#crop").innerHTML = ""; $("#crop").classList.remove("vready"); if (s && s.hint) s.hint.hide(); render();   // its Hint bar goes (ui/cropframe.js)
 }
 function startCropSel() {   // a video too: crop & trim; nothing to crop says why (P4 B-48)
   const ids = hySel.pick(sel).filter(id => isPic(board.items[id])); if (cropState) return;
@@ -4444,8 +4288,6 @@ addEventListener("keydown", e => {
 var PDFI = new Map();   // path -> {pages, ars} from /api/pdf; {pages: 0} while it is asked
 var PBIG = false, PBP = 1;   // the large window shows a PDF; the page it shows (its own: browsing it leaves the card's page alone)
 function isPdf(it) { return isPic(it) && (byPath.get(it.path) || {}).kind === "pdf"; }
-// a picture file proper (png, jpg, webp, avif…): the library gives it no kind; a video, a PDF, a PSD or TIFF ("doc") has one
-function isImgFile(it) { const k = isPic(it) && (byPath.get(it.path) || {}).kind; return isPic(it) && (!k || k === "image"); }
 function pdfPages(path) { const i = PDFI.get(path); return (i && i.pages) || (byPath.get(path) || {}).pages || 0; }
 function pdfAsk(path) {
   if (PDFI.has(path)) return PDFI.get(path).p;
@@ -4499,7 +4341,7 @@ async function splitPdf(id) {
   const it = board.items[id]; if (!it || !isPdf(it) || it.pageFixed) return;
   await pdfAsk(it.path);
   const n = pdfPages(it.path); if (n < 2) { toast(T("This PDF has one page")); return; }
-  if (n > 40 && !confirm(T("Split into {n} pages?", { n }))) return;
+  if (n > 40 && !await hyAsk({ title: T("Split into {n} pages?", { n }), ok: T("Split") })) return;   // the app's question, not confirm() (P-21)
   const cur = board.items[id]; if (!cur) return;
   const ars = (PDFI.get(cur.path) || {}).ars || [], W = cur.w, GAP = 24, PAD = Math.round(W * 1.5), cols = Math.min(MAXCOLS, n), rows = Math.ceil(n / cols);
   const ar = k => ars[k] || cur.ar, rowH = [...Array(rows)].map((_, r) => Math.max(...[...Array(cols)].map((_, c) => r * cols + c < n ? W / ar(r * cols + c) : 0)));
@@ -4638,8 +4480,8 @@ $("#dock").addEventListener("click", e => { const b = e.target.closest("button")
 
 // open the frame in the review viewer (big picture, scores, notes); on its own page the canvas opens the picture in a new tab
 $("#iFav").onclick = () => { const id = [...sel][0]; if (id) toggleFav([id]); };   // a picture or an HTML page (toggleFav keeps those)
-$("#bundo").onclick = undo; $("#bredo").onclick = redo; $("#bfit").onclick = () => fit();   // not "= fit": the click event would arrive as the list of frames to show
-$("#bkeys").onclick = () => { const o = $("#keys").style.display !== "block"; closeSide("keys"); $("#keys").style.display = o ? "block" : "none"; side(); };
+$("#bundo").onclick = undo; $("#bredo").onclick = redo;   // the view %: its menu (ui/boardzoom.js, round 20)
+$("#bkeys").onclick = () => { const o = !$("#keys").classList.contains("open"); closeSide("keys"); $("#keys").classList.toggle("open", o); side(); };
 ["#bkeys", "#keys"].forEach(q => $(q).addEventListener("pointerdown", e => e.stopPropagation()));
 // the side panels scroll, the board under them stays (2026-10-02: the event list did not scroll, the canvas took the wheel)
 ["#keys", "#hist", "#sets"].forEach(q => $(q).addEventListener("wheel", e => e.stopPropagation(), { passive: true }));
@@ -4748,7 +4590,7 @@ async function deletePage(id) {
 function renamePage(id) {
   const row = $(`#pages .row[data-pg="${id}"]`); if (!row) return;
   const pg0 = pages.find(p => p.id === id), t = row.querySelector(".t") || row.querySelector(".ln"), inp = document.createElement("input");
-  inp.value = pg0.title; t.replaceWith(inp); inp.focus(); inp.select(); const kh = hyHint("rename", inp);
+  inp.value = pg0.title; t.replaceWith(inp); inp.focus(); inp.select(); hyTyping.hold(inp); const kh = hyHint("rename", inp);
   let closed = false;
   const done = ok => {
     if (closed) return; closed = true; kh.hide();

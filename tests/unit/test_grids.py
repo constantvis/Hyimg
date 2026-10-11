@@ -158,3 +158,26 @@ def test_md_view_of_a_sample_page():
 def test_gravity_reads_rows_top_to_bottom_left_to_right():
     E = [((500, 0, 100, 100), "b"), ((0, 10, 100, 100), "a"), ((0, 300, 100, 100), "c"), ((0, -400, 2000, 100), "h")]
     assert hymd.gravity(E) == ["h", "a", "b", "c"]
+
+
+def crowd():
+    sq = lambda x, y, w=100, ar=1.0: pic(x, y, w=w, ar=ar)
+    I = {"n0": sq(0, 150, 200, 2.0), "m0": sq(0, 300), "n2": sq(600, 150), "u": sq(130, 10, 50), "p0": sq(260, 200), "p1": sq(384, 200),
+         "nt": {"type": "note", "text": "x", "x": 130, "y": 150, "w": 100, "fs": 20}}
+    I.update({f"s{k}": sq(k * 120, 0) for k in range(6)})
+    return {"items": I, "groups": {}, "grids": {"gp": {"members": ["p0", "p1"], "cols": 2, "rows": 1, "gap": 24, "cell": "fit"}}}
+
+
+def test_a_grid_makes_room_its_neighbours_move_down_as_on_the_board():
+    """owner 2026-10-11, ♥ on r21/grid-b.html «Соседи отъезжают»: the same rule as ui/grid.js room (tests/unit/js/grid.test.mjs)"""
+    b = crowd(); B = json.loads(json.dumps(b)); ids = [f"s{k}" for k in range(6)]
+    grids.make(b, ids, cols=3)
+    moved = grids.room(b, ids, B)
+    assert sorted(moved) == ["m0", "n0", "p0", "p1"]
+    assert xy(b, "n0", "m0", "p0", "p1") == [(0, 248), (0, 372), (260, 248), (384, 248)]
+    assert xy(b, "n2", "u", "nt") == [(600, 150), (130, 10), (130, 150)]
+    # hy.py grid: the same, and its line says how many moved
+    b = crowd(); ops = {}
+    grids.register(ops, lambda b, ref, kinds=None: (_ for _ in ()).throw(SystemExit(ref)), lambda b, ref: [ref])
+    out = ops["grid"](b, ids, {"cols": 3})
+    assert out.endswith("сдвинуто вниз: 4") and xy(b, "m0") == [(0, 372)], out

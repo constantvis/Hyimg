@@ -3,7 +3,8 @@ must be explicit, so an agent reads it without guessing). One pass over the page
 
   # «Page»                     the page's title
   ## Heading / ### Heading     a heading by its size: a section (letters of 160 and more, LAYOUT.md) or a caption;
-                               a text document's body under its title, its own headings below that level (textdocs.py)
+                               a text document's body under its title, its own headings below that level (textdocs.py);
+                               ▭W×H after its [id] a Fixed size box, ▭W a title that wraps at W (textdocs.mark)
   ## ▣ Group «Title» [id]      a group is a section; a group whose frame lies inside another's is a section under it
   > a note's text [id]         a note as a quote, in its group or where it stands; its arrows after it as → lines (a reply too)
   ▦ grid C × R [id]            a grid as a Markdown table (its heading row as the table's titles)
@@ -105,7 +106,7 @@ def render(b, title="", page=""):
             elif it.get("type") == "note": note(k)
             elif it.get("type") == "text":
                 lvl = 2 if (it.get("fs") or 0) >= SECTION_FS and depth == 0 else 3 + depth
-                L.extend([f"{'#' * min(6, lvl)} {first(it.get('text'))} [{k}]", *textdocs.body_md(it.get("text"), min(6, lvl)), ""])   # a document
+                L.extend([f"{'#' * min(6, lvl)} {first(it.get('text'))} [{k}]{textdocs.mark(it)}", *textdocs.body_md(it.get("text"), min(6, lvl)), ""])   # a document
         flush()
 
     emit(None, 0)

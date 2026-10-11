@@ -72,10 +72,15 @@ window.hyConfirm = hyConfirm;
 // Only a Studio's Cancel button and Image Studio's crumb ask; the last Esc, the Board segment and another Studio's segment keep the work
 // (S-27 A). The words are the board's (window.T, the parent's in Image Studio's page)
 //   hyLeave({ name, save, discard, keep, accent })   save, discard, keep: what each answer does; name: the thing's name in the title
+// Inside a Studio on the board the name is the one its crumb step shows (ui/modes.js doc(), round 20 «Одна оболочка», owner 2026-10-11:
+// «беру»; studios audit S-07: 3D Studio asked about «a», the scene's folder); name is for a Studio's page open on its own
+const studioDoc = () => { for (const w of [window, (() => { try { return parent !== window ? parent : null; } catch { return null; } })()]) {
+  try { const d = w && typeof w.hyStudioDoc === "function" ? w.hyStudioDoc() : null; if (d && d.name) return d; } catch { /* another origin */ } } return null; };
 export function hyLeave(o) {
   const T = typeof window.T === "function" ? window.T : (() => { try { return parent !== window && typeof parent.T === "function" ? parent.T : null; } catch { return null; } })();
   const w = (k, v) => T ? T(k, v) : k.replace(/\{(\w+)\}/g, (_, n) => (v || {})[n] ?? "");
-  return hyConfirm({ title: o.name ? w("Save changes to “{name}”?", { name: o.name }) : w("Save changes?"), note: w("Your changes are lost if you leave without saving"),
+  const d = studioDoc(), name = d ? d.name : o.name;
+  return hyConfirm({ title: name ? w("Save changes to “{name}”?", { name }) : w("Save changes?"), note: w("Your changes are lost if you leave without saving"),
     ok: w("Discard"), cancel: w("Keep editing"), onOk: o.discard, onCancel: o.keep, accent: o.accent, icon: o.icon, save: { label: w("Save"), run: o.save } });
 }
 window.hyLeave = hyLeave;

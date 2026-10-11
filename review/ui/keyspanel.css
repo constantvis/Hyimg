@@ -3,24 +3,11 @@
    header as drawn, 58 px with a pill of two tabs Tips and All keys, 30 px, no icons (r15 wins over round 14's standard 24 px block tabs,
    owner 2026-10-10), the search, then the sections in the drawing's capitals. Every row: the action's icon, its words, its keys one cap per key, at the right.
    Before round 15 it was one list up to 1000 px wide with uneven columns. ui/keyspanel.js builds it around the rows canvas.html writes. */
-#keys { position: absolute; top: 58px; bottom: 12px; right: 12px; z-index: 31; width: 340px; box-sizing: border-box; overflow: hidden; padding: 0;
-  border: 1px solid var(--line); border-radius: 18px; color: var(--ink); font: 400 12.5px var(--sans); line-height: normal;
-  background: color-mix(in srgb, var(--panel) 97%, transparent); -webkit-backdrop-filter: blur(24px) saturate(1.4); backdrop-filter: blur(24px) saturate(1.4); }
-/* its shadow is the side panels' token (ui/ui.css --hy-sh-pop), as History's */
-#keys .kp-in { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-#keys .kp-bh { flex: none; height: 58px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 12px 0 14px; }
-#keys .kp-bh .sp { flex: 1; }
-#keys .kp-x { width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--sub); cursor: pointer; }
-#keys .kp-x:hover { background: var(--hy-hov); color: var(--ink); }
-#keys .kp-x > svg { width: 13px; height: 13px; }
-#keys .kp-s { flex: none; position: relative; display: block; margin: 0 10px 6px; }
-#keys .kp-s > svg { position: absolute; left: 10px; top: 50%; width: 13px; height: 13px; translate: 0 -50%; color: var(--muted); pointer-events: none; }
-/* hy-allow: row-radius r15's search field is History's field (canvas.html #hist input), 9 px */
-#keys .kp-s input { width: 100%; height: 32px; box-sizing: border-box; padding: 0 10px 0 31px; border: 1px solid var(--line); border-radius: 9px; outline: none;
-  background: color-mix(in srgb, var(--raise) 80%, transparent); color: var(--ink); font: 400 12.5px var(--sans); }
-#keys .kp-s input:focus { border-color: color-mix(in srgb, var(--hy-sel) 70%, var(--line)); }
-#keys .kp-s input::placeholder { color: var(--muted); }
-#keys .kp-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 0 12px; }
+/* Since round 20 (owner 2026-10-11) a side panel as every other (ui/hy/side.css .hy-side, ui/side.js): 340, 18, glass 97 %, as tall as its
+   rows up to 12 px over the bottom, the header 52 with the pill (was 58), no × (was a round 30), the search 32, the footnote, «Nothing
+   found» in the middle at 14 (was 12 px at the left). Here only the rows. */
+#keys { z-index: 31; display: none; font: 400 12.5px var(--sans); line-height: normal; } #keys.open { display: flex; }
+#keys .kp-body { padding: 0 0 12px; }
 #keys :is(.kp-body > section, .kp-row, .kp-tip, .kp-lb, .kp-none)[hidden] { display: none !important; }
 /* a section's label: «HERE · BOARD 5», «KEYS HERE 9 … All 48» */
 #keys .kp-lb { height: 30px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 8px 8px 0; margin: 0 2px 0 9px;
@@ -55,4 +42,6 @@
 #keys .kp-row.kp-gest :is(.k, .t) { display: inline; max-width: none; margin: 0; text-align: left; }
 #keys .kp-row.kp-gest .k { color: var(--ink); font: 500 12.5px/1.35 var(--sans); }
 #keys .kp-row.kp-gest .t { color: var(--sub); }
-#keys .kp-none { padding: 18px 16px; color: var(--muted); font: 400 12px var(--sans); }
+/* «Show» at the end of Tips: the tooltips and the hints on or off, a mini toggle at the row's right end (round 20, 2026-10-11) */
+#keys .kp-sw { cursor: default; }
+#keys .kp-sw hy-minitoggle { order: 2; margin-left: auto; flex: none; }

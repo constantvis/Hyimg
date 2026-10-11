@@ -105,9 +105,13 @@ test("every key the shared modules ask for has its Russian in lang-common.js", (
   // boardkeys.js and boardsel.js, the board's keys and what a selection means (П4 medium findings, 2026-10-10), the board's own (lang-board.js);
   // annlist.js, a Studio's Annotations list (round 17), shows the board's words (lang-board.js), in Image Studio's page too, through the board's T;
   // infobody.js, the Info card's body (round 18's spec sheet, moved from canvas.html), the board's own (lang-board.js);
-  // outer.js, pictures and videos dropped or pasted from outside (2026-10-10, moved from canvas.html), the board's own too
-  const skip = new Set(["menu.js", "modes.js", "notelink.js", "anncore.js", "annotate.js", "comments.js", "grid.js", "i18n.js", "homebell.js", "cardfav.js", "textdoc.js",
-    "connectors.js", "arrange.js", "infohead.js", "infobody.js", "keyspanel.js", "libpanel.js", "undorebase.js", "boardkeys.js", "boardsel.js", "annlist.js", "outer.js"]);
+  // outer.js, pictures and videos dropped or pasted from outside (2026-10-10, moved from canvas.html), the board's own too; cropframe.js, the
+  // crop's frame and ratio bar (2026-10-11, moved from canvas.html), the board's own (lang-board.js); textbox.js, the Text tool and a text's
+  // box (2026-10-11), the board's own too; boarddock.js (the board's dock and «+») and ctxmain.js (the first rows of the board's right click,
+  // round 20, 2026-10-11) and selbar.js (the bar over a selection, B-17) the board's own (lang-board.js)
+  const skip = new Set(["boarddock.js", "ctxmain.js", "selbar.js", "menu.js", "modes.js", "notelink.js", "anncore.js", "annotate.js", "comments.js", "grid.js", "i18n.js", "homebell.js", "cardfav.js", "textdoc.js",
+    "connectors.js", "arrange.js", "infohead.js", "infobody.js", "keyspanel.js", "libpanel.js", "undorebase.js", "boardkeys.js", "boardsel.js", "annlist.js", "outer.js", "cropframe.js",
+    "textbox.js"]);
   const common = dict["lang-common.js"].ru, missing = [];
   for (const f of fs.readdirSync(UI).filter(f => f.endsWith(".js") && !f.startsWith("lang-") && !skip.has(f)))
     for (const k of asked(f)) if (!(k in common)) missing.push(`${f}: «${k}»`);
@@ -122,7 +126,7 @@ test("Home's news and bell (homebell.js, Home only) have their words in Home's d
 test("the board's keys and selection (boardkeys.js, boardsel.js) and what comes from outside (outer.js) have their words in the board's dictionary", () => {
   const board = dict["lang-board.js"].ru;
   for (const k of asked("infobody.js")) assert.ok(k in board || k in dict["lang-common.js"].ru, `infobody.js: «${k}»`);   // the Info card's body (round 18)
-  for (const f of ["boardkeys.js", "boardsel.js", "outer.js"]) for (const k of asked(f)) assert.ok(k in board, `${f}: «${k}»`);
+  for (const f of ["boardkeys.js", "boardsel.js", "outer.js", "textbox.js"]) for (const k of asked(f)) assert.ok(k in board, `${f}: «${k}»`);
 });
 
 test("Arrange's grids (grid.js) have their words in the board's dictionary", () => {

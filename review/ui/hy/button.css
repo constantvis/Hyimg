@@ -50,5 +50,6 @@ hy-icon-button[variant=plain] { background: var(--raise); }
 /* an icon button: shape= keeps one shape whatever the setting */
 hy-icon-button[shape=round] { border-radius: 50%; }
 hy-icon-button[shape=square] { border-radius: 8px; }
+hy-icon-button[shape=square][size=s] { border-radius: var(--hy-ctl-r); }   /* a side panel's header button, as a block header's (24, 6) */
 hy-icon-button[shape=square][size=plate] { border-radius: 11px; }
 @media (prefers-reduced-motion: reduce) { hy-button, hy-icon-button { transition: none; } }

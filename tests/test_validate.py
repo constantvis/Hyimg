@@ -140,3 +140,17 @@ def test_the_top_rows_plates_take_the_rows_look(tmp_path):
            ":root[data-shape=pro] #crumb { border-radius: 11px; }\n.m3title code { font: 400 12px ui-monospace, monospace; }\n</style>\n"
            "<script>\nconst b = document.createElement('div'); b.className = \"gst hy-plate\";\nconst t = `<div class=\"m3title hy-plate\" data-hyui></div>`;\n</script>\n")
     assert rules_of(tmp_path, "new.html", new) == []
+
+
+def test_the_core_asks_with_its_own_dialogs_never_the_browsers(tmp_path):   # panels audit P-21, round 20 (2026-10-11)
+    js = "\n".join(['if (!confirm("Split?")) return;', 'window.alert("x");', 'const n = prompt("name");',
+                    'hyConfirm({ title: "ok" }); o.confirm(); async function prompt(o) {}', '// confirm("in a comment")', 'const s = "alert(1)";'])
+    assert rules_of(tmp_path, "hyimg/review/ui/a.js", js) == [("native-dialog", 1), ("native-dialog", 2), ("native-dialog", 3)]
+    assert rules_of(tmp_path, "hyimg-image-studio/a.js", js) == [], "a plugin's own dialogs are its own"
+
+
+def test_the_keyboards_one_focus_ring_is_let_through(tmp_path):   # panels audit P-23, round 20 (2026-10-11): the ring on :focus-visible only
+    css = (".a:focus-visible { outline: var(--hy-focus-ring) !important; outline-offset: var(--hy-focus-off); }\n"
+           ".b:focus { outline: var(--hy-focus-ring); }\n"
+           ".c:focus-visible { outline: 2px solid blue; }\n")
+    assert rules_of(tmp_path, "f.css", css) == [("focus-ring", 2), ("focus-ring", 3)]

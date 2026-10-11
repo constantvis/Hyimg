@@ -8,8 +8,13 @@
 // the app's curve); dragged out it leaves and the gap closes; a picture or card dropped on a grid goes into the cell under the pointer (an
 // ⌥-drag copy too); ⌘D puts the copy right after its original; a member deleted or resized reflows the grid from its old top left. Cells are
 // "fit": a column is as wide as its widest member, a row as tall as its tallest, a member at its cell's top left. Every gesture is one undo
-// step (the grids ride in the board's snapshot). canvas.html calls: arranged (the three Arrange commands), settle (each commit), moving and
+// step (the grids ride in the board's snapshot). canvas.html calls: arrange (the three Arrange commands), settle (each commit), moving and
 // drop (a drag), dup (⌘D), draw (the handles), entry and act (the right click, built by ui/arrange.js), merged (ui/merge.js).
+// Arrange makes room (owner 2026-10-11, ♥ on r21/grid-b.html «Соседи отъезжают»; round 20 B-13: ⌥A laid its second row over the pictures
+// under the selection, and they were hidden): the result stays where the selection was, and the things it now covers move down just below
+// it, those they then cover too; a grid among them moves whole. What lay under or over the selection before stays (it was put there).
+// Notes and timelines keep their place, as Arrange leaves them. One undo step, a note says how many moved. review/grids.py room is the
+// same rule for hy.py grid.
 (() => {
   const GAP = 24, EASE = "cubic-bezier(.32,.72,0,1)";
   const items = b => b.items || {}, table = b => b.grids || {};
@@ -82,6 +87,32 @@
     (b.grids || (b.grids = {}))[gid] = { members: ids, cols: Math.max(1, cols || Math.max(...rows.map(r => r.length))), rows: 0, gap: GAP, cell: "fit" };
     reflow(b, gid, at); return gid;
   }
+  // room(b, ids, B): the things of b that ids now cover move down below them (B the board before, its boxes say what was covered already)
+  const hit = (a, c) => a.x < c.x + c.w - .5 && a.x + a.w > c.x + .5 && a.y < c.y + c.h - .5 && a.y + a.h > c.y + .5;
+  const boxOf = (b, ids) => { const rs = ids.map(id => rect(b, id)).filter(Boolean), x = Math.min(...rs.map(r => r.x)), y = Math.min(...rs.map(r => r.y));
+    return { x, y, w: Math.max(...rs.map(r => r.x + r.w)) - x, h: Math.max(...rs.map(r => r.y + r.h)) - y }; };
+  function room(b, ids, B) {
+    const S = new Set(ids), fixed = ids.map(id => rect(b, id)).filter(Boolean), was = B ? ids.map(id => rect(B, id)).filter(Boolean) : [];
+    const units = [], seen = new Set();   // a thing alone, or a whole grid (its members move together)
+    for (const [id, it] of Object.entries(items(b))) {
+      if (S.has(id) || seen.has(id) || !gridable(it)) continue;
+      const g = of(b, id), ms = g ? table(b)[g].members.filter(m => items(b)[m] && !S.has(m)) : [id]; ms.forEach(m => seen.add(m));
+      const old = B && ms.every(m => items(B)[m]) ? boxOf(B, ms) : null;
+      if (old && was.some(r => hit(old, r))) continue;   // it lay under or over the selection already
+      units.push({ ms, moved: false });
+    }
+    const R = u => boxOf(b, u.ms), moved = [];
+    for (let again = true, guard = 0; again && guard < 200; guard++) {
+      again = false;
+      units.sort((p, q) => R(p).y - R(q).y);
+      units.forEach((u, k) => {
+        const r = R(u), by = [...fixed, ...units.filter((v, j) => v.moved && v !== u && j < k).map(R)];
+        const dy = Math.max(0, ...by.filter(o => hit(r, o)).map(o => o.y + o.h + GAP - r.y)); if (dy < .5) return;
+        u.ms.forEach(m => { items(b)[m].y += dy; }); if (!u.moved) moved.push(...u.ms); u.moved = again = true;
+      });
+    }
+    return moved;
+  }
   // a merged board (ui/merge.js): a grid whose members came from both sides is laid out again; members gone leave it
   function merged(out, local, remote) {
     for (const [gid, g] of Object.entries(table(out))) {
@@ -131,6 +162,16 @@
     }
     make(board, ok, cols, ordered, HY.uid);
   }
+  // ⌥A ⌥S ⌥D: what they laid out becomes a grid (arranged), the things it covers make room, one step named by the command (step)
+  function arrange(ids, cols, ordered, before, step) {
+    arranged(ids, cols, ordered);
+    let B = null; try { B = JSON.parse(before); } catch { /* no board before: nothing was covered already */ }
+    const moved = room(board, ids0(ids), B); moved.forEach(flow);
+    commit(before, said(moved), { step });
+    return moved;
+  }
+  // the note's words for what moved down, "" when nothing did
+  const said = moved => !moved.length ? "" : T("Moved down to make room: {what}", { what: window.hyNoteLink ? hyNoteLink.what(board, moved) : T("{n} pictures", { n: moved.length }) });
   // each commit: what the edit did to a grid's members (deleted, resized, a copy added) reflows it
   function settle(before) { if (!live()) return; let B = null; try { B = JSON.parse(before); } catch {} prune(board, B); if (!Object.keys(board.grids).length) delete board.grids; }
   function dup(src, copy) { const g = of(board, src); if (!g) return; const m = board.grids[g].members; m.splice(m.indexOf(src) + 1, 0, copy); }
@@ -214,5 +255,5 @@
 #handles .gridslot { position: absolute; pointer-events: none; border-radius: calc(6px / var(--z, 1)); background: color-mix(in srgb, var(--sel) 14%, transparent);
   transition: left .18s ${EASE}, top .18s ${EASE}; }`;
   (document.head || document.documentElement).appendChild(css);
-  window.hyGrid = { rect, rowsOf, layout, reflow, make, leave, prune, merged, slot, heads, of, gridable, placed, arranged, settle, dup, moving, drop, draw, entry, act };
+  window.hyGrid = { rect, rowsOf, layout, reflow, make, leave, prune, merged, slot, heads, of, gridable, placed, room, said, arranged, arrange, settle, dup, moving, drop, draw, entry, act };
 })();

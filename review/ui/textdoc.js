@@ -4,7 +4,11 @@
 //             after it are the body: half the title's size, regular, with # ## ### headings, - and 1. lists, - [ ] checklists (a click
 //             ticks them), > quotes, --- rules, **bold**, *italic*, ~~struck~~, `code` and links ([text](url) or a bare https://…)
 //   it.tw     the width a document wraps at, board units; set when a body first appears, dragged by the side strips, scaled by a corner
-// A text with no body is a heading and is drawn exactly as before: its text as it is, one weight, auto width, no tw. Nothing is migrated.
+//   it.tm     its box, as Figma's text (owner 2026-10-11): "w" Auto width (one line grows with the words), "h" Auto height (wraps at tw,
+//             grows down), "f" Fixed size (tw × it.th, the text wraps and what does not fit shows below the box). Set by hand only: a
+//             side strip makes Auto height at its width, the top or bottom strip Fixed size, the text bar switches (ui/textbox.js)
+// A text with no body and no tm is a heading and is drawn exactly as before: its text as it is, one weight, auto width, no tw; a
+// document with no tm wraps at tw (Auto height). Nothing is migrated.
 // Writing: the title is one field (↵ done, as a heading's; ⇧↵ or ↓ goes on into the body), the body another under it where ↵ is a new
 // line, as in Apple Notes, Bear and Obsidian (a list, a checklist and a quote go on, an empty item ends them); ⌘↵, Esc or a click outside
 // apply. The body is written as Markdown with its marks dimmed and the bold, headings, code and links lit as you type (a mirror under a
@@ -19,6 +23,14 @@
   const isDoc = it => !!it && split(it.text).body.trim() !== "";
   // a new document's width: about 14 letters of its title, at least its title's own width, at most twice the 14 (fs × 14: 560 at Regular)
   const autoW = (it, now) => Math.round(Math.min(Math.max(it.fs * 14, now || 0), it.fs * 28));
+  // its box: tm as set, else what it always was (a heading Auto width, a document Auto height); Fixed needs its height
+  const modeOf = (it, doc) => { const m = it && it.tm; return m === "f" ? (it.th > 0 ? "f" : "h") : m === "h" || m === "w" ? m : doc ? "h" : "w"; };
+  const mode = it => modeOf(it, isDoc(it));
+  function frame(el, it, m, doc) {   // the element's box by the mode: as wide as its words, tw wide, or tw × th (border-box: exactly that)
+    el.classList.toggle("wrap", m !== "w"); el.classList.toggle("tm-w", m === "w" && doc); el.classList.toggle("fixed", m === "f");
+    if (m !== "w" && !it.tw) it.tw = autoW(it, el.offsetWidth);
+    el.style.width = m === "w" ? "" : it.tw + "px"; el.style.height = m === "f" ? it.th + "px" : "";
+  }
 
   // ---- the body, rendered: one block per source line, data-l its line in it.text (the title is line 0)
   const RE = { h: /^(#{1,3})\s+(.*)$/, hr: /^\s*([-*_])(?:\s*\1){2,}\s*$/, ck: /^(\s*)[-*+•]\s+\[([ xX])\](?:\s+(.*))?$/,
@@ -57,8 +69,8 @@
   // the item drawn when it is not being written: a heading as before, a document as title and body at its width
   function paint(el, it) {
     const { title, body } = split(it.text);
-    if (!body.trim()) { el.classList.remove("doc"); el.style.width = ""; el.textContent = it.text; return; }
-    el.classList.add("doc"); el.style.width = (it.tw || autoW(it)) + "px";
+    if (!body.trim()) { el.classList.remove("doc"); frame(el, { ...it }, mode(it), false); el.textContent = it.text; return; }
+    el.classList.add("doc"); frame(el, { ...it, tw: it.tw || autoW(it) }, mode(it), true);
     el.innerHTML = `<div class="td-t" data-l="0">${esc(title) || "&#8203;"}</div><div class="td-b">${bodyHtml(body.replace(/\s+$/, ""), 1)}</div>`;
   }
 
@@ -138,12 +150,11 @@
     el.textContent = ""; el.appendChild(box); el.classList.add("editing");
     let B = null, kh = { hide() {} }, ctx = "";
     const full = () => ta.value + (B ? "\n" + B.ta.value : "");
-    const fit = () => {
-      const doc = !!B; el.classList.toggle("doc", doc);
-      if (doc) { if (!it.tw) it.tw = autoW(it, el.offsetWidth); el.style.width = it.tw + "px"; ta.style.width = "100%"; B.m.innerHTML = hl(B.ta.value); }
-      else { el.style.width = ""; ta.style.width = "0"; }
+    const fit = () => {   // the box by the text's mode (a document with no tm wraps at its tw, set here as it always was)
+      const doc = !!B, m = modeOf(it, doc); el.classList.toggle("doc", doc); frame(el, it, m, doc);
+      ta.style.width = m === "w" ? "0" : "100%"; if (doc) B.m.innerHTML = hl(B.ta.value);
       ta.style.height = "0";
-      if (!doc) ta.style.width = Math.max(ta.scrollWidth, it.fs * 4) + 4 + "px";
+      if (m === "w") ta.style.width = Math.max(ta.scrollWidth, it.fs * 4) + 4 + "px";
       ta.style.height = ta.scrollHeight + "px";
     };
     const hint = body => {   // the title's: the heading's ↵; the body's: ⌘↵ at the document's corner, bare, as on a note
@@ -165,7 +176,7 @@
       box.remove(); el.classList.remove("editing"); el._k = null;
       if (!ok) { if (!it.text) { delete board.items[id]; } render(); return; }
       if (!v.trim()) { delete board.items[id]; sel.delete(id); if (before0) { render(); return; } commit(before); return; }   // an empty title disappears
-      it.text = v; if (!isDoc(it)) delete it.tw; else if (!it.tw) it.tw = autoW(it);
+      it.text = v; if (!it.tm) { if (!isDoc(it)) delete it.tw; else if (!it.tw) it.tw = autoW(it); }   // a box set by hand stays (ui/textbox.js)
       render(); regroup([id]); commit(before);
     };
     // the title: ↵ done as a heading always was, ⇧↵ carries what is after the caret down into the body, ↓ at its end goes there
@@ -215,6 +226,7 @@
     fit();
     if (where && where.body && B) { B.ta.focus(); selectWordAt(B.ta, where.at); }
     else { ta.focus(); selectWordAt(ta, where ? where.at : at); }
+    hyTyping.hold(box);   // the board's keys wait while it is open (board audit 2026-10-11, B-09)
     sel = new Set([id]); hint(!!B && document.activeElement === B.ta);
     Object.defineProperty(box, "value", { get: full });   // ⌘Z sees the whole document: a new text goes at once, an old one undoes its typing first
     openEditor = done; hyUndoNew.watch(box, !!before0, done);
@@ -240,29 +252,38 @@
   }, true);
 
   window.hyTextDoc = {
-    split, isDoc, html: bodyHtml, paint,
-    // a new text, its field open: at p (board units; a double click on the empty board) or in the middle of what is on screen («+» › Text
-    // in the dock, owner 2026-10-10). "Обычный" size; zoomed far out, where that would be under 12 px on screen, the smallest one still
-    // read and edited; zoomed in, no bigger on screen than at 100 % (ui/newsize.js)
-    create(p) {
+    split, isDoc, html: bodyHtml, paint, mode, autoW,
+    // a new text, its field open: at p (board units; a double click on the empty board, a click of the Text tool) or in the middle of
+    // what is on screen («+» › Text in the dock, owner 2026-10-10). "Обычный" size; zoomed far out, where that would be under 12 px on
+    // screen, the smallest one still read and edited; zoomed in, no bigger on screen than at 100 % (ui/newsize.js). With box {w, h} (the
+    // Text tool's drag, ui/textbox.js) p is its top left corner and the text is a Fixed size box of exactly that, as in Figma
+    create(p, box) {
       if (!p && window.hyPrevNo && hyPrevNo()) return null;
       const r = stage.getBoundingClientRect(), at = p || toWorld(r.left + INSET + (r.width - INSET) / 2, r.top + r.height / 2), id = uid("t"), before = snap();
       let size = 1; while (size < TSIZE.length - 1 && TSIZE[size].fs * cam.z < 12) size++;
       const ts = hyTextSize.make(size, cam.z);   // its own scale kept: H1, H2 and the A's stay in it (ui/textsize.js)
-      board.items[id] = { type: "text", text: "", x: at.x, y: at.y - ts.fs * .6, ...ts, w: 0, h: 0 };
+      board.items[id] = { type: "text", text: "", x: at.x, y: box ? at.y : at.y - ts.fs * .6, ...ts, w: 0, h: 0 };
+      if (box) Object.assign(board.items[id], { tm: "f", tw: Math.round(box.w), th: Math.round(box.h) });
       render(); editText(id, before); return id;
     },
-    // a resize drag on a text: a side strip (e, w) sets a document's width; a corner scales the type, and a document's width with it
-    resize(it, it0, c, k, d) {
-      if ((c === "e" || c === "w") && isDoc(it)) { it.tw = Math.round(Math.max(it.fs * 4, (it0.tw || autoW(it0)) + d)); return; }
-      it.fs = Math.max(8, it0.fs * k); if (it0.tw) it.tw = it0.tw * it.fs / it0.fs;
+    // a resize drag on a text (owner 2026-10-11: «фиксированность появляется, когда я тянуть начинаю»): a side strip (e, w) sets the
+    // width and makes the text Auto height (a Fixed one stays Fixed); the top or bottom strip (n, s) sets the height and makes it Fixed
+    // size; a corner scales the type, and the box with it. d: the width's change, dv: the height's, board units
+    resize(it, it0, c, k, d, dv = 0) {
+      const m0 = mode(it0), w0 = m0 === "w" ? it0.w : it0.tw || autoW(it0), h0 = m0 === "f" ? it0.th : it0.h;
+      if (c === "e" || c === "w") { it.tm = m0 === "f" ? "f" : "h"; it.tw = Math.round(Math.max(it.fs * 2, w0 + d)); return; }
+      if (c === "n" || c === "s") { it.tm = "f"; it.tw = Math.round(w0); it.th = Math.round(Math.max(it.fs * 1.2, h0 + dv)); return; }
+      it.fs = Math.max(8, it0.fs * k); const q = it.fs / it0.fs; if (it0.tw) it.tw = it0.tw * q; if (it0.th) it.th = it0.th * q;
     },
-    // the side strips of a selected document, under its corner squares (canvas.html box() draws those); on, when the handles show at all
+    // the strips of a selected text, under its corner squares (canvas.html box() draws those): the sides its width, the top and bottom
+    // its height; on, when the handles show at all
     edges(h, id, r, it, on) {
-      if (!on || !isDoc(it)) return;
-      [["w", r.x], ["e", r.x + r.w]].forEach(([c, x]) => {
-        const e = document.createElement("div"); e.className = "he"; e.dataset.resize = id; e.dataset.rc = c; e.title = T("Drag: the text's width");
-        Object.assign(e.style, { left: x + "px", top: r.y + "px", width: "calc(14px / var(--z))", height: r.h + "px", transform: "translate(-50%, 0)", cursor: "ew-resize" });
+      if (!on) return;
+      [["w", r.x, r.y, 0, r.h], ["e", r.x + r.w, r.y, 0, r.h], ["n", r.x, r.y, r.w, 0], ["s", r.x, r.y + r.h, r.w, 0]].forEach(([c, x, y, w, hh]) => {
+        const e = document.createElement("div"), side = !w; e.className = "he"; e.dataset.resize = id; e.dataset.rc = c;
+        e.title = side ? T("Drag: the text's width") : T("Drag: a fixed height");
+        Object.assign(e.style, { left: x + "px", top: y + "px", width: side ? "calc(14px / var(--z))" : w + "px", height: side ? hh + "px" : "calc(14px / var(--z))",
+          transform: side ? "translate(-50%, 0)" : "translate(0, -50%)", cursor: side ? "ew-resize" : "ns-resize" });
         h.appendChild(e);
       });
     },
@@ -274,9 +295,13 @@
       const r = stage.getBoundingClientRect(), p = at || { x: cam.x + r.width / 2 / cam.z, y: cam.y + r.height / 2 / cam.z };
       let size = 1; while (size < TSIZE.length - 1 && TSIZE[size].fs * cam.z < 12) size++;
       const ts = hyTextSize.make(size, cam.z), fs = ts.fs, id = uid("t"), before = snap();
-      board.items[id] = { type: "text", text: t, x: p.x, y: p.y, ...ts, w: 0, h: 0 };
-      if (isDoc(board.items[id])) board.items[id].tw = Math.round(fs * 14);
-      sel = new Set([id]); render(); regroup([id]); commit(before, T("Pasted: text")); return true;
+      const it = board.items[id] = { type: "text", text: t, x: p.x, y: p.y, ...ts, w: 0, h: 0 };
+      if (isDoc(it)) it.tw = Math.round(fs * 14);
+      sel = new Set([id]); render();
+      // one line wider than two documents (owner 2026-10-11: a pasted paragraph ran as one endless line across the board): Auto height
+      // at a new document's width, 560 at Regular, in the text's own scale
+      if (!isDoc(it) && it.w > fs * 28) { Object.assign(it, { tm: "h", tw: Math.round(fs * 14) }); render(); }
+      regroup([id]); commit(before, T("Pasted: text")); return true;
     },
   };
 })();

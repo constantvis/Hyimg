@@ -547,7 +547,8 @@ def test_crop_bar_buttons_and_the_key_for_a_video(server, engine):
         assert b.count() == 1 and b.inner_text().strip().startswith("Кроп и обрезка") and b.locator("> kbd").inner_text() == "⇧C"
         b.click()
         page.wait_for_function("() => cropState && cropState.id === 'v1' && cropState.vid")
-        assert page.evaluate("() => document.querySelector('#hint').classList.contains('vid')")
+        # the Hint bar of a crop and trim: ↵ and Esc, no ratio key (round 20: the crop's keys in the one Hint bar, ui/boardhints.js)
+        page.wait_for_function("() => { const h = document.querySelector('hy-keyhint[data-ctx=crop]'); return !!h && !!h.querySelector('[data-id=apply]') && !h.querySelector('[data-id=ratio]'); }")
         page.keyboard.press("Escape"); page.wait_for_function("() => !cropState")
         page.keyboard.press("Shift+C"); page.wait_for_function("() => cropState && cropState.id === 'v1'")
         page.keyboard.press("Escape")

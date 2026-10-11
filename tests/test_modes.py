@@ -178,16 +178,16 @@ def test_switch_is_icons_at_the_right_end_like_figmas(srv, theme, shape):
             assert g["thumbBox"] < 1 and rgb(g["thumb"]) != rgb(g["group"]), g   # on a filled tile of its own colour
             assert g["rad"] == ("999px" if shape == "round" else "5px"), g   # round, or in «pro» the row radius less the thumb's 3 px inset (concentric)
             assert page.evaluate("document.getElementById('dock').offsetHeight") <= 50
-            # the tooltip: the name over the segment; on a disabled one, also what enables it
+            # the tooltip: the name over the segment; on a disabled one, also what enables it (the app's one tooltip, ui/hy/tooltip.js, round 20)
             r = page.evaluate("() => { const r = document.querySelector('#modes [data-mode=fake]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.top]; }")
-            page.mouse.move(r[0], r[1]); page.wait_for_function("() => document.getElementById('modetip').classList.contains('on')")
+            page.mouse.move(r[0], r[1]); page.wait_for_function("() => !!document.querySelector('#hytip[shown]')")
             page.wait_for_timeout(350)
-            t = page.evaluate("() => { const t = document.getElementById('modetip'), b = t.getBoundingClientRect(); return [t.textContent, b.bottom, b.left + b.width / 2, getComputedStyle(t).opacity]; }")
+            t = page.evaluate("() => { const t = document.getElementById('hytip'), b = t.getBoundingClientRect(); return [t.textContent, b.bottom, b.left + b.width / 2, getComputedStyle(t).opacity]; }")
             assert t[0] == "FakeSelect a fake card" and t[1] <= r[2] - 6 and t[3] == "1", t
             page.mouse.move(r[0] - 44, r[1]); page.wait_for_timeout(100)   # Board: at once (one was just shown), the name alone
-            assert page.evaluate("document.getElementById('modetip').textContent") == "Board"
+            assert page.evaluate("document.getElementById('hytip').textContent") == "Board"
             page.mouse.move(700, 300); page.wait_for_timeout(300)
-            assert page.evaluate("getComputedStyle(document.getElementById('modetip')).opacity") == "0"
+            assert page.evaluate("getComputedStyle(document.getElementById('hytip')).opacity") == "0"
             # an editor owns the dock: its buttons first, the switch still at the right end
             page.evaluate("(() => { sel = new Set(['f1']); render(); })()"); page.wait_for_timeout(100)
             page.click("#modes [data-mode=fake]"); page.wait_for_timeout(200)

@@ -28,6 +28,7 @@
     const kk = k(t), fs = fsAt(i, kk);
     if (kk !== 1) t.k = kk;
     if (t.tw) t.tw *= fs / t.fs;   // a document: its width too
+    if (t.th) t.th *= fs / t.fs;   // a Fixed size box: its height (ui/textbox.js)
     t.size = i; t.fs = fs;
   }
   function step(t, d) {

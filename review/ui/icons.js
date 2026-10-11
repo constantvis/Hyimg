@@ -105,7 +105,9 @@
     pause: '<rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/>',   // pause
     stop: '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>',   // stop
     note: '<path d="M5 4h14a1 1 0 0 1 1 1v9l-6 6H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 20v-5a1 1 0 0 1 1-1h5"/>',   // a sticky note
-    timeline: '<path d="M3 14h18"/><circle cx="5" cy="14" r="2" fill="currentColor"/><circle cx="12" cy="14" r="2"/><circle cx="19" cy="14" r="2"/><path d="M9.5 9h5"/>',   // a timeline
+    // a timeline, its one icon everywhere («+», the «?» panel): two dots, a line, an arrow, the phases and where the work goes (owner
+    // 2026-10-11 on r21/tl-star.html: «да ок»; before, «+» wore layoutTimeline and «?» dots on a line)
+    timeline: '<circle cx="4.5" cy="12" r="2.3"/><circle cx="11.5" cy="12" r="2.3"/><path d="M6.8 12h2.4M13.8 12H21"/><path d="m17.5 8.5 3.5 3.5-3.5 3.5"/>',
     heading: '<path d="M6 4.5v15M18 4.5v15M6 12h12"/>',   // a heading: big text over a column of groups (docs/glossary.md)
     // a component (docs/glossary.md): made once, used many times; one solid diamond, K1 of icons-redesign round 2 (owner 2026-10-08: «да вот
     // так отлично»), it replaced Figma's four diamonds
@@ -142,6 +144,10 @@
     drawRect: '<rect x="4" y="5.5" width="16" height="13" rx="1.5"/>',   // a rectangle drawn on the board
     drawEllipse: '<ellipse cx="12" cy="12" rx="8.5" ry="6.5"/>',   // an ellipse drawn on the board
     drawText: '<path d="M5.5 6.5V5h13v1.5"/><path d="M12 5v14"/><path d="M9.5 19h5"/>',   // a short text label on the board
+    // a text's box, Figma's three (owner 2026-10-11, ui/textbox.js): Auto width, Auto height, Fixed size
+    textAutoW: '<path d="M3.5 7v10M20.5 7v10M7 12h10"/><path d="m9.5 9.5-2.5 2.5 2.5 2.5M14.5 9.5l2.5 2.5-2.5 2.5"/>',   // one line grows sideways
+    textAutoH: '<path d="M7 3.5h10M7 20.5h10M12 7v10"/><path d="m9.5 9.5 2.5-2.5 2.5 2.5M9.5 14.5l2.5 2.5 2.5-2.5"/>',   // wraps, grows down
+    textFixed: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M8.5 9h7M12 9v7"/>',   // a box of its own width and height
     eraser: '<path d="m7 20-3.3-3.3a1.5 1.5 0 0 1 0-2.1L13.6 4.7a1.5 1.5 0 0 1 2.1 0l4.6 4.6a1.5 1.5 0 0 1 0 2.1L11.5 20z"/><path d="M8.5 9.5 15 16M7 20h13"/>',   // erase
     resolve: '<circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-4.8"/>',   // resolve a comment thread
     reply: '<path d="M10 8 5 12.5l5 4.5"/><path d="M5 12.5h9a5 5 0 0 1 5 5V19"/>',   // reply in a thread
@@ -209,6 +215,10 @@
     lasso: '<path d="M7 22a5 5 0 0 1-2-4"/><path d="M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><path d="M5 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>',   // the lasso
     wand: '<path d="m15 4-1 2-2 1 2 1 1 2 1-2 2-1-2-1z"/><path d="M14 10 4 20"/>',   // the magic wand
     subject: '<rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="3 2.4"/><circle cx="12" cy="10" r="3"/><path d="M7 19c.8-3 2.7-4.5 5-4.5s4.2 1.5 5 4.5"/>',   // select the subject
+    // Smart Select (Image Studio, SAM 3): an object's dashed frame and the pointer that picks it, Lucide's square-dashed-mouse-pointer
+    smartSelect: '<path d="M12.03 12.68a.5.5 0 0 1 .65-.65l9 3.5a.5.5 0 0 1-.03.94l-3.45 1.07a1 1 0 0 0-.66.66l-1.07 3.44a.5.5 0 0 1-.94.03z"/>'
+      + '<path d="M5 3a2 2 0 0 0-2 2"/><path d="M19 3a2 2 0 0 1 2 2"/><path d="M5 21a2 2 0 0 1-2-2"/><path d="M9 3h1"/><path d="M9 21h2"/><path d="M14 3h1"/>'
+      + '<path d="M3 9v1"/><path d="M21 9v2"/><path d="M3 14v1"/>',
     removeBg: '<path d="M4 4h4M4 4v4M20 4h-4M20 4v4M4 20h4M4 20v-4M20 20h-4M20 20v-4"/><circle cx="12" cy="10" r="3"/><path d="M7 18c.8-2.6 2.7-4 5-4s4.2 1.4 5 4"/>',   // remove the background
     pen: '<path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.6 7.6"/><circle cx="11" cy="11" r="2"/>',   // the vector pen; a vector file (AI, SVG)
     patch: '<path d="M10 10.01h.01M10 14.01h.01M14 10.01h.01M14 14.01h.01"/><path d="M18 6v12M6 6v12"/><rect x="2" y="6" width="20" height="12" rx="2"/>',   // the healing patch
@@ -251,6 +261,13 @@
     grow: '<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M3 3l3 3M21 3l-3 3M3 21l3-3M21 21l-3-3"/>',   // grow the selection
     blur: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" stroke-dasharray="2 3"/><circle cx="12" cy="12" r="10.5" stroke-dasharray="1 4" opacity=".6"/>',   // blur
     sharpen: '<path d="M12 3 21 20H3z"/><path d="M12 10v5"/>',   // sharpen
+    // the handles of a box's numbers (studios audit S-03, 2026-10-11: a scrub's handle is a letter or an icon, never a word; Dev Studio's
+    // inspector wrote «Зазор24»): the padding, the gap between children, the corner radius, the text size and the stroke's width
+    padding: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><rect x="8" y="8" width="8" height="8" rx="1" stroke-dasharray="2 2"/>',   // a box's padding (Dev Studio's field)
+    gap: '<rect x="3.5" y="4" width="5" height="16" rx="1.5"/><rect x="15.5" y="4" width="5" height="16" rx="1.5"/><path d="M12 9v6"/>',   // the gap between a box's children
+    radius: '<path d="M5 20v-8a7 7 0 0 1 7-7h7"/><path d="M5 20h.01M19 5h.01"/>',   // a corner's radius
+    textSize: '<path d="M3 8V6h10v2M8 6v12M6 18h4"/><path d="M14 13v-1h7v1M17.5 12v6M16 18h3"/>',   // the text's size
+    strokeWidth: '<path d="M4 5h16"/><rect x="4" y="11" width="16" height="1" rx=".5" fill="currentColor"/><rect x="4" y="17" width="16" height="3" rx="1" fill="currentColor"/>',   // a stroke's width
     zoomIn: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M11 8v6M8 11h6"/>',   // zoom in
     zoomOut: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M8 11h6"/>',   // zoom out
     zoom100: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M11 9l2-1.5V16"/>',   // 100 %

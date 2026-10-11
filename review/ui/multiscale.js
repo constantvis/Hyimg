@@ -46,7 +46,7 @@
       const r = o.r, w1 = r.w * k, h1 = r.h * k, kind = api.kind(it), g0 = o.g && st.g0.get(o.g), g1 = o.g && G1.get(o.g);
       if (g1) { it.x = g1.x + (r.x - g0.x) * k; it.y = g1.y + (r.y - g0.y) * k; }
       else { it.x = place(r.x, r.w, w1, B.x, B.w, X, W, ax); it.y = place(r.y, r.h, h1, B.y, B.h, Y, H, ay); }
-      if (kind === "text") { it.fs = o.it.fs * k; it.w = w1; it.h = h1; if (o.it.tw) it.tw = o.it.tw * k; }   // the redraw measures it again; a document's width too
+      if (kind === "text") { it.fs = o.it.fs * k; it.w = w1; it.h = h1; if (o.it.tw) it.tw = o.it.tw * k; if (o.it.th) it.th = o.it.th * k; }   // measured again; a text box too
       else if (kind === "tl") { it.fs = o.it.fs * k; it.len = o.it.len * k; it.points.forEach((q, i) => { q.t = o.it.points[i].t * k; }); api.tlSize(it); }
       else if (kind === "note") { it.w = o.it.w * k; it.h = o.it.h * k; }   // its type is a share of its width (NSIZE)
       else if (kind === "card") { it.w = o.it.w * k; it.h = o.it.h * k; }

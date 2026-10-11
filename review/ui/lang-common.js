@@ -14,7 +14,9 @@ hyLang({
     "step::New note": "Новая заметка", "step::New text": "Новый текст", "step::New timeline": "Новый таймлайн", "step::New card": "Новая карточка",
     "step::Grouped {n}": "Группа из {n}", "step::Ungrouped": "Без группы", "step::Added: {n}": "Добавлено: {n}", "step::Deleted: {n}": "Удалено: {n}",
     "step::Move": "Перемещение", "step::Move {n}": "Перемещение: {n}", "step::Text": "Текст", "step::Size": "Размер", "step::Colour": "Цвет",
-    "step::Crop": "Кадрирование", "step::Opacity": "Прозрачность", "step::Arrow": "Стрелка", "step::Arrange": "Раскладка", "step::Change": "Изменение",
+    "step::Crop": "Кадрирование", "step::Crop frame": "Рамка", "step::Opacity": "Прозрачность", "step::Arrow": "Стрелка", "step::Arrange": "Раскладка", "step::Change": "Изменение",
+    // a step named by its command (round 20 B-12, ui/undofx.js note): ⌥A ⌥S ⌥D, ⌘D
+    "step::Arrange as a grid": "Раскладка сеткой", "step::Arrange in a row": "Раскладка в ряд", "step::Tidy": "Причесать", "step::Duplicate": "Дубликат",
     "Open {studio} · ↵ or a double click": "Открыть {studio} · ↵ или двойной клик",   // the Studio's chip over a card (ui/studiochip.js)
     "step::Page name": "Имя страницы", "Show all · ⇧1": "Показать все · ⇧1", "Show all": "Показать все",
     // menu.js: «Показать в Finder» for library files
@@ -24,6 +26,7 @@ hyLang({
     "Finder did not open": "Finder не открылся",
     // menu.js: «Open in <App>» on a card's menu (owner 2026-10-06)
     "Open in default app": "Открыть в программе по умолчанию",
+    "default": "по умолчанию", "Other…": "Другое…",   // «Open with ›», round 20 (ui/menu.js hyOpenWith)
     "Open in {app}": "Открыть в {app}",
     // ui/hy/actions.js, ui/hy/openin.js: a Studio's actions top right, «Open in <Browser>» (owner 2026-10-09)
     "Studio actions": "Действия студии", "Open in browser": "Открыть в браузере", "Choose a browser": "Выбрать браузер",
@@ -222,14 +225,27 @@ hyLang({
     "A board link opened in a browser goes straight to Hyimg": "Ссылка на доску из браузера сразу открывает Hyimg",
     "Key hints": "Подсказки клавиш", "Always": "Всегда", "Until learned": "Пока не запомню",
     "Key hints and tips always show, learned ones too": "Подсказки клавиш и советы видны всегда, даже выученные",
-    "A key used 5 times and a tip used once are no longer shown": "Клавиша после 5 раз и совет после первого больше не показываются",
     "No key hints, Hint bar or tips": "Без подсказок клавиш, строки подсказок и советов",
     // ui/hy/keyhint.js: the words beside the keys (ui/boardhints.js, the studios); «hint::» keeps them apart from buttons. A surface's
     // hint is the ↵ alone, no word (owner 2026-10-09): the words are the capsule's (a drag, a resize) and the Hint bar's
     "hint::Done": "Готово", "hint::One axis": "По одной оси", "hint::From the centre": "От центра", "hint::Keep proportions": "Сохранить пропорции",
     "hint::45°": "45°", "hint::Square": "Квадрат", "hint::Circle": "Круг", "hint::Add to selection": "Добавить к выделению", "hint::Delete": "Удалить",
     "hint::Proportions": "Пропорции", "hint::Brush size": "Размер кисти", "hint::Black / white": "Черный / белый", "hint::Orbit": "Вращать",
-    "hint::Save": "Сохранить", "hint::Back": "Назад", "hint::Select an element": "Выбрать элемент", "hint::Annotation": "Аннотация", "hint::Space": "Пробел",
+    "hint::Save": "Сохранить", "hint::Back": "Назад", "hint::Select an element": "Выбрать элемент", "hint::Select": "Выбрать", "hint::Annotation": "Аннотация", "hint::Space": "Пробел",
+    // ui/hy/tooltip.js, the app's one tooltip, its switch in Settings › Interface and in the «?» panel (round 20, 2026-10-11)
+    "Tooltips": "Подсказки при наведении", "No tooltips over buttons": "Без подсказок над кнопками",
+    "A button's name and keys over it after a short rest": "Имя кнопки и ее клавиши, если задержать указатель",
+    "Learned keys and tips go, unused for a month they come back": "Выученные клавиши и советы уходят, забытые за месяц возвращаются",
+    // ui/boardzoom.js: the zoom's menu at the view % (round 20, 2026-10-11)
+    "View zoom": "Масштаб вида", "Zoom to fit": "Показать все", "Zoom to selection": "К выделенному", "Zoom to 100 %": "Масштаб 100 %",
+    "Zoom in": "Приблизить", "Zoom out": "Отдалить", "Select something first": "Сначала выделите что-нибудь",
+    // what is picked (round 21, 2026-10-11, ui/boardhints.js): the Hint bar's general keys and the one tip under it (ui/hy/nudge.js); the crop's Hint bar
+    "hint::Grid": "Сетка", "hint::Group": "Сгруппировать", "hint::Zoom to them": "Приблизить к ним", "hint::Zoom to it": "Приблизить к нему",
+    "hint::Open": "Открыть", "hint::Crop": "Кадрировать", "hint::Duplicate": "Дублировать",
+    "nudge::<b>lays them out as a grid</b>": "<b>раскладывает их сеткой</b>", "nudge::<b>groups them</b>": "<b>группирует их</b>",
+    "nudge::<b>zooms to them</b>": "<b>приближает к ним</b>", "nudge::<b>zooms to it</b>": "<b>приближает к нему</b>",
+    "nudge::<b>crops it</b>": "<b>кадрирует</b>", "nudge::<b>drag</b>: a copy": "<b>перетащите</b>: копия",
+    "hint::Ratio": "Формат", "hint::Apply": "Применить", "hint::Cancel": "Отмена",
     // ui/hy/tip.js: a tip's place (round 12's version 9, owner 2026-10-09); the tips of the board (ui/boardhints.js) and the library (ui/libtips.js)
     "Hide tips here": "Скрыть советы здесь", "Tips are off here · click the bulb to bring them back": "Советы здесь скрыты · клик по лампочке вернет их",
     "tip::<b>N</b> puts a note here": "<b>N</b> ставит здесь заметку", "tip::<b>⌘V</b> pastes a picture": "<b>⌘V</b> вставляет картинку",
@@ -319,6 +335,7 @@ hyLang({
     "set::Notifications": "Уведомления", "Mac notifications": "Уведомления Mac",
     // bellrow.js: the bell's panel header on Home and on a board
     "Notifications": "Уведомления",
+    "Nothing yet": "Пока пусто", "Agents' work and comments · <b>Esc</b> closes": "Работа агентов и комментарии · <b>Esc</b> закрывает",   // the bell (ui/bellrow.js, round 20)
     "An agent placed something on a board": "Агент что-то положил на доску", "An annotation on a board": "Аннотация на доске",
     "A reply to me": "Ответ мне", "I or my agent was @mentioned": "Упомянули меня или моего агента", "A reply to my note": "Ответ на мою заметку",
     "Only when Hyimg is in the background": "Только когда Hyimg в фоне",

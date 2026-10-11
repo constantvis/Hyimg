@@ -19,12 +19,16 @@
 :is(hy-split, hy-open-in) .oi-cv { width: 12px; height: 12px; transform: rotate(90deg); transition: transform .2s var(--hy-ease); }
 :is(hy-split, hy-open-in) > .oi-more[aria-expanded=true] .oi-cv { transform: rotate(-90deg); }
 :is(hy-split, hy-open-in, .hy-oi-menu) .oi-ic { display: block; width: 18px; height: 18px; flex: none; }
-.hy-oi-menu { position: fixed; z-index: 70; box-sizing: border-box; min-width: 220px; padding: 6px; border: 1px solid var(--line); border-radius: 14px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+.hy-oi-menu { position: fixed; z-index: 70; box-sizing: border-box; min-width: 220px; padding: var(--hy-pop-pad, 6px); border: 1px solid var(--line); border-radius: var(--hy-pop-r, 14px);
+  background: var(--hy-pop-bg, var(--panel)); -webkit-backdrop-filter: var(--hy-pop-blur); backdrop-filter: var(--hy-pop-blur);   /* a pop-up (panels audit P-17) */
   box-shadow: var(--hy-sh-pop); color: var(--sub); font: 500 13px var(--sans); transform-origin: 100% 0; animation: hyOiIn .2s var(--hy-ease); }
-.hy-oi-menu > button { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 9px; width: 100%; height: 32px; padding: 0 10px; border-radius: 9px;
+.hy-oi-menu > button, .hy-oi-menu .hy-sub > button { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 9px; width: 100%; height: 32px; padding: 0 10px; border-radius: 9px;
   color: var(--sub); white-space: nowrap; cursor: default; }
-.hy-oi-menu > button:is(:hover, :focus) { background: var(--raise); color: var(--ink); }
+.hy-oi-menu > button:is(:hover, :focus), .hy-oi-menu .hy-sub > button:is(:hover, :focus), .hy-oi-menu > button[aria-expanded=true] { background: var(--raise); color: var(--ink); }
+/* a row with a submenu («Open with ›», round 20): its words take the room, the chevron at the right end; the submenu's rows as the menu's */
+.hy-oi-menu .ml { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* not block.css's small heading of the same name; nearly opaque: a backdrop blur inside the menu's own does not blur the page under it */
+.hy-oi-menu .hy-sub { margin: 0; color: var(--sub); font: 500 13px var(--sans); letter-spacing: normal; text-transform: none; background: color-mix(in srgb, var(--panel) 97%, transparent); }
 .hy-oi-menu .oi-ck { flex: none; width: 14px; height: 14px; visibility: hidden; color: var(--ink); }
 .hy-oi-menu > button[aria-checked=true] .oi-ck { visibility: visible; }
 .hy-oi-menu .oi-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -36,7 +40,7 @@ hy-split[variant=solid] > button { border-radius: 999px; }
 hy-split[variant=solid][split] > .oi-go { padding: 0 9px 0 14px; border-radius: 999px 0 0 999px; }
 hy-split[variant=solid] > .oi-more { width: 26px; padding-right: 2px; border-left-color: color-mix(in srgb, var(--panel) 22%, transparent); border-radius: 0 999px 999px 0; }
 hy-split[variant=solid] > button:hover, hy-split[variant=solid] > .oi-more[aria-expanded=true] { color: var(--panel); background: color-mix(in srgb, var(--panel) 10%, transparent); }
-.hy-oi-menu > button[aria-disabled=true] { opacity: .45; }
+.hy-oi-menu > button[aria-disabled=true], .hy-oi-menu .hy-sub > button[aria-disabled=true] { opacity: .45; }
 .hy-oi-menu .oi-k { display: inline-flex; gap: 2px; margin-left: 14px; }
 .hy-oi-menu .oi-sep { height: 1px; margin: 5px 8px; background: var(--line); }
 /* a Studio's row: a dot in the Studio's colour where the icon stands (round 19, switch-b.html) */

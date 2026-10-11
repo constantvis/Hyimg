@@ -31,8 +31,8 @@ def open_board(p, port, ua=None):
 
 def tip(page, key):
     page.mouse.move(5, 5); page.wait_for_timeout(500)
-    page.hover(f"#modes button[data-mode={key}]"); page.wait_for_function("() => document.getElementById('modetip').classList.contains('on')", timeout=3000)
-    return page.locator("#modetip").inner_text()
+    page.hover(f"#modes button[data-mode={key}]"); page.wait_for_function("() => !!document.querySelector('#hytip[shown]')", timeout=3000)
+    return page.locator("#hytip").inner_text()   # the app's one tooltip (ui/hy/tooltip.js, round 20)
 
 
 def test_greyed_segments_say_what_to_do(srv):
@@ -43,11 +43,12 @@ def test_greyed_segments_say_what_to_do(srv):
         assert page.get_attribute("#modes button[data-mode=two]", "aria-disabled") == "true"
         t = tip(page, "two")
         assert "Two Studio" in t and "Select a two card to use Two Studio" in t, t
-        # inside a Studio nothing can be selected: the tooltip says what to open instead
+        # inside a Studio nothing can be selected: the segment says what to open instead. Since 2026-10-11 (studios audit S-01: the dock
+        # fits beside the library) a Studio's switch shows only Board and itself, so the greyed segment is not on screen there
         page.evaluate("() => MODES.enter('fake', ['f1'])"); page.wait_for_function("() => MODES.open === 'fake'")
-        t = tip(page, "two")
-        assert "Open a two card to use Two Studio" in t and "Select" not in t, t
-        assert page.get_attribute("#modes button[data-mode=two]", "aria-description") == "Open a two card to use Two Studio"
+        page.wait_for_function("() => !document.querySelector('#modes button[data-mode=two]').getClientRects().length")
+        assert page.evaluate("() => [...document.querySelectorAll('#modes > button')].filter(b => b.getClientRects().length).map(b => b.dataset.mode)") == ["board", "fake"]
+        assert page.get_attribute("#modes button[data-mode=two]", "aria-description") == "Open a two card to use Two Studio"   # still its words
         assert not errors, errors
         br.close()
 

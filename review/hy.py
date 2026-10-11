@@ -16,7 +16,8 @@ sees (a heading, a group title, a note's first line, a timeline dot's label) or 
   hy.py save FILE... --to DIR [--move]   pictures into a library folder (a batch), leaving out every picture the library already
                                 has (same bytes, any name or folder) and repeats among FILE; names without an extension get one
   hy.py dupes                   byte-identical copies in the library: which file the library shows, which it folds into it
-  hy.py undocumented [folder]   frames whose json says nothing about them (no prompt, no model), by folder
+  hy.py undocumented [folder]   frames whose json says nothing about them (no prompt, no model), by folder; then generated or rendered
+                                frames whose json has no time (seconds: required, docs/data.md)
   hy.py notify "что сделано" [--text "подробнее"] [--ids a,b]   a notification for the owner (the bell on the canvas, red dot);
                                 without --ids it names what you put on the page since your last one; notify --place ID repairs an old one
   hy.py layout plan             «Разложить по папкам как на доске»: what would move where, read only (counts and examples)
@@ -32,7 +33,7 @@ Commands inside do (separated by ;):
   set REF key=V ...                   any field: text, title, w, fs, color
   point TL "Label" x=V                a timeline dot by its label: moved, or added if new (TL: the timeline, or any label on it)
   note "text" x=V y=V [w=N] [color=blue]
-  text "Title\\nbody" x=V y=V [size=0-4|fs=N] [w=N]   a heading; with lines after the title a document, its body Markdown (textdocs.py)
+  text "Title\\nbody" x=V y=V [size=0-4|fs=N] [w=N h=N mode=w|h|f]   a heading; with lines after the title a document (textdocs.py; w h: its box)
   model FILE x=V y=V | near=REF [w=360]   a 3D card (plugin 3d) from a library glb or STEP/IGES (FreeCAD converts it): a new scene
                                       3d/scenes/<stamp>-<name>/scene.json with the file on the floor, two lights and a camera
   html FILE.html x=V y=V | near=REF [into=GROUP] [w=480] [vw=1280] [vh=800]   Dev Studio's HTML card (plugin dev); refuses without the
@@ -276,7 +277,7 @@ def lay_out(b, rows, kv, what, moving=()):
     if "near" not in kv and "into" not in kv and not ("x" in kv and "y" in kv):
         raise SystemExit(f"{what}: укажи into=<группа> (подгруппой внутрь темы), near=<что рядом> или x= и y=")
     pw = sorted(it["w"] for it in b["items"].values() if is_pic(it))
-    w = round(kv.get("w") or (pw[len(pw) // 2] if pw else 320)); gap = round(kv.get("gap", 24)); cols = int(kv.get("cols", 8))
+    w = round(kv.get("w") or (pw[len(pw) // 2] if pw else 320)); gap = round(kv.get("gap", 24)); cols, whole = grids.wrap(rows, kv)
     into = None
     if "into" in kv:   # a sub-group (note + rows) under the last block of a theme group, not a group of its own (owner 2026-10-02)
         into = resolve(b, str(kv["into"]), {"group"})[1]; g = b["groups"][into]; pad = round(w * 1.5)
@@ -284,7 +285,7 @@ def lay_out(b, rows, kv, what, moving=()):
         own = [rect(b, m) for m in inside]; rs = own + [zone_rect(b["items"][m]) for m in inside if b["items"][m].get("reach")]
         left = min((r["x"] for r in own), default=g["x"] + pad)   # the notes' column itself, not their dashed zones
         bottom = max((r["y"] + r["h"] for r in rs), default=g["y"] + pad - w)
-        if "cols" not in kv:   # as wide as the group already is, 4 to 8 pictures
+        if "cols" not in kv and not whole:   # a pile: as wide as the group already is, 4 to 8 pictures
             room = g["x"] + g["w"] - pad - (left + (round(w * .15) + w if kv.get("note") else 0))
             cols = max(4, min(8, int((room + gap) // (w + gap))))
     y, pics = 0, []
@@ -955,14 +956,17 @@ def cmd_save(files, to, move=False):
 
 
 def cmd_undocumented(pat):
-    """library frames whose json says nothing about what they are (no prompt, no model): their card in Hyimg is empty"""
-    import fnmatch
-    items = [i for i in api("/api/items")[1] if not i["path"].startswith("ext/") and not ((i.get("prompt") or "").strip() or (i.get("model") or "").strip())
-             and (not pat or fnmatch.fnmatch(i["path"], pat) or fnmatch.fnmatch(i["path"], pat.rstrip("/") + "/*"))]
-    by = {}
-    for i in items: by.setdefault(i["folder"], []).append(i["path"])
-    print(f"{len(items)} кадров без описания в {len(by)} папках" + (f" по «{pat}»" if pat else ""))
-    for f, ps in sorted(by.items(), key=lambda x: -len(x[1])): print(f"{len(ps):5}  {f}")
+    """library frames whose json says nothing about what they are (no prompt, no model): their card in Hyimg is empty; then the frames
+    something made whose json has no time (owner 2026-10-11: the time of a generation or a render is required; runmeta.py reads it)"""
+    import fnmatch, runmeta
+    mine = [i for i in api("/api/items")[1] if not i["path"].startswith("ext/") and (not pat or fnmatch.fnmatch(i["path"], pat) or fnmatch.fnmatch(i["path"], pat.rstrip("/") + "/*"))]
+    for what, items in (("без описания", [i for i in mine if not ((i.get("prompt") or "").strip() or (i.get("model") or "").strip())]),
+                        ("сделанных без времени (seconds, старым не выдумывать)", runmeta.untimed(mine))):
+        by = {}
+        for i in items: by.setdefault(i["folder"], []).append(i["path"])
+        print(f"{len(items)} кадров {what} в {len(by)} папках" + (f" по «{pat}»" if pat else ""))
+        for f, ps in sorted(by.items(), key=lambda x: -len(x[1])):   # the frames made without a time by name, the first three
+            print(f"{len(ps):5}  {f}" + (f"  ({', '.join(p.rsplit('/', 1)[-1] for p in ps[:3])}{', …' if len(ps) > 3 else ''})" if what[0] == "с" else ""))
 
 
 def cmd_dupes():
@@ -1041,7 +1045,7 @@ def _cad_glb(plugin, path):
     if st.get("state") != "ready": raise SystemExit(f"FreeCAD не прочитал {path}: {st.get('reason') or st.get('state')} {st.get('error') or ''}")
     req = urllib.request.Request(BASE + f"/api/plugin/{plugin}/cadglb", data=json.dumps({"key": st["key"]}).encode(), method="POST",
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=120) as r: return r.read()
+    with urllib.request.urlopen(req, timeout=120) as r: return r.read(), st   # st: FreeCAD's seconds, version, mode, compute (cad.py)
 
 
 def op_model(b, args, kv):
@@ -1055,7 +1059,11 @@ def op_model(b, args, kv):
         h = 0x811c9dc5
         for ch in f"{path}@0": h = ((h ^ ord(ch)) * 0x01000193) & 0xffffffff
         glb = f"3d/converted/{h:08x}/{stem}.glb"
-        if api_head(glb) != 200: post_bytes(f"/api/file?p={urllib.parse.quote(glb)}", _cad_glb(plugin, path))
+        if api_head(glb) != 200:   # the glb and its json: what it was made from, how long FreeCAD took, where (owner 2026-10-11)
+            data, st = _cad_glb(plugin, path); post_bytes(f"/api/file?p={urllib.parse.quote(glb)}", data)
+            run = {k: st[k] for k in ("seconds", "compute") if st.get(k) is not None}
+            post_bytes(f"/api/file?p={urllib.parse.quote(glb + '.json')}", json.dumps({"model": f"FreeCAD {st.get('version') or ''}".strip(),
+                       "prompt": f"{path} as glb (FreeCAD through the 3D plugin)", "inputs": [path], **run}, ensure_ascii=False).encode())
     elif ext == ".glb": glb = path
     else: raise SystemExit(f"{ext}: hy.py кладет glb и STEP/IGES; obj, stl, fbx открой через карточку в приложении (она переводит их в glb)")
     with urllib.request.urlopen(BASE + "/file?p=" + urllib.parse.quote(glb), timeout=120) as r: data = r.read()
